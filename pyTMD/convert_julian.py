@@ -102,7 +102,7 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
 	#-- return date variables in output format (default python dictionary)
 	if (FORMAT == 'dict'):
 		return dict(year=YEAR, month=MONTH, day=DAY,
-			hour=YEAR, minute=MINUTE, second=SECOND)
+			hour=HOUR, minute=MINUTE, second=SECOND)
 	elif (FORMAT == 'tuple'):
 		return (YEAR, MONTH, DAY, HOUR, MINUTE, SECOND)
 	elif (FORMAT == 'zip'):
