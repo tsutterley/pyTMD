@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 load_constituent.py (09/2017)
-Loads parameters for a given tidal constitent
+Loads parameters for a given tidal constituent
 
 CALLING SEQUENCE:
 	flag,amplitude,phase,alpha,species = load_constituents(c)
@@ -41,7 +41,7 @@ def load_constituent(c):
 		1.355937e-04,1.382329e-04,1.431581e-04,1.452450e-04,7.556036e-05,
 		7.028195e-05,7.824458e-05,6.531174e-05,0.053234e-04,0.026392e-04,
 		0.003982e-04,2.810377e-04,2.859630e-04,2.783984e-04])
-	#-- Astronomical arguments (relative to t0 = 1 Jan 0:00 1992]
+	#-- Astronomical arguments (relative to t0 = 1 Jan 0:00 1992)
 	phase_all = np.array([1.731557546,0.000000000,0.173003674,1.558553872,
 		6.050721243,6.110181633,3.487600001,5.877717569,4.086699633,
 		3.463115091,5.427136701,0.553986502,0.052841931,2.137025284,

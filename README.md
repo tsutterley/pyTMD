@@ -17,8 +17,10 @@ pyTMD
 - [IERS Ocean Pole Load Tide Coefficients Map](http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)
 
 #### Dependencies
-[numpy: Scientific Computing Tools For Python](http://www.numpy.org)  
-[scipy: Scientific Tools for Python](http://www.scipy.org/)  
+[numpy: Scientific Computing Tools For Python](https://www.numpy.org)  
+[scipy: Scientific Tools for Python](https://www.scipy.org/)  
+[h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
+[netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)
 
 #### Download
 The program homepage is:   

@@ -50,7 +50,7 @@ from read_ocean_pole_tide import read_ocean_pole_tide
 
 #-- PURPOSE: compute the pole load tide radial displacements following
 #-- IERS conventions (2010)
-def compute_LPT_displacements(base_dir, input_file, output_file, MODE=0775):
+def compute_LPT_displacements(tide_dir, input_file, output_file, MODE=0775):
 
 	#-- read input *.csv file to extract MJD, latitude, longitude and elevation
 	dtype = dict(names=('MJD','lat','lon','h'),formats=('f','f','f','f'))
@@ -109,8 +109,8 @@ def compute_LPT_displacements(base_dir, input_file, output_file, MODE=0775):
 		*dinput['h'] + (3.0/a_axis**2.0)*dinput['h']**2.0)
 
 	#-- pole tide files (mean and daily)
-	mean_pole_file = os.path.join(base_dir,'mean_pole_2017-10-23.tab')
-	pole_tide_file = os.path.join(base_dir,'finals_all_2017-09-01.tab')
+	mean_pole_file = os.path.join(tide_dir,'mean_pole_2017-10-23.tab')
+	pole_tide_file = os.path.join(tide_dir,'finals_all_2017-09-01.tab')
 	#-- calculate angular coordinates of mean pole at time tdec
 	mpx,mpy,fl = iers_mean_pole(mean_pole_file,tdec,'2015')
 	#-- read IERS daily polar motion values
@@ -147,8 +147,8 @@ def main():
 	long_options = ['help','directory=','mode=']
 	optlist,arglist = getopt.getopt(sys.argv[1:], 'hD:M:', long_options)
 
-	#-- set data directory based on the input file
-	base_dir = None
+	#-- set data directory containing the pole tide files
+	tide_dir = None
 	#-- permissions mode of the local files (number in octal)
 	MODE = 0775
 	for opt, arg in optlist:
@@ -156,7 +156,7 @@ def main():
 			usage()
 			sys.exit()
 		elif opt in ("-D","--directory"):
-			base_dir = os.path.expanduser(arg)
+			tide_dir = os.path.expanduser(arg)
 		elif opt in ("-M","--mode"):
 			MODE = int(arg, 8)
 
@@ -168,10 +168,10 @@ def main():
 	input_file = os.path.expanduser(arglist[0])
 	output_file = os.path.expanduser(arglist[1])
 	#-- set base directory from the input file if not current set
-	base_dir = os.path.dirname(input_file) if (base_dir is None) else base_dir
+	tide_dir = os.path.dirname(input_file) if (tide_dir is None) else tide_dir
 
 	#-- run load pole tide program for input *.csv file
-	compute_LPT_displacements(base_dir, input_file, output_file, MODE=MODE)
+	compute_LPT_displacements(tide_dir, input_file, output_file, MODE=MODE)
 
 #-- run main program
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 from convert_julian import convert_julian
 from convert_calendar_decimal import convert_calendar_decimal
+from calc_delta_time import calc_delta_time
 from calc_astrol_longitudes import calc_astrol_longitudes
 from map_ll_tides import map_ll_tides
 from map_xy_tides import map_xy_tides
@@ -7,7 +8,8 @@ from convert_xy_ll import convert_xy_ll
 from infer_minor_corrections import infer_minor_corrections
 from load_constituent import load_constituent
 from load_nodal_corrections import load_nodal_corrections
-from read_tide_model import read_tide_model
+from read_tide_model import extract_tidal_constants
+from read_GOT_model import extract_GOT_constants
 from predict_tidal_ts import predict_tidal_ts
 from predict_tide_drift import predict_tide_drift
 from predict_tide import predict_tide

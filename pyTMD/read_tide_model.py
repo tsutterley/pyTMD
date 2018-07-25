@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (09/2017)
+read_tide_model.py (07/2018)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
 	given locations
@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
 	convert_xy_ll.py: converts lat/lon points to and from projected coordinates
 
 UPDATE HISTORY:
+	Updated 07/2018: added different interpolation methods
 	Updated 09/2017: Adapted for Python
 """
 import os
@@ -29,7 +30,9 @@ import scipy.interpolate
 from convert_xy_ll import convert_xy_ll
 
 #-- extract tidal harmonic constants out of a tidal model at coordinates
-def extract_tidal_constants(ilon,ilat,grid_file,model_file,EPSG,type):
+def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
+	METHOD='linear'):
+	#-- read the OTIS-format tide grid file
 	xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
 	#-- run wrapper function to convert coordinate systems of input lat/lon
 	x,y = convert_xy_ll(ilon,ilat,EPSG,'F')
@@ -82,11 +85,15 @@ def extract_tidal_constants(ilon,ilat,grid_file,model_file,EPSG,type):
 		hu[hu==0] = np.nan
 		hv[hv==0] = np.nan
 
-	#-- use scipy interpolate to interpolate values
-	D = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-		hz.flatten(), zip(x,y), method='linear')
-	mz1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-		mz.real.flatten(), zip(x,y), method='linear')
+	if (METHOD == 'bilinear'):
+		D = bilinear_interp(xi,yi,hz,x,y)
+		mz1 = bilinear_interp(xi,yi,mz,x,y)
+	else:
+		#-- use scipy interpolate to interpolate values
+		D = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+			hz.flatten(), zip(x,y), method=METHOD)
+		mz1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+			mz.real.flatten(), zip(x,y), method=METHOD)
 
 	#-- u and v are velocities in cm/s
 	if type in ('v','u'):
@@ -109,9 +116,13 @@ def extract_tidal_constants(ilon,ilat,grid_file,model_file,EPSG,type):
 				z = extend_matrix(z)
 			#-- replace zero values with nan
 			z[z==0] = np.nan
-			#-- interpolate values
-			z1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-				z.flatten(), zip(x,y), method='linear')
+			#-- interpolate amplitude and phase of the constituent
+			if (METHOD == 'bilinear'):
+				z1 = bilinear_interp(xi,yi,z,x,y)
+			else:
+				#-- use scipy interpolate to interpolate values
+				z1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+					z.flatten(), zip(x,y), method=METHOD)
 			#-- amplitude and phase of the constituent
 			amplitude[:,i] = np.abs(z1)
 			phase[:,i] = np.arctan2(-np.imag(z1),np.real(z1))
@@ -124,10 +135,15 @@ def extract_tidal_constants(ilon,ilat,grid_file,model_file,EPSG,type):
 			#-- replace zero values with nan
 			u[u==0] = np.nan
 			#-- interpolate values
-			u1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-				u.flatten(), zip(x,y), method='linear')
-			mu1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-				mu.real.flatten(), zip(x,y), method='linear')
+			if (METHOD == 'bilinear'):
+				u1 = bilinear_interp(xi,yi,u,x,y)
+				mu1 = bilinear_interp(xi,yi,mu,x,y)
+			else:
+				#-- use scipy interpolate to interpolate values
+				u1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+					u.flatten(), zip(x,y), method=METHOD)
+				mu1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+					mu.real.flatten(), zip(x,y), method=METHOD)
 			#-- convert units
 			u1 = u1/unit_conv
 			#-- amplitude and phase of the constituent
@@ -142,10 +158,15 @@ def extract_tidal_constants(ilon,ilat,grid_file,model_file,EPSG,type):
 			#-- replace zero values with nan
 			v[v==0] = np.nan
 			#-- interpolate values
-			v1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-				v.flatten(), zip(x,y), method='linear')
-			mv1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-				mv.real.flatten(), zip(x,y), method='linear')
+			if (METHOD == 'bilinear'):
+				v1 = bilinear_interp(xi,yi,v,x,y)
+				mv1 = bilinear_interp(xi,yi,mv,x,y)
+			else:
+				#-- use scipy interpolate to interpolate values
+				v1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+					v.flatten(), zip(x,y), method=METHOD)
+				mv1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+					mv.real.flatten(), zip(x,y), method=METHOD)
 			#-- convert units
 			v1 = v1/unit_conv
 			#-- amplitude and phase of the constituent
@@ -308,3 +329,51 @@ def Huv(hz):
 	hu = mu*(hz + hz[indy,:])/2.0
 	hv = mv*(hz + hz[:,indx])/2.0
 	return (hu,hv)
+
+#-- PURPOSE: bilinear interpolation of input data to output data
+def bilinear_interp(ilon,ilat,idata,lon,lat):
+	#-- degrees to radians
+	dtr = np.pi/180.0
+	#-- grid step size of tide model
+	dlon = np.abs(ilon[1] - ilon[0])
+	dlat = np.abs(ilat[1] - ilat[0])
+	#-- Convert input coordinates to radians
+	phi = ilon*dtr
+	th = (90.0 - ilat)*dtr
+	#-- Convert output data coordinates to radians
+	xphi = lon*dtr
+	xth = (90.0 - lat)*dtr
+	#-- interpolate gridded ur values to data
+	data = np.zeros_like(lon)
+	for i,l in enumerate(lon):
+		#-- calculating the indices for the original grid
+		dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
+		dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
+		iph, = np.nonzero(dx == np.min(dx))[0]
+		ith, = np.nonzero(dy == np.min(dy))[0]
+		#-- if on corner value: use exact
+		if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
+			data[i] = idata[ith,iph]
+		elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph])):
+			data[i] = idata[ith+1,iph]
+		elif ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph+1])):
+			data[i] = idata[ith,iph+1]
+		elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph+1])):
+			data[i] = idata[ith+1,iph+1]
+		else:
+			#-- corner weight values for i,j
+			Wa = (xphi[i]-phi[iph])*(xth[i]-th[ith])
+			Wb = (phi[iph+1]-xphi[i])*(xth[i]-th[ith])
+			Wc = (xphi[i]-phi[iph])*(th[ith+1]-xth[i])
+			Wd = (phi[iph+1]-xphi[i])*(th[ith+1]-xth[i])
+			#-- divisor weight value
+			W = (phi[iph+1]-phi[iph])*(th[ith+1]-th[ith])
+			#-- corner data values for i,j
+			Ia = idata[ith,iph]#-- (0,0)
+			Ib = idata[ith,iph+1]#-- (1,0)
+			Ic = idata[ith+1,iph]#-- (0,1)
+			Id = idata[ith+1,iph+1]#-- (1,1)
+			#-- calculate interpolated value for i
+			data[i] = (Ia*Wa + Ib*Wb + Ic*Wc + Id*Wd)/W
+	#-- return interpolated values
+	return data
