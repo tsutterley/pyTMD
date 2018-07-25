@@ -133,7 +133,7 @@ def bilinear_interp(ilon,ilat,idata,lon,lat):
 	#-- Convert output data coordinates to radians
 	xphi = lon*dtr
 	xth = (90.0 - lat)*dtr
-	#-- interpolate gridded ur values to data
+	#-- interpolate gridded data values to data
 	data = np.zeros_like(lon)
 	for i,l in enumerate(lon):
 		#-- calculating the indices for the original grid
