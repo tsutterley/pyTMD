@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (07/2018)
+read_GOT_model.py (07/2019)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
 	calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -14,15 +14,21 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/
 
 UPDATE HISTORY:
+	Updated 07/2019: interpolate fill value mask with bivariate splines
+	Updated 12/2018: python3 compatibility updates for division and zip
+	Updated 10/2018: added SCALE as load tides are in mm and ocean are in cm
+	Updated 08/2018: added multivariate spline interpolation option
 	Written 07/2018
 """
+from __future__ import division
+
 import os
 import gzip
 import numpy as np
 import scipy.interpolate
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
-def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='linear'):
+def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=None):
 	#-- adjust longitudinal convention of input latitude and longitude
 	#-- to fit tide model convention
 	if (np.min(ilon) < 0.0):
@@ -31,7 +37,7 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='linear'):
 
 	#-- number of points
 	points = zip(ilon,ilat)
-	npts = len(points)
+	npts = len(list(points))
 	#-- read and interpolate each constituent
 	nc = len(model_files)
 	ampl = np.zeros((npts,nc))
@@ -46,24 +52,40 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='linear'):
 		lon = extend_array(lon,dlon)
 		amp = extend_matrix(amp)
 		ph = extend_matrix(ph)
-		#-- replace invalid values with nan
-		amp[amp==fv] = np.nan
-		ph[ph==fv] = np.nan
 		#-- interpolate amplitude and phase of the constituent
 		if (METHOD == 'bilinear'):
+			#-- replace invalid values with nan
+			amp[amp==fv] = np.nan
+			ph[ph==fv] = np.nan
 			ampl[:,i] = bilinear_interp(lon,lat,amp,ilon,ilat)
 			phase[:,i] = bilinear_interp(lon,lat,ph,ilon,ilat)
+		elif (METHOD == 'spline'):
+			#-- interpolate amplitude and phase of the constituent with scipy
+			msk = np.zeros_like(amp,dtype=np.bool)
+			f1 = scipy.interpolate.RectBivariateSpline(lon,lat,amp.T,kx=1,ky=1)
+			f2 = scipy.interpolate.RectBivariateSpline(lon,lat,ph.T,kx=1,ky=1)
+			f3 = scipy.interpolate.RectBivariateSpline(lon,lat,msk.T,kx=1,ky=1)
+			ampl[:,i] = f1.ev(ilon,ilat)
+			phase[:,i] = f2.ev(ilon,ilat)
+			mask = f3.ev(ilon,ilat).astype(np.bool)
+			#-- replace invalid values with nan
+			invalid, = np.nonzero(mask)
+			ampl[invalid] = np.nan
+			phase[invalid] = np.nan
 		else:
 			#-- create mesh grids of latitude and longitude
 			X,Y = np.meshgrid(lon,lat)
 			interp_points = zip(X.flatten(),Y.flatten())
+			#-- replace invalid values with nan
+			amp[amp==fv] = np.nan
+			ph[ph==fv] = np.nan
 			#-- interpolate amplitude and phase of the constituent with scipy
 			ampl[:,i] = scipy.interpolate.griddata(interp_points, amp.flatten(),
 				points, method=METHOD)
 			phase[:,i] = scipy.interpolate.griddata(interp_points, ph.flatten(),
 				points, method=METHOD)
-	#-- convert amplitude from centimeters to meters
-	amplitude = ampl/100.0
+	#-- convert amplitude from input units to meters
+	amplitude = ampl*SCALE
 	#-- return the interpolated values
 	return (amplitude,phase)
 
@@ -104,18 +126,18 @@ def read_GOT_grid(input_file):
 	ph = np.full((nlat,nlon),fill_value[0],dtype=np.float)
 	#-- starting lines to fill amplitude and phase variables
 	l1 = 7
-	l2 = 14 + np.int(nlon/11)*nlat + nlat
+	l2 = 14 + np.int(nlon//11)*nlat + nlat
 	#-- for each latitude
 	for i in range(nlat):
-		for j in range(nlon/11):
+		for j in range(nlon//11):
 			j1 = j*11
 			amp[i,j1:j1+11] = np.array(file_contents[l1].split(),dtype=np.float)
-		 	ph[i,j1:j1+11] = np.array(file_contents[l2].split(), dtype=np.float)
+			ph[i,j1:j1+11] = np.array(file_contents[l2].split(), dtype=np.float)
 			l1 += 1; l2 += 1
 		#-- add last tidal variables
 		j1 = (j+1)*11; j2 = nlon % 11
 		amp[i,j1:j1+j2] = np.array(file_contents[l1].split(),dtype=np.float)
-	 	ph[i,j1:j1+j2] = np.array(file_contents[l2].split(), dtype=np.float)
+		ph[i,j1:j1+j2] = np.array(file_contents[l2].split(), dtype=np.float)
 		l1 += 1; l2 += 1
 	#-- return output variables
 	return (amp,ph,lon,lat,fill_value[0])

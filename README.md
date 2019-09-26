@@ -1,12 +1,13 @@
 pyTMD
 =====
 
-#### Tide Model Driver to read OTIS-format tidal solutions and make tidal predictions  
+#### Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions  
 
 - [OSU Tidal Prediction Software (OTPS)](http://volkov.oce.orst.edu/tides/otps.html)  
 - [ESR Tide Model Driver (TMD) Matlab Toolbox](https://www.esr.org/research/polar-tide-models/tmd-software/)  
 - [OSU List of Regional Tide Models](http://volkov.oce.orst.edu/tides/region.html)  
 - [ESR List of Polar Tide Models](https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/)  
+- [A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2](https://ntrs.nasa.gov/search.jsp?R=19990089548)  
 
 #### Pole Tide Driver to calculate radial pole tide displacements  
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-infer_minor_corrections.py (07/2018)
+infer_minor_corrections.py (08/2018)
 Return correction for minor constituents based on Richard Ray's PERTH3 code
 	PERTH: PREdict Tidal Heights
 
@@ -17,7 +17,7 @@ OUTPUT:
 
 OPTIONS:
 	DELTAT: time correction for converting to Ephemeris Time (days)
-	CORRECTIONS: use nodal corrections from OTIS or GOT models
+	CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
 
 PYTHON DEPENDENCIES:
 	numpy: Scientific Computing Tools For Python
@@ -31,12 +31,13 @@ REFERENCES:
 	A. T. Doodson & H. Warburg, Admiralty Manual of Tides, HMSO, 1941.
 
 UPDATE HISTORY:
+	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
 		use the number of dates if calculating a tidal time series at a point
 	Updated 09/2017: Rewritten in Python
 """
 import numpy as np
-from calc_astrol_longitudes import calc_astrol_longitudes
+from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
 def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
 	#-- degrees to radians

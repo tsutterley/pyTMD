@@ -42,11 +42,11 @@ import os
 import getopt
 import numpy as np
 import scipy.interpolate
-from convert_julian import convert_julian
-from convert_calendar_decimal import convert_calendar_decimal
-from iers_mean_pole import iers_mean_pole
-from read_iers_EOP import read_iers_EOP
-from read_ocean_pole_tide import read_ocean_pole_tide
+from pyTMD.convert_julian import convert_julian
+from pyTMD.convert_calendar_decimal import convert_calendar_decimal
+from pyTMD.iers_mean_pole import iers_mean_pole
+from pyTMD.read_iers_EOP import read_iers_EOP
+from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 
 #-- PURPOSE: compute the pole load tide radial displacements following
 #-- IERS conventions (2010)

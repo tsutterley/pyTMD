@@ -4,13 +4,13 @@ convert_xy_ll.py (09/2017)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
-	x,y = convert_xy_ll(lon,lat,EPSG,'F')
-	lon,lat = convert_xy_ll(x,y,EPSG,'B')
+	x,y = convert_xy_ll(lon,lat,PROJ,'F')
+	lon,lat = convert_xy_ll(x,y,PROJ,'B')
 
 INPUTS:
 	i1: longitude ('F') or projection easting x ('B')
 	i2: latitude ('F') or projection northing y ('B')
-	EPSG: spatial reference system code for coordinate transformations
+	PROJ: spatial reference system code for coordinate transformations
 		https://www.epsg-registry.org/
 	BF: backwards ('B') or forward ('F') translations
 
@@ -31,22 +31,22 @@ UPDATE HISTORY:
 	Written 09/2017
 """
 import numpy as np
-from map_ll_tides import map_ll_tides
-from map_xy_tides import map_xy_tides
+from pyTMD.map_ll_tides import map_ll_tides
+from pyTMD.map_xy_tides import map_xy_tides
 
-def convert_xy_ll(i1,i2,EPSG,BF):
+def convert_xy_ll(i1,i2,PROJ,BF):
 	#-- python dictionary with conversion functions
 	conversion_functions = {}
 	conversion_functions['3031'] = xy_ll_EPSG3031
-	conversion_functions['3032'] = xy_ll_EPSG3032
+	conversion_functions['CATS2008'] = xy_ll_CATS2008
 	conversion_functions['3976'] = xy_ll_EPSG3976
 	conversion_functions['3996'] = xy_ll_EPSG3996
 	conversion_functions['4326'] = pass_values
-	#-- check that EPSG for conversion was entered correctly
-	if EPSG not in conversion_functions.keys():
-		raise Exception('EPSG:{0} conversion function not found'.format(EPSG))
+	#-- check that PROJ for conversion was entered correctly
+	if PROJ not in conversion_functions.keys():
+		raise Exception('PROJ:{0} conversion function not found'.format(PROJ))
 	#-- run conversion program and return values
-	o1,o2 = conversion_functions[EPSG](i1,i2,BF)
+	o1,o2 = conversion_functions[PROJ](i1,i2,BF)
 	return (o1,o2)
 
 #-- wrapper function for models in EPSG 3031 (Antarctic Polar Stereographic)
@@ -60,8 +60,8 @@ def xy_ll_EPSG3031(i1,i2,BF):
 	#-- return the output variables
 	return (o1,o2)
 
-#-- wrapper function for models in EPSG 3032 (CATS2008 tide model)
-def xy_ll_EPSG3032(i1,i2,BF):
+#-- wrapper function for CATS2008 tide models
+def xy_ll_CATS2008(i1,i2,BF):
 	#-- convert lat/lon to Polar-Stereographic x/y
 	if (BF.upper() == 'F'):
 		o1,o2 = map_ll_tides(i1,i2,-71.0,-1.0,-70.0)

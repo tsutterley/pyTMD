@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 setup(
-	name='Tide Model Driver to read OTIS-format tidal solutions and make tidal predictions',
-	version='1.0.0.0',
+	name='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
+	version='1.0.0.1',
 	description='Python',
 	url='https://github.com/tsutterley/pyTMD',
 	author='Tyler Sutterley',
-	author_email='tyler.c.sutterley@nasa.gov',
+	author_email='tsutterl@uw.edu',
 	license='MIT',
 	classifiers=[
 		'Development Status :: 3 - Alpha',
@@ -15,7 +15,7 @@ setup(
 		'Programming Language :: Python :: 2',
 		'Programming Language :: Python :: 2.7',
 	],
-	keywords='Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS,
+	keywords='Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT',
 	packages=find_packages(),
-	install_requires=['numpy','scipy'],
+	install_requires=['numpy','scipy','h5py','netCDF4'],
 )

@@ -41,7 +41,7 @@ def calc_delta_time(delta_file,iMJD):
 	ii, = np.nonzero(iMJD < MJD[-1])
 	jj, = np.nonzero(iMJD >= MJD[-1])
 	for i in ii:
-		indice, = np.nonzero((MJD[:-1] < MJD[i]) & (MJD[1:] >= MJD[i]))
+		indice, = np.nonzero((MJD[:-1] < iMJD[i]) & (MJD[1:] >= iMJD[i]))
 		delta1[i] = dinput[indice,3]
 		time1[i] = MJD[indice]
 		delta2[i] = dinput[indice+1,3]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_ocean_pole_tide.py (09/2017)
+read_ocean_pole_tide.py (12/2018)
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
 http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/icc7.pdf
@@ -22,6 +22,8 @@ REFERENCES:
 		doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+	Updated 12/2018: Compatibility updates for Python3
+	Split 10/2017 from compute_OPT_triangulated_data.py into separate file
 	Written 09/2017
 """
 import re
@@ -42,7 +44,7 @@ def read_ocean_pole_tide(input_file):
 		#-- file line at count
 		line = file_contents[count]
 		#-- find --------- within line to set HEADER flag to False when found
-		HEADER = not bool(re.match('---------',line))
+		HEADER = not bool(re.match(b'---------',line))
 		#-- add 1 to counter
 		count += 1
 

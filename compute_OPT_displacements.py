@@ -43,20 +43,21 @@ import os
 import getopt
 import numpy as np
 import scipy.interpolate
-from convert_julian import convert_julian
-from convert_calendar_decimal import convert_calendar_decimal
-from iers_mean_pole import iers_mean_pole
-from read_iers_EOP import read_iers_EOP
-from read_ocean_pole_tide import read_ocean_pole_tide
+from pyTMD.convert_julian import convert_julian
+from pyTMD.convert_calendar_decimal import convert_calendar_decimal
+from pyTMD.iers_mean_pole import iers_mean_pole
+from pyTMD.read_iers_EOP import read_iers_EOP
+from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 
 #-- PURPOSE: compute the ocean pole load tide radial displacements following
 #-- IERS conventions (2010) and using data from Desai (2002)
 def compute_OPT_displacements(tide_dir, input_file, output_file,
-	VERBOSE=False, MODE=0775):
+	METHOD=None, VERBOSE=False, MODE=0775):
 
 	#-- read input *.csv file to extract MJD, latitude, longitude and elevation
 	dtype = dict(names=('MJD','lat','lon','h'),formats=('f','f','f','f'))
 	dinput = np.loadtxt(input_file, delimiter=',', dtype=dtype)
+	file_lines, = np.shape(dinput['h'])
 	#-- convert from MJD to calendar dates, then to year-decimal
 	YY,MM,DD,HH,MN,SS = convert_julian(dinput['MJD'] + 2400000.5,FORMAT='tuple')
 	tdec = convert_calendar_decimal(YY,MM,DAY=DD,HOUR=HH,MINUTE=MN,SECOND=SS)
@@ -112,10 +113,23 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
 	#-- read ocean pole tide map from Desai (2002)
 	ocean_pole_tide_file = os.path.join(tide_dir,'opoleloadcoefcmcor.txt.gz')
 	iur,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
-	#-- use scipy griddata to interpolate to output points
-	gridlon,gridlat = np.meshgrid(ilon, ilat, indexing='ij')
-	UR = scipy.interpolate.griddata(zip(gridlon.flatten(),gridlat.flatten()),
-		iur.flatten(), zip(dinput['lon'],latitude_geocentric), method='linear')
+	#-- interpolate ocean pole tide map from Desai (2002)
+	if (METHOD == 'spline'):
+		#-- use scipy bivariate splines to interpolate to output points
+		f1 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
+			iur[:,::-1].real, kx=1, ky=1)
+		f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
+			iur[:,::-1].imag, kx=1, ky=1)
+		UR = np.zeros((file_lines),dtype=np.complex128)
+		UR.real = f1.ev(dinput['lon'],latitude_geocentric)
+		UR.imag = f2.ev(dinput['lon'],latitude_geocentric)
+	else:
+		#-- create mesh grids of latitude and longitude
+		gridlon,gridlat = np.meshgrid(ilon, ilat, indexing='ij')
+		interp_points = zip(gridlon.flatten(),gridlat.flatten())
+		#-- use scipy griddata to interpolate to output points
+		UR = scipy.interpolate.griddata(interp_points, iur.flatten(),
+			zip(dinput['lon'],latitude_geocentric), method=METHOD)
 
 	#-- calculate radial displacement at time
 	Urad = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
@@ -164,7 +178,8 @@ def main():
 	tide_dir = os.path.dirname(input_file) if (tide_dir is None) else tide_dir
 
 	#-- run ocean pole tide program for input *.csv file
-	compute_OPT_displacements(tide_dir, input_file, output_file, MODE=MODE)
+	compute_OPT_displacements(tide_dir, input_file, output_file,
+		METHOD='spline', MODE=MODE)
 
 #-- run main program
 if __name__ == '__main__':

@@ -16,7 +16,7 @@ OUTPUTS:
 
 OPTIONS:
 	DELTAT: time correction for converting to Ephemeris Time (days)
-	CORRECTIONS: use nodal corrections from OTIS or GOT models
+	CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
 
 PYTHON DEPENDENCIES:
 	numpy: Scientific Computing Tools For Python
@@ -27,13 +27,14 @@ PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 
 UPDATE HISTORY:
+	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
 	Updated 09/2017: Rewritten in Python
 	Rewritten in Matlab by Lana Erofeeva 01/2003
 	Written by Richard Ray 03/1999
 """
 import numpy as np
-from calc_astrol_longitudes import calc_astrol_longitudes
+from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
 def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	#-- constituents array (not all are included in tidal program)
@@ -74,7 +75,7 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	arg[:,14] = t1 - s + 3.0*h - p + 90.0 #-- chi1
 	arg[:,15] = t1 - 2.0*h + pp - 90.0 #-- pi1
 	arg[:,16] = t1 - h - 90.0 #-- p1
-	if (CORRECTIONS == 'OTIS'):
+	if CORRECTIONS in ('OTIS','ATLAS'):
 		arg[:,17] = t1 + 90.0 #-- s1
 	elif (CORRECTIONS == 'GOT'):
 		arg[:,17] = t1 + 180.0 #-- s1 (Doodson's phase)
@@ -126,7 +127,7 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	#-- set nodal corrections
 	f = np.zeros((nt,54))
 	u = np.zeros((nt,54))
-	if (CORRECTIONS == 'OTIS'):
+	if CORRECTIONS in ('OTIS','ATLAS'):
 		f[:,0] = 1.0 #-- Sa
 		f[:,1] = 1.0 #-- Ssa
 		f[:,2] = 1.0 - 0.130*cosn #-- Mm
