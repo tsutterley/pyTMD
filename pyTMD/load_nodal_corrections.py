@@ -27,6 +27,7 @@ PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 
 UPDATE HISTORY:
+	Updated 09/2019: added netcdf option to CORRECTIONS option
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
 	Updated 09/2017: Rewritten in Python
@@ -75,7 +76,7 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	arg[:,14] = t1 - s + 3.0*h - p + 90.0 #-- chi1
 	arg[:,15] = t1 - 2.0*h + pp - 90.0 #-- pi1
 	arg[:,16] = t1 - h - 90.0 #-- p1
-	if CORRECTIONS in ('OTIS','ATLAS'):
+	if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
 		arg[:,17] = t1 + 90.0 #-- s1
 	elif (CORRECTIONS == 'GOT'):
 		arg[:,17] = t1 + 180.0 #-- s1 (Doodson's phase)
@@ -127,7 +128,7 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	#-- set nodal corrections
 	f = np.zeros((nt,54))
 	u = np.zeros((nt,54))
-	if CORRECTIONS in ('OTIS','ATLAS'):
+	if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
 		f[:,0] = 1.0 #-- Sa
 		f[:,1] = 1.0 #-- Ssa
 		f[:,2] = 1.0 - 0.130*cosn #-- Mm

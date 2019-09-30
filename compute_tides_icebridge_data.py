@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (05/2019)
+Written by Tyler Sutterley (09/2019)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -16,6 +16,22 @@ INPUTS:
 COMMAND LINE OPTIONS:
 	-D X, --directory=X: Working data directory
 	-T X, --tide=X: Tide model to use in correction
+		CATS0201
+		CATS2008
+		CATS2008_load
+		TPXO9-atlas
+		TPXO9.1
+		TPXO8-atlas
+		TPXO7.2
+		TPXO7.2_load
+		AODTM-5
+		AOTIM-5
+		GOT4.7
+		GOT4.7_load
+		GOT4.8
+		GOT4.8_load
+		GOT4.10
+		GOT4.10_load	
 	-M X, --mode=X: Permission mode of directories and files created
 	-V, --verbose: Output information about each created file
 
@@ -27,6 +43,8 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/
 	h5py: Python interface for Hierarchal Data Format 5 (HDF5)
 		http://h5py.org
+	netCDF4: Python interface to the netCDF C library
+	 	https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
 	convert_julian.py: returns the calendar date and time given a Julian date
@@ -40,11 +58,13 @@ PROGRAM DEPENDENCIES:
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
 	predict_tide_drift.py: predict tidal elevations using harmonic constants
-	read_tide_model.py: extract tidal harmonic constants out of a tidal model
+	read_tide_model.py: extract tidal harmonic constants from OTIS tide models
+	read_netcdf_model.py: extract tidal harmonic constants from netcdf models
 	read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 	read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 05/2019: added option interpolate to choose the interpolation method
 	Updated 02/2019: using range for python3 compatibility
 	Updated 10/2018: updated GPS time calculation for calculating leap seconds
@@ -67,6 +87,7 @@ from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
+from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
 
 #-- PURPOSE: reading the number of file lines removing commented lines
@@ -428,14 +449,20 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
 		model_format = 'OTIS'
 		EPSG = 'CATS2008'
 		type = 'z'
-	elif (MODEL == 'TPXO9_atlas'):
-		grid_file = os.path.join(tide_dir,'tpxo9_atlas','grid_tpxo9atlas_30_v1')
-		model_file = os.path.join(tide_dir,'tpxo9_atlas','hf.tpxo9_atlas_30_v1')
+	elif (MODEL == 'TPXO9-atlas'):
+		model_directory = os.path.join(tide_dir,'TPXO9_atlas')
+		grid_file = 'grid_tpxo9_atlas.nc.gz'
+		model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
+			'h_p1_tpxo9_atlas_30.nc.gz','h_k1_tpxo9_atlas_30.nc.gz',
+			'h_n2_tpxo9_atlas_30.nc.gz','h_m2_tpxo9_atlas_30.nc.gz',
+			'h_s2_tpxo9_atlas_30.nc.gz','h_k2_tpxo9_atlas_30.nc.gz',
+			'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
+			'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
 		reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
 		attrib['tide']['long_name'] = 'Ocean_Tide'
-		model_format = 'ATLAS'
-		EPSG = '4326'
+		model_format = 'netcdf'
 		type = 'z'
+		SCALE = 1.0/1000.0
 	elif (MODEL == 'TPXO9.1'):
 		grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
 		model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
@@ -615,7 +642,11 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
 	if model_format in ('OTIS','ATLAS'):
 		amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
 			EPSG, type, METHOD=METHOD, GRID=model_format)
-		deltat = 0.0
+		deltat = np.zeros_like(t)
+	elif model_format in ('netcdf'):
+		amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
+			grid_file, model_files, type, METHOD=METHOD, SCALE=SCALE)
+		deltat = np.zeros_like(t)
 	elif (model_format == 'GOT'):
 		amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
 			METHOD=METHOD, SCALE=SCALE)
@@ -650,10 +681,9 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
 		DELTAT=deltat, CORRECTIONS=model_format)
 	tide += infer_minor_corrections(t, hc, c,
 		DELTAT=deltat, CORRECTIONS=model_format)
-	#-- replace nan values with fill value
+	#-- replace invalid values with fill value
 	fill_value = -9999.0
-	inan, = np.nonzero(np.isnan(tide))
-	tide[inan] = fill_value
+	tide.data[tide.mask] = fill_value
 
 	#-- add latitude and longitude to output file
 	for key in ['lat','lon']:

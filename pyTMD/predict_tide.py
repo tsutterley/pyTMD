@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide.py (08/2018)
+predict_tide.py (09/2019)
 Predict tidal elevation at a single time using harmonic constants
 
 CALLING SEQUENCE:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
 	load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+	Updated 09/2019: added netcdf option to CORRECTIONS option
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
 	Updated 09/2017: Rewritten in Python
@@ -45,7 +46,7 @@ def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	ht = 0.0
 	#-- for each constituent
 	for k,c in enumerate(constituents):
-		if CORRECTIONS in ('OTIS','ATLAS'):
+		if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
 			#-- load parameters for each constituent
 			amp,ph,omega,alpha,species = load_constituent(c)
 			#-- add component for constituent to output tidal elevation

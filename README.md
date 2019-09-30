@@ -23,6 +23,11 @@ pyTMD
 [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
 [netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)
 
+#### Reference
+T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg, S. R. M.,
+"Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
+13, 1801–1817, (2019). [doi:tc-13-1801-2019](https://doi.org/10.5194/tc-13-1801-2019)  
+
 #### Download
 The program homepage is:   
 https://github.com/tsutterley/pyTMD   

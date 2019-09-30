@@ -1,10 +1,23 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (07/2019)
+read_GOT_model.py (09/2019)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
 	calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
 	given locations
+
+INPUTS:
+	ilon: longitude to interpolate
+	ilat: latitude to interpolate
+	directory: data directory for tide data files
+	model_files: list of gzipped model files for each constituent
+
+OPTIONS:
+	METHOD: interpolation method
+		bilinear: quick bilinear interpolation
+		spline: scipy bivariate spline interpolation
+		linear, cubic, nearest: scipy griddata interpolations
+	SCALE: scaling factor for converting to output units
 
 PYTHON DEPENDENCIES:
 	numpy: Scientific Computing Tools For Python
@@ -14,6 +27,7 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/
 
 UPDATE HISTORY:
+	Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
 	Updated 07/2019: interpolate fill value mask with bivariate splines
 	Updated 12/2018: python3 compatibility updates for division and zip
 	Updated 10/2018: added SCALE as load tides are in mm and ocean are in cm
@@ -28,7 +42,7 @@ import numpy as np
 import scipy.interpolate
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
-def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=None):
+def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=1):
 	#-- adjust longitudinal convention of input latitude and longitude
 	#-- to fit tide model convention
 	if (np.min(ilon) < 0.0):
@@ -36,15 +50,17 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=None):
 		ilon[lt0] += 360.0
 
 	#-- number of points
-	points = zip(ilon,ilat)
-	npts = len(list(points))
-	#-- read and interpolate each constituent
+	npts = len(ilon)
+	#-- amplitude and phase
 	nc = len(model_files)
-	ampl = np.zeros((npts,nc))
-	phase = np.zeros((npts,nc))
+	ampl = np.ma.zeros((npts,nc))
+	ampl.mask = np.zeros((npts,nc),dtype=np.bool)
+	phase = np.ma.zeros((npts,nc))
+	phase.mask = np.zeros((npts,nc),dtype=np.bool)
+	#-- read and interpolate each constituent
 	for i,model_file in enumerate(model_files):
 		#-- read constituent from elevation file
-		amp,ph,lon,lat,fv = read_GOT_grid(os.path.join(directory,model_file))
+		amp,ph,lon,lat = read_GOT_grid(os.path.join(directory,model_file))
 		#-- grid step size of tide model
 		dlon = np.abs(lon[1] - lon[0])
 		dlat = np.abs(lat[1] - lat[0])
@@ -54,24 +70,21 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=None):
 		ph = extend_matrix(ph)
 		#-- interpolate amplitude and phase of the constituent
 		if (METHOD == 'bilinear'):
-			#-- replace invalid values with nan
-			amp[amp==fv] = np.nan
-			ph[ph==fv] = np.nan
 			ampl[:,i] = bilinear_interp(lon,lat,amp,ilon,ilat)
 			phase[:,i] = bilinear_interp(lon,lat,ph,ilon,ilat)
 		elif (METHOD == 'spline'):
 			#-- interpolate amplitude and phase of the constituent with scipy
-			msk = np.zeros_like(amp,dtype=np.bool)
-			f1 = scipy.interpolate.RectBivariateSpline(lon,lat,amp.T,kx=1,ky=1)
-			f2 = scipy.interpolate.RectBivariateSpline(lon,lat,ph.T,kx=1,ky=1)
-			f3 = scipy.interpolate.RectBivariateSpline(lon,lat,msk.T,kx=1,ky=1)
-			ampl[:,i] = f1.ev(ilon,ilat)
-			phase[:,i] = f2.ev(ilon,ilat)
-			mask = f3.ev(ilon,ilat).astype(np.bool)
-			#-- replace invalid values with nan
-			invalid, = np.nonzero(mask)
-			ampl[invalid] = np.nan
-			phase[invalid] = np.nan
+			f1 = scipy.interpolate.RectBivariateSpline(lon,lat,amp.data.T,kx=1,ky=1)
+			f2 = scipy.interpolate.RectBivariateSpline(lon,lat,amp.mask.T,kx=1,ky=1)
+			f3 = scipy.interpolate.RectBivariateSpline(lon,lat,ph.data.T,kx=1,ky=1)
+			f4 = scipy.interpolate.RectBivariateSpline(lon,lat,ph.mask.T,kx=1,ky=1)
+			ampl.data[:,i] = f1.ev(ilon,ilat)
+			ampl.mask[:,i] = f2.ev(ilon,ilat).astype(np.bool)
+			phase.data[:,i] = f3.ev(ilon,ilat)
+			phase.mask[:,i] = f4.ev(ilon,ilat).astype(np.bool)
+			#-- mask invalid values
+			ampl.data[ampl.mask] = ampl.fill_value
+			phase.data[phase.mask] = phase.fill_value
 		else:
 			#-- create mesh grids of latitude and longitude
 			X,Y = np.meshgrid(lon,lat)
@@ -81,9 +94,14 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=None):
 			ph[ph==fv] = np.nan
 			#-- interpolate amplitude and phase of the constituent with scipy
 			ampl[:,i] = scipy.interpolate.griddata(interp_points, amp.flatten(),
-				points, method=METHOD)
+				zip(X.flatten(),Y.flatten()), method=METHOD)
 			phase[:,i] = scipy.interpolate.griddata(interp_points, ph.flatten(),
-				points, method=METHOD)
+				zip(X.flatten(),Y.flatten()), method=METHOD)
+			#-- mask invalid values
+			ampl.mask[:,i] = np.isnan(ampl.data[:,i])
+			phase.mask[:,i] = np.isnan(phase.data[:,i])
+			ampl.data[ampl.mask] = ampl.fill_value
+			phase.data[phase.mask] = phase.fill_value
 	#-- convert amplitude from input units to meters
 	amplitude = ampl*SCALE
 	#-- return the interpolated values
@@ -102,7 +120,7 @@ def extend_array(input_array,step_size):
 #-- PURPOSE: wrapper function to extend a matrix
 def extend_matrix(input_matrix):
 	ny,nx = np.shape(input_matrix)
-	temp = np.zeros((ny,nx+3),dtype=input_matrix.dtype)
+	temp = np.ma.zeros((ny,nx+3),dtype=input_matrix.dtype)
 	temp[:,0] = input_matrix[:,-1]
 	temp[:,1:-2] = input_matrix[:,:]
 	temp[:,-2] = input_matrix[:,0]
@@ -122,8 +140,11 @@ def read_GOT_grid(input_file):
 	#-- create output variables
 	lat = np.linspace(ilat[0],ilat[1],nlat)
 	lon = np.linspace(ilon[0],ilon[1],nlon)
-	amp = np.full((nlat,nlon),fill_value[0],dtype=np.float)
-	ph = np.full((nlat,nlon),fill_value[0],dtype=np.float)
+	amp = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float)
+	ph = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float)
+	#-- create masks for output variables (0=valid)
+	amp.mask = np.zeros((nlat,nlon),dtype=np.bool)
+	ph.mask = np.zeros((nlat,nlon),dtype=np.bool)
 	#-- starting lines to fill amplitude and phase variables
 	l1 = 7
 	l2 = 14 + np.int(nlon//11)*nlat + nlat
@@ -131,16 +152,21 @@ def read_GOT_grid(input_file):
 	for i in range(nlat):
 		for j in range(nlon//11):
 			j1 = j*11
-			amp[i,j1:j1+11] = np.array(file_contents[l1].split(),dtype=np.float)
-			ph[i,j1:j1+11] = np.array(file_contents[l2].split(), dtype=np.float)
-			l1 += 1; l2 += 1
+			amp.data[i,j1:j1+11] = np.array(file_contents[l1].split(),dtype='f')
+			ph.data[i,j1:j1+11] = np.array(file_contents[l2].split(),dtype='f')
+			l1 += 1
+			l2 += 1
 		#-- add last tidal variables
 		j1 = (j+1)*11; j2 = nlon % 11
-		amp[i,j1:j1+j2] = np.array(file_contents[l1].split(),dtype=np.float)
-		ph[i,j1:j1+j2] = np.array(file_contents[l2].split(), dtype=np.float)
-		l1 += 1; l2 += 1
+		amp.data[i,j1:j1+j2] = np.array(file_contents[l1].split(),dtype='f')
+		ph.data[i,j1:j1+j2] = np.array(file_contents[l2].split(),dtype='f')
+		l1 += 1
+		l2 += 1
+	#-- set masks
+	amp.mask[amp.data == amp.fill_value] = True
+	ph.mask[ph.data == ph.fill_value] = True
 	#-- return output variables
-	return (amp,ph,lon,lat,fill_value[0])
+	return (amp,ph,lon,lat)
 
 #-- PURPOSE: bilinear interpolation of input data to output data
 def bilinear_interp(ilon,ilat,idata,lon,lat):

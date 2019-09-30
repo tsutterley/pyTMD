@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 plot_tide_forecasts.py
-Written by Tyler Sutterley (08/2018)
+Written by Tyler Sutterley (09/2019)
 Plots the daily tidal displacements for a given location
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -15,6 +15,22 @@ COMMAND LINE OPTIONS:
 	-C X, --coordinates=X: latitude and longitude of point to forecast
 	--date=X: date to forecast in ISO format (YYYY-MM-DD)
 	-T X, --tide=X: Tide model to use
+		CATS0201
+		CATS2008
+		CATS2008_load
+		TPXO9-atlas
+		TPXO9.1
+		TPXO8-atlas
+		TPXO7.2
+		TPXO7.2_load
+		AODTM-5
+		AOTIM-5
+		GOT4.7
+		GOT4.7_load
+		GOT4.8
+		GOT4.8_load
+		GOT4.10
+		GOT4.10_load
 
 PYTHON DEPENDENCIES:
 	numpy: Scientific Computing Tools For Python
@@ -22,6 +38,8 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/NumPy_for_Matlab_Users
 	scipy: Scientific Tools for Python
 		http://www.scipy.org/
+	netCDF4: Python interface to the netCDF C library
+	 	https://unidata.github.io/netcdf4-python/netCDF4/index.html
 	matplotlib: Python 2D plotting library
 		http://matplotlib.org/
 		https://github.com/matplotlib/matplotlib
@@ -35,11 +53,13 @@ PROGRAM DEPENDENCIES:
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
 	infer_minor_corrections.py: return corrections for 16 minor constituents
-	read_tide_model.py: extract tidal harmonic constants out of a tidal model
+	read_tide_model.py: extract tidal harmonic constants from OTIS tide models
+	read_netcdf_model.py: extract tidal harmonic constants from netcdf models
 	read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 	predict_tidal_ts.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Written 07/2018 for public release
 """
@@ -51,11 +71,12 @@ import time
 import getopt
 import numpy as np
 import matplotlib.pyplot as plt
-from tidal_library.calc_delta_time import calc_delta_time
-from tidal_library.infer_minor_corrections import infer_minor_corrections
-from tidal_library.predict_tidal_ts import predict_tidal_ts
-from tidal_library.read_tide_model import extract_tidal_constants
-from tidal_library.read_GOT_model import extract_GOT_constants
+from pyTMD.calc_delta_time import calc_delta_time
+from pyTMD.infer_minor_corrections import infer_minor_corrections
+from pyTMD.predict_tidal_ts import predict_tidal_ts
+from pyTMD.read_tide_model import extract_tidal_constants
+from pyTMD.read_netcdf_model import extract_netcdf_constants
+from pyTMD.read_GOT_model import extract_GOT_constants
 
 #-- PURPOSE: calculate the Modified Julian Day (MJD) from calendar date
 #-- http://scienceworld.wolfram.com/astronomy/JulianDate.html
@@ -92,16 +113,22 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		model_format = 'OTIS'
 		EPSG = 'CATS2008'
 		type = 'z'
-	elif (MODEL == 'TPXO9_atlas'):
-		grid_file = os.path.join(tide_dir,'tpxo9_atlas','grid_tpxo9atlas_30_v1')
-		model_file = os.path.join(tide_dir,'tpxo9_atlas','hf.tpxo9_atlas_30_v1')
+	elif (TIDE_MODEL == 'TPXO9-atlas'):
+		model_directory = os.path.join(tide_dir,'TPXO9_atlas')
+		grid_file = 'grid_tpxo9_atlas.nc.gz'
+		model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
+			'h_p1_tpxo9_atlas_30.nc.gz','h_k1_tpxo9_atlas_30.nc.gz',
+			'h_n2_tpxo9_atlas_30.nc.gz','h_m2_tpxo9_atlas_30.nc.gz',
+			'h_s2_tpxo9_atlas_30.nc.gz','h_k2_tpxo9_atlas_30.nc.gz',
+			'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
+			'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
 		reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
-		model_format = 'ATLAS'
-		EPSG = '4326'
+		model_format = 'netcdf'
 		type = 'z'
+		SCALE = 1.0/1000.0
 	elif (TIDE_MODEL == 'TPXO9.1'):
-		grid_file = os.path.join(tide_dir,'TPX09.1','DATA','grid_tpxo9')
-		model_file = os.path.join(tide_dir,'TPX09.1','DATA','h_tpxo9.v1')
+		grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
+		model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
 		reference = 'http://volkov.oce.orst.edu/tides/global.html'
 		model_format = 'OTIS'
 		EPSG = '4326'
@@ -209,12 +236,17 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 	if model_format in ('OTIS','ATLAS'):
 		amp,ph,D,c = extract_tidal_constants(np.array([LON]), np.array([LAT]),
 			grid_file,model_file,EPSG,type,METHOD='spline',GRID=model_format)
-		deltat = 0.0
+		deltat = np.zeros_like(MJD)
+	elif (model_format == 'netcdf'):
+		amp,ph,D,c = extract_netcdf_constants(np.array([LON]), np.array([LAT]),
+			model_directory, grid_file, model_files, type, METHOD='spline',
+			SCALE=SCALE)
+		deltat = np.zeros_like(MJD)
 	elif (model_format == 'GOT'):
 		amp,ph = extract_GOT_constants(np.array([LON]), np.array([LAT]),
 			model_directory, model_files, METHOD='spline', SCALE=SCALE)
 		delta_file = os.path.join(tide_dir,'deltat.data')
-		deltat = calc_delta_time(delta_file,MJD + TIME)
+		deltat = calc_delta_time(delta_file, MJD + TIME)
 
 	#-- convert phase to radians
 	cph = -1j*ph*np.pi/180.0
