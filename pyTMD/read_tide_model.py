@@ -62,8 +62,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 	if (GRID == 'ATLAS'):
 		#-- if reading a global solution with localized solutions
 		x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
-		xi,yi,hz = combine_altas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
-		mz = create_altas_mask(x0,y0,mz0,local,VARIABLE='depth')
+		xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
+		mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
 	else:
 		#-- if reading a pure global solution
 		xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
@@ -153,7 +153,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 			#-- read constituent from elevation file
 			if (GRID == 'ATLAS'):
 				z0,zlocal = read_atlas_elevation(model_file,i,c)
-				xi,yi,z=combine_altas_model(x0,y0,z0,pmask,zlocal,VARIABLE='z')
+				xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,VARIABLE='z')
 			else:
 				z = read_elevation_file(model_file,i)
 			#-- replace original values with extend matrices
@@ -189,7 +189,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 			#-- read constituent from transport file
 			if (GRID == 'ATLAS'):
 				u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
-				xi,yi,u=combine_altas_model(x0,y0,u0,pmask,uvlocal,VARIABLE='u')
+				xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,VARIABLE='u')
 			else:
 				u,v = read_transport_file(model_file,i)
 			#-- replace original values with extend matrices
@@ -229,7 +229,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 			#-- read constituent from transport file
 			if (GRID == 'ATLAS'):
 				u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
-				xi,yi,v = combine_altas_model(x0,y0,v0,pmask,local,VARIABLE='v')
+				xi,yi,v = combine_atlas_model(x0,y0,v0,pmask,local,VARIABLE='v')
 			else:
 				u,v = read_transport_file(input_file,i)
 			#-- replace original values with extend matrices
@@ -625,7 +625,7 @@ def read_atlas_transport(input_file,ic,constituent):
 	return (u,v,local)
 
 #-- create a 2 arc-minute grid mask from mz and depth variables
-def create_altas_mask(xi,yi,mz,local,VARIABLE=None):
+def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
 	#-- create 2 arc-minute grid dimensions
 	d30 = 1.0/30.0
 	x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)
@@ -654,7 +654,7 @@ def create_altas_mask(xi,yi,mz,local,VARIABLE=None):
 	return m30
 
 #-- combines global and local atlas solutions
-def combine_altas_model(xi,yi,zi,pmask,local,VARIABLE=None):
+def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
 	#-- create 2 arc-minute grid dimensions
 	d30 = 1.0/30.0
 	x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)

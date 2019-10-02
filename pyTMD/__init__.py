@@ -21,3 +21,5 @@ from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 from pyTMD.output_otis_tides import output_otis_grid
 from pyTMD.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
+from pyTMD.read_ICESat2_ATL03 import read_HDF5_ATL03_main,read_HDF5_ATL03_beam
+from pyTMD.read_ICESat2_ATL06 import read_HDF5_ATL06
