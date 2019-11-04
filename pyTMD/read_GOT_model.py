@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (09/2019)
+read_GOT_model.py (11/2019)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
 	calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -27,6 +27,7 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/
 
 UPDATE HISTORY:
+	Updated 11/2019: find invalid mask points for each constituent
 	Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
 	Updated 07/2019: interpolate fill value mask with bivariate splines
 	Updated 12/2018: python3 compatibility updates for division and zip
@@ -83,8 +84,8 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=1):
 			phase.data[:,i] = f3.ev(ilon,ilat)
 			phase.mask[:,i] = f4.ev(ilon,ilat).astype(np.bool)
 			#-- mask invalid values
-			ampl.data[ampl.mask] = ampl.fill_value
-			phase.data[phase.mask] = phase.fill_value
+			ampl.data[ampl.mask[:,i],i] = ampl.fill_value
+			phase.data[phase.mask[:,i],i] = phase.fill_value
 		else:
 			#-- create mesh grids of latitude and longitude
 			X,Y = np.meshgrid(lon,lat)
@@ -100,8 +101,8 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=1):
 			#-- mask invalid values
 			ampl.mask[:,i] = np.isnan(ampl.data[:,i])
 			phase.mask[:,i] = np.isnan(phase.data[:,i])
-			ampl.data[ampl.mask] = ampl.fill_value
-			phase.data[phase.mask] = phase.fill_value
+			ampl.data[ampl.mask[:,i],i] = ampl.fill_value
+			phase.data[phase.mask[:,i],i] = phase.fill_value
 	#-- convert amplitude from input units to meters
 	amplitude = ampl*SCALE
 	#-- return the interpolated values

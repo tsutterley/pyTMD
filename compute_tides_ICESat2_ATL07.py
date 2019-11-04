@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 u"""
-compute_tides_ICESat2_ATL03.py
+compute_tides_ICESat2_ATL07.py
 Written by Tyler Sutterley (11/2019)
-Calculates tidal elevations for correcting ICESat-2 photon height data
+Calculates tidal elevations for correcting ICESat-2 sea ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
 	http://volkov.oce.orst.edu/tides/region.html
@@ -42,7 +42,7 @@ PYTHON DEPENDENCIES:
 		http://h5py.org
 
 PROGRAM DEPENDENCIES:
-	read_ICESat2_ATL03.py: reads ICESat-2 global geolocated photon data files
+	read_ICESat2_ATL07.py: reads ICESat-2 sea ice height data files
 	convert_julian.py: returns the calendar date and time given a Julian date
 	count_leap_seconds.py: determines the number of leap seconds for a GPS time
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
@@ -59,10 +59,12 @@ PROGRAM DEPENDENCIES:
 	read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 
 UPDATE HISTORY:
-	Updated 11/2019: calculate minor constituents as separate variable
+	Forked 11/2019 from compute_tides_ICESat2_atl06.py
 	Updated 10/2019: external read functions.  adjust regex for processed files
 	Updated 09/2019: using date functions paralleling public repository
 		add option for TPXO9-atlas.  add OTIS netcdf tide option
+	Updated 05/2019: check if beam exists in a try except else clause
+	Updated 04/2019: check if subsetted beam contains land ice data
 	Written 04/2019
 """
 from __future__ import print_function
@@ -75,7 +77,7 @@ import h5py
 import getopt
 import datetime
 import numpy as np
-from pyTMD.read_ICESat2_ATL03 import read_HDF5_ATL03_main, read_HDF5_ATL03_beam
+from pyTMD.read_ICESat2_ATL07 import read_HDF5_ATL07
 from pyTMD.convert_julian import convert_julian
 from pyTMD.count_leap_seconds import count_leap_seconds
 from pyTMD.calc_delta_time import calc_delta_time
@@ -85,7 +87,7 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
 
-#-- PURPOSE: read ICESat-2 geolocated photon data (ATL03) from NSIDC
+#-- PURPOSE: read ICESat-2 sea ice height (ATL07) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 	#-- select between tide models
@@ -93,7 +95,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
 		model_file = os.path.join(tide_dir,'cats0201_tmd','h0_CATS02_01')
 		reference = 'https://mail.esr.org/polar_tide_models/Model_CATS0201.html'
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -106,7 +108,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/cats2008/')
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -119,7 +121,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		model_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/cats2008/')
-		variable = 'tide_load'
+		variable = 'height_segment_load'
 		long_name = "Load Tide"
 		description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
 		model_format = 'OTIS'
@@ -135,7 +137,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 			'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
 			'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
 		reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -147,7 +149,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
 		model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
 		reference = 'http://volkov.oce.orst.edu/tides/global.html'
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -159,7 +161,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
 		model_file = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
 		reference = 'http://volkov.oce.orst.edu/tides/tpxo8_atlas.html'
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -171,7 +173,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
 		model_file = os.path.join(tide_dir,'TPXO7.2_tmd','h_tpxo7.2')
 		reference = 'http://volkov.oce.orst.edu/tides/global.html'
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -183,7 +185,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		grid_file = os.path.join(tide_dir,'TPXO7.2_load','grid_tpxo6.2')
 		model_file = os.path.join(tide_dir,'TPXO7.2_load','h_tpxo7.2_load')
 		reference = 'http://volkov.oce.orst.edu/tides/global.html'
-		variable = 'tide_load'
+		variable = 'height_segment_load'
 		long_name = "Load Tide"
 		description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
 		model_format = 'OTIS'
@@ -194,7 +196,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		model_file = os.path.join(tide_dir,'aodtm5_tmd','h0_Arc5km.oce')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aodtm-5/')
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -207,7 +209,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		model_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aotim-5/')
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -222,7 +224,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
 		reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
 			'MiscPubs/19990089548_1999150788.pdf')
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -237,7 +239,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
 		reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
 			'MiscPubs/19990089548_1999150788.pdf')
-		variable = 'tide_load'
+		variable = 'height_segment_load'
 		long_name = "Load Tide"
 		description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
 		model_format = 'GOT'
@@ -249,7 +251,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
 		reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
 			'MiscPubs/19990089548_1999150788.pdf')
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -264,7 +266,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
 		reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
 			'MiscPubs/19990089548_1999150788.pdf')
-		variable = 'tide_load'
+		variable = 'height_segment_load'
 		long_name = "Load Tide"
 		description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
 		model_format = 'GOT'
@@ -276,7 +278,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
 		reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
 			'MiscPubs/19990089548_1999150788.pdf')
-		variable = 'tide_ocean'
+		variable = 'height_segment_ocean'
 		long_name = "Ocean Tide"
 		description = ("Ocean Tides including diurnal and semi-diurnal "
 			"(harmonic analysis), and longer period tides (dynamic and "
@@ -291,7 +293,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
 		reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
 			'MiscPubs/19990089548_1999150788.pdf')
-		variable = 'tide_load'
+		variable = 'height_segment_load'
 		long_name = "Load Tide"
 		description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
 		model_format = 'GOT'
@@ -299,69 +301,64 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
 	#-- read data from FILE
 	print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
-	IS2_atl03_mds,IS2_atl03_attrs,IS2_atl03_beams = read_HDF5_ATL03_main(FILE,
+	IS2_atl07_mds,IS2_atl07_attrs,IS2_atl07_beams = read_HDF5_ATL07(FILE,
 		ATTRIBUTES=True)
 	DIRECTORY = os.path.dirname(FILE)
-	#-- extract parameters from ICESat-2 ATLAS HDF5 file name
-	rx = re.compile('(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
-		'(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
-	SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX = rx.findall(FILE).pop()
+	#-- extract parameters from ICESat-2 ATLAS HDF5 sea ice file name
+	rx = re.compile('(processed_)?(ATL\d{2})-(\d{2})_(\d{4})(\d{2})(\d{2})'
+		'(\d{2})(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
+	SUB,PRD,HEM,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX=rx.findall(FILE).pop()
 
 	#-- number of GPS seconds between the GPS epoch
 	#-- and ATLAS Standard Data Product (SDP) epoch
-	atlas_sdp_gps_epoch = IS2_atl03_mds['ancillary_data']['atlas_sdp_gps_epoch']
+	atlas_sdp_gps_epoch = IS2_atl07_mds['ancillary_data']['atlas_sdp_gps_epoch']
 
 	#-- copy variables for outputting to HDF5 file
-	IS2_atl03_tide = {}
-	IS2_atl03_fill = {}
-	IS2_atl03_tide_attrs = {}
+	IS2_atl07_tide = {}
+	IS2_atl07_fill = {}
+	IS2_atl07_tide_attrs = {}
 	#-- number of GPS seconds between the GPS epoch (1980-01-06T00:00:00Z UTC)
 	#-- and ATLAS Standard Data Product (SDP) epoch (2018-01-01T00:00:00Z UTC)
 	#-- Add this value to delta time parameters to compute full gps_seconds
-	IS2_atl03_tide['ancillary_data'] = {}
-	IS2_atl03_tide_attrs['ancillary_data'] = {}
+	IS2_atl07_tide['ancillary_data'] = {}
+	IS2_atl07_tide_attrs['ancillary_data'] = {}
 	for key in ['atlas_sdp_gps_epoch']:
 		#-- get each HDF5 variable
-		IS2_atl03_tide['ancillary_data'][key] = IS2_atl03_mds['ancillary_data'][key]
+		IS2_atl07_tide['ancillary_data'][key] = IS2_atl07_mds['ancillary_data'][key]
 		#-- Getting attributes of group and included variables
-		IS2_atl03_tide_attrs['ancillary_data'][key] = {}
-		for att_name,att_val in IS2_atl03_attrs['ancillary_data'][key].items():
-			IS2_atl03_tide_attrs['ancillary_data'][key][att_name] = att_val
+		IS2_atl07_tide_attrs['ancillary_data'][key] = {}
+		for att_name,att_val in IS2_atl07_attrs['ancillary_data'][key].items():
+			IS2_atl07_tide_attrs['ancillary_data'][key][att_name] = att_val
 
 	#-- for each input beam within the file
-	for gtx in sorted(IS2_atl03_beams):
+	for gtx in sorted(IS2_atl07_beams):
 		#-- output data dictionaries for beam
-		IS2_atl03_tide[gtx] = dict(geolocation={}, geophys_corr={})
-		IS2_atl03_fill[gtx] = dict(geolocation={}, geophys_corr={})
-		IS2_atl03_tide_attrs[gtx] = dict(geolocation={}, geophys_corr={})
+		IS2_atl07_tide[gtx] = dict(sea_ice_segments={})
+		IS2_atl07_fill[gtx] = dict(sea_ice_segments={})
+		IS2_atl07_tide_attrs[gtx] = dict(sea_ice_segments={})
 
-		#-- read data and attributes for beam
-		val,attrs = read_HDF5_ATL03_beam(FILE,gtx,ATTRIBUTES=True)
 		#-- number of segments
-		n_seg = len(val['geolocation']['segment_id'])
-		#-- extract variables for computing tides
-		segment_id = val['geolocation']['segment_id'].copy()
-		delta_time = val['geolocation']['delta_time'].copy()
-		lon = val['geolocation']['reference_photon_lon'].copy()
-		lat = val['geolocation']['reference_photon_lat'].copy()
-		#-- invalid value
-		fv = attrs['geolocation']['sigma_h']['_FillValue']
+		val = IS2_atl07_mds[gtx]['sea_ice_segments']
+		n_seg = len(val['height_segment_id'])
 
 		#-- convert time from ATLAS SDP to days relative to Jan 1, 1992
-		gps_seconds = atlas_sdp_gps_epoch + delta_time
-		tide_time = (gps_seconds - count_leap_seconds(gps_seconds))/86400.0 - 4378.0
+		gps_seconds = atlas_sdp_gps_epoch + val['delta_time']
+		tide_time = (gps_seconds-count_leap_seconds(gps_seconds))/86400.0-4378.0
 		#-- read tidal constants and interpolate to grid points
 		if model_format in ('OTIS','ATLAS'):
-			amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file,
-				model_file, EPSG, type, METHOD='spline', GRID=model_format)
+			amp,ph,D,c = extract_tidal_constants(val['longitude'],
+				val['latitude'], grid_file, model_file, EPSG, type,
+				METHOD='spline', GRID=model_format)
 			deltat = np.zeros_like(tide_time)
 		elif (model_format == 'netcdf'):
-			amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-				grid_file, model_files, type, METHOD='spline', SCALE=SCALE)
+			amp,ph,D,c = extract_netcdf_constants(val['longitude'],
+				val['latitude'], model_directory, grid_file,
+				model_files, type, METHOD='spline', SCALE=SCALE)
 			deltat = np.zeros_like(tide_time)
 		elif (model_format == 'GOT'):
-			amp,ph = extract_GOT_constants(lon, lat, model_directory,
-				model_files, METHOD='spline', SCALE=SCALE)
+			amp,ph = extract_GOT_constants(val['longitude'],
+				val['latitude'], model_directory, model_files,
+				METHOD='spline', SCALE=SCALE)
 			#-- convert time to Modified Julian Days for calculating deltat
 			delta_file = os.path.join(tide_dir,'deltat.data')
 			deltat = calc_delta_time(delta_file, tide_time + 48622.0)
@@ -372,9 +369,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		hc = amp*np.exp(cph)
 
 		#-- predict tidal elevations at time and infer minor corrections
-		tide = np.ma.empty((n_seg),fill_value=fv)
-		tide.mask = np.zeros((n_seg))
-		tide.data[:] = predict_tide_drift(tide_time, hc, c,
+		tide = predict_tide_drift(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
 		minor = infer_minor_corrections(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
@@ -385,135 +380,147 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		tide.mask[invalid] = True
 
 		#-- group attributes for beam
-		IS2_atl03_tide_attrs[gtx]['Description'] = attrs['Description']
-		IS2_atl03_tide_attrs[gtx]['atlas_pce'] = attrs['atlas_pce']
-		IS2_atl03_tide_attrs[gtx]['atlas_beam_type'] = attrs['atlas_beam_type']
-		IS2_atl03_tide_attrs[gtx]['groundtrack_id'] = attrs['groundtrack_id']
-		IS2_atl03_tide_attrs[gtx]['atmosphere_profile'] = attrs['atmosphere_profile']
-		IS2_atl03_tide_attrs[gtx]['atlas_spot_number'] = attrs['atlas_spot_number']
-		IS2_atl03_tide_attrs[gtx]['sc_orientation'] = attrs['sc_orientation']
-
-		#-- group attributes for geolocation
-		IS2_atl03_tide_attrs[gtx]['geolocation']['Description'] = ("Contains parameters related to "
-			"geolocation.  The rate of all of these parameters is at the rate corresponding to the "
-			"ICESat-2 Geolocation Along Track Segment interval (nominally 20 m along-track).")
-		IS2_atl03_tide_attrs[gtx]['geolocation']['data_rate'] = ("Data within this group are "
-			"stored at the ICESat-2 20m segment rate.")
-		#-- group attributes for geophys_corr
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['Description'] = ("Contains parameters used to "
-			"correct photon heights for geophysical effects, such as tides.  These parameters are "
-			"posted at the same interval as the ICESat-2 Geolocation Along-Track Segment interval "
-			"(nominally 20m along-track).")
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['data_rate'] = ("These parameters are stored at "
-			"the ICESat-2 Geolocation Along Track Segment rate (nominally every 20 m along-track).")
+		IS2_atl07_tide_attrs[gtx]['Description'] = IS2_atl07_attrs[gtx]['Description']
+		IS2_atl07_tide_attrs[gtx]['atlas_pce'] = IS2_atl07_attrs[gtx]['atlas_pce']
+		IS2_atl07_tide_attrs[gtx]['atlas_beam_type'] = IS2_atl07_attrs[gtx]['atlas_beam_type']
+		IS2_atl07_tide_attrs[gtx]['groundtrack_id'] = IS2_atl07_attrs[gtx]['groundtrack_id']
+		IS2_atl07_tide_attrs[gtx]['atmosphere_profile'] = IS2_atl07_attrs[gtx]['atmosphere_profile']
+		IS2_atl07_tide_attrs[gtx]['atlas_spot_number'] = IS2_atl07_attrs[gtx]['atlas_spot_number']
+		IS2_atl07_tide_attrs[gtx]['sc_orientation'] = IS2_atl07_attrs[gtx]['sc_orientation']
+		#-- group attributes for sea_ice_segments
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['Description'] = ("Top group for sea "
+			"ice segments as computed by the ATBD algorithm.")
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['data_rate'] = ("Data within this "
+			"group are stored at the variable segment rate.")
 
 		#-- geolocation, time and segment ID
-		#-- delta time in geolocation group
-		IS2_atl03_tide[gtx]['geolocation']['delta_time'] = delta_time
-		IS2_atl03_fill[gtx]['geolocation']['delta_time'] = None
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time'] = {}
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['units'] = "seconds since 2018-01-01"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['long_name'] = "Elapsed GPS seconds"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['standard_name'] = "time"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['calendar'] = "standard"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['description'] = ("Elapsed seconds "
-			"from the ATLAS SDP GPS Epoch, corresponding to the transmit time of the reference "
-			"photon. The ATLAS Standard Data Products (SDP) epoch offset is defined within "
-			"/ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds between the GPS epoch "
-			"(1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By adding the offset "
-			"contained within atlas_sdp_gps_epoch to delta time parameters, the time in gps_seconds "
-			"relative to the GPS epoch can be computed.")
-		IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['coordinates'] = \
-			"segment_id reference_photon_lat reference_photon_lon"
-		#-- delta time in geophys_corr group
-		IS2_atl03_tide[gtx]['geophys_corr']['delta_time'] = delta_time
-		IS2_atl03_fill[gtx]['geophys_corr']['delta_time'] = None
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time'] = {}
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['units'] = "seconds since 2018-01-01"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['long_name'] = "Elapsed GPS seconds"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['standard_name'] = "time"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['calendar'] = "standard"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['description'] = ("Elapsed seconds "
-			"from the ATLAS SDP GPS Epoch, corresponding to the transmit time of the reference "
-			"photon. The ATLAS Standard Data Products (SDP) epoch offset is defined within "
-			"/ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds between the GPS epoch "
-			"(1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By adding the offset "
-			"contained within atlas_sdp_gps_epoch to delta time parameters, the time in gps_seconds "
-			"relative to the GPS epoch can be computed.")
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['coordinates'] = ("../geolocation/segment_id "
-			"../geolocation/reference_photon_lat ../geolocation/reference_photon_lon")
+		#-- delta time
+		IS2_atl07_tide[gtx]['sea_ice_segments']['delta_time'] = val['delta_time'].copy()
+		IS2_atl07_fill[gtx]['sea_ice_segments']['delta_time'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['units'] = "seconds since 2018-01-01"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['long_name'] = "Elapsed GPS seconds"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['standard_name'] = "time"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['source'] = "telemetry"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['calendar'] = "standard"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['description'] = ("Number of "
+			"GPS seconds since the ATLAS SDP epoch. The ATLAS Standard Data Products (SDP) epoch "
+			"offset is defined within /ancillary_data/atlas_sdp_gps_epoch as the number of GPS "
+			"seconds between the GPS epoch (1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP "
+			"epoch. By adding the offset contained within atlas_sdp_gps_epoch to delta time "
+			"parameters, the time in gps_seconds relative to the GPS epoch can be computed.")
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['coordinates'] = \
+			"height_segment_id latitude longitude"
 
 		#-- latitude
-		IS2_atl03_tide[gtx]['geolocation']['reference_photon_lat'] = lat
-		IS2_atl03_fill[gtx]['geolocation']['reference_photon_lat'] = None
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat'] = {}
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['units'] = "degrees_north"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['contentType'] = "physicalMeasurement"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['long_name'] = "Latitude"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['standard_name'] = "latitude"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['description'] = ("Latitude of each "
-			"reference photon. Computed from the ECF Cartesian coordinates of the bounce point.")
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['valid_min'] = -90.0
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['valid_max'] = 90.0
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['coordinates'] = \
-			"segment_id delta_time reference_photon_lon"
+		IS2_atl07_tide[gtx]['sea_ice_segments']['latitude'] = val['latitude']
+		IS2_atl07_fill[gtx]['sea_ice_segments']['latitude'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['units'] = "degrees_north"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['contentType'] = "physicalMeasurement"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['long_name'] = "Latitude"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['standard_name'] = "latitude"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['description'] = ("Latitude of "
+			"segment center")
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['valid_min'] = -90.0
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['valid_max'] = 90.0
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude']['coordinates'] = \
+			"height_segment_id delta_time longitude"
 		#-- longitude
-		IS2_atl03_tide[gtx]['geolocation']['reference_photon_lon'] = lon
-		IS2_atl03_fill[gtx]['geolocation']['reference_photon_lon'] = None
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon'] = {}
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['units'] = "degrees_east"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['contentType'] = "physicalMeasurement"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['long_name'] = "Longitude"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['standard_name'] = "longitude"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['description'] = ("Longitude of each "
-			"reference photon. Computed from the ECF Cartesian coordinates of the bounce point.")
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['valid_min'] = -180.0
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['valid_max'] = 180.0
-		IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['coordinates'] = \
-			"segment_id delta_time reference_photon_lat"
+		IS2_atl07_tide[gtx]['sea_ice_segments']['longitude'] = val['longitude'].copy()
+		IS2_atl07_fill[gtx]['sea_ice_segments']['longitude'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['units'] = "degrees_east"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['contentType'] = "physicalMeasurement"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['long_name'] = "Longitude"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['standard_name'] = "longitude"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['description'] = ("Longitude of "
+			"segment center")
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['valid_min'] = -180.0
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['valid_max'] = 180.0
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['longitude']['coordinates'] = \
+			"height_segment_id delta_time latitude"
 		#-- segment ID
-		IS2_atl03_tide[gtx]['geolocation']['segment_id'] = segment_id
-		IS2_atl03_fill[gtx]['geolocation']['segment_id'] = None
-		IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id'] = {}
-		IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['units'] = "1"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['contentType'] = "referenceInformation"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['long_name'] = "Along-track segment ID number"
-		IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['description'] = ("A 7 digit number "
-			"identifying the along-track geolocation segment number.  These are sequential, starting with "
-			"1 for the first segment after an ascending equatorial crossing node. Equal to the segment_id for "
-			"the second of the two 20m ATL03 segments included in the 40m ATL03 segment")
-		IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['coordinates'] = \
-			"delta_time reference_photon_lat reference_photon_lon"
+		IS2_atl07_tide[gtx]['sea_ice_segments']['height_segment_id'] = val['height_segment_id']
+		IS2_atl07_fill[gtx]['sea_ice_segments']['height_segment_id'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['height_segment_id'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['height_segment_id']['units'] = "1"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['height_segment_id']['contentType'] = "referenceInformation"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['height_segment_id']['long_name'] = \
+			"Identifier of each height segment"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['height_segment_id']['description'] = \
+			"Identifier of each height segment"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['height_segment_id']['coordinates'] = \
+			"delta_time latitude longitude"
+		#-- geolocation segment beginning
+		IS2_atl07_tide[gtx]['sea_ice_segments']['geoseg_beg'] = val['geoseg_beg'].copy()
+		IS2_atl07_fill[gtx]['sea_ice_segments']['geoseg_beg'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_beg'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_beg']['units'] = "1"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_beg']['contentType'] = "referenceInformation"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_beg']['long_name'] = "Beginning GEOSEG"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_beg']['description'] = \
+			"Geolocation segment (geoseg) ID associated with the first photon used in this sea ice segment"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_beg']['coordinates'] = \
+			"height_segment_id delta_time latitude longitude"
+		#-- geolocation segment ending
+		IS2_atl07_tide[gtx]['sea_ice_segments']['geoseg_end'] = val['geoseg_end'].copy()
+		IS2_atl07_fill[gtx]['sea_ice_segments']['geoseg_end'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_end'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_end']['units'] = "1"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_end']['contentType'] = "referenceInformation"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_end']['long_name'] = "Ending GEOSEG"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_end']['description'] = \
+			"Geolocation segment (geoseg) ID associated with the last photon used in this sea ice segment"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geoseg_end']['coordinates'] = \
+			"height_segment_id delta_time latitude longitude"
+		#-- along track distance
+		IS2_atl07_tide[gtx]['sea_ice_segments']['seg_dist_x'] = val['seg_dist_x'].copy()
+		IS2_atl07_fill[gtx]['sea_ice_segments']['seg_dist_x'] = None
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['seg_dist_x'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['seg_dist_x']['units'] = "meters"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['seg_dist_x']['contentType'] = "referenceInformation"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['seg_dist_x']['long_name'] = "Along track distance"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['seg_dist_x']['description'] = \
+			"Along-track distance from the equator crossing to the segment center."
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['seg_dist_x']['coordinates'] = \
+			"height_segment_id delta_time latitude longitude"
+
+		#-- geophysical variables
+		IS2_atl07_tide[gtx]['sea_ice_segments']['geophysical'] = {}
+		IS2_atl07_fill[gtx]['sea_ice_segments']['geophysical'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical']['Description'] = ("Contains geophysical "
+			"parameters and corrections used to correct photon heights for geophysical effects, such as tides.")
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical']['data_rate'] = ("Data within this group "
+			"are stored at the sea_ice_height segment rate.")
 
 		#-- computed tide
-		IS2_atl03_tide[gtx]['geophys_corr'][variable] = tide
-		IS2_atl03_fill[gtx]['geophys_corr'][variable] = tide.fill_value
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable] = {}
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['units'] = "meters"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['contentType'] = "referenceInformation"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['long_name'] = long_name
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['description'] = description
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['source'] = MODEL
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['reference'] = reference
-		IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['coordinates'] = \
-			"segment_id delta_time reference_photon_lat reference_photon_lon"
-		IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['coordinates'] = \
-			("../geolocation/segment_id ../geolocation/delta_time "
-			"../geolocation/reference_photon_lat ../geolocation/reference_photon_lon")
+		IS2_atl07_tide[gtx]['sea_ice_segments']['geophysical'][variable] = tide.copy()
+		IS2_atl07_fill[gtx]['sea_ice_segments']['geophysical'][variable] = tide.fill_value
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable] = {}
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['units'] = "meters"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['contentType'] = "referenceInformation"
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['long_name'] = long_name
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['description'] = description
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['source'] = MODEL
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['reference'] = reference
+		IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['coordinates'] = \
+			"../height_segment_id ../delta_time ../latitude ../longitude"
 
 	#-- output tidal HDF5 file
-	args = (PRD,MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
-	file_format = '{0}_{1}_TIDES_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
+	args = (PRD,HEM,MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX)
+	ff = '{0}-{1}_{2}_TIDES_{3}{4}{5}{6}{7}{8}_{9}{10}{11}_{12}_{13}{14}.h5'
 	#-- print file information
-	print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-	HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_tide_attrs, CLOBBER='Y',
-		INPUT=os.path.basename(FILE), FILL_VALUE=IS2_atl03_fill,
-		FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
+	print('\t{0}'.format(ff.format(*args))) if VERBOSE else None
+	HDF5_atl07_tide_write(IS2_atl07_tide, IS2_atl07_tide_attrs, CLOBBER='Y',
+		INPUT=os.path.basename(FILE), FILL_VALUE=IS2_atl07_fill,
+		FILENAME=os.path.join(DIRECTORY,ff.format(*args)))
 	#-- change the permissions mode
-	os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
+	os.chmod(os.path.join(DIRECTORY,ff.format(*args)), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
-def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
+def HDF5_atl07_tide_write(IS2_atl07_tide, IS2_atl07_attrs, INPUT=None,
 	FILENAME='', FILL_VALUE=None, CLOBBER='Y'):
 	#-- setting HDF5 clobber attribute
 	if CLOBBER in ('Y','y'):
@@ -530,73 +537,105 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
 	#-- number of GPS seconds between the GPS epoch (1980-01-06T00:00:00Z UTC)
 	#-- and ATLAS Standard Data Product (SDP) epoch (2018-01-01T00:00:00Z UTC)
 	h5['ancillary_data'] = {}
-	for k,v in IS2_atl03_tide['ancillary_data'].items():
+	for k,v in IS2_atl07_tide['ancillary_data'].items():
 		#-- Defining the HDF5 dataset variables
 		val = 'ancillary_data/{0}'.format(k)
 		h5['ancillary_data'][k] = fileID.create_dataset(val, np.shape(v), data=v,
 			dtype=v.dtype, compression='gzip')
 		#-- add HDF5 variable attributes
-		for att_name,att_val in IS2_atl03_attrs['ancillary_data'][k].items():
+		for att_name,att_val in IS2_atl07_attrs['ancillary_data'][k].items():
 			h5['ancillary_data'][k].attrs[att_name] = att_val
 
 	#-- write each output beam
-	beams = [k for k in IS2_atl03_tide.keys() if bool(re.match(r'gt\d[lr]',k))]
+	beams = [k for k in IS2_atl07_tide.keys() if bool(re.match(r'gt\d[lr]',k))]
 	for gtx in beams:
 		fileID.create_group(gtx)
-		h5[gtx] = {}
 		#-- add HDF5 group attributes for beam
 		for att_name in ['Description','atlas_pce','atlas_beam_type',
 			'groundtrack_id','atmosphere_profile','atlas_spot_number',
 			'sc_orientation']:
-			fileID[gtx].attrs[att_name] = IS2_atl03_attrs[gtx][att_name]
-		#-- create geolocation and geophys_corr groups
-		for key in ['geolocation','geophys_corr']:
-			fileID[gtx].create_group(key)
-			h5[gtx][key] = {}
-			for att_name in ['Description','data_rate']:
-				att_val = IS2_atl03_attrs[gtx][key][att_name]
-				fileID[gtx][key].attrs[att_name] = att_val
+			fileID[gtx].attrs[att_name] = IS2_atl07_attrs[gtx][att_name]
+		#-- create sea_ice_segments group
+		fileID[gtx].create_group('sea_ice_segments')
+		h5[gtx] = dict(sea_ice_segments={})
+		for att_name in ['Description','data_rate']:
+			att_val = IS2_atl07_attrs[gtx]['sea_ice_segments'][att_name]
+			fileID[gtx]['sea_ice_segments'].attrs[att_name] = att_val
 
-			#-- delta_time in group
-			v = IS2_atl03_tide[gtx][key]['delta_time']
-			attrs = IS2_atl03_attrs[gtx][key]['delta_time']
-			fillvalue = FILL_VALUE[gtx][key]['delta_time']
+		#-- delta_time
+		v = IS2_atl07_tide[gtx]['sea_ice_segments']['delta_time']
+		attrs = IS2_atl07_attrs[gtx]['sea_ice_segments']['delta_time']
+		#-- Defining the HDF5 dataset variables
+		val = '{0}/{1}/{2}'.format(gtx,'sea_ice_segments','delta_time')
+		h5[gtx]['sea_ice_segments']['delta_time'] = fileID.create_dataset(val,
+			np.shape(v), data=v, dtype=v.dtype, compression='gzip')
+		#-- add HDF5 variable attributes
+		for att_name,att_val in attrs.items():
+			h5[gtx]['sea_ice_segments']['delta_time'].attrs[att_name] = att_val
+
+		#-- geolocation and segment identification variables
+		for k in ['latitude','longitude','height_segment_id',
+			'geoseg_beg','geoseg_end','seg_dist_x']:
+			#-- values and attributes
+			v = IS2_atl07_tide[gtx]['sea_ice_segments'][k]
+			attrs = IS2_atl07_attrs[gtx]['sea_ice_segments'][k]
+			fillvalue = FILL_VALUE[gtx]['sea_ice_segments'][k]
 			#-- Defining the HDF5 dataset variables
-			val = '{0}/{1}/{2}'.format(gtx,key,'delta_time')
-			h5[gtx][key]['delta_time'] = fileID.create_dataset(val,np.shape(v),
-				data=v, dtype=v.dtype, fillvalue=fillvalue, compression='gzip')
+			val = '{0}/{1}/{2}'.format(gtx,'sea_ice_segments',k)
+			h5[gtx]['sea_ice_segments'][k] = fileID.create_dataset(val,
+				np.shape(v), data=v, dtype=v.dtype, fillvalue=fillvalue,
+				compression='gzip')
+			#-- attach dimensions
+			for dim in ['delta_time']:
+				h5[gtx]['sea_ice_segments'][k].dims.create_scale(
+					h5[gtx]['sea_ice_segments'][dim], dim)
+				h5[gtx]['sea_ice_segments'][k].dims[0].attach_scale(
+					h5[gtx]['sea_ice_segments'][dim])
 			#-- add HDF5 variable attributes
 			for att_name,att_val in attrs.items():
-				h5[gtx][key]['delta_time'].attrs[att_name] = att_val
+				h5[gtx]['sea_ice_segments'][k].attrs[att_name] = att_val
 
-			#-- add other variables for group
-			groupkeys = set(IS2_atl03_tide[gtx][key].keys())-set(['delta_time'])
-			for k in sorted(groupkeys):
-				#-- values and attributes
-				v = IS2_atl03_tide[gtx][key][k]
-				attrs = IS2_atl03_attrs[gtx][key][k]
-				fillvalue = FILL_VALUE[gtx][key][k]
-				#-- Defining the HDF5 dataset variables
-				val = '{0}/{1}/{2}'.format(gtx,key,k)
-				h5[gtx][key][k] = fileID.create_dataset(val,np.shape(v),data=v,
+		#-- add to geophysical corrections
+		key = 'geophysical'
+		fileID[gtx]['sea_ice_segments'].create_group(key)
+		h5[gtx]['sea_ice_segments'][key] = {}
+		for att_name in ['Description','data_rate']:
+			att_val=IS2_atl07_attrs[gtx]['sea_ice_segments'][key][att_name]
+			fileID[gtx]['sea_ice_segments'][key].attrs[att_name] = att_val
+		for k,v in IS2_atl07_tide[gtx]['sea_ice_segments'][key].items():
+			#-- attributes
+			attrs = IS2_atl07_attrs[gtx]['sea_ice_segments'][key][k]
+			fillvalue = FILL_VALUE[gtx]['sea_ice_segments'][key][k]
+			#-- Defining the HDF5 dataset variables
+			val = '{0}/{1}/{2}/{3}'.format(gtx,'sea_ice_segments',key,k)
+			if fillvalue:
+				h5[gtx]['sea_ice_segments'][key][k] = \
+					fileID.create_dataset(val, np.shape(v), data=v,
 					dtype=v.dtype, fillvalue=fillvalue, compression='gzip')
-				#-- attach dimensions
-				for dim in ['delta_time']:
-					h5[gtx][key][k].dims.create_scale(h5[gtx][key][dim], dim)
-					h5[gtx][key][k].dims[0].attach_scale(h5[gtx][key][dim])
-				#-- add HDF5 variable attributes
-				for att_name,att_val in attrs.items():
-					h5[gtx][key][k].attrs[att_name] = att_val
+			else:
+				h5[gtx]['sea_ice_segments'][key][k] = \
+					fileID.create_dataset(val, np.shape(v), data=v,
+					dtype=v.dtype, compression='gzip')
+			#-- attach dimensions
+			for dim in ['delta_time']:
+				h5[gtx]['sea_ice_segments'][key][k].dims.create_scale(
+					h5[gtx]['sea_ice_segments'][dim], dim)
+				h5[gtx]['sea_ice_segments'][key][k].dims[0].attach_scale(
+					h5[gtx]['sea_ice_segments'][dim])
+			#-- add HDF5 variable attributes
+			for att_name,att_val in attrs.items():
+				h5[gtx]['sea_ice_segments'][key][k].attrs[att_name] = att_val
 
 	#-- HDF5 file title
 	fileID.attrs['featureType'] = 'trajectory'
-	fileID.attrs['title'] = 'ATLAS/ICESat-2 L2A Global Geolocated Photon Data'
-	fileID.attrs['summary'] = ('The purpose of ATL03 is to provide along-track '
-		'photon data for all 6 ATLAS beams and associated statistics')
-	fileID.attrs['description'] = ('Photon heights determined by ATBD '
-		'Algorithm using POD and PPD. All photon events per transmit pulse '
-		'per beam. Includes POD and PPD vectors. Classification of each '
-		'photon by several ATBD Algorithms.')
+	fileID.attrs['title'] = 'ATLAS/ICESat-2 L3A Sea Ice Height'
+	fileID.attrs['summary'] = ('Estimates of the sea ice tidal parameters '
+		'needed to interpret and assess the quality of sea height estimates.')
+	fileID.attrs['description'] = ('The data set (ATL07) contains along-track '
+		'heights for sea ice and open water leads (at varying length scales) '
+		'relative to the WGS84 ellipsoid (ITRF2014 reference frame) after '
+		'adjustment for geoidal and tidal variations, and inverted barometer '
+		'effects.')
 	date_created = datetime.datetime.today()
 	fileID.attrs['date_created'] = date_created.isoformat()
 	project = 'ICESat-2 > Ice, Cloud, and land Elevation Satellite-2'
@@ -609,14 +648,14 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
 	fileID.attrs['source'] = 'Spacecraft'
 	fileID.attrs['references'] = 'http://nsidc.org/data/icesat2/data.html'
 	fileID.attrs['processing_level'] = '4'
-	#-- add attributes for input ATL03 files
+	#-- add attributes for input ATL07 file
 	fileID.attrs['input_files'] = ','.join([os.path.basename(i) for i in INPUT])
 	#-- find geospatial and temporal ranges
 	lnmn,lnmx,ltmn,ltmx,tmn,tmx = (np.inf,-np.inf,np.inf,-np.inf,np.inf,-np.inf)
 	for gtx in beams:
-		lon = IS2_atl03_tide[gtx]['geolocation']['reference_photon_lon']
-		lat = IS2_atl03_tide[gtx]['geolocation']['reference_photon_lat']
-		delta_time = IS2_atl03_tide[gtx]['geolocation']['delta_time']
+		lon = IS2_atl07_tide[gtx]['sea_ice_segments']['longitude']
+		lat = IS2_atl07_tide[gtx]['sea_ice_segments']['latitude']
+		delta_time = IS2_atl07_tide[gtx]['sea_ice_segments']['delta_time']
 		#-- setting the geospatial and temporal ranges
 		lnmn = lon.min() if (lon.min() < lnmn) else lnmn
 		lnmx = lon.max() if (lon.max() > lnmx) else lnmx
@@ -635,7 +674,7 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
 	fileID.attrs['date_type'] = 'UTC'
 	fileID.attrs['time_type'] = 'CCSDS UTC-A'
 	#-- convert start and end time from ATLAS SDP seconds into Julian days
-	atlas_sdp_gps_epoch=IS2_atl03_tide['ancillary_data']['atlas_sdp_gps_epoch']
+	atlas_sdp_gps_epoch=IS2_atl07_tide['ancillary_data']['atlas_sdp_gps_epoch']
 	gps_seconds = atlas_sdp_gps_epoch + np.array([tmn,tmx])
 	time_leaps = count_leap_seconds(gps_seconds)
 	time_julian = 2444244.5 + (gps_seconds - time_leaps)/86400.0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL06.py
-Written by Tyler Sutterley (10/2019)
+Written by Tyler Sutterley (11/2019)
 Calculates tidal elevations for correcting ICESat-2 land ice elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -42,6 +42,7 @@ PYTHON DEPENDENCIES:
 		http://h5py.org
 
 PROGRAM DEPENDENCIES:
+	read_ICESat2_ATL06.py: reads ICESat-2 land ice along-track height data files
 	convert_julian.py: returns the calendar date and time given a Julian date
 	count_leap_seconds.py: determines the number of leap seconds for a GPS time
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
@@ -58,6 +59,7 @@ PROGRAM DEPENDENCIES:
 	read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 
 UPDATE HISTORY:
+	Updated 11/2019: calculate minor constituents as separate variable
 	Updated 10/2019: external read functions.  adjust regex for processed files
 	Updated 09/2019: using date functions paralleling public repository
 		add option for TPXO9-atlas.  add OTIS netcdf tide option
@@ -365,7 +367,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 			delta_file = os.path.join(tide_dir,'deltat.data')
 			deltat = calc_delta_time(delta_file, tide_time + 48622.0)
 
+		#-- calculate complex phase in radians for Euler's
 		cph = -1j*ph*np.pi/180.0
+		#-- calculate constituent oscillation
 		hc = amp*np.exp(cph)
 
 		#-- predict tidal elevations at time and infer minor corrections
@@ -373,8 +377,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		tide.mask = np.copy(h_li.mask)
 		tide.data[ii] = predict_tide_drift(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
-		tide.data[ii] += infer_minor_corrections(tide_time, hc, c,
+		minor = infer_minor_corrections(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
+		tide.data[ii] += minor.data[:]
 		#-- replace masked and nan values with fill value
 		invalid, = np.nonzero(np.isnan(tide.data) | tide.mask)
 		tide.data[invalid] = tide.fill_value
@@ -622,7 +627,7 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
 	fileID.attrs['source'] = 'Spacecraft'
 	fileID.attrs['references'] = 'http://nsidc.org/data/icesat2/data.html'
 	fileID.attrs['processing_level'] = '4'
-	#-- add attributes for input ATL03 and ATL09 files
+	#-- add attributes for input ATL06 files
 	fileID.attrs['input_files'] = ','.join([os.path.basename(i) for i in INPUT])
 	#-- find geospatial and temporal ranges
 	lnmn,lnmx,ltmn,ltmx,tmn,tmx = (np.inf,-np.inf,np.inf,-np.inf,np.inf,-np.inf)

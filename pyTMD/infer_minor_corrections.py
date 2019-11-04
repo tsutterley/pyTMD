@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-infer_minor_corrections.py (08/2018)
+infer_minor_corrections.py (11/2018)
 Return correction for minor constituents based on Richard Ray's PERTH3 code
 	PERTH: PREdict Tidal Heights
 
@@ -31,6 +31,7 @@ REFERENCES:
 	A. T. Doodson & H. Warburg, Admiralty Manual of Tides, HMSO, 1941.
 
 UPDATE HISTORY:
+	Updated 11/2019: output as numpy masked arrays instead of nan-filled arrays
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
 		use the number of dates if calculating a tidal time series at a point
@@ -48,12 +49,12 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
 	#-- number of data points to calculate if running time series/drift/map
 	n = nt if ((npts == 1) & (nt > 1)) else npts
 	#-- allocate for output elevation correction
-	dh = np.zeros((n))
+	dh = np.ma.zeros((n))
 	#-- convert time from days relative to Jan 1, 1992 to modified julian days
 	time_mjd = 48622.0 + time
 	cindex = ['q1','o1','p1','k1','n2','m2','s2','k2']
 	#-- re-order zmaj to correspond to cindex
-	z8 = np.zeros((n,8),dtype=np.complex64)
+	z8 = np.ma.zeros((n,8),dtype=np.complex64)
 	ni = 0
 	for i,c in enumerate(cindex):
 		j = [j for j,val in enumerate(constituents) if val == c]

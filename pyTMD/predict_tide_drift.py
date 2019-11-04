@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide_drift.py (09/2019)
+predict_tide_drift.py (11/2019)
 Predict tidal elevation at multiple times and locations using harmonic constants
 
 CALLING SEQUENCE:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
 	load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+	Updated 11/2019: output as numpy masked arrays instead of nan-filled arrays
 	Updated 09/2019: added netcdf option to CORRECTIONS option
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
@@ -43,7 +44,7 @@ def predict_tide_drift(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 	pu,pf,G = load_nodal_corrections(time + 48622.0, constituents,
 		DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
 	#-- allocate for output time series
-	ht = np.zeros((nt))
+	ht = np.ma.zeros((nt))
 	#-- for each constituent
 	for k,c in enumerate(constituents):
 		if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
