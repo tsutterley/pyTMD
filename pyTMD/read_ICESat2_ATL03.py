@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_ICESat2_ATL03.py (09/2019)
+read_ICESat2_ATL03.py (11/2019)
 Read ICESat-2 ATL03 and ATL09 data files to calculate average segment surfaces
 	ATL03 datasets: Global Geolocated Photons
 	ATL09 datasets: Atmospheric Characteristics
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
 		http://h5py.org
 
 UPDATE HISTORY:
+	Updated 11/2019: create attribute dictionaries but don't fill if False
 	Updated 09/2019: add functions for reading main and beam level variables
 	Updated 03/2019: extract a set of ATL09 parameters for each ATL03 segment_ID
 	Updated 02/2019: continued writing read program with first ATL03 release
@@ -40,7 +41,7 @@ def read_HDF5_ATL03(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- allocate python dictionaries for ICESat-2 ATL03 variables and attributes
 	IS2_atl03_mds = {}
-	IS2_atl03_attrs = {} if ATTRIBUTES else None
+	IS2_atl03_attrs = {}
 
 	#-- read each input beam within the file
 	IS2_atl03_beams = []
@@ -110,7 +111,7 @@ def read_HDF5_ATL03(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- ICESat-2 spacecraft orientation at time
 	IS2_atl03_mds['orbit_info'] = {}
-	IS2_atl03_attrs['orbit_info'] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs['orbit_info'] = {}
 	for key,val in fileID['orbit_info'].items():
 		IS2_atl03_mds['orbit_info'][key] = val[:]
 		#-- Getting attributes of group and included variables
@@ -130,7 +131,7 @@ def read_HDF5_ATL03(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	#-- could alternatively use the Julian day of the ATLAS SDP epoch: 2458119.5
 	#-- and add leap seconds since 2018-01-01T00:00:00Z UTC (ATLAS SDP epoch)
 	IS2_atl03_mds['ancillary_data'] = {}
-	IS2_atl03_attrs['ancillary_data'] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs['ancillary_data'] = {}
 	for key in ['atlas_sdp_gps_epoch','data_end_utc','data_start_utc','end_cycle',
 		'end_geoseg','end_gpssow','end_gpsweek','end_orbit','end_region',
 		'end_rgt','granule_end_utc','granule_start_utc','release','start_cycle',
@@ -147,7 +148,7 @@ def read_HDF5_ATL03(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- transmit-echo-path (tep) parameters
 	IS2_atl03_mds['ancillary_data']['tep'] = {}
-	IS2_atl03_attrs['ancillary_data']['tep'] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs['ancillary_data']['tep'] = {}
 	for key,val in fileID['ancillary_data']['tep'].items():
 		#-- get each HDF5 variable
 		IS2_atl03_mds['ancillary_data']['tep'][key] = val[:]
@@ -162,7 +163,7 @@ def read_HDF5_ATL03(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	cal1,cal2 = ('ancillary_data','calibrations')
 	for var in ['dead_time','first_photon_bias']:
 		IS2_atl03_mds[cal1][var] = {}
-		IS2_atl03_attrs[cal1][var] = {} if ATTRIBUTES else None
+		IS2_atl03_attrs[cal1][var] = {}
 		for key,val in fileID[cal1][cal2][var].items():
 			#-- get each HDF5 variable
 			if isinstance(val, h5py.Dataset):
@@ -186,10 +187,10 @@ def read_HDF5_ATL03(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	#-- get ATLAS impulse response variables for the transmitter echo path (TEP)
 	tep1,tep2 = ('atlas_impulse_response','tep_histogram')
 	IS2_atl03_mds[tep1] = {}
-	IS2_atl03_attrs[tep1] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs[tep1] = {}
 	for pce in ['pce1_spot1','pce2_spot3']:
 		IS2_atl03_mds[tep1][pce] = {tep2:{}}
-		IS2_atl03_attrs[tep1][pce] = {tep2:{}} if ATTRIBUTES else None
+		IS2_atl03_attrs[tep1][pce] = {tep2:{}}
 		#-- for each TEP variable
 		for key,val in fileID[tep1][pce][tep2].items():
 			IS2_atl03_mds[tep1][pce][tep2][key] = val[:]
@@ -220,7 +221,7 @@ def read_HDF5_ATL09(FILENAME, pfl, segID, ATTRIBUTES=True):
 
 	#-- allocate python dictionaries for ICESat-2 ATL09 variables and attributes
 	IS2_atl09_mds = {}
-	IS2_atl09_attrs = {} if ATTRIBUTES else None
+	IS2_atl09_attrs = {}
 
 	#-- read profile reported for the ATLAS strong beams within the file
 	IS2_atl09_mds[pfl] = dict(high_rate={})
@@ -273,13 +274,13 @@ def read_HDF5_ATL03_main(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- allocate python dictionaries for ICESat-2 ATL03 variables and attributes
 	IS2_atl03_mds = {}
-	IS2_atl03_attrs = {} if ATTRIBUTES else None
+	IS2_atl03_attrs = {}
 
 	#-- read each input beam within the file
 	IS2_atl03_beams = [k for k in fileID.keys() if bool(re.match('gt\d[lr]',k))]
 	#-- ICESat-2 spacecraft orientation at time
 	IS2_atl03_mds['orbit_info'] = {}
-	IS2_atl03_attrs['orbit_info'] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs['orbit_info'] = {}
 	for key,val in fileID['orbit_info'].items():
 		IS2_atl03_mds['orbit_info'][key] = val[:]
 		#-- Getting attributes of group and included variables
@@ -299,7 +300,7 @@ def read_HDF5_ATL03_main(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	#-- could alternatively use the Julian day of the ATLAS SDP epoch: 2458119.5
 	#-- and add leap seconds since 2018-01-01T00:00:00Z UTC (ATLAS SDP epoch)
 	IS2_atl03_mds['ancillary_data'] = {}
-	IS2_atl03_attrs['ancillary_data'] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs['ancillary_data'] = {}
 	for key in ['atlas_sdp_gps_epoch','data_end_utc','data_start_utc','end_cycle',
 		'end_geoseg','end_gpssow','end_gpsweek','end_orbit','end_region',
 		'end_rgt','granule_end_utc','granule_start_utc','release','start_cycle',
@@ -316,7 +317,7 @@ def read_HDF5_ATL03_main(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- transmit-echo-path (tep) parameters
 	IS2_atl03_mds['ancillary_data']['tep'] = {}
-	IS2_atl03_attrs['ancillary_data']['tep'] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs['ancillary_data']['tep'] = {}
 	for key,val in fileID['ancillary_data']['tep'].items():
 		#-- get each HDF5 variable
 		IS2_atl03_mds['ancillary_data']['tep'][key] = val[:]
@@ -331,7 +332,7 @@ def read_HDF5_ATL03_main(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	cal1,cal2 = ('ancillary_data','calibrations')
 	for var in ['dead_time','first_photon_bias']:
 		IS2_atl03_mds[cal1][var] = {}
-		IS2_atl03_attrs[cal1][var] = {} if ATTRIBUTES else None
+		IS2_atl03_attrs[cal1][var] = {}
 		for key,val in fileID[cal1][cal2][var].items():
 			#-- get each HDF5 variable
 			if isinstance(val, h5py.Dataset):
@@ -355,10 +356,10 @@ def read_HDF5_ATL03_main(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	#-- get ATLAS impulse response variables for the transmitter echo path (TEP)
 	tep1,tep2 = ('atlas_impulse_response','tep_histogram')
 	IS2_atl03_mds[tep1] = {}
-	IS2_atl03_attrs[tep1] = {} if ATTRIBUTES else None
+	IS2_atl03_attrs[tep1] = {}
 	for pce in ['pce1_spot1','pce2_spot3']:
 		IS2_atl03_mds[tep1][pce] = {tep2:{}}
-		IS2_atl03_attrs[tep1][pce] = {tep2:{}} if ATTRIBUTES else None
+		IS2_atl03_attrs[tep1][pce] = {tep2:{}}
 		#-- for each TEP variable
 		for key,val in fileID[tep1][pce][tep2].items():
 			IS2_atl03_mds[tep1][pce][tep2][key] = val[:]
@@ -394,7 +395,7 @@ def read_HDF5_ATL03_beam(FILENAME, gtx, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- allocate python dictionaries for ICESat-2 ATL03 variables and attributes
 	IS2_atl03_mds = {}
-	IS2_atl03_attrs = {} if ATTRIBUTES else None
+	IS2_atl03_attrs = {}
 
 	#-- get each HDF5 variable
 	IS2_atl03_mds['heights'] = {}

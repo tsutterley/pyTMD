@@ -11,6 +11,7 @@ PYTHON DEPENDENCIES:
 		http://h5py.org
 
 UPDATE HISTORY:
+	Updated 11/2019: create attribute dictionaries but don't fill if False
 	Written 11/2019
 """
 from __future__ import print_function
@@ -32,7 +33,7 @@ def read_HDF5_ATL07(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 
 	#-- allocate python dictionaries for ICESat-2 ATL07 variables and attributes
 	IS2_atl07_mds = {}
-	IS2_atl07_attrs = {} if ATTRIBUTES else None
+	IS2_atl07_attrs = {}
 
 	#-- read each input beam within the file
 	IS2_atl07_beams = []
@@ -104,7 +105,7 @@ def read_HDF5_ATL07(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	#-- could alternatively use the Julian day of the ATLAS SDP epoch: 2458119.5
 	#-- and add leap seconds since 2018-01-01:T00:00:00Z UTC (ATLAS SDP epoch)
 	IS2_atl07_mds['ancillary_data'] = {}
-	IS2_atl07_attrs['ancillary_data'] = {} if ATTRIBUTES else None
+	IS2_atl07_attrs['ancillary_data'] = {}
 	for key in ['atlas_sdp_gps_epoch']:
 		#-- get each HDF5 variable
 		IS2_atl07_mds['ancillary_data'][key] = fileID['ancillary_data'][key][:]
@@ -118,7 +119,7 @@ def read_HDF5_ATL07(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 	#-- sea ice ancillary information (processing flags and parameters)
 	for cal in ('fine_surface_finding','sea_ice','surface_classification'):
 		IS2_atl07_mds['ancillary_data'][cal] = {}
-		IS2_atl07_attrs['ancillary_data'][cal] = {} if ATTRIBUTES else None
+		IS2_atl07_attrs['ancillary_data'][cal] = {}
 		for key,val in fileID['ancillary_data'][cal].items():
 			#-- get each HDF5 variable
 			IS2_atl07_mds['ancillary_data'][cal][key] = val[:]
