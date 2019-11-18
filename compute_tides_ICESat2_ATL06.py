@@ -60,7 +60,9 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
 	Updated 11/2019: calculate minor constituents as separate variable
+		compute tide values at all segments and then mask to valid
 	Updated 10/2019: external read functions.  adjust regex for processed files
+		changing Y/N flags to True/False
 	Updated 09/2019: using date functions paralleling public repository
 		add option for TPXO9-atlas.  add OTIS netcdf tide option
 	Updated 05/2019: check if beam exists in a try except else clause
@@ -342,26 +344,24 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		n_seg = len(val['segment_id'])
 		#-- find valid segments for beam
 		fv = IS2_atl06_attrs[gtx]['land_ice_segments']['h_li']['_FillValue']
-		h_li = np.ma.array(val['h_li'], fill_value=fv, mask=(val['h_li']==fv))
-		ii, = np.nonzero(~h_li.mask)
 
 		#-- convert time from ATLAS SDP to days relative to Jan 1, 1992
-		gps_seconds = atlas_sdp_gps_epoch + val['delta_time'][ii]
+		gps_seconds = atlas_sdp_gps_epoch + val['delta_time']
 		tide_time = (gps_seconds-count_leap_seconds(gps_seconds))/86400.0-4378.0
 		#-- read tidal constants and interpolate to grid points
 		if model_format in ('OTIS','ATLAS'):
-			amp,ph,D,c = extract_tidal_constants(val['longitude'][ii],
-				val['latitude'][ii], grid_file, model_file, EPSG, type,
+			amp,ph,D,c = extract_tidal_constants(val['longitude'],
+				val['latitude'], grid_file, model_file, EPSG, type,
 				METHOD='spline', GRID=model_format)
 			deltat = np.zeros_like(tide_time)
 		elif (model_format == 'netcdf'):
-			amp,ph,D,c = extract_netcdf_constants(val['longitude'][ii],
-				val['latitude'][ii], model_directory, grid_file,
+			amp,ph,D,c = extract_netcdf_constants(val['longitude'],
+				val['latitude'], model_directory, grid_file,
 				model_files, type, METHOD='spline', SCALE=SCALE)
 			deltat = np.zeros_like(tide_time)
 		elif (model_format == 'GOT'):
-			amp,ph = extract_GOT_constants(val['longitude'][ii],
-				val['latitude'][ii], model_directory, model_files,
+			amp,ph = extract_GOT_constants(val['longitude'],
+				val['latitude'], model_directory, model_files,
 				METHOD='spline', SCALE=SCALE)
 			#-- convert time to Modified Julian Days for calculating deltat
 			delta_file = os.path.join(tide_dir,'deltat.data')
@@ -374,12 +374,12 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
 		#-- predict tidal elevations at time and infer minor corrections
 		tide = np.ma.empty((n_seg),fill_value=fv)
-		tide.mask = np.copy(h_li.mask)
-		tide.data[ii] = predict_tide_drift(tide_time, hc, c,
+		tide.mask = np.zeros((n_seg),dtype=np.bool)
+		tide.data[:] = predict_tide_drift(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
 		minor = infer_minor_corrections(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
-		tide.data[ii] += minor.data[:]
+		tide.data[:] += minor.data[:]
 		#-- replace masked and nan values with fill value
 		invalid, = np.nonzero(np.isnan(tide.data) | tide.mask)
 		tide.data[invalid] = tide.fill_value
@@ -495,7 +495,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 	file_format = '{0}_{1}_TIDES_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
 	#-- print file information
 	print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-	HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_tide_attrs, CLOBBER='Y',
+	HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_tide_attrs, CLOBBER=True,
 		INPUT=os.path.basename(FILE), FILL_VALUE=IS2_atl06_fill,
 		FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
 	#-- change the permissions mode
@@ -503,9 +503,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
 def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
-	FILENAME='', FILL_VALUE=None, CLOBBER='Y'):
+	FILENAME='', FILL_VALUE=None, CLOBBER=False):
 	#-- setting HDF5 clobber attribute
-	if CLOBBER in ('Y','y'):
+	if CLOBBER:
 		clobber = 'w'
 	else:
 		clobber = 'w-'
@@ -628,7 +628,7 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
 	fileID.attrs['references'] = 'http://nsidc.org/data/icesat2/data.html'
 	fileID.attrs['processing_level'] = '4'
 	#-- add attributes for input ATL06 files
-	fileID.attrs['input_files'] = ','.join([os.path.basename(i) for i in INPUT])
+	fileID.attrs['input_files'] = os.path.basename(INPUT)
 	#-- find geospatial and temporal ranges
 	lnmn,lnmx,ltmn,ltmx,tmn,tmx = (np.inf,-np.inf,np.inf,-np.inf,np.inf,-np.inf)
 	for gtx in beams:

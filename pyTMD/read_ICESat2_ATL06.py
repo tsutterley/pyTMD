@@ -3,6 +3,12 @@ u"""
 read_ICESat2_ATL06.py (11/2019)
 Read ICESat-2 ATL06 (Land Ice Along-Track Height Product) data files
 
+OPTIONS:
+	ATTRIBUTES: read HDF5 attributes for groups and variables
+	HISTOGRAM: read ATL06 residual_histogram variables
+	QUALITY: read ATL06 segment_quality variables
+	VERBOSE: output information about input ATL06 file
+
 PYTHON DEPENDENCIES:
 	numpy: Scientific Computing Tools For Python
 		http://www.numpy.org
@@ -12,6 +18,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
 	Updated 11/2019: create attribute dictionaries but don't fill if False
+		add function for reading only beam level variables
 	Updated 02/2019: continued writing read program with first ATL03 release
 	Written 07/2017
 """
@@ -23,7 +30,8 @@ import h5py
 import numpy as np
 
 #-- PURPOSE: read ICESat-2 ATL06 HDF5 data files
-def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, VERBOSE=False):
+def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, HISTOGRAM=False, QUALITY=False,
+	VERBOSE=False):
 	#-- Open the HDF5 file for reading
 	fileID = h5py.File(os.path.expanduser(FILENAME), 'r')
 
@@ -56,9 +64,6 @@ def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 		IS2_atl06_mds[gtx]['land_ice_segments']['fit_statistics'] = {}
 		IS2_atl06_mds[gtx]['land_ice_segments']['geophysical'] = {}
 		IS2_atl06_mds[gtx]['land_ice_segments']['ground_track'] = {}
-		IS2_atl06_mds[gtx]['residual_histogram'] = {}
-		IS2_atl06_mds[gtx]['segment_quality'] = {}
-		IS2_atl06_mds[gtx]['segment_quality']['signal_selection_status'] = {}
 		#-- get each HDF5 variable
 		#-- ICESat-2 land_ice_segments Group
 		for key,val in fileID[gtx]['land_ice_segments'].items():
@@ -67,16 +72,23 @@ def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 			elif isinstance(val, h5py.Group):
 				for k,v in val.items():
 					IS2_atl06_mds[gtx]['land_ice_segments'][key][k] = v[:]
+
 		#-- ICESat-2 residual_histogram Group
-		for key,val in fileID[gtx]['residual_histogram'].items():
-			IS2_atl06_mds[gtx]['residual_histogram'][key] = val[:]
+		if HISTOGRAM:
+			IS2_atl06_mds[gtx]['residual_histogram'] = {}
+			for key,val in fileID[gtx]['residual_histogram'].items():
+				IS2_atl06_mds[gtx]['residual_histogram'][key] = val[:]
+
 		#-- ICESat-2 segment_quality Group
-		for key,val in fileID[gtx]['segment_quality'].items():
-			if isinstance(val, h5py.Dataset):
-				IS2_atl06_mds[gtx]['segment_quality'][key] = val[:]
-			elif isinstance(val, h5py.Group):
-				for k,v in val.items():
-					IS2_atl06_mds[gtx]['segment_quality'][key][k] = v[:]
+		if QUALITY:
+			IS2_atl06_mds[gtx]['segment_quality'] = {}
+			IS2_atl06_mds[gtx]['segment_quality']['signal_selection_status'] = {}
+			for key,val in fileID[gtx]['segment_quality'].items():
+				if isinstance(val, h5py.Dataset):
+					IS2_atl06_mds[gtx]['segment_quality'][key] = val[:]
+				elif isinstance(val, h5py.Group):
+					for k,v in val.items():
+						IS2_atl06_mds[gtx]['segment_quality'][key][k] = v[:]
 
 		#-- Getting attributes of included variables
 		if ATTRIBUTES:
@@ -88,9 +100,6 @@ def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 			IS2_atl06_attrs[gtx]['land_ice_segments']['fit_statistics'] = {}
 			IS2_atl06_attrs[gtx]['land_ice_segments']['geophysical'] = {}
 			IS2_atl06_attrs[gtx]['land_ice_segments']['ground_track'] = {}
-			IS2_atl06_attrs[gtx]['residual_histogram'] = {}
-			IS2_atl06_attrs[gtx]['segment_quality'] = {}
-			IS2_atl06_attrs[gtx]['segment_quality']['signal_selection_status'] = {}
 			#-- Global Group Attributes for ATL06 beam
 			for att_name,att_val in fileID[gtx].attrs.items():
 				IS2_atl06_attrs[gtx][att_name] = att_val
@@ -103,12 +112,19 @@ def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 						IS2_atl06_attrs[gtx]['land_ice_segments'][key][k] = {}
 						for att_name,att_val in v.attrs.items():
 							IS2_atl06_attrs[gtx]['land_ice_segments'][key][k][att_name] = att_val
+		#-- Getting attributes of histogram variables
+		if ATTRIBUTES and HISTOGRAM:
 			#-- ICESat-2 residual_histogram Group
+			IS2_atl06_attrs[gtx]['residual_histogram'] = {}
 			for key,val in fileID[gtx]['residual_histogram'].items():
 				IS2_atl06_attrs[gtx]['residual_histogram'][key] = {}
 				for att_name,att_val in val.attrs.items():
 					IS2_atl06_attrs[gtx]['residual_histogram'][key][att_name] = att_val
+		#-- Getting attributes of quality variables
+		if ATTRIBUTES and QUALITY:
 			#-- ICESat-2 segment_quality Group
+			IS2_atl06_attrs[gtx]['segment_quality'] = {}
+			IS2_atl06_attrs[gtx]['segment_quality']['signal_selection_status'] = {}
 			for key,val in fileID[gtx]['segment_quality'].items():
 				IS2_atl06_attrs[gtx]['segment_quality'][key] = {}
 				for att_name,att_val in val.attrs.items():
@@ -186,6 +202,77 @@ def read_HDF5_ATL06(FILENAME, ATTRIBUTES=False, VERBOSE=False):
 					IS2_atl06_attrs['quality_assessment'][key][k] = {}
 					for att_name,att_val in v.attrs.items():
 						IS2_atl06_attrs['quality_assessment'][key][k][att_name]= att_val
+
+	#-- Closing the HDF5 file
+	fileID.close()
+	#-- Return the datasets and variables
+	return (IS2_atl06_mds,IS2_atl06_attrs,IS2_atl06_beams)
+
+#-- PURPOSE: read ICESat-2 ATL06 HDF5 data files for beam variables
+def read_HDF5_ATL06_beam(FILENAME, gtx, ATTRIBUTES=False, VERBOSE=False):
+	#-- Open the HDF5 file for reading
+	fileID = h5py.File(os.path.expanduser(FILENAME), 'r')
+
+	#-- Output HDF5 file information
+	if VERBOSE:
+		print(fileID.filename)
+		print(list(fileID.keys()))
+
+	#-- allocate python dictionaries for ICESat-2 ATL06 variables and attributes
+	IS2_atl06_mds = {}
+	IS2_atl06_attrs = {}
+
+	#-- read each input beam within the file
+	IS2_atl06_beams = []
+	for g in [k for k in fileID.keys() if bool(re.match(r'gt\d[lr]',k))]:
+		#-- check if subsetted beam contains land ice data
+		try:
+			fileID[g]['land_ice_segments']['segment_id']
+		except KeyError:
+			pass
+		else:
+			IS2_atl06_beams.append(g)
+
+	#-- read input beam within the file
+	if gtx in IS2_atl06_beams:
+		IS2_atl06_mds[gtx] = {}
+		IS2_atl06_mds[gtx]['land_ice_segments'] = {}
+		IS2_atl06_mds[gtx]['land_ice_segments']['bias_correction'] = {}
+		IS2_atl06_mds[gtx]['land_ice_segments']['dem'] = {}
+		IS2_atl06_mds[gtx]['land_ice_segments']['fit_statistics'] = {}
+		IS2_atl06_mds[gtx]['land_ice_segments']['geophysical'] = {}
+		IS2_atl06_mds[gtx]['land_ice_segments']['ground_track'] = {}
+		#-- get each HDF5 variable
+		#-- ICESat-2 land_ice_segments Group
+		for key,val in fileID[gtx]['land_ice_segments'].items():
+			if isinstance(val, h5py.Dataset):
+				IS2_atl06_mds[gtx]['land_ice_segments'][key] = val[:]
+			elif isinstance(val, h5py.Group):
+				for k,v in val.items():
+					IS2_atl06_mds[gtx]['land_ice_segments'][key][k] = v[:]
+
+		#-- Getting attributes of included variables
+		if ATTRIBUTES:
+			#-- Getting attributes of ICESat-2 ATL06 beam variables
+			IS2_atl06_attrs[gtx] = {}
+			IS2_atl06_attrs[gtx]['land_ice_segments'] = {}
+			IS2_atl06_attrs[gtx]['land_ice_segments']['bias_correction'] = {}
+			IS2_atl06_attrs[gtx]['land_ice_segments']['dem'] = {}
+			IS2_atl06_attrs[gtx]['land_ice_segments']['fit_statistics'] = {}
+			IS2_atl06_attrs[gtx]['land_ice_segments']['geophysical'] = {}
+			IS2_atl06_attrs[gtx]['land_ice_segments']['ground_track'] = {}
+			#-- Global Group Attributes for ATL06 beam
+			for att_name,att_val in fileID[gtx].attrs.items():
+				IS2_atl06_attrs[gtx][att_name] = att_val
+			for key,val in fileID[gtx]['land_ice_segments'].items():
+				IS2_atl06_attrs[gtx]['land_ice_segments'][key] = {}
+				for att_name,att_val in val.attrs.items():
+					IS2_atl06_attrs[gtx]['land_ice_segments'][key][att_name] = att_val
+				if isinstance(val, h5py.Group):
+					for k,v in val.items():
+						IS2_atl06_attrs[gtx]['land_ice_segments'][key][k] = {}
+						for att_name,att_val in v.attrs.items():
+							IS2_atl06_attrs[gtx]['land_ice_segments'][key][k][att_name] = att_val
 
 	#-- Closing the HDF5 file
 	fileID.close()

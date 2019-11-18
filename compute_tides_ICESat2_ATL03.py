@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
 	Updated 11/2019: calculate minor constituents as separate variable
 	Updated 10/2019: external read functions.  adjust regex for processed files
+		changing Y/N flags to True/False
 	Updated 09/2019: using date functions paralleling public repository
 		add option for TPXO9-atlas.  add OTIS netcdf tide option
 	Written 04/2019
@@ -506,7 +507,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 	file_format = '{0}_{1}_TIDES_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
 	#-- print file information
 	print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-	HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_tide_attrs, CLOBBER='Y',
+	HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_tide_attrs, CLOBBER=True,
 		INPUT=os.path.basename(FILE), FILL_VALUE=IS2_atl03_fill,
 		FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
 	#-- change the permissions mode
@@ -514,9 +515,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
 def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
-	FILENAME='', FILL_VALUE=None, CLOBBER='Y'):
+	FILENAME='', FILL_VALUE=None, CLOBBER=False):
 	#-- setting HDF5 clobber attribute
-	if CLOBBER in ('Y','y'):
+	if CLOBBER:
 		clobber = 'w'
 	else:
 		clobber = 'w-'
@@ -610,7 +611,7 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
 	fileID.attrs['references'] = 'http://nsidc.org/data/icesat2/data.html'
 	fileID.attrs['processing_level'] = '4'
 	#-- add attributes for input ATL03 files
-	fileID.attrs['input_files'] = ','.join([os.path.basename(i) for i in INPUT])
+	fileID.attrs['input_files'] = os.path.basename(INPUT)
 	#-- find geospatial and temporal ranges
 	lnmn,lnmx,ltmn,ltmx,tmn,tmx = (np.inf,-np.inf,np.inf,-np.inf,np.inf,-np.inf)
 	for gtx in beams:
