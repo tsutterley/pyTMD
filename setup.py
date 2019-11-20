@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
 	name='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
-	version='1.0.0.6',
+	version='1.0.0.7',
 	description='Python',
 	url='https://github.com/tsutterley/pyTMD',
 	author='Tyler Sutterley',
@@ -17,5 +17,5 @@ setup(
 	],
 	keywords='Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT',
 	packages=find_packages(),
-	install_requires=['numpy','scipy','h5py','netCDF4'],
+	install_requires=['numpy','scipy','pyproj','h5py','netCDF4','matplotlib'],
 )

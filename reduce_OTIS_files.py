@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (08/2018)
+Written by Tyler Sutterley (11/2019)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -16,6 +16,8 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/NumPy_for_Matlab_Users
 	scipy: Scientific Tools for Python
 		http://www.scipy.org/
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
 	read_tide_model.py: extract tidal harmonic constants out of a tidal model
@@ -23,6 +25,7 @@ PROGRAM DEPENDENCIES:
 	output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Written 08/2018
 """
 from __future__ import print_function
@@ -102,7 +105,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS, MODE=0o775):
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aodtm-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
 	elif (TIDE_MODEL == 'AOTIM-5'):
 		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
 		z_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
@@ -110,7 +113,15 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS, MODE=0o775):
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aotim-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
+	elif (TIDE_MODEL == 'AOTIM-5-2018'):
+		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
+		z_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km2018')
+		uv_file = os.path.join(tide_dir,'aotim5_tmd','u_Arc5km2018_T')
+		reference = ('https://www.esr.org/research/polar-tide-models/'
+			'list-of-polar-tide-models/aotim-5/')
+		model_format = 'OTIS'
+		EPSG = 'PSNorth'
 
 	#-- read the OTIS-format tide grid file
 	if (model_format == 'ATLAS'):

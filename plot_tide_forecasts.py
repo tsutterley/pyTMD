@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 plot_tide_forecasts.py
-Written by Tyler Sutterley (09/2019)
+Written by Tyler Sutterley (11/2019)
 Plots the daily tidal displacements for a given location
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -25,6 +25,7 @@ COMMAND LINE OPTIONS:
 		TPXO7.2_load
 		AODTM-5
 		AOTIM-5
+		AOTIM-5-2018
 		GOT4.7
 		GOT4.7_load
 		GOT4.8
@@ -38,6 +39,8 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/NumPy_for_Matlab_Users
 	scipy: Scientific Tools for Python
 		http://www.scipy.org/
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 	netCDF4: Python interface to the netCDF C library
 	 	https://unidata.github.io/netcdf4-python/netCDF4/index.html
 	matplotlib: Python 2D plotting library
@@ -48,8 +51,6 @@ PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 	calc_delta_time.py: calculates difference between universal and dynamic time
 	convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-	map_ll_tides.py: converts from latitude/longitude to polar stereographic
-	map_xy_tides.py: converts from polar stereographic to latitude/longitude
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
 	infer_minor_corrections.py: return corrections for 16 minor constituents
@@ -59,6 +60,7 @@ PROGRAM DEPENDENCIES:
 	predict_tidal_ts.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Written 07/2018 for public release
@@ -160,7 +162,7 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aodtm-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (TIDE_MODEL == 'AOTIM-5'):
 		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
@@ -168,7 +170,15 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aotim-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
+		type = 'z'
+	elif (TIDE_MODEL == 'AOTIM-5-2018'):
+		grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
+		model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
+		reference = ('https://www.esr.org/research/polar-tide-models/'
+			'list-of-polar-tide-models/aotim-5/')
+		model_format = 'OTIS'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (TIDE_MODEL == 'GOT4.7'):
 		model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')

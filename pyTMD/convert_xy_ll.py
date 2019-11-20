@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-convert_xy_ll.py (09/2017)
+convert_xy_ll.py (11/2019)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
@@ -22,17 +22,17 @@ PYTHON DEPENDENCIES:
 	numpy: Scientific Computing Tools For Python
 		http://www.numpy.org
 		http://www.scipy.org/NumPy_for_Matlab_Users
-
-PROGRAM DEPENDENCIES:
-	map_ll_tides.py: converts from latitude/longitude to polar stereographic
-	map_xy_tides.py: converts from polar stereographic to latitude/longitude
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 
 UPDATE HISTORY:
+	Updated 11/2019: using pyproj for coordinate conversions
 	Written 09/2017
 """
 import numpy as np
-from pyTMD.map_ll_tides import map_ll_tides
-from pyTMD.map_xy_tides import map_xy_tides
+# from pyTMD.map_ll_tides import map_ll_tides
+# from pyTMD.map_xy_tides import map_xy_tides
+import pyproj
 
 def convert_xy_ll(i1,i2,PROJ,BF):
 	#-- python dictionary with conversion functions
@@ -40,7 +40,7 @@ def convert_xy_ll(i1,i2,PROJ,BF):
 	conversion_functions['3031'] = xy_ll_EPSG3031
 	conversion_functions['CATS2008'] = xy_ll_CATS2008
 	conversion_functions['3976'] = xy_ll_EPSG3976
-	conversion_functions['3996'] = xy_ll_EPSG3996
+	conversion_functions['PSNorth'] = xy_ll_PSNorth
 	conversion_functions['4326'] = pass_values
 	#-- check that PROJ for conversion was entered correctly
 	if PROJ not in conversion_functions.keys():
@@ -51,50 +51,74 @@ def convert_xy_ll(i1,i2,PROJ,BF):
 
 #-- wrapper function for models in EPSG 3031 (Antarctic Polar Stereographic)
 def xy_ll_EPSG3031(i1,i2,BF):
+	#-- projections for converting from latitude/longitude
+	proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))
+	proj2 = pyproj.Proj({'proj':'stere','lat_0':-90,'lat_ts':-71,'lon_0':0,
+		'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84','units':'km'})
 	#-- convert lat/lon to Polar-Stereographic x/y
 	if (BF.upper() == 'F'):
-		o1,o2 = map_ll_tides(i1,i2,-71.0,-1.0,0.0)
+		# o1,o2 = map_ll_tides(i1,i2,-71.0,-1.0,0.0)
+		o1,o2 = pyproj.transform(proj1, proj2, i1, i2)
 	#-- convert Polar-Stereographic x/y to lat/lon
 	elif (BF.upper() == 'B'):
-		o1,o2 = map_xy_tides(i1,i2,-71.0,-1.0,0.0)
+		# o1,o2 = map_xy_tides(i1,i2,-71.0,-1.0,0.0)
+		o1,o2 = pyproj.transform(proj2, proj1, i1, i2)
 	#-- return the output variables
 	return (o1,o2)
 
 #-- wrapper function for CATS2008 tide models
 def xy_ll_CATS2008(i1,i2,BF):
+	#-- projections for converting from latitude/longitude
+	proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))
+	proj2 = pyproj.Proj({'proj':'stere','lat_0':-90,'lat_ts':-71,'lon_0':-70,
+		'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84','units':'km'})
 	#-- convert lat/lon to Polar-Stereographic x/y
 	if (BF.upper() == 'F'):
-		o1,o2 = map_ll_tides(i1,i2,-71.0,-1.0,-70.0)
+		# o1,o2 = map_ll_tides(i1,i2,-71.0,-1.0,-70.0)
+		o1,o2 = pyproj.transform(proj1, proj2, i1, i2)
 	#-- convert Polar-Stereographic x/y to lat/lon
 	elif (BF.upper() == 'B'):
-		o1,o2 = map_xy_tides(i1,i2,-71.0,-1.0,-70.0)
+		# o1,o2 = map_xy_tides(i1,i2,-71.0,-1.0,-70.0)
+		o1,o2 = pyproj.transform(proj2, proj1, i1, i2)
 	#-- return the output variables
 	return (o1,o2)
 
 #-- wrapper function for models in EPSG 3976 (NSIDC Sea Ice Stereographic South)
 def xy_ll_EPSG3976(i1,i2,BF):
+	#-- projections for converting from latitude/longitude
+	proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))
+	proj2 = pyproj.Proj({'proj':'stere','lat_0':-90,'lat_ts':-70,'lon_0':0,
+		'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84','units':'km'})
 	#-- convert lat/lon to Polar-Stereographic x/y
 	if (BF.upper() == 'F'):
-		o1,o2 = map_ll_tides(i1,i2,-70.0,-1.0,0.0)
+		# o1,o2 = map_ll_tides(i1,i2,-70.0,-1.0,0.0)
+		o1,o2 = pyproj.transform(proj1, proj2, i1, i2)
 	#-- convert Polar-Stereographic x/y to lat/lon
 	elif (BF.upper() == 'B'):
-		o1,o2 = map_xy_tides(i1,i2,-70.0,-1.0,0.0)
+		# o1,o2 = map_xy_tides(i1,i2,-70.0,-1.0,0.0)
+		o1,o2 = pyproj.transform(proj2, proj1, i1, i2)
 	#-- return the output variables
 	return (o1,o2)
 
-#-- wrapper function for models in EPSG 3996 (IBCAO Polar Stereographic North)
-def xy_ll_EPSG3996(i1,i2,BF):
+#-- wrapper function for models in PSNorth projection
+def xy_ll_PSNorth(i1,i2,BF):
+	# #-- projections for converting from latitude/longitude
+	# proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))
+	# proj2 = pyproj.Proj({'proj':'stere','lat_0':90,'lat_ts':90,'lon_0':270,
+	# 	'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84','units':'km'})
 	#-- convert lat/lon to Polar-Stereographic x/y
 	if (BF.upper() == 'F'):
 		# o1,o2 = map_ll_tides(i1,i2,75.0,1.0,0.0)
+		# o1,o2 = pyproj.transform(proj1, proj2, i1, i2)
 		o1 = (90.0-i2)*111.7*np.cos(i1/180.0*np.pi)
 		o2 = (90.0-i2)*111.7*np.sin(i1/180.0*np.pi)
 	#-- convert Polar-Stereographic x/y to lat/lon
 	elif (BF.upper() == 'B'):
 		# o1,o2 = map_xy_tides(i1,i2,75.0,1.0,0.0)
-		o1=90.0-np.sqrt(i1**2+i2**2)/111.7
-		o2=np.arctan2(i2,i1)*180/np.pi
-		ii,=np.nonzero(o1<0)
+		# o1,o2 = pyproj.transform(proj2, proj1, i1, i2)
+		o1 = 90.0 - np.sqrt(i1**2+i2**2)/111.7
+		o2 = np.arctan2(i2,i1)*180.0/np.pi
+		ii, = np.nonzero(o1 < 0)
 		o1[ii] += 360.0
 	#-- return the output variables
 	return (o1,o2)

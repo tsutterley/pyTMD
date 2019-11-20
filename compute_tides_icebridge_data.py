@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (09/2019)
+Written by Tyler Sutterley (11/2019)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -26,12 +26,13 @@ COMMAND LINE OPTIONS:
 		TPXO7.2_load
 		AODTM-5
 		AOTIM-5
+		AOTIM-5-2018
 		GOT4.7
 		GOT4.7_load
 		GOT4.8
 		GOT4.8_load
 		GOT4.10
-		GOT4.10_load	
+		GOT4.10_load
 	-M X, --mode=X: Permission mode of directories and files created
 	-V, --verbose: Output information about each created file
 
@@ -45,6 +46,8 @@ PYTHON DEPENDENCIES:
 		http://h5py.org
 	netCDF4: Python interface to the netCDF C library
 	 	https://unidata.github.io/netcdf4-python/netCDF4/index.html
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
 	convert_julian.py: returns the calendar date and time given a Julian date
@@ -52,8 +55,6 @@ PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 	calc_delta_time.py: calculates difference between universal and dynamic time
 	convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-	map_ll_tides.py: converts from latitude/longitude to polar stereographic
-	map_xy_tides.py: converts from polar stereographic to latitude/longitude
 	infer_minor_corrections.py: return corrections for 16 minor constituents
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
@@ -64,6 +65,7 @@ PROGRAM DEPENDENCIES:
 	read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 05/2019: added option interpolate to choose the interpolation method
 	Updated 02/2019: using range for python3 compatibility
@@ -502,7 +504,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
 			'list-of-polar-tide-models/aodtm-5/')
 		attrib['tide']['long_name'] = 'Ocean_Tide'
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (MODEL == 'AOTIM-5'):
 		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
@@ -511,7 +513,15 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
 			'list-of-polar-tide-models/aotim-5/')
 		attrib['tide']['long_name'] = 'Ocean_Tide'
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
+		type = 'z'
+	elif (MODEL == 'AOTIM-5-2018'):
+		grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
+		model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
+		reference = ('https://www.esr.org/research/polar-tide-models/'
+			'list-of-polar-tide-models/aotim-5/')
+		model_format = 'OTIS'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (MODEL == 'GOT4.7'):
 		model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
