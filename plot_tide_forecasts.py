@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 plot_tide_forecasts.py
-Written by Tyler Sutterley (09/2019)
+Written by Tyler Sutterley (11/2019)
 Plots the daily tidal displacements for a given location
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -25,6 +25,7 @@ COMMAND LINE OPTIONS:
 		TPXO7.2_load
 		AODTM-5
 		AOTIM-5
+		AOTIM-5-2018
 		GOT4.7
 		GOT4.7_load
 		GOT4.8
@@ -38,6 +39,8 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/NumPy_for_Matlab_Users
 	scipy: Scientific Tools for Python
 		http://www.scipy.org/
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 	netCDF4: Python interface to the netCDF C library
 	 	https://unidata.github.io/netcdf4-python/netCDF4/index.html
 	matplotlib: Python 2D plotting library
@@ -48,8 +51,6 @@ PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 	calc_delta_time.py: calculates difference between universal and dynamic time
 	convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-	map_ll_tides.py: converts from latitude/longitude to polar stereographic
-	map_xy_tides.py: converts from polar stereographic to latitude/longitude
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
 	infer_minor_corrections.py: return corrections for 16 minor constituents
@@ -59,6 +60,7 @@ PROGRAM DEPENDENCIES:
 	predict_tidal_ts.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Written 07/2018 for public release
@@ -160,7 +162,7 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aodtm-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (TIDE_MODEL == 'AOTIM-5'):
 		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
@@ -168,7 +170,15 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aotim-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
+		type = 'z'
+	elif (TIDE_MODEL == 'AOTIM-5-2018'):
+		grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
+		model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
+		reference = ('https://www.esr.org/research/polar-tide-models/'
+			'list-of-polar-tide-models/aotim-5/')
+		model_format = 'OTIS'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (TIDE_MODEL == 'GOT4.7'):
 		model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
@@ -248,36 +258,38 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		delta_file = os.path.join(tide_dir,'deltat.data')
 		deltat = calc_delta_time(delta_file, MJD + TIME)
 
-	#-- convert phase to radians
+	#-- calculate complex phase in radians for Euler's
 	cph = -1j*ph*np.pi/180.0
+	#-- calculate constituent oscillation
 	hc = amp*np.exp(cph)
 
 	#-- convert time from MJD to days relative to Jan 1, 1992 (48622 MJD)
 	#-- predict tidal elevations at time 1 and infer minor corrections
 	TIDE = predict_tidal_ts(MJD + TIME - 48622.0, hc, c,
 		DELTAT=deltat, CORRECTIONS=model_format)
-	TIDE += infer_minor_corrections(MJD + TIME - 48622.0, hc, c,
+	MINOR = infer_minor_corrections(MJD + TIME - 48622.0, hc, c,
 		DELTAT=deltat, CORRECTIONS=model_format)
+	TIDE.data[:] += MINOR.data[:]
 	#-- convert to centimeters
-	TIDE *= 100.0
+	TIDE.data[:] *= 100.0
 
 	#-- differentiate to calculate high and low tides
 	diff = np.zeros_like(TIME, dtype=np.float)
 	#-- forward differentiation for starting point
-	diff[0] = TIDE[1] - TIDE[0]
+	diff[0] = TIDE.data[1] - TIDE.data[0]
 	#-- backward differentiation for end point
-	diff[-1] = TIDE[-1] - TIDE[-2]
+	diff[-1] = TIDE.data[-1] - TIDE.data[-2]
 	#-- centered differentiation for all others
-	diff[1:-1] = (TIDE[2:] - TIDE[0:-2])/2.0
+	diff[1:-1] = (TIDE.data[2:] - TIDE.data[0:-2])/2.0
 	#-- indices of high and low tides
 	htindex, = np.nonzero((np.sign(diff[0:-1]) >= 0) & (np.sign(diff[1:]) < 0))
 	ltindex, = np.nonzero((np.sign(diff[0:-1]) <= 0) & (np.sign(diff[1:]) > 0))
 
 	#-- create plot with tidal displacements, high and low tides and dates
 	fig,ax1 = plt.subplots(num=1)
-	ax1.plot(TIME*24.0,TIDE,'k')
-	ax1.plot(TIME[htindex]*24.0,TIDE[htindex],'r*')
-	ax1.plot(TIME[ltindex]*24.0,TIDE[ltindex],'b*')
+	ax1.plot(TIME*24.0,TIDE.data,'k')
+	ax1.plot(TIME[htindex]*24.0,TIDE.data[htindex],'r*')
+	ax1.plot(TIME[ltindex]*24.0,TIDE.data[ltindex],'b*')
 	for h in range(24,192,24):
 		ax1.axvline(h,color='gray',lw=0.5,ls='dashed',dashes=(11,5))
 	ax1.set_xlim(0,7*24)

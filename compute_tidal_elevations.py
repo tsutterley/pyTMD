@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (09/2019)
+Written by Tyler Sutterley (11/2019)
 Calculates tidal elevations for an input csv filea
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -30,12 +30,13 @@ COMMAND LINE OPTIONS:
 		TPXO7.2_load
 		AODTM-5
 		AOTIM-5
+		AOTIM-5-2018
 		GOT4.7
 		GOT4.7_load
 		GOT4.8
 		GOT4.8_load
 		GOT4.10
-		GOT4.10_load	
+		GOT4.10_load
 	-M X, --mode=X: Permission mode of output file
 
 PYTHON DEPENDENCIES:
@@ -46,13 +47,13 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/
 	netCDF4: Python interface to the netCDF C library
 	 	https://unidata.github.io/netcdf4-python/netCDF4/index.html
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 	calc_delta_time.py: calculates difference between universal and dynamic time
 	convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-	map_ll_tides.py: converts from latitude/longitude to polar stereographic
-	map_xy_tides.py: converts from polar stereographic to latitude/longitude
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
 	infer_minor_corrections.py: return corrections for 16 minor constituents
@@ -62,6 +63,7 @@ PROGRAM DEPENDENCIES:
 	predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 07/2018: added GSFC Global Ocean Tides (GOT) models
 	Written 10/2017 for public release
@@ -82,7 +84,7 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 #-- PURPOSE: read HDF5 data from merge_HDF5_triangle_files.py
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_elevations(tide_dir, input_file, output_file,
-	TIDE_MODEL='', MODE=0775):
+	TIDE_MODEL='', MODE=0o775):
 
 	#-- read input *.csv file to extract MJD, latitude, longitude and elevation
 	dtype = dict(names=('MJD','lat','lon','h'),formats=('f8','f8','f8','f8'))
@@ -112,7 +114,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 		model_format = 'OTIS'
 		EPSG = 'CATS2008'
 		type = 'z'
-	elif (MODEL == 'TPXO9-atlas'):
+	elif (TIDE_MODEL == 'TPXO9-atlas'):
 		model_directory = os.path.join(tide_dir,'TPXO9_atlas')
 		grid_file = 'grid_tpxo9_atlas.nc.gz'
 		model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
@@ -125,14 +127,14 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 		model_format = 'netcdf'
 		type = 'z'
 		SCALE = 1.0/1000.0
-	elif (MODEL == 'TPXO9.1'):
+	elif (TIDE_MODEL == 'TPXO9.1'):
 		grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
 		model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
 		reference = 'http://volkov.oce.orst.edu/tides/global.html'
 		model_format = 'OTIS'
 		EPSG = '4326'
 		type = 'z'
-	elif (MODEL == 'TPXO8-atlas'):
+	elif (TIDE_MODEL == 'TPXO8-atlas'):
 		grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
 		model_file = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
 		reference = 'http://volkov.oce.orst.edu/tides/tpxo8_atlas.html'
@@ -159,7 +161,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aodtm-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (TIDE_MODEL == 'AOTIM-5'):
 		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
@@ -167,7 +169,15 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/aotim-5/')
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
+		type = 'z'
+	elif (TIDE_MODEL == 'AOTIM-5-2018'):
+		grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
+		model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
+		reference = ('https://www.esr.org/research/polar-tide-models/'
+			'list-of-polar-tide-models/aotim-5/')
+		model_format = 'OTIS'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (TIDE_MODEL == 'GOT4.7'):
 		model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
@@ -243,19 +253,23 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 		delta_file = os.path.join(tide_dir,'deltat.data')
 		deltat = calc_delta_time(delta_file,dinput['MJD'])
 
-	#-- convert phase to radians
+	#-- calculate complex phase in radians for Euler's
 	cph = -1j*ph*np.pi/180.0
+	#-- calculate constituent oscillation
 	hc = amp*np.exp(cph)
 
 	#-- convert time from MJD to days relative to Jan 1, 1992 (48622 MJD)
 	#-- predict tidal elevations at time 1 and infer minor corrections
-	tide = predict_tide_drift(dinput['MJD'] - 48622.0, hc, c,
-		DELTAT=deltat, CORRECTIONS=model_format)
-	tide += infer_minor_corrections(dinput['MJD'] - 48622.0, hc, c,
-		DELTAT=deltat, CORRECTIONS=model_format)
-	#-- replace invalid values with fill value
 	fill_value = -9999.0
-	tide.data[tide.mask] = fill_value
+	tide = np.ma.empty_like(dinput['MJD'],fill_value=fill_value)
+	tide.mask = np.any(hc.mask,axis=1)
+	tide.data[:] = predict_tide_drift(dinput['MJD'] - 48622.0, hc, c,
+		DELTAT=deltat, CORRECTIONS=model_format)
+	minor = infer_minor_corrections(dinput['MJD'] - 48622.0, hc, c,
+		DELTAT=deltat, CORRECTIONS=model_format)
+	tide.data[:] += minor.data[:]
+	#-- replace invalid values with fill value
+	tide.data[tide.mask] = tide.fill_value
 
 	#-- output to file
 	with open(output_file,'w') as f:
@@ -282,7 +296,7 @@ def main():
 	#-- tide model to use
 	TIDE_MODEL = 'CATS2008'
 	#-- permissions mode of the local files (number in octal)
-	MODE = 0775
+	MODE = 0o775
 	for opt, arg in optlist:
 		if opt in ('-h','--help'):
 			usage()

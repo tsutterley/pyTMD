@@ -23,6 +23,7 @@ COMMAND LINE OPTIONS:
 		TPXO7.2_load
 		AODTM-5
 		AOTIM-5
+		AOTIM-5-2018
 		GOT4.7
 		GOT4.7_load
 		GOT4.8
@@ -40,6 +41,8 @@ PYTHON DEPENDENCIES:
 		http://www.scipy.org/
 	h5py: Python interface for Hierarchal Data Format 5 (HDF5)
 		http://h5py.org
+	pyproj: Python interface to PROJ library
+		https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
 	read_ICESat2_ATL03.py: reads ICESat-2 global geolocated photon data files
@@ -48,8 +51,6 @@ PROGRAM DEPENDENCIES:
 	calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 	calc_delta_time.py: calculates difference between universal and dynamic time
 	convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-	map_ll_tides.py: converts from latitude/longitude to polar stereographic
-	map_xy_tides.py: converts from polar stereographic to latitude/longitude
 	infer_minor_corrections.py: return corrections for 16 minor constituents
 	load_constituent.py: loads parameters for a given tidal constituent
 	load_nodal_corrections.py: load the nodal corrections for tidal constituents
@@ -60,6 +61,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
 	Updated 11/2019: calculate minor constituents as separate variable
+		added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 10/2019: external read functions.  adjust regex for processed files
 		changing Y/N flags to True/False
 	Updated 09/2019: using date functions paralleling public repository
@@ -201,7 +203,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 			"(harmonic analysis), and longer period tides (dynamic and "
 			"self-consistent equilibrium).")
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (MODEL == 'AOTIM-5'):
 		grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
@@ -214,7 +216,20 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 			"(harmonic analysis), and longer period tides (dynamic and "
 			"self-consistent equilibrium).")
 		model_format = 'OTIS'
-		EPSG = '3996'
+		EPSG = 'PSNorth'
+		type = 'z'
+	elif (MODEL == 'AOTIM-5-2018'):
+		grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
+		model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
+		reference = ('https://www.esr.org/research/polar-tide-models/'
+			'list-of-polar-tide-models/aotim-5/')
+		variable = 'tide_ocean'
+		long_name = "Ocean Tide"
+		description = ("Ocean Tides including diurnal and semi-diurnal "
+			"(harmonic analysis), and longer period tides (dynamic and "
+			"self-consistent equilibrium).")
+		model_format = 'OTIS'
+		EPSG = 'PSNorth'
 		type = 'z'
 	elif (MODEL == 'GOT4.7'):
 		model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
@@ -374,7 +389,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
 		#-- predict tidal elevations at time and infer minor corrections
 		tide = np.ma.empty((n_seg),fill_value=fv)
-		tide.mask = np.zeros((n_seg))
+		tide.mask = np.any(hc.mask,axis=1)
 		tide.data[:] = predict_tide_drift(tide_time, hc, c,
 			DELTAT=deltat, CORRECTIONS=model_format)
 		minor = infer_minor_corrections(tide_time, hc, c,

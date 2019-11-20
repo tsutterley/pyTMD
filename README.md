@@ -20,8 +20,10 @@ pyTMD
 #### Dependencies
 [numpy: Scientific Computing Tools For Python](https://www.numpy.org)  
 [scipy: Scientific Tools for Python](https://www.scipy.org/)  
+[pyproj: Python interface to PROJ library](https://pypi.org/project/pyproj/)  
 [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
-[netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)
+[netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
+[matplotlib: Python 2D plotting library](http://matplotlib.org/)  
 
 #### Reference
 T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg, S. R. M.,
@@ -38,4 +40,4 @@ https://github.com/tsutterley/pyTMD/archive/master.zip
 This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.  It is provided here for your convenience but _with no guarantees whatsoever_.  
 
 #### Credits
-The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.  The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).   
+The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.  The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).  The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.  

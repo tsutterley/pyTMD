@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (09/2019)
+read_tide_model.py (11/2019)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
 	given locations
@@ -42,6 +42,7 @@ PROGRAM DEPENDENCIES:
 	convert_xy_ll.py: converts lat/lon points to and from projected coordinates
 
 UPDATE HISTORY:
+	Updated 11/2019: interpolate heights and fluxes to numpy masked arrays
 	Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
 	Updated 01/2019: decode constituents for Python3 compatibility
 	Updated 08/2018: added option GRID for using ATLAS outputs that
@@ -53,7 +54,7 @@ UPDATE HISTORY:
 import os
 import numpy as np
 import scipy.interpolate
-from tidal_library.convert_xy_ll import convert_xy_ll
+from pyTMD.convert_xy_ll import convert_xy_ll
 
 #-- extract tidal harmonic constants from OTIS tide models at coordinates
 def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
@@ -123,18 +124,20 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 		#-- use quick bilinear to interpolate values
 		D = bilinear_interp(xi,yi,hz,x,y)
 		mz1 = bilinear_interp(xi,yi,mz,x,y)
+		mz1 = np.ceil(mz1).astype(mz.dtype)
 	elif (METHOD == 'spline'):
 		#-- use scipy bivariate splines to interpolate values
 		f1=scipy.interpolate.RectBivariateSpline(xi,yi,hz.T,kx=1,ky=1)
 		f2=scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)
 		D = f1.ev(x,y)
-		mz1 = f2.ev(x,y)
+		mz1 = np.ceil(f2.ev(x,y)).astype(mz.dtype)
 	else:
 		#-- use scipy griddata to interpolate values
 		D = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
 			hz.flatten(), zip(x,y), method=METHOD)
 		mz1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
 			mz.real.flatten(), zip(x,y), method=METHOD)
+		mz1 = np.ceil(mz1).astype(mz.dtype)
 
 	#-- u and v are velocities in cm/s
 	if type in ('v','u'):
@@ -147,7 +150,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 	constituents,nc = read_constituents(model_file)
 	npts = len(D)
 	amplitude = np.ma.zeros((npts,nc))
-	phase = np.ma.zeros((npts,nc))
+	amplitude.mask = np.zeros((npts,nc),dtype=np.bool)
+	ph = np.ma.zeros((npts,nc))
+	ph.mask = np.zeros((npts,nc),dtype=np.bool)
 	for i,c in enumerate(constituents):
 		if (type == 'z'):
 			#-- read constituent from elevation file
@@ -164,27 +169,38 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 				#-- replace zero values with nan
 				z[z==0] = np.nan
 				#-- use quick bilinear to interpolate values
-				z1 = bilinear_interp(xi,yi,z,x,y)
+				z1 = np.ma.zeros((npts),dtype=z.dtype)
+				z1.data = bilinear_interp(xi,yi,z,x,y)
+				#-- replace nan values with fill_value
+				z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
+				z1.data[z1.mask] = z1.fill_value
 			elif (METHOD == 'spline'):
 				#-- use scipy bivariate splines to interpolate values
 				f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
 					z.real.T,kx=1,ky=1)
 				f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
 					z.imag.T,kx=1,ky=1)
-				z1 = np.zeros((npts),dtype=z.dtype)
-				z1.real = f1.ev(x,y)
-				z1.imag = f2.ev(x,y)
-				#-- replace zero values with nan
-				z1[z1==0] = np.nan
+				z1 = np.ma.zeros((npts),dtype=z.dtype)
+				z1.data.real = f1.ev(x,y)
+				z1.data.imag = f2.ev(x,y)
+				#-- replace zero values with fill_value
+				z1.mask = (~mz1.astype(np.bool))
+				z1.data[z1.mask] = z1.fill_value
 			else:
 				#-- replace zero values with nan
 				z[z==0] = np.nan
 				#-- use scipy griddata to interpolate values
-				z1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+				z1 = np.ma.zeros((npts),dtype=z.dtype)
+				z1.data=scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
 					z.flatten(), zip(x,y), method=METHOD)
+				#-- replace nan values with fill_value
+				z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
+				z1.data[z1.mask] = z1.fill_value
 			#-- amplitude and phase of the constituent
-			amplitude[:,i] = np.abs(z1)
-			phase[:,i] = np.arctan2(-np.imag(z1),np.real(z1))
+			amplitude.data[:,i] = np.abs(z1.data)
+			amplitude.mask[:,i] = z1.mask
+			ph.data[:,i] = np.arctan2(-np.imag(z1.data),np.real(z1.data))
+			ph.mask[:,i] = z1.mask
 		elif type in ('U','u'):
 			#-- read constituent from transport file
 			if (GRID == 'ATLAS'):
@@ -223,8 +239,10 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 			#-- convert units
 			u1 = u1/unit_conv
 			#-- amplitude and phase of the constituent
-			amplitude[:,i] = np.abs(u1)
-			phase[:,i] = np.arctan2(-np.imag(u1),np.real(u1))
+			amplitude.data[:,i] = np.abs(u1)
+			amplitude.mask[:,i] = (~np.ceil(mu1).astype(np.bool))
+			ph.data[:,i] = np.arctan2(-np.imag(u1),np.real(u1))
+			ph.mask[:,i] = (~np.ceil(mu1).astype(np.bool))
 		elif type in ('V','v'):
 			#-- read constituent from transport file
 			if (GRID == 'ATLAS'):
@@ -263,11 +281,17 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 			#-- convert units
 			v1 = v1/unit_conv
 			#-- amplitude and phase of the constituent
-			amplitude[:,i] = np.abs(v1)
-			phase[:,i] = np.arctan2(-np.imag(v1),np.real(v1))
+			amplitude.data[:,i] = np.abs(v1)
+			amplitude.mask[:,i] = (~np.ceil(mv1).astype(np.bool))
+			ph.data[:,i] = np.arctan2(-np.imag(v1),np.real(v1))
+			ph.mask[:,i] = (~np.ceil(mv1).astype(np.bool))
+
 	#-- convert phase to degrees
-	phase = phase*180.0/np.pi
-	phase[phase < 0] += 360.0
+	phase = ph*180.0/np.pi
+	phase.data[phase.data < 0] += 360.0
+	#-- replace masked values with fill value
+	amplitude.data[amplitude.mask] = amplitude.fill_value
+	phase.data[phase.mask] = phase.fill_value
 	#-- return the interpolated values
 	return (amplitude,phase,D,constituents)
 
