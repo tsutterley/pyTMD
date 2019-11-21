@@ -9,7 +9,6 @@
 *.pyc
 *.m~
 *.m~~
- 
 # Packages #
 ############
 *.7z
@@ -20,7 +19,6 @@
 *.rar
 *.tar
 *.zip
- 
 # Logs and databases #
 ######################
 *.log
@@ -30,7 +28,7 @@
 *.gmtdefaults4
 .RData
 .Rhistory
-
+__pycache__
 # OS generated files #
 ######################
 .DS_Store
@@ -40,7 +38,6 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
-
 # LaTeX and Vim #
 ######################
 *.aux
@@ -72,3 +69,7 @@ Thumbs.db
 *.mtc0
 *.sw*
 *.hidden
+# Jupyter Checkpoints #
+#######################
+.ipynb_checkpoints
+Untitled.ipynb

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide.py (09/2019)
+predict_tide.py (11/2019)
 Predict tidal elevation at a single time using harmonic constants
 
 CALLING SEQUENCE:
@@ -28,6 +28,8 @@ PROGRAM DEPENDENCIES:
 	load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+	Updated 11/2019: can output an array of heights with a single time stamp
+		such as for estimating tide height maps from imagery
 	Updated 09/2019: added netcdf option to CORRECTIONS option
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
 	Updated 07/2018: added option to use GSFC GOT nodal corrections
@@ -38,12 +40,13 @@ from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
 def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
-	nc = len(constituents)
+	#-- number of points and number of constituents
+	npts,nc = np.shape(hc)
 	#-- load the nodal corrections
 	pu,pf,G = load_nodal_corrections(time + 48622.0, constituents,
 		DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
 	#-- allocate for output tidal elevation
-	ht = 0.0
+	ht = np.ma.zeros((npts))
 	#-- for each constituent
 	for k,c in enumerate(constituents):
 		if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
@@ -54,6 +57,6 @@ def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 		elif (CORRECTIONS == 'GOT'):
 			th = G[0,k]*np.pi/180.0 + pu[0,k]
 		#-- sum over all tides
-		ht += pf[0,k]*hc.real[k]*np.cos(th) - pf[0,k]*hc.imag[k]*np.sin(th)
-	#-- return the tidal elevation
-	return ht
+		ht += pf[0,k]*hc.real[:,k]*np.cos(th) - pf[0,k]*hc.imag[:,k]*np.sin(th)
+	#-- return the tidal elevation after removing singleton dimensions
+	return np.squeeze(ht)
