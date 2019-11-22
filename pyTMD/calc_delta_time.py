@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 calc_delta_time.py
-Written by Tyler Sutterley (07/2018)
+Written by Tyler Sutterley (11/2019)
 Calculates the difference between universal time and dynamical time following
 	Richard Ray's PERTH3 algorithms
 
@@ -10,6 +10,7 @@ INPUTS:
 	iMJD: Modified Julian Day of times to interpolate
 
 UPDATE HISTORY:
+	Updated 11/2019: pad input time dimension if entering a single value
 	Updated 07/2018: linearly extrapolate if using dates beyond the table
 	Written 07/2018
 """
@@ -26,6 +27,9 @@ def calc_modified_julian_day(YEAR, MONTH, DAY):
 
 #-- interpolate delta time
 def calc_delta_time(delta_file,iMJD):
+	#-- change dimensions if entering a single value
+	if (np.ndim(iMJD) == 0):
+		iMJD = np.array([iMJD])
 	#-- number of output points
 	npts = len(iMJD)
 	#-- allocate for delta time before and after the measurement
@@ -52,5 +56,5 @@ def calc_delta_time(delta_file,iMJD):
 	#-- for dates beyond the maximum date in the table: extrapolate to date
 	dt = (dinput[-1,3]-dinput[-2,3])/(MJD[-1] - MJD[-2])
 	deltat[jj] = (iMJD[jj] - MJD[-1])*dt/86400.0
-	#-- return the delta time in days
-	return deltat
+	#-- return the delta time in days after removing singleton dimensions
+	return np.squeeze(deltat)
