@@ -1,6 +1,8 @@
 pyTMD
 =====
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)  
+
 #### Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions  
 
 - [OSU Tidal Prediction Software (OTPS)](http://volkov.oce.orst.edu/tides/otps.html)  
