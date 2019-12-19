@@ -24,3 +24,4 @@ from pyTMD.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
 from pyTMD.read_ICESat2_ATL03 import read_HDF5_ATL03_main,read_HDF5_ATL03_beam
 from pyTMD.read_ICESat2_ATL06 import read_HDF5_ATL06
 from pyTMD.read_ICESat2_ATL07 import read_HDF5_ATL07
+from pyTMD.read_ICESat2_ATL12 import read_HDF5_ATL12
