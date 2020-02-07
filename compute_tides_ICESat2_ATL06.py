@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL06.py
-Written by Tyler Sutterley (11/2019)
+Written by Tyler Sutterley (02/2020)
 Calculates tidal elevations for correcting ICESat-2 land ice elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -60,6 +60,8 @@ PROGRAM DEPENDENCIES:
 	read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 
 UPDATE HISTORY:
+	Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
+		Program Data Center http://www.usap-dc.org/view/dataset/601235
 	Updated 11/2019: calculate minor constituents as separate variable
 		compute tide values at all segments and then mask to valid
 		added AOTIM-5-2018 tide model (2018 update to 2004 model)
@@ -108,7 +110,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 		EPSG = '4326'
 		type = 'z'
 	elif (MODEL == 'CATS2008'):
-		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008a_opt')
+		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
 		model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/cats2008/')

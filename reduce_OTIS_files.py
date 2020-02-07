@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (11/2019)
+Written by Tyler Sutterley (02/2020)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -25,6 +25,8 @@ PROGRAM DEPENDENCIES:
 	output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+	Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
+		Program Data Center http://www.usap-dc.org/view/dataset/601235
 	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Written 08/2018
 """
@@ -49,7 +51,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS, MODE=0o775):
 		model_format = 'OTIS'
 		EPSG = '4326'
 	elif (TIDE_MODEL == 'CATS2008'):
-		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008a_opt')
+		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
 		z_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
 		uv_file = os.path.join(tide_dir,'CATS2008','uv.CATS2008.out')
 		reference = ('https://www.esr.org/research/polar-tide-models/'

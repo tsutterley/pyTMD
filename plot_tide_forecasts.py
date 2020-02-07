@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 plot_tide_forecasts.py
-Written by Tyler Sutterley (11/2019)
+Written by Tyler Sutterley (02/2020)
 Plots the daily tidal displacements for a given location
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -60,6 +60,8 @@ PROGRAM DEPENDENCIES:
 	predict_tidal_ts.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+	Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
+		Program Data Center http://www.usap-dc.org/view/dataset/601235
 	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 08/2018: added correction option ATLAS for localized OTIS solutions
@@ -100,7 +102,7 @@ def plot_tide_forecasts(tide_dir, LON, LAT, DATE, TIDE_MODEL=''):
 		EPSG = '4326'
 		type = 'z'
 	elif (TIDE_MODEL == 'CATS2008'):
-		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008a_opt')
+		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
 		model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/cats2008/')

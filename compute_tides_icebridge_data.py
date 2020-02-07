@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (11/2019)
+Written by Tyler Sutterley (02/2020)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -65,6 +65,8 @@ PROGRAM DEPENDENCIES:
 	read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+	Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
+		Program Data Center http://www.usap-dc.org/view/dataset/601235
 	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 05/2019: added option interpolate to choose the interpolation method
@@ -388,7 +390,7 @@ def calc_julian_day(YEAR, MONTH, DAY, HOUR=0, MINUTE=0, SECOND=0):
 def calc_GPS_to_UTC(YEAR, MONTH, DAY, HOUR, MINUTE, SECOND):
 	GPS = 367.*YEAR - np.floor(7.*(YEAR + np.floor((MONTH+9.)/12.))/4.) - \
 		np.floor(3.*(np.floor((YEAR + (MONTH - 9.)/7.)/100.) + 1.)/4.) + \
-		np.floor(275.*MONTH/9.) + DAY - 723263.0
+		np.floor(275.*MONTH/9.) + DAY + 1721028.5 - 2444244.5
 	GPS_Time = GPS*86400.0 + HOUR*3600.0 + MINUTE*60.0 + SECOND
 	return count_leap_seconds(GPS_Time)
 
@@ -434,7 +436,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
 		EPSG = '4326'
 		type = 'z'
 	elif (MODEL == 'CATS2008'):
-		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008a_opt')
+		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
 		model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/cats2008/')

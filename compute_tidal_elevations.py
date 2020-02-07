@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (11/2019)
-Calculates tidal elevations for an input csv filea
+Written by Tyler Sutterley (02/2020)
+Calculates tidal elevations for an input csv file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
 	http://volkov.oce.orst.edu/tides/region.html
@@ -63,6 +63,8 @@ PROGRAM DEPENDENCIES:
 	predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+	Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
+		Program Data Center http://www.usap-dc.org/view/dataset/601235
 	Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
 	Updated 09/2019: added TPXO9_atlas reading from netcdf4 tide files
 	Updated 07/2018: added GSFC Global Ocean Tides (GOT) models
@@ -99,7 +101,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 		EPSG = '4326'
 		type = 'z'
 	elif (TIDE_MODEL == 'CATS2008'):
-		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008a_opt')
+		grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
 		model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
 		reference = ('https://www.esr.org/research/polar-tide-models/'
 			'list-of-polar-tide-models/cats2008/')
