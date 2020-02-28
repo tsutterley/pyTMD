@@ -6,20 +6,23 @@ pyTMD
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/master)
 
-#### Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions  
+#### Python-based tidal prediction software that reads OTIS and GOT formatted tidal solutions for calculating ocean and load tides
 
 - [OSU Tidal Prediction Software (OTPS)](http://volkov.oce.orst.edu/tides/otps.html)  
 - [ESR Tide Model Driver (TMD) Matlab Toolbox](https://www.esr.org/research/polar-tide-models/tmd-software/)  
 - [OSU List of Regional Tide Models](http://volkov.oce.orst.edu/tides/region.html)  
 - [ESR List of Polar Tide Models](https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/)  
 - [A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2](https://ntrs.nasa.gov/search.jsp?R=19990089548)  
+- [Delta times from US Naval Observatory (USNO) Earth Orientation Products](http://maia.usno.navy.mil/ser7/deltat.data)  
+- [Delta times from NASA Crustal Dynamics Data Information System (CDDIS)](ftp://cddis.nasa.gov/products/iers/deltat.data)  
 
-#### Pole Tide Driver to calculate radial pole tide displacements  
+#### Pole tide prediction software for calculating radial pole tide displacements
 
 - [IERS Conventions (2010)](http://iers-conventions.obspm.fr/)  
 - [IERS Mean Pole Location](https://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab)  
 - [IERS Pole Coordinates to Calculate Mean Pole](https://hpiers.obspm.fr/iers/eop/eopc01/eopc01.1900-now.dat)  
-- [IERS Daily Earth Orientation Parameters (EOP)](http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly)  
+- [IERS Daily Earth Orientation Parameters (EOP) from USNO](http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly)  
+- [IERS Daily Earth Orientation Parameters (EOP) from NASA CDDIS](ftp://cddis.nasa.gov/products/iers/finals.all)  
 - [IERS Ocean Pole Load Tide Coefficients Map](http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)
 
 #### Dependencies
@@ -36,10 +39,12 @@ T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wesse
 13, 1801–1817, (2019). [doi:tc-13-1801-2019](https://doi.org/10.5194/tc-13-1801-2019)  
 
 #### Download
-The program homepage is:   
-https://github.com/tsutterley/pyTMD   
-A zip archive of the latest version is available directly at:    
+The program homepage is:  
+https://github.com/tsutterley/pyTMD  
+A zip archive of the latest version is available directly at:  
 https://github.com/tsutterley/pyTMD/archive/master.zip  
+Incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:  
+https://github.com/fspaolo/captoolkit  
 
 #### Disclaimer  
 This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.  It is provided here for your convenience but _with no guarantees whatsoever_.  

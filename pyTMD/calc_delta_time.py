@@ -2,11 +2,13 @@
 u"""
 calc_delta_time.py
 Written by Tyler Sutterley (11/2019)
-Calculates the difference between universal time and dynamical time following
-    Richard Ray's PERTH3 algorithms
+Calculates the difference between universal time and dynamical time (TT - UT1)
+    following Richard Ray's PERTH3 algorithms
 
 INPUTS:
-    delta_file from http://maia.usno.navy.mil/ser7/deltat.data
+    delta_file from
+        http://maia.usno.navy.mil/ser7/deltat.data
+        ftp://cddis.nasa.gov/products/iers/deltat.data
     iMJD: Modified Julian Day of times to interpolate
 
 UPDATE HISTORY:
