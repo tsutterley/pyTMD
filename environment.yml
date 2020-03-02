@@ -1,0 +1,13 @@
+name: example-environment
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.6
+  - notebook
+  - numpy
+  - scipy
+  - pyproj
+  - matplotlib
+  - netCDF4
+  - h5py
+

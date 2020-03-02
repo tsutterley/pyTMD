@@ -1,0 +1,2 @@
+jupyter labextension install --clean @jupyter-widgets/jupyterlab-manager \
+   jupyter-matplotlib jupyter-leaflet
