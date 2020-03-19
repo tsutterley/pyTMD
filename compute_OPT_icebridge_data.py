@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (05/2019)
+Written by Tyler Sutterley (03/2020)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -35,6 +35,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 05/2019: added option interpolate to choose the interpolation method
     Updated 02/2019: using range for python3 compatibility
     Updated 10/2018: updated GPS time calculation for calculating leap seconds
@@ -57,7 +58,7 @@ from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
-from pyTMD.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
+from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
 
 #-- PURPOSE: reading the number of file lines removing commented lines
 def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
