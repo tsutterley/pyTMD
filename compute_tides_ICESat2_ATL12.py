@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL12.py
-Written by Tyler Sutterley (02/2020)
+Written by Tyler Sutterley (03/2020)
 Calculates tidal elevations for correcting ICESat-2 ocean surface height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 
 UPDATE HISTORY:
+    Updated 03/2020: use read_ICESat2_ATL12.py from read-ICESat-2 repository
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
     Forked 12/2019 from compute_tides_ICESat2_ATL07.py
@@ -83,7 +84,7 @@ import h5py
 import getopt
 import datetime
 import numpy as np
-from pyTMD.read_ICESat2_ATL12 import read_HDF5_ATL12
+from icesat2_toolkit.read_ICESat2_ATL12 import read_HDF5_ATL12
 from pyTMD.convert_julian import convert_julian
 from pyTMD.count_leap_seconds import count_leap_seconds
 from pyTMD.calc_delta_time import calc_delta_time

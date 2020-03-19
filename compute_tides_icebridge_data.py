@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (02/2020)
+Written by Tyler Sutterley (03/2020)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -65,6 +65,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
     Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
@@ -86,7 +87,7 @@ import getopt
 import numpy as np
 from pyTMD.convert_julian import convert_julian
 from pyTMD.count_leap_seconds import count_leap_seconds
-from pyTMD.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
+from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift

@@ -3,8 +3,6 @@ from pyTMD.count_leap_seconds import count_leap_seconds
 from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
-from pyTMD.map_ll_tides import map_ll_tides
-from pyTMD.map_xy_tides import map_xy_tides
 from pyTMD.convert_xy_ll import convert_xy_ll
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.load_constituent import load_constituent
@@ -20,8 +18,3 @@ from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 from pyTMD.output_otis_tides import output_otis_grid
-from pyTMD.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
-from pyTMD.read_ICESat2_ATL03 import read_HDF5_ATL03_main,read_HDF5_ATL03_beam
-from pyTMD.read_ICESat2_ATL06 import read_HDF5_ATL06
-from pyTMD.read_ICESat2_ATL07 import read_HDF5_ATL07
-from pyTMD.read_ICESat2_ATL12 import read_HDF5_ATL12

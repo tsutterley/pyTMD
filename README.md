@@ -26,12 +26,15 @@ pyTMD
 - [IERS Ocean Pole Load Tide Coefficients Map](http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)
 
 #### Dependencies
-[numpy: Scientific Computing Tools For Python](https://www.numpy.org)  
-[scipy: Scientific Tools for Python](https://www.scipy.org/)  
-[pyproj: Python interface to PROJ library](https://pypi.org/project/pyproj/)  
-[h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
-[netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
-[matplotlib: Python 2D plotting library](http://matplotlib.org/)  
+ - [numpy: Scientific Computing Tools For Python](https://www.numpy.org)  
+ - [scipy: Scientific Tools for Python](https://www.scipy.org/)  
+ - [pyproj: Python interface to PROJ library](https://pypi.org/project/pyproj/)  
+ - [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
+ - [netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
+ - [matplotlib: Python 2D plotting library](http://matplotlib.org/)  
+ - [cartopy: Python package designed for geospatial data processing](https://scitools.org.uk/cartopy/docs/latest/)  
+ - [read-ICESat-2: Python tools to read data from the NASA ICESat-2 mission](https://github.com/tsutterley/read-ICESat-2/)  
+ - [read-ATM1b-QFIT-binary: Python reader for Airborne Topographic Mapper (ATM) QFIT data products](https://github.com/tsutterley/read-ATM1b-QFIT-binary)  
 
 #### Reference
 T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg, S. R. M.,
