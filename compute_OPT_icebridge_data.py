@@ -12,7 +12,7 @@ INPUTS:
 
 COMMAND LINE OPTIONS:
     -D X, --directory=X: Working data directory
-    -I X, --interpolate: Interpolation method (default spline)
+    -I X, --interpolate=X: Interpolation method (default spline)
     -M X, --mode=X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 

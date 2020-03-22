@@ -11,7 +11,6 @@ INPUTS:
     i1: longitude ('F') or projection easting x ('B')
     i2: latitude ('F') or projection northing y ('B')
     PROJ: spatial reference system code for coordinate transformations
-        https://www.epsg-registry.org/
     BF: backwards ('B') or forward ('F') translations
 
 OUTPUTS:

@@ -5,7 +5,7 @@ Return correction for minor constituents based on Richard Ray's PERTH3 code
     PERTH: PREdict Tidal Heights
 
 CALLING SEQUENCE:
-    dh = infer_minor_corrections(c)
+    dh = infer_minor_corrections(time,zmajor,constituents)
 
 INPUTS:
     constituents: tidal constituent IDs

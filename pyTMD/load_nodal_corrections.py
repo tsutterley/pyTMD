@@ -4,7 +4,7 @@ load_nodal_corrections.py (07/2018)
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
 CALLING SEQUENCE:
-    pu,pf,G = nodal(time,constituents)
+    pu,pf,G = load_nodal_corrections(time,constituents)
 
 INPUTS:
     time: modified julian day of input date

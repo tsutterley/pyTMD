@@ -30,6 +30,12 @@ OPTIONS:
     GZIP: input netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
+OUTPUTS:
+    amplitude: amplitudes of tidal constituents
+    phase: phases of tidal constituents
+    D: bathymetry of tide model
+    constituents: list of model constituents
+
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         http://www.numpy.org

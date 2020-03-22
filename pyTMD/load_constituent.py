@@ -4,7 +4,7 @@ load_constituent.py (09/2017)
 Loads parameters for a given tidal constituent
 
 CALLING SEQUENCE:
-    flag,amplitude,phase,alpha,species = load_constituents(c)
+    flag,amplitude,phase,alpha,species = load_constituent(c)
 
 INPUTS:
     c: tidal constituent IDs
