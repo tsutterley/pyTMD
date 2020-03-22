@@ -12,7 +12,7 @@ INPUTS:
     constituents: tidal constituent IDs
 
 OUTPUT:
-    ht: time series reconstructed using the nodal corrections
+    ht: height reconstructed using the nodal corrections
 
 OPTIONS:
     DELTAT: time correction for converting to Ephemeris Time (days)

@@ -29,6 +29,12 @@
 .RData
 .Rhistory
 __pycache__
+build/
+develop-eggs/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 # OS generated files #
 ######################
 .DS_Store

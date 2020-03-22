@@ -3,6 +3,7 @@ pyTMD
 
 [![Language](https://img.shields.io/badge/python-v3.7-green.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/pyTMD/blob/master/LICENSE)
+[![Documentation Status](https://readthedocs.org/projects/pytmd/badge/?version=latest)](https://pytmd.readthedocs.io/en/latest/?badge=latest)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/master)
 
@@ -37,7 +38,7 @@ pyTMD
  - [read-ATM1b-QFIT-binary: Python reader for Airborne Topographic Mapper (ATM) QFIT data products](https://github.com/tsutterley/read-ATM1b-QFIT-binary)  
 
 #### Reference
-T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg, S. R. M.,
+T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
 "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
 13, 1801–1817, (2019). [doi:tc-13-1801-2019](https://doi.org/10.5194/tc-13-1801-2019)  
 

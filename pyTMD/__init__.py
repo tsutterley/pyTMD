@@ -18,3 +18,4 @@ from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 from pyTMD.output_otis_tides import output_otis_grid
+from pyTMD.compute_tide_corrections import compute_tide_corrections
