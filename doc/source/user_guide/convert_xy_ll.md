@@ -1,7 +1,7 @@
 convert_xy_ll.py
 ================
 
- - Converts lat/lon points to and from projected coordinates
+ - Uses pyproj to convert lat/lon points to and from projected coordinates
 
 #### Calling Sequence
 ```python
@@ -9,6 +9,7 @@ from pyTMD.convert_xy_ll import convert_xy_ll
 x,y = convert_xy_ll(lon,lat,PROJ,'F')
 lon,lat = convert_xy_ll(x,y,PROJ,'B')
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/convert_xy_ll.py)
 
 #### Inputs
  1. `i1`: longitude ('F') or projection easting x ('B')

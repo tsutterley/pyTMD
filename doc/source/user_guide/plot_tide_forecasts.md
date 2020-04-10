@@ -10,6 +10,7 @@ plot_tide_forecasts.py
 python plot_tide_forecasts.py --directory=<path_to_directory> --tide=<model> \
     --coordinates=<coordinates> --date=<date_to_forecast>
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/plot_tide_forecasts.py)
 
 #### Command Line Options
  - `-D X`, `--directory=X`: Working data directory

@@ -9,6 +9,7 @@ compute_tides_ICESat2_ATL06.py
 ```bash
 python compute_tides_ICESat2_ATL06.py --directory=<path_to_directory> --tide=<model> input_file
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/compute_tides_ICESat2_ATL06.py)
 
 #### Inputs
  1. `input_file`: input ICESat-2 ATL06 file

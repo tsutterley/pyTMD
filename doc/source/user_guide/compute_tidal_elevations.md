@@ -9,6 +9,7 @@ compute_tidal_elevations.py
 ```bash
 python compute_tidal_elevations.py --directory=<path_to_directory> --tide=<model> input_file output_file
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/compute_tidal_elevations.py)
 
 #### Inputs
  1. `input_file`: input csv file with columns:

@@ -9,6 +9,7 @@ predict_tidal_ts.py
 from pyTMD.predict_tidal_ts import predict_tidal_ts
 ht = predict_tidal_ts(time,hc,con)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/predict_tidal_ts.py)
 
 #### Inputs
  1. `time`: days relative to Jan 1, 1992 (48622mjd)

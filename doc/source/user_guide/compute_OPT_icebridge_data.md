@@ -9,6 +9,7 @@ compute_OPT_icebridge_data.py
 ```bash
 python compute_OPT_icebridge_data.py --directory=<path_to_directory> input_file
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/compute_OPT_icebridge_data.py)
 
 #### Inputs
  1. `input_file`: input ATM1B, ATM icessn or LVIS file from NSIDC

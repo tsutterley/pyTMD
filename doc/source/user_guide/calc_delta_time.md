@@ -8,6 +8,7 @@ calc_delta_time.py
 from pyTMD.calc_delta_time import calc_delta_time
 deltat = calc_delta_time(delta_file, iMJD)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/calc_delta_time.py)
 
 #### Inputs
  1. `delta_file`:  

@@ -9,6 +9,7 @@ count_leap_seconds.py
 from pyTMD.count_leap_seconds import count_leap_seconds
 n_leaps = count_leap_seconds(GPS_Time)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/count_leap_seconds.py)
 
 #### Inputs
  1. `GPS_Time`: seconds since January 6, 1980 at 00:00:00

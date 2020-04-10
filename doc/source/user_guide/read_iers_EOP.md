@@ -9,6 +9,7 @@ read_iers_EOP.py
 from pyTMD.read_iers_EOP import read_iers_EOP
 MJD,x,y,flag = read_iers_EOP(input_file)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_iers_EOP.py)
 
 #### Inputs
  1. `input_file`:  full path to IERS EOP "finals" file
