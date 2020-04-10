@@ -9,6 +9,7 @@ load_nodal_corrections.py
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 pu,pf,G = load_nodal_corrections(time,constituents)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/load_nodal_corrections.py)
 
 #### Inputs
  1. `time`: modified julian day of input date

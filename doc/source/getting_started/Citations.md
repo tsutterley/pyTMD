@@ -3,8 +3,11 @@ Citation Information
 
 #### References
 This software is developed with the goal of supporting science applications for
-airborne and satellite altimetry.  The programs included in this software have
-contributed most recently to the following work:
+airborne and satellite altimetry. This work was supported by an appointment to
+the NASA Postdoctoral Program at NASA Goddard Space Flight Center, administered
+by Universities Space Research Association under contract with NASA. The
+programs included in this software have contributed most recently to the
+following work:
 
 T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
 "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
@@ -26,4 +29,6 @@ This software is also dependent on other commonly used Python packages:
 - [cartopy: Python package designed for geospatial data processing](https://scitools.org.uk/cartopy/docs/latest/)  
 
 #### Credits
-The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.  The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).  The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.  
+The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.
+The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).
+The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.  

@@ -8,6 +8,7 @@ load_constituent.py
 from pyTMD.load_constituent import load_constituent
 flag,amplitude,phase,alpha,species = load_constituent(c)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/load_constituent.py)
 
 #### Inputs
  1. `c`: tidal constituent IDs

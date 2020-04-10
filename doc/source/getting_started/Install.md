@@ -1,5 +1,5 @@
-Install
-=======
+Installation
+============
 
 Presently pyTMD is only available for use as a [github repository](https://github.com/tsutterley/pyTMD).
 The contents of the repository can be download as a [zipped file](https://github.com/tsutterley/pyTMD/archive/master.zip)  or cloned.

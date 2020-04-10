@@ -9,6 +9,7 @@ read_GOT_model.py
 from pyTMD.read_GOT_model import read_GOT_model
 amp,ph = read_GOT_model(ilon,ilat,directory,model_files,METHOD='spline')
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_GOT_model.py)
 
 #### Inputs
   1. `ilon`: longitude to interpolate

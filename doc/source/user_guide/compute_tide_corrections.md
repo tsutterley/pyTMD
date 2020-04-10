@@ -11,6 +11,7 @@ from pyTMD.compute_tide_corrections import compute_tide_corrections
 tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
     MODEL=MODEL, EPOCH=(2000,1,1,0,0,0), EPSG=3031, TYPE='drift')
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/compute_tide_corrections.py)
 
 #### Inputs
  1. `x`: x-coordinates in projection EPSG

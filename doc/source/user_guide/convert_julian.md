@@ -8,6 +8,7 @@ convert_julian.py
 from pyTMD.convert_julian import convert_julian
 YEAR,MONTH,DAY,HOUR,MINUTE,SECOND = convert_julian(JD, FORMAT='tuple')
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/convert_julian.py)
 
 #### Inputs
  1. `JD`: Julian Day of the specified calendar date (days since -4712-01-01T12:00:00)  

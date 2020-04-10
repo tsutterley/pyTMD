@@ -10,6 +10,7 @@ read_ocean_pole_tide.py
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 ht = read_ocean_pole_tide(input_file)
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_ocean_pole_tide.py)
 
 #### Inputs
   1. `input_file`: [IERS 0.5x0.5 map of ocean pole tide coefficients](ftp://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)

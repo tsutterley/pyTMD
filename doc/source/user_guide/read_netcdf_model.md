@@ -7,8 +7,9 @@ read_netcdf_model.py
 #### Calling Sequence
 ```python
 from pyTMD.read_netcdf_model import read_netcdf_model
-ht = read_netcdf_model(ilon,ilat,directory,model_files,type,METHOD='spline')
+amp,ph,D,c = read_netcdf_model(ilon,ilat,directory,model_files,type,METHOD='spline')
 ```
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_netcdf_model.py)
 
 #### Inputs
   1. `ilon`: longitude to interpolate
