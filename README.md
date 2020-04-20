@@ -32,8 +32,9 @@ pyTMD
  - [pyproj: Python interface to PROJ library](https://pypi.org/project/pyproj/)  
  - [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
  - [netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
- - [matplotlib: Python 2D plotting library](http://matplotlib.org/)  
+ - [matplotlib: Python 2D plotting library](https://matplotlib.org/)  
  - [cartopy: Python package designed for geospatial data processing](https://scitools.org.uk/cartopy/docs/latest/)  
+ - [ipyleaflet: Jupyter / Leaflet bridge enabling interactive maps](https://github.com/jupyter-widgets/ipyleaflet)  
  - [read-ICESat-2: Python tools to read data from the NASA ICESat-2 mission](https://github.com/tsutterley/read-ICESat-2/)  
  - [read-ATM1b-QFIT-binary: Python reader for Airborne Topographic Mapper (ATM) QFIT data products](https://github.com/tsutterley/read-ATM1b-QFIT-binary)  
 
