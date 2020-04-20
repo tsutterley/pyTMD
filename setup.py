@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
-    version='1.0.1.5',
+    version='1.0.1.6',
     description='Python',
     url='https://github.com/tsutterley/pyTMD',
     author='Tyler Sutterley',
@@ -17,7 +17,7 @@ setup(
     ],
     keywords='Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT',
     packages=find_packages(),
-    install_requires=['numpy','scipy','pyproj','h5py','netCDF4','matplotlib','cartopy'],
+    install_requires=['numpy','scipy','pyproj','h5py','netCDF4','matplotlib','cartopy','ipyleaflet'],
     dependency_links=['https://github.com/tsutterley/read-ICESat-2/tarball/master',
         'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/master'],
 )
