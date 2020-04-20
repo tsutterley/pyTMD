@@ -25,8 +25,9 @@ This software is also dependent on other commonly used Python packages:
 - [pyproj: Python interface to PROJ library](https://pypi.org/project/pyproj/)  
 - [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
 - [netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
-- [matplotlib: Python 2D plotting library](http://matplotlib.org/)  
+- [matplotlib: Python 2D plotting library](https://matplotlib.org/)  
 - [cartopy: Python package designed for geospatial data processing](https://scitools.org.uk/cartopy/docs/latest/)  
+- [ipyleaflet: Jupyter / Leaflet bridge enabling interactive maps](https://github.com/jupyter-widgets/ipyleaflet)  
 
 #### Credits
 The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.

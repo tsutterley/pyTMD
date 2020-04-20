@@ -40,7 +40,6 @@ calculating radial pole tide displacements
     user_guide/load_constituent.md
     user_guide/load_nodal_corrections.md
     user_guide/output_otis_tides.md
-    user_guide/plot_tide_forecasts.md
     user_guide/predict_tidal_ts.md
     user_guide/predict_tide_drift.md
     user_guide/predict_tide.md
