@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 setup(
-    name='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
+    name='pyTMD',
     version='1.0.1.6',
-    description='Python',
+    description='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
     url='https://github.com/tsutterley/pyTMD',
     author='Tyler Sutterley',
     author_email='tsutterl@uw.edu',
