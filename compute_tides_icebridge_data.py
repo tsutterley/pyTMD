@@ -38,12 +38,12 @@ COMMAND LINE OPTIONS:
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
-        http://www.numpy.org
-        http://www.scipy.org/NumPy_for_Matlab_Users
+        https://numpy.org
+        https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
-        http://www.scipy.org/
+        https://docs.scipy.org/doc/
     h5py: Python interface for Hierarchal Data Format 5 (HDF5)
-        http://h5py.org
+        https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
     pyproj: Python interface to PROJ library

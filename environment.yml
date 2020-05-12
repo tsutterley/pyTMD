@@ -1,4 +1,4 @@
-name: example-environment
+name: pyTMD
 channels:
   - conda-forge
 dependencies:

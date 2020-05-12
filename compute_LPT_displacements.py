@@ -20,10 +20,10 @@ COMMAND LINE OPTIONS:
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
-        http://www.numpy.org
-        http://www.scipy.org/NumPy_for_Matlab_User
+        https://numpy.org
+        https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
-        http://www.scipy.org/
+        https://docs.scipy.org/doc/
 
 PROGRAM DEPENDENCIES:
     convert_julian.py: returns the calendar date and time given a Julian date

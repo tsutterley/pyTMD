@@ -11,8 +11,8 @@ ftp://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
-        http://www.numpy.org
-        http://www.scipy.org/NumPy_for_Matlab_Users
+        https://numpy.org
+        https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 REFERENCES:
     S Desai, "Observing the pole tide with satellite altimetry", Journal of

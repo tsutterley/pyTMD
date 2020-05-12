@@ -50,6 +50,8 @@ A zip archive of the latest version is available directly at:
 https://github.com/tsutterley/pyTMD/archive/master.zip  
 Incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:  
 https://github.com/fspaolo/captoolkit  
+The Matlab Tide Model Driver from the institute of Earth & Space Research is available at:  
+https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5  
 
 #### Disclaimer  
 This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.  It is provided here for your convenience but _with no guarantees whatsoever_.  

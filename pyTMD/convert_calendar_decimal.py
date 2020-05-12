@@ -29,7 +29,7 @@ OUTPUTS:
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
-        (http://www.numpy.org)
+        (https://numpy.org)
 
 NOTES:
     Dershowitz, N. and E.M. Reingold. 2008.  Calendrical Calculations.

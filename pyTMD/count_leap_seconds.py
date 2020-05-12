@@ -9,7 +9,7 @@ INPUTS:
     GPS_Time: GPS time (standard = seconds since January 6, 1980 at 00:00)
 
 PYTHON DEPENDENCIES:
-    numpy: Scientific Computing Tools For Python (http://www.numpy.org)
+    numpy: Scientific Computing Tools For Python (https://numpy.org)
 
 UPDATE HISTORY:
     Written 10/2017

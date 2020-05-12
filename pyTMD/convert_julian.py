@@ -30,7 +30,7 @@ OPTIONS:
         'zip': aggregated variable sets
 
 PYTHON DEPENDENCIES:
-    numpy: Scientific Computing Tools For Python (http://www.numpy.org)
+    numpy: Scientific Computing Tools For Python (https://numpy.org)
 
 NOTES:
     Translated from caldat in "Numerical Recipes in C", by William H. Press,
