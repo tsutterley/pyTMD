@@ -5,6 +5,22 @@ Python-based tidal prediction software that reads OTIS and GOT formatted tidal
 solutions for calculating ocean and load tides and IERS conventions for
 calculating radial pole tide displacements
 
+.. graphviz::
+    :caption: pyTMD Ocean and Load Tide Framework
+    :align: center
+
+    digraph {
+        M [label="Tide Model" shape=box style="filled" color="darkorchid"]
+        T [label="pyTMD" shape=box style="filled" color="gray"]
+        P [label="Tide Predictions" shape=box style="filled" color="mediumseagreen"]
+        H [label="Tide Heights" shape=box style="filled" color="mediumseagreen"]
+        C [label="Average Tidal Currents" shape=box style="filled" color="mediumseagreen"]
+        M -> T
+        T -> P
+        T -> H
+        T -> C
+    }
+
 .. toctree::
     :maxdepth: 2
     :caption: Getting Started:

@@ -1,8 +1,14 @@
 from setuptools import setup, find_packages
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name='pyTMD',
     version='1.0.1.6',
     description='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/tsutterley/pyTMD',
     author='Tyler Sutterley',
     author_email='tsutterl@uw.edu',

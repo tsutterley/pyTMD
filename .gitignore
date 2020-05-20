@@ -30,6 +30,7 @@
 .Rhistory
 __pycache__
 build/
+dist/
 develop-eggs/
 wheels/
 *.egg-info/

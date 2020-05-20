@@ -30,6 +30,6 @@ This software is also dependent on other commonly used Python packages:
 - [ipyleaflet: Jupyter / Leaflet bridge enabling interactive maps](https://github.com/jupyter-widgets/ipyleaflet)  
 
 #### Credits
-The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.
+The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman, Lana Erofeeva and Susan Howard.
 The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).
 The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.  

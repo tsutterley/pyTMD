@@ -4,15 +4,16 @@ pyTMD
 [![Language](https://img.shields.io/badge/python-v3.7-green.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/pyTMD/blob/master/LICENSE)
 [![Documentation Status](https://readthedocs.org/projects/pytmd/badge/?version=latest)](https://pytmd.readthedocs.io/en/latest/?badge=latest)
+[![PyPI Version](https://img.shields.io/pypi/v/pyTMD.svg)](https://pypi.python.org/pypi/pyTMD/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/master)
 
 #### Python-based tidal prediction software that reads OTIS and GOT formatted tidal solutions for calculating ocean and load tides
 
-- [OSU Tidal Prediction Software (OTPS)](http://volkov.oce.orst.edu/tides/otps.html)  
+- [OSU Tidal Prediction Software (OTPS)](https://www.tpxo.net/otps)  
 - [ESR Tide Model Driver (TMD) Matlab Toolbox](https://www.esr.org/research/polar-tide-models/tmd-software/)  
-- [OSU List of Regional Tide Models](http://volkov.oce.orst.edu/tides/region.html)  
-- [ESR List of Polar Tide Models](https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/)  
+- [OSU Global and Regional Tide Models](https://www.tpxo.net)  
+- [ESR Polar Tide Models](https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/)  
 - [A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2](https://ntrs.nasa.gov/search.jsp?R=19990089548)  
 - [Delta times from US Naval Observatory (USNO) Earth Orientation Products](http://maia.usno.navy.mil/ser7/deltat.data)  
 - [Delta times from NASA Crustal Dynamics Data Information System (CDDIS)](ftp://cddis.nasa.gov/products/iers/deltat.data)  
@@ -41,20 +42,30 @@ pyTMD
 #### Reference
 T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
 "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
-13, 1801–1817, (2019). [doi:tc-13-1801-2019](https://doi.org/10.5194/tc-13-1801-2019)  
+13, 1801-1817, (2019). [doi:tc-13-1801-2019](https://doi.org/10.5194/tc-13-1801-2019)  
+
+L. Padman, M. R. Siegfried, H. A. Fricker,
+"Ocean Tide Influences on the Antarctic and Greenland Ice Sheets", *Reviews of Geophysics*,
+56, 142-184, (2018). [doi:10.1002/2016RG000546](https://doi.org/10.1002/2016RG000546)  
 
 #### Download
 The program homepage is:  
 https://github.com/tsutterley/pyTMD  
 A zip archive of the latest version is available directly at:  
 https://github.com/tsutterley/pyTMD/archive/master.zip  
-Incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:  
-https://github.com/fspaolo/captoolkit  
-The Matlab Tide Model Driver from the institute of Earth & Space Research is available at:  
+
+#### Software
+Matlab Tide Model Driver from Earth & Space Research is available at:  
 https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5  
+Fortran OSU Tidal Prediction Software OTPS is available at:  
+https://www.tpxo.net/otps  
+pyTMD was incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:  
+https://github.com/fspaolo/captoolkit  
 
 #### Disclaimer  
 This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.  It is provided here for your convenience but _with no guarantees whatsoever_.  
 
 #### Credits
-The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman and Lana Erofeeva.  The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).  The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.  
+The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman, Lana Erofeeva and Susan Howard.
+The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert ([copyright OSU](http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf), licensed for non-commercial use).
+The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.  
