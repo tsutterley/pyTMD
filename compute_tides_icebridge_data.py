@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (03/2020)
+Written by Tyler Sutterley (06/2020)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -19,6 +19,7 @@ COMMAND LINE OPTIONS:
         CATS0201
         CATS2008
         CATS2008_load
+        TPXO9-atlas-v2
         TPXO9-atlas
         TPXO9.1
         TPXO8-atlas
@@ -65,6 +66,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
@@ -435,7 +437,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'CATS2008'):
         grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
         model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
@@ -444,7 +446,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'CATS2008'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'CATS2008_load'):
         grid_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
         model_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
@@ -453,7 +455,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Load_Tide'
         model_format = 'OTIS'
         EPSG = 'CATS2008'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'TPXO9-atlas'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas')
         grid_file = 'grid_tpxo9_atlas.nc.gz'
@@ -466,7 +468,21 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'netcdf'
-        type = 'z'
+        TYPE = 'z'
+        SCALE = 1.0/1000.0
+    elif (MODEL == 'TPXO9-atlas-v2'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas')
+        grid_file = 'grid_tpxo9_atlas_v2.nc.gz'
+        model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
+            'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
+            'h_n2_tpxo9_atlas_30_v2.nc.gz','h_m2_tpxo9_atlas_30_v2.nc.gz',
+            'h_s2_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
+            'h_m4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
+            'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
+        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        attrib['tide']['long_name'] = 'Ocean_Tide'
+        model_format = 'netcdf'
+        TYPE = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
@@ -475,7 +491,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'TPXO8-atlas'):
         grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
         model_file = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
@@ -483,7 +499,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'ATLAS'
         EPSG = '4326'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'TPXO7.2'):
         grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_tmd','h_tpxo7.2')
@@ -491,7 +507,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'TPXO7.2_load'):
         grid_file = os.path.join(tide_dir,'TPXO7.2_load','grid_tpxo6.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_load','h_tpxo7.2_load')
@@ -499,7 +515,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Load_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'AODTM-5'):
         grid_file = os.path.join(tide_dir,'aodtm5_tmd','grid_Arc5km')
         model_file = os.path.join(tide_dir,'aodtm5_tmd','h0_Arc5km.oce')
@@ -508,7 +524,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'PSNorth'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'AOTIM-5'):
         grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
         model_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
@@ -517,7 +533,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         attrib['tide']['long_name'] = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'PSNorth'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'AOTIM-5-2018'):
         grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
         model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
@@ -525,7 +541,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
             'list-of-polar-tide-models/aotim-5/')
         model_format = 'OTIS'
         EPSG = 'PSNorth'
-        type = 'z'
+        TYPE = 'z'
     elif (MODEL == 'GOT4.7'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -654,11 +670,11 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
-            EPSG, type, METHOD=METHOD, GRID=model_format)
+            EPSG, TYPE, METHOD=METHOD, GRID=model_format)
         deltat = np.zeros_like(t)
     elif model_format in ('netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-            grid_file, model_files, type, METHOD=METHOD, SCALE=SCALE)
+            grid_file, model_files, TYPE, METHOD=METHOD, SCALE=SCALE)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,

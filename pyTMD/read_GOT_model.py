@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (11/2019)
+read_GOT_model.py (06/2020)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -27,6 +27,7 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 06/2020: use argmin and argmax in bilinear interpolation
     Updated 11/2019: find invalid mask points for each constituent
     Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
     Updated 07/2019: interpolate fill value mask with bivariate splines
@@ -188,8 +189,8 @@ def bilinear_interp(ilon,ilat,idata,lon,lat):
         #-- calculating the indices for the original grid
         dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
         dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
-        iph, = np.nonzero(dx == np.min(dx))
-        ith, = np.nonzero(dy == np.min(dy))
+        iph = np.argmin(dx)
+        ith = np.argmin(dy)
         #-- if on corner value: use exact
         if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
             data[i] = idata[ith,iph]

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='pyTMD',
-    version='1.0.1.6',
+    version='1.0.1.7',
     description='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -18,8 +18,8 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.7',
     ],
     keywords='Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT',
     packages=find_packages(),

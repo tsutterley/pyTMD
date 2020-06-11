@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (11/2019)
+read_tide_model.py (06/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -16,7 +16,7 @@ INPUTS:
     grid_file: grid file for model
     model_file: model file containing each constituent
     EPSG: projection of tide model data
-    type: tidal variable to run
+    TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
         v: vertical transport velocities
@@ -47,6 +47,8 @@ PROGRAM DEPENDENCIES:
     convert_xy_ll.py: converts lat/lon points to and from projected coordinates
 
 UPDATE HISTORY:
+    Updated 06/2020: output currents as numpy masked arrays
+        use argmin and argmax in bilinear interpolation
     Updated 11/2019: interpolate heights and fluxes to numpy masked arrays
     Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
     Updated 01/2019: decode constituents for Python3 compatibility
@@ -62,7 +64,7 @@ import scipy.interpolate
 from pyTMD.convert_xy_ll import convert_xy_ll
 
 #-- extract tidal harmonic constants from OTIS tide models at coordinates
-def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
+def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
     METHOD='spline', GRID='OTIS'):
     #-- read the OTIS-format tide grid file
     if (GRID == 'ATLAS'):
@@ -79,7 +81,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
 
-    if (type != 'z'):
+    if (TYPE != 'z'):
         mz,mu,mv = Muv(hz)
         hu,hv = Huv(hz)
 
@@ -113,7 +115,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
 
     #-- masks zero values
     hz = np.ma.array(hz,mask=(hz==0))
-    if (type != 'z'):
+    if (TYPE != 'z'):
         #-- replace original values with extend matrices
         if GLOBAL:
             hu = extend_matrix(hu)
@@ -130,12 +132,22 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
         D = bilinear_interp(xi,yi,hz,x,y)
         mz1 = bilinear_interp(xi,yi,mz,x,y)
         mz1 = np.ceil(mz1).astype(mz.dtype)
+        if (TYPE != 'z'):
+            mu1 = bilinear_interp(xi,yi,mu,x,y)
+            mu1 = np.ceil(mu1).astype(mu.dtype)
+            mv1 = bilinear_interp(xi,yi,mv,x,y)
+            mv1 = np.ceil(mv1).astype(mz.dtype)
     elif (METHOD == 'spline'):
         #-- use scipy bivariate splines to interpolate values
         f1=scipy.interpolate.RectBivariateSpline(xi,yi,hz.T,kx=1,ky=1)
         f2=scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)
         D = f1.ev(x,y)
         mz1 = np.ceil(f2.ev(x,y)).astype(mz.dtype)
+        if (TYPE != 'z'):
+            f3=scipy.interpolate.RectBivariateSpline(xi,yi,mu.T,kx=1,ky=1)
+            f4=scipy.interpolate.RectBivariateSpline(xi,yi,mv.T,kx=1,ky=1)
+            mu1 = np.ceil(f3.ev(x,y)).astype(mu.dtype)
+            mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
         #-- use scipy griddata to interpolate values
         D = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
@@ -143,12 +155,19 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
         mz1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
             mz.real.flatten(), zip(x,y), method=METHOD)
         mz1 = np.ceil(mz1).astype(mz.dtype)
+        if (TYPE != 'z'):
+            mu1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+                mu.flatten(), zip(x,y), method=METHOD)
+            mv1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+                mv.flatten(), zip(x,y), method=METHOD)
+            mu1 = np.ceil(mu1).astype(mu.dtype)
+            mv1 = np.ceil(mv1).astype(mv.dtype)
 
     #-- u and v are velocities in cm/s
-    if type in ('v','u'):
+    if TYPE in ('v','u'):
         unit_conv = (D*100.0)
     #-- U and V are transports in m^2/s
-    elif type in ('V','U'):
+    elif TYPE in ('V','U'):
         unit_conv = 1.0
 
     #-- read and interpolate each constituent
@@ -159,7 +178,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=np.bool)
     for i,c in enumerate(constituents):
-        if (type == 'z'):
+        if (TYPE == 'z'):
             #-- read constituent from elevation file
             if (GRID == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file,i,c)
@@ -203,10 +222,10 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
-            amplitude.mask[:,i] = z1.mask
+            amplitude.mask[:,i] = np.copy(z1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(z1.data),np.real(z1.data))
-            ph.mask[:,i] = z1.mask
-        elif type in ('U','u'):
+            ph.mask[:,i] = np.copy(z1.mask)
+        elif TYPE in ('U','u'):
             #-- read constituent from transport file
             if (GRID == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
@@ -220,41 +239,47 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
                 u[u==0] = np.nan
-                u1 = bilinear_interp(xi,yi,u,x,y)
-                mu1 = bilinear_interp(xi,yi,mu,x,y)
+                #-- use quick bilinear to interpolate values
+                u1 = np.ma.zeros((npts),dtype=u.dtype)
+                u1.data = bilinear_interp(xi,yi,u,x,y)
+                #-- replace nan values with fill_value
+                u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
+                u1.data[u1.mask] = u1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     u.real.T,kx=1,ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     u.imag.T,kx=1,ky=1)
-                f3 = scipy.interpolate.RectBivariateSpline(xi,yi,
-                    mu.real.T,kx=1,ky=1)
-                u1 = np.zeros((npts),dtype=u.dtype)
-                u1.real = f1.ev(x,y)
-                u1.imag = f2.ev(x,y)
-                mu1.real = f3.ev(x,y)
+                u1 = np.ma.zeros((npts),dtype=u.dtype)
+                u1.data.real = f1.ev(x,y)
+                u1.data.imag = f2.ev(x,y)
+                #-- replace zero values with fill_value
+                u1.mask = (~mu1.astype(np.bool))
+                u1.data[u1.mask] = u1.fill_value
             else:
                 #-- replace zero values with nan
                 u[u==0] = np.nan
-                #-- use scipy interpolate to interpolate values
-                u1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+                #-- use scipy griddata to interpolate values
+                u1 = np.ma.zeros((npts),dtype=u.dtype)
+                u1.data=scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
                     u.flatten(), zip(x,y), method=METHOD)
-                mu1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                    mu.real.flatten(), zip(x,y), method=METHOD)
+                #-- replace nan values with fill_value
+                u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
+                u1.data[u1.mask] = u1.fill_value
             #-- convert units
             u1 = u1/unit_conv
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(u1)
-            amplitude.mask[:,i] = (~np.ceil(mu1).astype(np.bool))
+            amplitude.mask[:,i] = np.copy(u1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(u1),np.real(u1))
-            ph.mask[:,i] = (~np.ceil(mu1).astype(np.bool))
-        elif type in ('V','v'):
+            ph.mask[:,i] = np.copy(u1.mask)
+        elif TYPE in ('V','v'):
             #-- read constituent from transport file
             if (GRID == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
                 xi,yi,v = combine_atlas_model(x0,y0,v0,pmask,local,VARIABLE='v')
             else:
-                u,v = read_transport_file(input_file,i)
+                u,v = read_transport_file(model_file,i)
             #-- replace original values with extend matrices
             if GLOBAL:
                 v = extend_matrix(v)
@@ -262,34 +287,40 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, type,
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
                 v[v==0] = np.nan
-                v1 = bilinear_interp(xi,yi,v,x,y)
-                mv1 = bilinear_interp(xi,yi,mv,x,y)
+                #-- use quick bilinear to interpolate values
+                v1 = np.ma.zeros((npts),dtype=v.dtype)
+                v1.data = bilinear_interp(xi,yi,v,x,y)
+                #-- replace nan values with fill_value
+                v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
+                v1.data[v1.mask] = v1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     v.real.T,kx=1,ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     v.imag.T,kx=1,ky=1)
-                f3 = scipy.interpolate.RectBivariateSpline(xi,yi,
-                    mv.real.T,kx=1,ky=1)
-                v1 = np.zeros((npts),dtype=u.dtype)
-                v1.real = f1.ev(x,y)
-                v1.imag = f2.ev(x,y)
-                mv1.real = f3.ev(x,y)
+                v1 = np.ma.zeros((npts),dtype=v.dtype)
+                v1.data.real = f1.ev(x,y)
+                v1.data.imag = f2.ev(x,y)
+                #-- replace zero values with fill_value
+                v1.mask = (~mv1.astype(np.bool))
+                v1.data[v1.mask] = v1.fill_value
             else:
                 #-- replace zero values with nan
-                v[v==0] = np.nan
-                #-- use scipy interpolate to interpolate values
-                v1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
+                v[u==0] = np.nan
+                #-- use scipy griddata to interpolate values
+                v1 = np.ma.zeros((npts),dtype=v.dtype)
+                v1.data=scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
                     v.flatten(), zip(x,y), method=METHOD)
-                mv1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                    mv.real.flatten(), zip(x,y), method=METHOD)
+                #-- replace nan values with fill_value
+                v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
+                v1.data[v1.mask] = v1.fill_value
             #-- convert units
             v1 = v1/unit_conv
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(v1)
-            amplitude.mask[:,i] = (~np.ceil(mv1).astype(np.bool))
+            amplitude.mask[:,i] = np.copy(v1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(v1),np.real(v1))
-            ph.mask[:,i] = (~np.ceil(mv1).astype(np.bool))
+            ph.mask[:,i] = np.copy(v1.mask)
 
     #-- convert phase to degrees
     phase = ph*180.0/np.pi
@@ -733,6 +764,8 @@ def Muv(hz):
     indy[:-1] = np.arange(1,ny)
     indy[-1] = 0
     #-- calculate mu and mv
+    mu = np.zeros((ny,nx),dtype=np.int)
+    mv = np.zeros((ny,nx),dtype=np.int)
     mu[indy,:] = mz*mz[indy,:]
     mv[:,indx] = mz*mz[:,indx]
     return (mu,mv,mz)
@@ -772,8 +805,8 @@ def bilinear_interp(ilon,ilat,idata,lon,lat):
         #-- calculating the indices for the original grid
         dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
         dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
-        iph = np.min(np.nonzero(dx == np.min(dx)))
-        ith = np.min(np.nonzero(dy == np.min(dy)))
+        iph = np.argmin(dx)
+        ith = np.argmin(dy)
         #-- if on corner value: use exact
         if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
             data[i] = idata[ith,iph]

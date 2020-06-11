@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (09/2019)
+read_netcdf_model.py (06/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -17,7 +17,7 @@ INPUTS:
     directory: data directory for tide data files
     grid_file: grid file for model (can be gzipped)
     model_files: list of model files for each constituent (can be gzipped)
-    type: tidal variable to run
+    TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
         v: vertical transport velocities
@@ -46,6 +46,7 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 UPDATE HISTORY:
+    Updated 06/2020: use argmin and argmax in bilinear interpolation
     Written 09/2019
 """
 import os
@@ -56,7 +57,7 @@ import scipy.interpolate
 
 #-- extract tidal harmonic constants from OTIS tide models at coordinates
 def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
-    type, METHOD='spline', GZIP=True, SCALE=1):
+    TYPE, METHOD='spline', GZIP=True, SCALE=1):
 
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
@@ -73,19 +74,19 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     #-- allocate numpy masked array for bathymetry
     bathymetry = np.ma.zeros((ny,nx))
     #-- read bathmetry and coordinates for variable type
-    if (type == 'z'):
+    if (TYPE == 'z'):
         #-- get bathymetry at nodes
         bathymetry.data[:,:] = fileID.variables['hz'][:,:].T
         #-- read latitude and longitude at z-nodes
         lon = fileID.variables['lon_z'][:].copy()
         lat = fileID.variables['lat_z'][:].copy()
-    elif type in ('U','u'):
+    elif TYPE in ('U','u'):
         #-- get bathymetry at u-nodes
         bathymetry.data[:,:] = fileID.variables['hu'][:,:].T
         #-- read latitude and longitude at u-nodes
         lon = fileID.variables['lon_u'][:].copy()
         lat = fileID.variables['lat_u'][:].copy()
-    elif type in ('V','v'):
+    elif TYPE in ('V','v'):
         #-- get bathymetry at v-nodes
         bathymetry.data[:,:] = fileID.variables['hv'][:,:].T
         #-- read latitude and longitude at v-nodes
@@ -136,10 +137,10 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             mask.flatten(), zip(x,y), method=METHOD).astype(np.bool)
 
     #-- u and v are velocities in cm/s
-    if type in ('v','u'):
+    if TYPE in ('v','u'):
         unit_conv = (D.data*100.0)
     #-- U and V are transports in m^2/s
-    elif type in ('V','U'):
+    elif TYPE in ('V','U'):
         unit_conv = 1.0
 
     #-- number of constituents
@@ -153,7 +154,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     phase.mask = np.zeros((npts,nc),dtype=np.bool)
     #-- read and interpolate each constituent
     for i,fi in enumerate(model_files):
-        if (type == 'z'):
+        if (TYPE == 'z'):
             #-- read constituent from elevation file
             z,con = read_elevation_file(os.path.join(directory,fi),GZIP)
             #-- append constituent to list
@@ -192,9 +193,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             #-- amplitude and phase of the constituent
             ampl[:,i] = np.abs(z1)
             phase[:,i] = np.arctan2(-np.imag(z1),np.real(z1))
-        elif type in ('U','u','V','v'):
+        elif TYPE in ('U','u','V','v'):
             #-- read constituent from transport file
-            tr,con = read_transport_file(os.path.join(directory,fi),type,GZIP)
+            tr,con = read_transport_file(os.path.join(directory,fi),TYPE,GZIP)
             #-- append constituent to list
             constituents.append(con)
             #-- replace original values with extend matrices
@@ -285,7 +286,7 @@ def read_elevation_file(input_file,GZIP):
     return (h,con.strip())
 
 #-- read transport file to extract real and imaginary components for constituent
-def read_transport_file(input_file,type,GZIP):
+def read_transport_file(input_file,TYPE,GZIP):
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
     if GZIP:
@@ -301,10 +302,10 @@ def read_transport_file(input_file,type,GZIP):
     #-- real and imaginary components of transport
     tr = np.ma.zeros((ny,nx),dtype=np.complex64)
     tr.mask = np.zeros((ny,nx),dtype=np.bool)
-    if type in ('U','u'):
+    if TYPE in ('U','u'):
         tr.data.real[:,:] = fileID.variables['uRe'][:,:].T
         tr.data.imag[:,:] = fileID.variables['uIm'][:,:].T
-    elif type in ('V','v'):
+    elif TYPE in ('V','v'):
         tr.data.real[:,:] = fileID.variables['vRe'][:,:].T
         tr.data.imag[:,:] = fileID.variables['vIm'][:,:].T
     #-- close the file
@@ -332,8 +333,8 @@ def bilinear_interp(ilon,ilat,idata,lon,lat):
         #-- calculating the indices for the original grid
         dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
         dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
-        iph = np.min(np.nonzero(dx == np.min(dx)))
-        ith = np.min(np.nonzero(dy == np.min(dy)))
+        iph = np.argmin(dx)
+        ith = np.argmin(dy)
         #-- if on corner value: use exact
         if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
             data[i] = idata[ith,iph]
