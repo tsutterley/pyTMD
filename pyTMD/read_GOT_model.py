@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (06/2020)
+read_GOT_model.py (07/2020)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -19,6 +19,10 @@ OPTIONS:
         linear, cubic, nearest: scipy griddata interpolations
     SCALE: scaling factor for converting to output units
 
+OUTPUTS:
+    amplitude: amplitudes of tidal constituents
+    phase: phases of tidal constituents
+
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
@@ -27,6 +31,7 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 06/2020: use argmin and argmax in bilinear interpolation
     Updated 11/2019: find invalid mask points for each constituent
     Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
@@ -45,6 +50,31 @@ import scipy.interpolate
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
 def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=1):
+    """
+    Reads files for Richard Ray's Global Ocean Tide (GOT) models
+    Makes initial calculations to run the tide program
+    Spatially interpolates tidal constituents to input coordinates
+
+    Arguments
+    ---------
+    ilon: longitude to interpolate
+    ilat: latitude to interpolate
+    directory: data directory for tide data files
+    model_files: list of gzipped model files for each constituent
+
+    Keyword arguments
+    -----------------
+    METHOD: interpolation method
+        bilinear: quick bilinear interpolation
+        spline: scipy bivariate spline interpolation
+        linear, cubic, nearest: scipy griddata interpolations
+    SCALE: scaling factor for converting to output units
+
+    Returns
+    -------
+    amplitude: amplitudes of tidal constituents
+    phase: phases of tidal constituents
+    """
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
     if (np.min(ilon) < 0.0):
@@ -111,8 +141,21 @@ def extract_GOT_constants(ilon,ilat,directory,model_files,METHOD='',SCALE=1):
 
 #-- PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
+    """
+    Wrapper function to extend an array
+
+    Arguments
+    ---------
+    input_array: array to extend
+    step_size: step size between elements of array
+
+    Returns
+    -------
+    temp: extended array
+    """
     n = len(input_array)
     temp = np.zeros((n+3),dtype=input_array.dtype)
+    #-- extended array [x-1,x0,...,xN,xN+1,xN+2]
     temp[0] = input_array[0] - step_size
     temp[1:-2] = input_array[:]
     temp[-2] = input_array[-1] + step_size
@@ -121,6 +164,17 @@ def extend_array(input_array,step_size):
 
 #-- PURPOSE: wrapper function to extend a matrix
 def extend_matrix(input_matrix):
+    """
+    Wrapper function to extend a matrix
+
+    Arguments
+    ---------
+    input_matrix: matrix to extend
+
+    Returns
+    -------
+    temp: extended matrix
+    """
     ny,nx = np.shape(input_matrix)
     temp = np.ma.zeros((ny,nx+3),dtype=input_matrix.dtype)
     temp[:,0] = input_matrix[:,-1]
@@ -131,6 +185,20 @@ def extend_matrix(input_matrix):
 
 #-- PURPOSE: read GOT model grid files
 def read_GOT_grid(input_file):
+    """
+    Read Richard Ray's Global Ocean Tide (GOT) model file
+
+    Arguments
+    ---------
+    input_file: gzipped model file
+
+    Returns
+    -------
+    amp: amplitudes of tidal constituents
+    ph: phases of tidal constituents
+    lon: longitude of tidal model
+    lat: latitude of tidal model
+    """
     #-- read GZIP file
     with gzip.open(os.path.expanduser(input_file),'rb') as f:
         file_contents = f.read().splitlines()
@@ -172,6 +240,21 @@ def read_GOT_grid(input_file):
 
 #-- PURPOSE: bilinear interpolation of input data to output data
 def bilinear_interp(ilon,ilat,idata,lon,lat):
+    """
+    Bilinear interpolation of input data to output coordinates
+
+    Arguments
+    ---------
+    ilon: longitude of tidal model
+    ilat: latitude of tidal model
+    idata: tide model data
+    lat: output latitude
+    lon: output longitude
+
+    Returns
+    -------
+    data: interpolated data
+    """
     #-- degrees to radians
     dtr = np.pi/180.0
     #-- grid step size of tide model

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (07/2018)
+load_nodal_corrections.py (07/2020)
+Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
 CALLING SEQUENCE:
@@ -8,7 +9,7 @@ CALLING SEQUENCE:
 
 INPUTS:
     time: modified julian day of input date
-    constituents: tidal constituents array
+    constituents: tidal constituent IDs
 
 OUTPUTS:
     pu,pf: nodal corrections for the constituents
@@ -27,6 +28,7 @@ PROGRAM DEPENDENCIES:
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 09/2019: added netcdf option to CORRECTIONS option
     Updated 08/2018: added correction option ATLAS for localized OTIS solutions
     Updated 07/2018: added option to use GSFC GOT nodal corrections
@@ -38,6 +40,25 @@ import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
 def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+    """
+    Calculates the nodal corrections for tidal constituents
+
+    Arguments
+    ---------
+    time: modified julian day of input date
+    constituents: tidal constituent IDs
+
+    Keyword arguments
+    -----------------
+    DELTAT: time correction for converting to Ephemeris Time (days)
+    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    pu,pf: nodal corrections for the constituents
+    G: phase correction in degrees
+    """
+
     #-- constituents array (not all are included in tidal program)
     cindex = ['sa','ssa','mm','msf','mf','mt','alpha1','2q1','sigma1','q1',
         'rho1','o1','tau1','m1','chi1','pi1','p1','s1','k1','psi1','phi1',

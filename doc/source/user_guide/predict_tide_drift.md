@@ -1,7 +1,7 @@
 predict_tide_drift.py
 ===============
 
- - Predict tidal elevation at multiple times and locations using harmonic constants  
+ - Predict tides at multiple times and locations using harmonic constants  
  - Can be used to calculate tidal corrections for airborne and satellite altimetry  
 
 #### Calling Sequence

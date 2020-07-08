@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 convert_calendar_decimal.py
-Written by Tyler Sutterley (05/2015)
+Written by Tyler Sutterley (07/2020)
 
 Converts from calendar date into decimal years
 Converts year, month (day, hour, minute, second)
@@ -28,14 +28,14 @@ OUTPUTS:
     t_date: date in decimal format (years)
 
 PYTHON DEPENDENCIES:
-    numpy: Scientific Computing Tools For Python
-        (https://numpy.org)
+    numpy: Scientific Computing Tools For Python (https://numpy.org)
 
 NOTES:
     Dershowitz, N. and E.M. Reingold. 2008.  Calendrical Calculations.
         Cambridge: Cambridge University Press.
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 05/2015: updated comments and minor update to nonzero statement
     Updated 05/2014: added option for day of year
     Updated 04/2014: new code from convert_J2000.py
@@ -43,9 +43,31 @@ UPDATE HISTORY:
         for leap years to include mod 100 and mod 400
     Written 04/2014
 """
-def convert_calendar_decimal(year, month, DAY=None, \
-    HOUR=None, MINUTE=None, SECOND=None, DofY=None):
-    import numpy as np
+import numpy as np
+
+def convert_calendar_decimal(year, month, DAY=None, HOUR=None, MINUTE=None,
+    SECOND=None, DofY=None):
+    """
+    Converts from calendar date into decimal years taking into
+    account leap years
+
+    Arguments
+    ---------
+    year: calendar year
+    month: calendar month
+
+    Keyword arguments
+    -----------------
+    DAY: day of the month
+    HOUR: hour of the day
+    MINUTE: minute of the hour
+    SECOND: second of the minute
+    DofY: day of the year (January 1 = 1)
+
+    Returns
+    -------
+    t_date: date in decimal format
+    """
 
     #-- number of dates
     if (np.ndim(np.squeeze(year)) == 0):

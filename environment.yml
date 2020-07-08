@@ -12,6 +12,7 @@ dependencies:
   - netCDF4
   - h5py
   - cartopy
+  - pip
   - pip:
      - git+https://github.com/tsutterley/read-ICESat-2.git
      - git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git

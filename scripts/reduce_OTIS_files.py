@@ -245,6 +245,12 @@ def main():
         elif opt in ("-M","--mode"):
             MODE = int(arg,8)
 
+    #-- verify model before running program
+    model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas','TPXO9.1',
+        'TPXO8-atlas','TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
+        'AOTIM-5-2018']
+    assert TIDE_MODEL in model_list, 'Unlisted tide model'
+
     #-- run program
     make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS, MODE=MODE)
 

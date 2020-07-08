@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 u"""
 calc_iers_mean_pole.py
-Written by Tyler Sutterley (10/2017)
+Written by Tyler Sutterley (07/2020)
 Calculates the mean pole coordinates x and y are obtained by Gaussian-weighted
-     average of the IERS C01 pole coordinates following the provided readme
+    average of the IERS C01 pole coordinates following the provided readme
     ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.readme
 Should provide updated values similar to
     ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Written 10/2017
 """
 from __future__ import print_function
@@ -32,8 +33,16 @@ import os
 import time
 import numpy as np
 
-#-- read table of pole coordinates, calculate Gaussian mean coordinates at dates
+#-- PURPOSE: read table of IERS pole coordinates and calculate Gaussian-average
 def calc_iers_mean_pole(input_file):
+    """
+    Calculates the mean pole coordinates x and y are obtained by a
+    Gaussian-weighted average of the IERS pole coordinates
+
+    Arguments
+    ---------
+    input_file: pole coordinates file
+    """
     #-- read the pole coordinates file (e.g. eopc01.1900-now.dat)
     dinput = np.loadtxt(os.path.expanduser(input_file))
     DIRECTORY = os.path.dirname(os.path.expanduser(input_file))

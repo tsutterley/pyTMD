@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_iers_EOP.py
-Written by Tyler Sutterley (09/2017)
+Written by Tyler Sutterley (07/2020)
 Provides the daily earth orientation parameters (EOP) from IERS
     http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly
 Data format: http://maia.usno.navy.mil/ser7/readme.finals
@@ -25,12 +25,28 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Written 09/2017
 """
 import re
 import numpy as np
 
+#-- calculates the daily earth orientation parameters (EOP) from IERS
 def read_iers_EOP(input_file):
+    """
+    Calculates the daily earth orientation parameters (EOP) from IERS
+
+    Arguments
+    ---------
+    input_file: full path to IERS EOP "finals" file
+
+    Returns
+    -------
+    MJD: modified Julian date of EOP measurements
+    x: Angular coordinate x [arcsec]
+    y: Angular coordinate y [arcsec]
+    flag: IERS (I) or Prediction (P) flag for polar motion values
+    """
     #-- read data file splitting at line breaks
     with open(input_file,'r') as f:
         file_contents = f.read().splitlines()

@@ -8,7 +8,7 @@ reduce_OTIS_files.py
 python reduce_OTIS_files.py --directory=<path_to_directory> --tide=<model> \
     --bounds=<xmin,xmax,ymin,ymax>
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/reduce_OTIS_files.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/reduce_OTIS_files.py)
 
 #### Command Line Options
  - `-D X`, `--directory=X`: Working data directory

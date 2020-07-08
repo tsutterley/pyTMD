@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (03/2020)
+Written by Tyler Sutterley (07/2020)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
     Written 03/2020
 """
@@ -80,12 +81,25 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 
 #-- PURPOSE: convert value to numpy arrays if single point
 def point_to_array(val):
+    """
+    Convert a value to a numpy array if originally a single point
+    """
     return np.array([val]) if (np.ndim(val) == 0) else np.copy(val)
 
 #-- PURPOSE: convert times from seconds since EPOCH1 to time since EPOCH2
 def convert_delta_time(delta_time, EPOCH1=None, EPOCH2=None, SCALE=(1./86400.)):
     """
-    Convert delta time from seconds since EPOCH to time since EPOCH2
+    Convert delta time from seconds since EPOCH1 to time since EPOCH2
+
+    Arguments
+    ---------
+    delta_time: seconds since EPOCH1
+
+    Keyword arguments
+    -----------------
+    EPOCH1: epoch for input delta_time
+    EPOCH2: epoch for output delta_time
+    SCALE: scaling factor for converting time to output units
     """
     epoch1 = datetime.datetime(*EPOCH1)
     epoch2 = datetime.datetime(*EPOCH2)
@@ -97,6 +111,40 @@ def convert_delta_time(delta_time, EPOCH1=None, EPOCH2=None, SCALE=(1./86400.)):
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC',
     METHOD='spline', FILL_VALUE=np.nan):
+    """
+    Compute tides at points and times using tidal harmonics
+
+    Arguments
+    ---------
+    x: x-coordinates in projection EPSG
+    y: y-coordinates in projection EPSG
+    delta_time: seconds since EPOCH
+
+    Keyword arguments
+    -----------------
+    DIRECTORY: working data directory for tide models
+    MODEL: Tide model to use in correction
+    EPOCH: time period for calculating delta times
+        default: J2000 (seconds since 2000-01-01T00:00:00)
+    TYPE: input data type
+        drift: drift buoys or satellite/airborne altimetry (time per data point)
+        grid: spatial grids or images (single time per image)
+    TIME: time type if need to compute leap seconds to convert to UTC
+        GPS: leap seconds needed
+        TAI: leap seconds needed (TAI = GPS + 19 seconds)
+        UTC: no leap seconds needed
+    EPSG: input coordinate system
+        default: 3031 Polar Stereographic South, WGS84
+    METHOD: interpolation method
+        bilinear: quick bilinear interpolation
+        spline: scipy bivariate spline interpolation
+        linear, cubic, nearest: scipy griddata interpolations
+    FILL_VALUE: output invalid value (default NaN)
+
+    Returns
+    -------
+    tide: tidal elevation at coordinates and time in meters
+    """
 
     #-- select between tide models
     if (MODEL == 'CATS0201'):
@@ -216,6 +264,8 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+    else:
+        raise Exception("Unlisted tide model")
 
     #-- converting x,y from EPSG to latitude/longitude
     proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(EPSG))

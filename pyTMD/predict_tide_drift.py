@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
-predict_tide_drift.py (11/2019)
-Predict tidal elevation at multiple times and locations using harmonic constants
+predict_tide_drift.py (07/2020)
+Predict tides at multiple times and locations using harmonic constants
 
 CALLING SEQUENCE:
     ht = predict_tide_drift(time,hc,con)
@@ -12,7 +12,7 @@ INPUTS:
     constituents: tidal constituent IDs
 
 OUTPUT:
-    ht: time series reconstructed using the nodal corrections
+    ht: tidal time series reconstructed using the nodal corrections
 
 OPTIONS:
     DELTAT: time correction for converting to Ephemeris Time (days)
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 11/2019: output as numpy masked arrays instead of nan-filled arrays
     Updated 09/2019: added netcdf option to CORRECTIONS option
     Updated 08/2018: added correction option ATLAS for localized OTIS solutions
@@ -39,6 +40,25 @@ from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
 def predict_tide_drift(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+    """
+    Predict tides at multiple times and locations using harmonic constants
+
+    Arguments
+    ---------
+    time: days relative to 1992-01-01T00:00:00
+    hc: harmonic constant vector (complex)
+    constituents: tidal constituent IDs
+
+    Keyword arguments
+    -----------------
+    DELTAT: time correction for converting to Ephemeris Time (days)
+    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    ht: tidal time series reconstructed using the nodal corrections
+    """
+
     nt = len(time)
     #-- load the nodal corrections
     pu,pf,G = load_nodal_corrections(time + 48622.0, constituents,
@@ -56,5 +76,5 @@ def predict_tide_drift(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         #-- sum over all tides
         ht += pf[:,k]*hc.real[:,k]*np.cos(th) - pf[:,k]*hc.imag[:,k]*np.sin(th)
-    #-- return the tidal elevation
+    #-- return tides
     return ht

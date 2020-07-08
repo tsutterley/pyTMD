@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-convert_xy_ll.py (03/2020)
+convert_xy_ll.py (07/2020)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
@@ -25,6 +25,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 03/2020: remove commented coordinate conversion functions
     Updated 11/2019: using pyproj for coordinate conversions
     Written 09/2017
@@ -33,6 +34,21 @@ import numpy as np
 import pyproj
 
 def convert_xy_ll(i1,i2,PROJ,BF):
+    """
+    Converts lat/lon points to and from projected coordinates
+
+    Arguments
+    ---------
+    i1: longitude ('F') or projection easting x ('B')
+    i2: latitude ('F') or projection northing y ('B')
+    PROJ: spatial reference system code for coordinate transformations
+    BF: backwards ('B') or forward ('F') translations
+
+    Returns
+    -------
+    o1: projection easting x ('F') or longitude ('B')
+    o2: projection northing y ('F') or latitude ('B')
+    """
     #-- python dictionary with conversion functions
     conversion_functions = {}
     conversion_functions['3031'] = xy_ll_EPSG3031

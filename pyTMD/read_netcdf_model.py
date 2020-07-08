@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (06/2020)
+read_netcdf_model.py (07/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -20,7 +20,17 @@ INPUTS:
     TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
+        U: horizontal depth-averaged transport
         v: vertical transport velocities
+        V: vertical depth-averaged transport
+
+
+    #-- u and v are velocities in cm/s
+    if TYPE in ('v','u'):
+        unit_conv = (D.data*100.0)
+    #-- U and V are transports in m^2/s
+    elif TYPE in ('V','U'):
+        unit_conv = 1.0
 
 OPTIONS:
     METHOD: interpolation method
@@ -46,6 +56,7 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 06/2020: use argmin and argmax in bilinear interpolation
     Written 09/2019
 """
@@ -55,9 +66,42 @@ import netCDF4
 import numpy as np
 import scipy.interpolate
 
-#-- extract tidal harmonic constants from OTIS tide models at coordinates
+#-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     TYPE, METHOD='spline', GZIP=True, SCALE=1):
+    """
+    Reads files for a netCDF4 tidal model
+    Makes initial calculations to run the tide program
+    Spatially interpolates tidal constituents to input coordinates
+
+    Arguments
+    ---------
+    ilon: longitude to interpolate
+    ilat: latitude to interpolate
+    directory: data directory for tide data files
+    grid_file: grid file for model (can be gzipped)
+    model_files: list of model files for each constituent (can be gzipped)
+    TYPE: tidal variable to run
+        z: heights
+        u: horizontal transport velocities
+        v: vertical transport velocities
+
+    Keyword arguments
+    -----------------
+    METHOD: interpolation method
+        bilinear: quick bilinear interpolation
+        spline: scipy bivariate spline interpolation
+        linear, cubic, nearest: scipy griddata interpolations
+    GZIP: input netCDF4 files are compressed
+    SCALE: scaling factor for converting to output units
+
+    Returns
+    -------
+    amplitude: amplitudes of tidal constituents
+    phase: phases of tidal constituents
+    D: bathymetry of tide model
+    constituents: list of model constituents
+    """
 
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
@@ -242,17 +286,41 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     #-- return the interpolated values
     return (amplitude,phase,D,constituents)
 
-#-- wrapper function to extend an array
+#-- PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
+    """
+    Wrapper function to extend an array
+
+    Arguments
+    ---------
+    input_array: array to extend
+    step_size: step size between elements of array
+
+    Returns
+    -------
+    temp: extended array
+    """
     n = len(input_array)
     temp = np.zeros((n+2),dtype=input_array.dtype)
+    #-- extended array [x-1,x0,...,xN,xN+1]
     temp[0] = input_array[0] - step_size
     temp[1:-1] = input_array[:]
     temp[-1] = input_array[-1] + step_size
     return temp
 
-#-- wrapper function to extend a matrix
+#-- PURPOSE: wrapper function to extend a matrix
 def extend_matrix(input_matrix):
+    """
+    Wrapper function to extend a matrix
+
+    Arguments
+    ---------
+    input_matrix: matrix to extend
+
+    Returns
+    -------
+    temp: extended matrix
+    """
     ny,nx = np.shape(input_matrix)
     temp = np.ma.zeros((ny,nx+2),dtype=input_matrix.dtype)
     temp[:,0] = input_matrix[:,-1]
@@ -260,9 +328,26 @@ def extend_matrix(input_matrix):
     temp[:,-1] = input_matrix[:,0]
     return temp
 
-#-- read elevation file to extract real and imaginary components for constituent
+#-- PURPOSE: read elevation file to extract real and imaginary components for
+#-- constituent
 def read_elevation_file(input_file,GZIP):
-    #-- read the netcdf format tide grid file
+    """
+    Read elevation file to extract real and imaginary components for constituent
+
+    Arguments
+    ---------
+    input_file: input elevation file
+
+    Keyword arguments
+    -----------------
+    GZIP: input netCDF4 files are compressed
+
+    Returns
+    -------
+    h: tidal elevation
+    con: tidal constituent ID
+    """
+    #-- read the netcdf format tide elevation file
     #-- reading a combined global solution with localized solutions
     if GZIP:
         f = gzip.open(input_file,'rb')
@@ -285,8 +370,30 @@ def read_elevation_file(input_file,GZIP):
     #-- return the elevation and constituent
     return (h,con.strip())
 
-#-- read transport file to extract real and imaginary components for constituent
+#-- PURPOSE: read transport file to extract real and imaginary components for
+#-- constituent
 def read_transport_file(input_file,TYPE,GZIP):
+    """
+    Read transport file to extract real and imaginary components for constituent
+
+    Arguments
+    ---------
+    input_file: input transport file
+
+    Keyword arguments
+    -----------------
+    TYPE: tidal variable to run
+        u: horizontal transport velocities
+        U: horizontal depth-averaged transport
+        v: vertical transport velocities
+        V: vertical depth-averaged transport
+    GZIP: input netCDF4 files are compressed
+
+    Returns
+    -------
+    tr: tidal transport
+    con: tidal constituent ID
+    """
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
     if GZIP:
@@ -316,6 +423,21 @@ def read_transport_file(input_file,TYPE,GZIP):
 
 #-- PURPOSE: bilinear interpolation of input data to output data
 def bilinear_interp(ilon,ilat,idata,lon,lat):
+    """
+    Bilinear interpolation of input data to output coordinates
+
+    Arguments
+    ---------
+    ilon: longitude of tidal model
+    ilat: latitude of tidal model
+    idata: tide model data
+    lat: output latitude
+    lon: output longitude
+
+    Returns
+    -------
+    data: interpolated data
+    """
     #-- degrees to radians
     dtr = np.pi/180.0
     #-- grid step size of tide model

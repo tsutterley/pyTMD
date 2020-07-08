@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_ocean_pole_tide.py (12/2018)
+read_ocean_pole_tide.py (07/2020)
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
 http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/icc7.pdf
@@ -22,8 +22,8 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 12/2018: Compatibility updates for Python3
-    Split 10/2017 from compute_OPT_triangulated_data.py into separate file
     Written 09/2017
 """
 import re
@@ -32,6 +32,19 @@ import numpy as np
 
 #-- PURPOSE: read real and imaginary ocean pole tide coefficients
 def read_ocean_pole_tide(input_file):
+    """
+    Read real and imaginary ocean pole tide coefficients
+
+    Arguments
+    ---------
+    input_file: IERS 0.5x0.5 map of ocean pole tide coefficients
+
+    Returns
+    -------
+    ur: ocean pole tide coefficients
+    glon: ocean grid longitude
+    glat: ocean grid latitude
+    """
     #-- read GZIP ocean pole tide file
     with gzip.open(input_file,'rb') as f:
         file_contents = f.read().splitlines()
@@ -71,8 +84,21 @@ def read_ocean_pole_tide(input_file):
 
 #-- PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
+    """
+    Wrapper function to extend an array
+
+    Arguments
+    ---------
+    input_array: array to extend
+    step_size: step size between elements of array
+
+    Returns
+    -------
+    temp: extended array
+    """
     n = len(input_array)
     temp = np.zeros((n+2),dtype=input_array.dtype)
+    #-- extended array [x-1,x0,...,xN,xN+1]
     temp[0] = input_array[0] - step_size
     temp[1:-1] = input_array[:]
     temp[-1] = input_array[-1] + step_size
@@ -80,6 +106,17 @@ def extend_array(input_array,step_size):
 
 #-- PURPOSE: wrapper function to extend a matrix
 def extend_matrix(input_matrix):
+    """
+    Wrapper function to extend a matrix
+
+    Arguments
+    ---------
+    input_matrix: matrix to extend
+
+    Returns
+    -------
+    temp: extended matrix
+    """
     nx,ny = np.shape(input_matrix)
     temp = np.zeros((nx+2,ny),dtype=input_matrix.dtype)
     temp[0,:] = input_matrix[-1,:]

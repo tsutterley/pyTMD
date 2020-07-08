@@ -1,7 +1,7 @@
 predict_tide.py
 ===============
 
- - Predict tidal elevation at a single time using harmonic constants
+ - Predict tides at a single time using harmonic constants
  - Can be used to calculate tidal corrections for imagery  
 
 #### Calling Sequence
@@ -21,4 +21,4 @@ ht = predict_tide(time,hc,con)
  - `CORRECTIONS`: use nodal corrections from OTIS/ATLAS or GOT models
 
 #### Outputs
- - `ht`: height reconstructed using the nodal corrections
+ - `ht`: tide values reconstructed using the nodal corrections

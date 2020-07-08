@@ -9,7 +9,7 @@ compute_LPT_displacements.py
 ```bash
 python compute_LPT_displacements.py --directory=<path_to_directory> input_file output_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/compute_LPT_displacements.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_LPT_displacements.py)
 
 #### Inputs
  1. `input_file`: input csv file with columns:

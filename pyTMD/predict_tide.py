@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
-predict_tide.py (11/2019)
-Predict tidal elevation at a single time using harmonic constants
+predict_tide.py (07/2020)
+Predict tides at a single time using harmonic constants
 
 CALLING SEQUENCE:
     ht = predict_tide(time,hc,con)
@@ -12,7 +12,7 @@ INPUTS:
     constituents: tidal constituent IDs
 
 OUTPUT:
-    ht: height reconstructed using the nodal corrections
+    ht: tide values reconstructed using the nodal corrections
 
 OPTIONS:
     DELTAT: time correction for converting to Ephemeris Time (days)
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 07/2020: added function docstrings
     Updated 11/2019: can output an array of heights with a single time stamp
         such as for estimating tide height maps from imagery
     Updated 09/2019: added netcdf option to CORRECTIONS option
@@ -40,6 +41,25 @@ from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
 def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+    """
+    Predict tides at a single time using harmonic constants
+
+    Arguments
+    ---------
+    time: days relative to 1992-01-01T00:00:00
+    hc: harmonic constant vector (complex)
+    constituents: tidal constituent IDs
+
+    Keyword arguments
+    -----------------
+    DELTAT: time correction for converting to Ephemeris Time (days)
+    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    ht: tide values reconstructed using the nodal corrections
+    """
+
     #-- number of points and number of constituents
     npts,nc = np.shape(hc)
     #-- load the nodal corrections
