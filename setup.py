@@ -14,7 +14,7 @@ scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith(
 
 setup(
     name='pyTMD',
-    version='1.0.1.9',
+    version='1.0.1.10',
     description='Tide Model Driver to read OTIS and GOT formatted tidal solutions and make tidal predictions',
     long_description=long_description,
     long_description_content_type="text/markdown",
