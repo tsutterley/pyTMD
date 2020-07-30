@@ -23,10 +23,16 @@ amp,ph,D,c = read_netcdf_model(ilon,ilat,directory,model_files,type,METHOD='spli
      - 'v': vertical transport velocities
 
 #### Options
+ - `TYPE`: tidal variable to run
+    * `'z'`: heights
+    * `'u'`: horizontal transport velocities
+    * `'U'`: horizontal depth-averaged transport
+    * `'v'`: vertical transport velocities
+    * `'v'`: vertical depth-averaged transport
  - `METHOD`: interpolation method
-    * `bilinear`: quick bilinear interpolation
-    * `spline`: scipy bivariate spline interpolation
-    * `linear`, `cubic`, `nearest`: scipy griddata interpolations
+    * `'bilinear'`: quick bilinear interpolation
+    * `'spline'`: scipy bivariate spline interpolation
+    * `'linear'`, `'cubic'`, `'nearest'`: scipy griddata interpolations
  - `GZIP`: input netCDF4 files are compressed
  - `SCALE`: scaling factor for converting to output units
 

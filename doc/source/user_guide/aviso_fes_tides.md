@@ -16,10 +16,10 @@ python aviso_fes_tides.py --directory=<path_to_tide_directory> --tide=fes2014
  - `--user=X`: username for AVISO FTP servers
  - `-N X, --netrc=X`: path to .netrc file for authentication
  - `--tide=X`: FES tide model to download
-    * fes1999
-    * fes2004
-    * fes2012
-    * fes2014
+    * FES1999
+    * FES2004
+    * FES2012
+    * FES2014
  - `--load`: download load tide model outputs
  - `--currents`:  download tide model current outputs
  - `-M X`, `--mode=X`: Permission mode of files downloaded

@@ -17,22 +17,14 @@ INPUTS:
     directory: data directory for tide data files
     grid_file: grid file for model (can be gzipped)
     model_files: list of model files for each constituent (can be gzipped)
+
+OPTIONS:
     TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
         U: horizontal depth-averaged transport
         v: vertical transport velocities
         V: vertical depth-averaged transport
-
-
-    #-- u and v are velocities in cm/s
-    if TYPE in ('v','u'):
-        unit_conv = (D.data*100.0)
-    #-- U and V are transports in m^2/s
-    elif TYPE in ('V','U'):
-        unit_conv = 1.0
-
-OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -55,8 +47,12 @@ PYTHON DEPENDENCIES:
     netCDF4: Python interface to the netCDF C library
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
+PROGRAM DEPENDENCIES:
+    bilinear_interp.py: bilinear interpolation of data to specified coordinates
+
 UPDATE HISTORY:
-    Updated 07/2020: added function docstrings
+    Updated 07/2020: added function docstrings. separate bilinear interpolation
+        changed TYPE variable to keyword argument. update griddata interpolation
     Updated 06/2020: use argmin and argmax in bilinear interpolation
     Written 09/2019
 """
@@ -65,10 +61,11 @@ import gzip
 import netCDF4
 import numpy as np
 import scipy.interpolate
+from pyTMD.bilinear_interp import bilinear_interp
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
-    TYPE, METHOD='spline', GZIP=True, SCALE=1):
+    TYPE='z', METHOD='spline', GZIP=True, SCALE=1):
     """
     Reads files for a netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -84,7 +81,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
+        U: horizontal depth-averaged transport
         v: vertical transport velocities
+        V: vertical depth-averaged transport
 
     Keyword arguments
     -----------------
@@ -175,10 +174,11 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         D.mask[:] = f2.ev(ilon,ilat).astype(np.bool)
     else:
         #-- use scipy griddata to interpolate values
-        D.data[:] = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-            bathymetry.flatten(), zip(x,y), method=METHOD)
-        D.mask[:] = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-            mask.flatten(), zip(x,y), method=METHOD).astype(np.bool)
+        interp_points = np.c_[lon.flatten(),lat.flatten()]
+        D.data[:] = scipy.interpolate.griddata(interp_points,
+            bathymetry.flatten(), np.c_[ilon,ilat], method=METHOD)
+        D.mask[:] = scipy.interpolate.griddata(interp_points,
+            mask.flatten(), np.c_[ilon,ilat], method=METHOD).astype(np.bool)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
@@ -209,7 +209,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             z1 = np.ma.zeros((npts),dtype=z.dtype)
             z1.mask = np.zeros((npts),dtype=np.bool)
             if (METHOD == 'bilinear'):
-                z1.data[:] = bilinear_interp(lon,lat,z,ilon,ilat)
+                z1.data[:] = bilinear_interp(lon,lat,z,ilon,ilat,dtype=z.dtype)
                 #-- mask zero values
                 z1.mask[z1.data == 0] = True
                 z1.data[z1.mask] = z1.fill_value
@@ -229,9 +229,8 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 #-- replace zero values with nan
                 z[z==0] = np.nan
                 #-- use scipy griddata to interpolate values
-                z1.data = scipy.interpolate.griddata(zip(lon.flatten(),
-                    lon.flatten()), z.flatten(), zip(ilon,ilat),
-                    method=METHOD)
+                z1.data = scipy.interpolate.griddata(interp_points,
+                    z.flatten(), np.c_[ilon,ilat], method=METHOD)
                 z1.mask[np.isnan(z1.data)] = True
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
@@ -248,7 +247,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             tr1 = np.ma.zeros((npts),dtype=tr.dtype)
             tr1.mask = np.zeros((npts),dtype=np.bool)
             if (METHOD == 'bilinear'):
-                tr1.data[:] = bilinear_interp(lon,lat,tr,ilon,ilat)
+                tr1.data[:]=bilinear_interp(lon,lat,tr,ilon,ilat,dtype=tr.dtype)
                 #-- mask zero values
                 tr1.mask[tr1.data == 0] = True
                 tr1.data[tr1.mask] = tr1.fill_value
@@ -268,8 +267,8 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 #-- replace zero values with nan
                 tr[tr==0] = np.nan
                 #-- use scipy interpolate to interpolate values
-                tr1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                    tr.flatten(), zip(x,y), method=METHOD)
+                tr1 = scipy.interpolate.griddata(interp_points,
+                    tr.flatten(), np.c_[ilon,ilat], method=METHOD)
                 tr1.mask[np.isnan(tr1.data)] = True
                 tr1.data[tr1.mask] = tr1.fill_value
             #-- convert units
@@ -420,66 +419,3 @@ def read_transport_file(input_file,TYPE,GZIP):
     f.close() if GZIP else None
     #-- return the transport components and constituent
     return (tr,con.strip())
-
-#-- PURPOSE: bilinear interpolation of input data to output data
-def bilinear_interp(ilon,ilat,idata,lon,lat):
-    """
-    Bilinear interpolation of input data to output coordinates
-
-    Arguments
-    ---------
-    ilon: longitude of tidal model
-    ilat: latitude of tidal model
-    idata: tide model data
-    lat: output latitude
-    lon: output longitude
-
-    Returns
-    -------
-    data: interpolated data
-    """
-    #-- degrees to radians
-    dtr = np.pi/180.0
-    #-- grid step size of tide model
-    dlon = np.abs(ilon[1] - ilon[0])
-    dlat = np.abs(ilat[1] - ilat[0])
-    #-- Convert input coordinates to radians
-    phi = ilon*dtr
-    th = (90.0 - ilat)*dtr
-    #-- Convert output data coordinates to radians
-    xphi = lon*dtr
-    xth = (90.0 - lat)*dtr
-    #-- interpolate gridded data values to data
-    data = np.zeros_like(lon,dtype=np.complex128)
-    for i,l in enumerate(lon):
-        #-- calculating the indices for the original grid
-        dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
-        dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
-        iph = np.argmin(dx)
-        ith = np.argmin(dy)
-        #-- if on corner value: use exact
-        if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
-            data[i] = idata[ith,iph]
-        elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph])):
-            data[i] = idata[ith+1,iph]
-        elif ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph+1])):
-            data[i] = idata[ith,iph+1]
-        elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph+1])):
-            data[i] = idata[ith+1,iph+1]
-        else:
-            #-- corner weight values for i,j
-            Wa = (xphi[i]-phi[iph])*(xth[i]-th[ith])
-            Wb = (phi[iph+1]-xphi[i])*(xth[i]-th[ith])
-            Wc = (xphi[i]-phi[iph])*(th[ith+1]-xth[i])
-            Wd = (phi[iph+1]-xphi[i])*(th[ith+1]-xth[i])
-            #-- divisor weight value
-            W = (phi[iph+1]-phi[iph])*(th[ith+1]-th[ith])
-            #-- corner data values for i,j
-            Ia = idata[ith,iph]#-- (0,0)
-            Ib = idata[ith,iph+1]#-- (1,0)
-            Ic = idata[ith+1,iph]#-- (0,1)
-            Id = idata[ith+1,iph+1]#-- (1,1)
-            #-- calculate interpolated value for i
-            data[i] = (Ia*Wa + Ib*Wb + Ic*Wc + Id*Wd)/W
-    #-- return interpolated values
-    return data

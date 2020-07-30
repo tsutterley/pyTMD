@@ -72,7 +72,7 @@ def predict_tidal_ts(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
             amp,ph,omega,alpha,species = load_constituent(c)
             #-- add component for constituent to output tidal time series
             th = omega*time*86400.0 + ph + pu[:,k]
-        elif (CORRECTIONS == 'GOT'):
+        elif CORRECTIONS in ('GOT','FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         #-- sum over all tides at location
         ht += pf[:,k]*hc.real[0,k]*np.cos(th) - pf[:,k]*hc.imag[0,k]*np.sin(th)

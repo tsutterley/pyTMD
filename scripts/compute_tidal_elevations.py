@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (06/2020)
+Written by Tyler Sutterley (07/2020)
 Calculates tidal elevations for an input csv file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -38,6 +38,8 @@ COMMAND LINE OPTIONS:
         GOT4.8_load
         GOT4.10
         GOT4.10_load
+        FES2014
+        FES2014_load
     -M X, --mode=X: Permission mode of output file
 
 PYTHON DEPENDENCIES:
@@ -54,16 +56,18 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
-    convert_xy_ll.py: convert lat/lon points to and from projected coordinates
+    convert_ll_xy.py: convert lat/lon points to and from projected coordinates
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
-    infer_minor_corrections.py: return corrections for 16 minor constituents
+    infer_minor_corrections.py: return corrections for minor constituents
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
+    read_FES_model.py: extract tidal harmonic constants from FES tide models
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 07/2020: added FES2014 and FES2014_load
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
@@ -84,6 +88,7 @@ from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
+from pyTMD.read_FES_model import extract_FES_constants
 
 #-- PURPOSE: read HDF5 data from merge_HDF5_triangle_files.py
 #-- compute tides at points and times using tidal model driver algorithms
@@ -253,15 +258,49 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             'MiscPubs/19990089548_1999150788.pdf')
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+    elif (TIDE_MODEL == 'FES2014'):
+        model_directory = os.path.join(tide_dir,'fes2014','ocean_tide')
+        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
+            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
+            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
+            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
+            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
+            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
+            'ssa.nc.gz','t2.nc.gz']
+        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
+            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
+            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+        reference = ('https://www.aviso.altimetry.fr/data/products/'
+            'auxiliary-products/global-tide-fes.html')
+        model_format = 'FES'
+        TYPE = 'z'
+        SCALE = 1.0/100.0
+    elif (TIDE_MODEL == 'FES2014_load'):
+        model_directory = os.path.join(tide_dir,'fes2014','load_tide')
+        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
+            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
+            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
+            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
+            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
+            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
+            'ssa.nc.gz','t2.nc.gz']
+        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
+            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
+            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+        reference = ('https://www.aviso.altimetry.fr/data/products/'
+            'auxiliary-products/global-tide-fes.html')
+        model_format = 'FES'
+        TYPE = 'z'
+        SCALE = 1.0/100.0
 
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
-            grid_file, model_file, EPSG, TYPE, METHOD='spline')
+            grid_file, model_file, EPSG, TYPE=TYPE, METHOD='spline')
         deltat = np.zeros_like(dinput['MJD'])
     elif (model_format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
-            model_directory, grid_file, model_files, TYPE,
+            model_directory, grid_file, model_files, TYPE=TYPE,
             METHOD='spline', SCALE=SCALE)
         deltat = np.zeros_like(dinput['MJD'])
     elif (model_format == 'GOT'):
@@ -269,6 +308,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             model_directory, model_files, METHOD='spline', SCALE=SCALE)
         delta_file = os.path.join(tide_dir,'deltat.data')
         deltat = calc_delta_time(delta_file,dinput['MJD'])
+    elif (model_format == 'FES'):
+        amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
+            model_directory, model_files, TYPE=TYPE, VERSION=TIDE_MODEL,
+            METHOD='spline', SCALE=SCALE)
+        deltat = np.zeros_like(dinput['MJD'])
 
     #-- calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -339,7 +383,7 @@ def main():
     model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas','TPXO9.1',
         'TPXO8-atlas','TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
         'AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load',
-        'GOT4.10','GOT4.10_load']
+        'GOT4.10','GOT4.10_load','FES2014','FES2014_load']
     assert TIDE_MODEL in model_list, 'Unlisted tide model'
     #-- run tidal elevation program for input *.csv file
     compute_tidal_elevations(tide_dir, input_file, output_file,

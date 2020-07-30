@@ -27,8 +27,15 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 
+REFERENCES:
+    A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
+    P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides"
+        US Coast and Geodetic Survey, Special Publication, 98, (1958).
+    M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
+        time series", Advances in Water Resources, 12, (1989).
+
 UPDATE HISTORY:
-    Updated 07/2020: added function docstrings
+    Updated 07/2020: added function docstrings.  add shallow water constituents
     Updated 09/2019: added netcdf option to CORRECTIONS option
     Updated 08/2018: added correction option ATLAS for localized OTIS solutions
     Updated 07/2018: added option to use GSFC GOT nodal corrections
@@ -64,13 +71,14 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         'rho1','o1','tau1','m1','chi1','pi1','p1','s1','k1','psi1','phi1',
         'theta1','j1','oo1','2n2','mu2','n2','nu2','m2a','m2','m2b','lambda2',
         'l2','t2','s2','r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4',
-        'm4','ms4','mk4','s4','s5','m6','s6','s7','s8','z0']
+        'm4','ms4','mk4','s4','s5','m6','s6','s7','s8','m8','mks2','msqm','mtm',
+        'n4','eps2','z0']
 
     #-- degrees to radians
     dtr = np.pi/180.0
 
     #-- set function for astrological longitudes
-    ASTRO5 = True if (CORRECTIONS == 'GOT') else False
+    ASTRO5 = True if CORRECTIONS in ('GOT','FES') else False
     #-- convert from Modified Julian Dates into Ephemeris Time
     s,h,p,omega,pp = calc_astrol_longitudes(time+DELTAT, ASTRO5=ASTRO5)
     hour = (time % 1)*24.0
@@ -79,7 +87,7 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     nt = 1 if (np.ndim(time) == 0) else len(time)
 
     #-- Determine equilibrium arguments
-    arg = np.zeros((nt,54))
+    arg = np.zeros((nt,60))
     arg[:,0] = h - pp #-- Sa
     arg[:,1] = 2.0*h #-- Ssa
     arg[:,2] = s - p #-- Mm
@@ -99,7 +107,7 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     arg[:,16] = t1 - h - 90.0 #-- p1
     if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
         arg[:,17] = t1 + 90.0 #-- s1
-    elif (CORRECTIONS == 'GOT'):
+    elif CORRECTIONS in ('GOT','FES'):
         arg[:,17] = t1 + 180.0 #-- s1 (Doodson's phase)
     arg[:,18] = t1 + h + 90.0 #-- k1
     arg[:,19] = t1 + 2.0*h - pp + 90.0 #-- psi1
@@ -136,8 +144,15 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     arg[:,50] = 3.0*t2 #-- S6
     arg[:,51] = 7.0*t1 #-- S7
     arg[:,52] = 4.0*t2 #-- S8
-    arg[:,53] = 0.0 #-- Z0 (mean sea level)
-
+    #-- shallow water constituents
+    arg[:,53] = 4.0*arg[:,29] #-- m8
+    arg[:,54] = arg[:,29] + arg[:,36] - arg[:,34] #-- mks2
+    arg[:,55] = 4.0*s - 2.0*h #-- msqm
+    arg[:,56] = 3.0*s - p #-- mtm
+    arg[:,57] = 2.0*arg[:,26] #-- n4
+    arg[:,58] = t2 - 5.0*s + 4.0*h + p #-- eps2
+    #-- mean sea level
+    arg[:,59] = 0.0 #-- Z0
 
     #-- determine nodal corrections f and u
     sinn = np.sin(omega*dtr)
@@ -147,9 +162,10 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     sin3n = np.sin(3.0*omega*dtr)
 
     #-- set nodal corrections
-    f = np.zeros((nt,54))
-    u = np.zeros((nt,54))
-    if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
+    f = np.zeros((nt,60))
+    u = np.zeros((nt,60))
+    #-- determine nodal corrections f and u for each model type
+    if CORRECTIONS in ('OTIS','ATLAS','netcdf','FES'):
         f[:,0] = 1.0 #-- Sa
         f[:,1] = 1.0 #-- Ssa
         f[:,2] = 1.0 - 0.130*cosn #-- Mm
@@ -223,7 +239,15 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         f[:,50] = 1.0 #-- S6
         f[:,51] = 1.0 #-- S7
         f[:,52] = 1.0 #-- S8
-        f[:,53] = 1.0 #-- Z0 (mean sea level)
+        #-- shallow water constituents
+        f[:,53] = f[:,29]**4 #-- m8
+        f[:,54] = f[:,29]*f[:,36] #-- mks2
+        f[:,55] = f[:,4] #-- msqm
+        f[:,56] = f[:,4] #-- mtm
+        f[:,57] = f[:,29]**2 #-- n4
+        f[:,58] = f[:,29] #-- eps2
+        #-- mean sea level
+        f[:,59] = 1.0 #-- Z0
 
         u[:,0] = 0.0 #-- Sa
         u[:,1] = 0.0 #-- Ssa
@@ -288,9 +312,18 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         u[:,50] = 0.0 #-- S6
         u[:,51] = 0.0 #-- S7
         u[:,52] = 0.0 #-- S8
-        u[:,53] = 0.0 #-- Z0 (mean sea level)
+        #-- shallow water constituents
+        u[:,53] = 4.0*u[:,29] #-- m8
+        u[:,54] = u[:,29] + u[:,36] #-- mks2
+        u[:,55] = u[:,4] #-- msqm
+        u[:,56] = u[:,4] #-- mtm
+        u[:,57] = 2.0*u[:,29] #-- n4
+        u[:,57] = 2.0*u[:,29] #-- MN4
+        u[:,58] = u[:,29] #-- eps2
+        #-- mean sea level
+        u[:,59] = 0.0 #-- Z0
 
-    elif (CORRECTIONS == 'GOT'):
+    elif CORRECTIONS in ('GOT',):
         f[:,9] = 1.009 + 0.187*cosn - 0.015*cos2n#-- Q1
         f[:,11] = f[:,9]#-- O1
         f[:,16] = 1.0 #-- P1
@@ -304,9 +337,12 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
 
         u[:,9] = 10.8*sinn - 1.3*sin2n#-- Q1
         u[:,11] = u[:,9]#-- O1
+        u[:,16] = 0.0 #-- P1
+        u[:,17] = 0.0 #-- S1
         u[:,18] = -8.9*sinn + 0.7*sin2n#-- K1
         u[:,26] = -2.1*sinn#-- N2
         u[:,29] = u[:,26]#-- M2
+        u[:,34] = 0.0 #-- S2
         u[:,36] = -17.7*sinn + 0.7*sin2n#-- K2
         u[:,44] = -4.2*sinn#-- M4
 

@@ -8,13 +8,14 @@ pyTMD
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/master)
 
-#### Python-based tidal prediction software that reads OTIS and GOT formatted tidal solutions for calculating ocean and load tides
+#### Python-based tidal prediction software that reads OTIS, GOT and FES formatted tidal solutions for calculating ocean and load tides
 
 - [OSU Tidal Prediction Software (OTPS)](https://www.tpxo.net/otps)  
 - [ESR Tide Model Driver (TMD) Matlab Toolbox](https://www.esr.org/research/polar-tide-models/tmd-software/)  
 - [OSU Global and Regional Tide Models](https://www.tpxo.net)  
 - [ESR Polar Tide Models](https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/)  
 - [A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2](https://ntrs.nasa.gov/search.jsp?R=19990089548)  
+- [Finite Element Solution (FES) tide models](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html)  
 - [Delta times from US Naval Observatory (USNO) Earth Orientation Products](http://maia.usno.navy.mil/ser7/deltat.data)  
 - [Delta times from NASA Crustal Dynamics Data Information System (CDDIS)](ftp://cddis.nasa.gov/products/iers/deltat.data)  
 

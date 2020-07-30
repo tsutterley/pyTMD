@@ -49,8 +49,8 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
-    convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-    infer_minor_corrections.py: return corrections for 16 minor constituents
+    convert_ll_xy.py: convert lat/lon points to and from projected coordinates
+    infer_minor_corrections.py: return corrections for minor constituents
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
     predict_tide.py: predict tides at single times using harmonic constants
@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
+    read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
     Updated 07/2020: added function docstrings
@@ -152,19 +153,19 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         model_file = os.path.join(DIRECTORY,'cats0201_tmd','h0_CATS02_01')
         model_format = 'OTIS'
         model_EPSG = '4326'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'CATS2008'):
         grid_file = os.path.join(DIRECTORY,'CATS2008','grid_CATS2008')
         model_file = os.path.join(DIRECTORY,'CATS2008','hf.CATS2008.out')
         model_format = 'OTIS'
         model_EPSG = 'CATS2008'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'CATS2008_load'):
         grid_file = os.path.join(DIRECTORY,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
         model_file = os.path.join(DIRECTORY,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
         model_format = 'OTIS'
         model_EPSG = 'CATS2008'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'TPXO9-atlas'):
         model_directory = os.path.join(DIRECTORY,'TPXO9_atlas')
         grid_file = 'grid_tpxo9_atlas.nc.gz'
@@ -175,50 +176,50 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
             'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
         model_format = 'netcdf'
-        type = 'z'
+        model_type = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9.1'):
         grid_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','grid_tpxo9')
         model_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','h_tpxo9.v1')
         model_format = 'OTIS'
         model_EPSG = '4326'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'TPXO8-atlas'):
         grid_file = os.path.join(DIRECTORY,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
         model_file = os.path.join(DIRECTORY,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
         model_format = 'ATLAS'
         model_EPSG = '4326'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'TPXO7.2'):
         grid_file = os.path.join(DIRECTORY,'TPXO7.2_tmd','grid_tpxo7.2')
         model_file = os.path.join(DIRECTORY,'TPXO7.2_tmd','h_tpxo7.2')
         model_format = 'OTIS'
         model_EPSG = '4326'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'TPXO7.2_load'):
         grid_file = os.path.join(DIRECTORY,'TPXO7.2_load','grid_tpxo6.2')
         model_file = os.path.join(DIRECTORY,'TPXO7.2_load','h_tpxo7.2_load')
         model_format = 'OTIS'
         model_EPSG = '4326'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'AODTM-5'):
         grid_file = os.path.join(DIRECTORY,'aodtm5_tmd','grid_Arc5km')
         model_file = os.path.join(DIRECTORY,'aodtm5_tmd','h0_Arc5km.oce')
         model_format = 'OTIS'
         model_EPSG = 'PSNorth'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'AOTIM-5'):
         grid_file = os.path.join(DIRECTORY,'aotim5_tmd','grid_Arc5km')
         model_file = os.path.join(DIRECTORY,'aotim5_tmd','h_Arc5km.oce')
         model_format = 'OTIS'
         model_EPSG = 'PSNorth'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'AOTIM-5-2018'):
         grid_file = os.path.join(DIRECTORY,'Arc5km2018','grid_Arc5km2018')
         model_file = os.path.join(DIRECTORY,'Arc5km2018','h_Arc5km2018')
         model_format = 'OTIS'
         model_EPSG = 'PSNorth'
-        type = 'z'
+        model_type = 'z'
     elif (MODEL == 'GOT4.7'):
         model_directory = os.path.join(DIRECTORY,'GOT4.7','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -264,6 +265,36 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+    elif (MODEL == 'FES2014'):
+        model_directory = os.path.join(DIRECTORY,'fes2014','ocean_tide')
+        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
+            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
+            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
+            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
+            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
+            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
+            'ssa.nc.gz','t2.nc.gz']
+        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6','m8',
+            'mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2','n4',
+            'nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+        model_format = 'FES'
+        TYPE = 'z'
+        SCALE = 1.0/100.0
+    elif (MODEL == 'FES2014_load'):
+        model_directory = os.path.join(DIRECTORY,'fes2014','load_tide')
+        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
+            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
+            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
+            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
+            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
+            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
+            'ssa.nc.gz','t2.nc.gz']
+        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
+            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
+            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+        model_format = 'FES'
+        model_type = 'z'
+        SCALE = 1.0/100.0
     else:
         raise Exception("Unlisted tide model")
 
@@ -294,11 +325,11 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
-            model_EPSG, type, METHOD=METHOD, GRID=model_format)
+            model_EPSG, TYPE=model_type, METHOD=METHOD, GRID=model_format)
         deltat = np.zeros_like(t)
-    elif model_format in ('netcdf'):
+    elif (model_format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-            grid_file, model_files, type, METHOD=METHOD, SCALE=SCALE)
+            grid_file, model_files, TYPE=model_type, METHOD=METHOD, SCALE=SCALE)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
@@ -306,6 +337,10 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         #-- convert time to Modified Julian Days for calculating deltat
         delta_file = os.path.join(DIRECTORY,'deltat.data')
         deltat = calc_delta_time(delta_file, t + 48622.0)
+    elif (model_format == 'FES'):
+        amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,
+            TYPE=model_type, VERSION=MODEL, METHOD=METHOD, SCALE=SCALE)
+        deltat = np.zeros_like(t)
 
     #-- calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0

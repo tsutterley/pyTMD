@@ -1,8 +1,8 @@
 pyTMD
 =====
 
-Python-based tidal prediction software that reads OTIS and GOT formatted tidal
-solutions for calculating ocean and load tides and IERS conventions for
+Python-based tidal prediction software that reads OTIS, GOT and FES formatted
+tidal solutions for predicting ocean and load tides and IERS conventions for
 calculating radial pole tide displacements
 
 .. graphviz::
@@ -34,6 +34,7 @@ calculating radial pole tide displacements
     :caption: User Guide:
 
     user_guide/aviso_fes_tides.md
+    user_guide/bilinear_interp.md
     user_guide/calc_astrol_longitudes.md
     user_guide/calc_delta_time.md
     user_guide/calc_iers_mean_pole.md
@@ -50,7 +51,7 @@ calculating radial pole tide displacements
     user_guide/compute_tides_ICESat2_ATL12.md
     user_guide/convert_calendar_decimal.md
     user_guide/convert_julian.md
-    user_guide/convert_xy_ll.md
+    user_guide/convert_ll_xy.md
     user_guide/count_leap_seconds.md
     user_guide/iers_mean_pole.md
     user_guide/infer_minor_corrections.md
@@ -60,6 +61,7 @@ calculating radial pole tide displacements
     user_guide/predict_tidal_ts.md
     user_guide/predict_tide_drift.md
     user_guide/predict_tide.md
+    user_guide/read_FES_model.md
     user_guide/read_GOT_model.md
     user_guide/read_iers_EOP.md
     user_guide/read_netcdf_model.md

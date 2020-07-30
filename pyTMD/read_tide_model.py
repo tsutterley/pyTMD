@@ -16,12 +16,14 @@ INPUTS:
     grid_file: grid file for model
     model_file: model file containing each constituent
     EPSG: projection of tide model data
+
+OPTIONS:
     TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
+        U: horizontal depth-averaged transport
         v: vertical transport velocities
-
-OPTIONS:
+        V: vertical depth-averaged transport
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -44,10 +46,12 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 PROGRAM DEPENDENCIES:
-    convert_xy_ll.py: converts lat/lon points to and from projected coordinates
+    convert_ll_xy.py: converts lat/lon points to and from projected coordinates
+    bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
-    Updated 07/2020: added function docstrings
+    Updated 07/2020: added function docstrings. separate bilinear interpolation
+        update griddata interpolation. changed TYPE variable to keyword argument
     Updated 06/2020: output currents as numpy masked arrays
         use argmin and argmax in bilinear interpolation
     Updated 11/2019: interpolate heights and fluxes to numpy masked arrays
@@ -62,10 +66,11 @@ UPDATE HISTORY:
 import os
 import numpy as np
 import scipy.interpolate
-from pyTMD.convert_xy_ll import convert_xy_ll
+from pyTMD.convert_ll_xy import convert_ll_xy
+from pyTMD.bilinear_interp import bilinear_interp
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
+def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     METHOD='spline', GRID='OTIS'):
     """
     Reads files for an OTIS-formatted tidal model
@@ -112,7 +117,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
         #-- if reading a pure global solution
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
     #-- run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_xy_ll(ilon,ilat,EPSG,'F')
+    x,y = convert_ll_xy(ilon,ilat,EPSG,'F')
     #-- grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -186,16 +191,17 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
             mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
         #-- use scipy griddata to interpolate values
-        D = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-            hz.flatten(), zip(x,y), method=METHOD)
-        mz1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-            mz.real.flatten(), zip(x,y), method=METHOD)
+        interp_points = np.c_[X.flatten(),Y.flatten()]
+        D = scipy.interpolate.griddata(interp_points,
+            hz.flatten(), np.c_[x,y], method=METHOD)
+        mz1 = scipy.interpolate.griddata(interp_points,
+            mz.real.flatten(), np.c_[x,y], method=METHOD)
         mz1 = np.ceil(mz1).astype(mz.dtype)
         if (TYPE != 'z'):
-            mu1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                mu.flatten(), zip(x,y), method=METHOD)
-            mv1 = scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                mv.flatten(), zip(x,y), method=METHOD)
+            mu1 = scipy.interpolate.griddata(interp_points,
+                mu.flatten(), np.c_[x,y], method=METHOD)
+            mv1 = scipy.interpolate.griddata(zinterp_points,
+                mv.flatten(), np.c_[x,y], method=METHOD)
             mu1 = np.ceil(mu1).astype(mu.dtype)
             mv1 = np.ceil(mv1).astype(mv.dtype)
 
@@ -230,7 +236,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
                 z[z==0] = np.nan
                 #-- use quick bilinear to interpolate values
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
-                z1.data = bilinear_interp(xi,yi,z,x,y)
+                z1.data = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
                 z1.data[z1.mask] = z1.fill_value
@@ -251,8 +257,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
                 z[z==0] = np.nan
                 #-- use scipy griddata to interpolate values
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
-                z1.data=scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                    z.flatten(), zip(x,y), method=METHOD)
+                z1.data=scipy.interpolate.griddata(interp_points,
+                    z.flatten(), np.c_[x,y], method=METHOD)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
                 z1.data[z1.mask] = z1.fill_value
@@ -277,7 +283,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
                 u[u==0] = np.nan
                 #-- use quick bilinear to interpolate values
                 u1 = np.ma.zeros((npts),dtype=u.dtype)
-                u1.data = bilinear_interp(xi,yi,u,x,y)
+                u1.data = bilinear_interp(xi,yi,u,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
                 u1.data[u1.mask] = u1.fill_value
@@ -297,8 +303,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
                 u[u==0] = np.nan
                 #-- use scipy griddata to interpolate values
                 u1 = np.ma.zeros((npts),dtype=u.dtype)
-                u1.data=scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                    u.flatten(), zip(x,y), method=METHOD)
+                u1.data=scipy.interpolate.griddata(interp_points,
+                    u.flatten(), np.c_[x,y], method=METHOD)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
                 u1.data[u1.mask] = u1.fill_value
@@ -325,7 +331,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
                 v[v==0] = np.nan
                 #-- use quick bilinear to interpolate values
                 v1 = np.ma.zeros((npts),dtype=v.dtype)
-                v1.data = bilinear_interp(xi,yi,v,x,y)
+                v1.data = bilinear_interp(xi,yi,v,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
                 v1.data[v1.mask] = v1.fill_value
@@ -345,8 +351,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
                 v[u==0] = np.nan
                 #-- use scipy griddata to interpolate values
                 v1 = np.ma.zeros((npts),dtype=v.dtype)
-                v1.data=scipy.interpolate.griddata(zip(X.flatten(),Y.flatten()),
-                    v.flatten(), zip(x,y), method=METHOD)
+                v1.data=scipy.interpolate.griddata(interp_points,
+                    v.flatten(), np.c_[x,y], method=METHOD)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
                 v1.data[v1.mask] = v1.fill_value
@@ -361,7 +367,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE,
     #-- convert phase to degrees
     phase = ph*180.0/np.pi
     phase.data[phase.data < 0] += 360.0
-    #-- replace masked values with fill value
+    #-- replace data for invalid mask values
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value
     #-- return the interpolated values
@@ -1008,66 +1014,3 @@ def Huv(hz):
     hu = mu*(hz + hz[indy,:])/2.0
     hv = mv*(hz + hz[:,indx])/2.0
     return (hu,hv)
-
-#-- PURPOSE: bilinear interpolation of input data to output data
-def bilinear_interp(ilon,ilat,idata,lon,lat):
-    """
-    Bilinear interpolation of input data to output coordinates
-
-    Arguments
-    ---------
-    ilon: longitude of tidal model
-    ilat: latitude of tidal model
-    idata: tide model data
-    lat: output latitude
-    lon: output longitude
-
-    Returns
-    -------
-    data: interpolated data
-    """
-    #-- degrees to radians
-    dtr = np.pi/180.0
-    #-- grid step size of tide model
-    dlon = np.abs(ilon[1] - ilon[0])
-    dlat = np.abs(ilat[1] - ilat[0])
-    #-- Convert input coordinates to radians
-    phi = ilon*dtr
-    th = (90.0 - ilat)*dtr
-    #-- Convert output data coordinates to radians
-    xphi = lon*dtr
-    xth = (90.0 - lat)*dtr
-    #-- interpolate gridded data values to data
-    data = np.zeros_like(lon,dtype=np.complex128)
-    for i,l in enumerate(lon):
-        #-- calculating the indices for the original grid
-        dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
-        dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
-        iph = np.argmin(dx)
-        ith = np.argmin(dy)
-        #-- if on corner value: use exact
-        if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
-            data[i] = idata[ith,iph]
-        elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph])):
-            data[i] = idata[ith+1,iph]
-        elif ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph+1])):
-            data[i] = idata[ith,iph+1]
-        elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph+1])):
-            data[i] = idata[ith+1,iph+1]
-        else:
-            #-- corner weight values for i,j
-            Wa = (xphi[i]-phi[iph])*(xth[i]-th[ith])
-            Wb = (phi[iph+1]-xphi[i])*(xth[i]-th[ith])
-            Wc = (xphi[i]-phi[iph])*(th[ith+1]-xth[i])
-            Wd = (phi[iph+1]-xphi[i])*(th[ith+1]-xth[i])
-            #-- divisor weight value
-            W = (phi[iph+1]-phi[iph])*(th[ith+1]-th[ith])
-            #-- corner data values for i,j
-            Ia = idata[ith,iph]#-- (0,0)
-            Ib = idata[ith,iph+1]#-- (1,0)
-            Ic = idata[ith+1,iph]#-- (0,1)
-            Id = idata[ith+1,iph+1]#-- (1,1)
-            #-- calculate interpolated value for i
-            data[i] = (Ia*Wa + Ib*Wb + Ic*Wc + Id*Wd)/W
-    #-- return interpolated values
-    return data

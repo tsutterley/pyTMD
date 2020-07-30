@@ -72,7 +72,7 @@ def predict_tide_drift(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
             amp,ph,omega,alpha,species = load_constituent(c)
             #-- add component for constituent to output tidal elevation
             th = omega*time*86400.0 + ph + pu[:,k]
-        elif (CORRECTIONS == 'GOT'):
+        elif CORRECTIONS in ('GOT','FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         #-- sum over all tides
         ht += pf[:,k]*hc.real[:,k]*np.cos(th) - pf[:,k]*hc.imag[:,k]*np.sin(th)
