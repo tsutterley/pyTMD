@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL03.py
-Written by Tyler Sutterley (06/2020)
+Written by Tyler Sutterley (07/2020)
 Calculates tidal elevations for correcting ICESat-2 photon height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -31,6 +31,8 @@ COMMAND LINE OPTIONS:
         GOT4.8_load
         GOT4.10
         GOT4.10_load
+        FES2014
+        FES2014_load
     -M X, --mode=X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -51,16 +53,18 @@ PROGRAM DEPENDENCIES:
     count_leap_seconds.py: determines the number of leap seconds for a GPS time
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
-    convert_xy_ll.py: convert lat/lon points to and from projected coordinates
-    infer_minor_corrections.py: return corrections for 16 minor constituents
+    convert_ll_xy.py: convert lat/lon points to and from projected coordinates
+    infer_minor_corrections.py: return corrections for minor constituents
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
     predict_tide_drift.py: predict tidal elevations using harmonic constants
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
+    read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
+    Updated 07/2020: added FES2014 and FES2014_load
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 03/2020: use read_ICESat2_ATL03.py from read-ICESat-2 repository
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
@@ -91,6 +95,7 @@ from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
+from pyTMD.read_FES_model import extract_FES_constants
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
 
@@ -336,6 +341,48 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
         description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+    elif (MODEL == 'FES2014'):
+        model_directory = os.path.join(tide_dir,'fes2014','ocean_tide')
+        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
+            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
+            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
+            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
+            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
+            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
+            'ssa.nc.gz','t2.nc.gz']
+        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
+            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
+            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+        reference = ('https://www.aviso.altimetry.fr/data/products/'
+            'auxiliary-products/global-tide-fes.html')
+        variable = 'tide_ocean'
+        long_name = "Ocean Tide"
+        description = ("Ocean Tides including diurnal and semi-diurnal "
+            "(harmonic analysis), and longer period tides (dynamic and "
+            "self-consistent equilibrium).")
+        model_format = 'FES'
+        TYPE = 'z'
+        SCALE = 1.0/100.0
+    elif (MODEL == 'FES2014_load'):
+        model_directory = os.path.join(tide_dir,'fes2014','load_tide')
+        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
+            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
+            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
+            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
+            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
+            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
+            'ssa.nc.gz','t2.nc.gz']
+        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
+            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
+            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+        reference = ('https://www.aviso.altimetry.fr/data/products/'
+            'auxiliary-products/global-tide-fes.html')
+        variable = 'tide_load'
+        long_name = "Load Tide"
+        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
+        model_format = 'FES'
+        TYPE = 'z'
+        SCALE = 1.0/100.0
 
     #-- read data from FILE
     print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
@@ -389,15 +436,15 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
         #-- convert time from ATLAS SDP to days relative to Jan 1, 1992
         gps_seconds = atlas_sdp_gps_epoch + delta_time
-        tide_time = (gps_seconds - count_leap_seconds(gps_seconds))/86400.0 - 4378.0
+        tide_time = (gps_seconds-count_leap_seconds(gps_seconds))/86400.0-4378.0
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file,
-                model_file, EPSG, TYPE, METHOD='spline', GRID=model_format)
+                model_file, EPSG, TYPE=TYPE, METHOD='spline', GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-                grid_file, model_files, TYPE, METHOD='spline', SCALE=SCALE)
+                grid_file, model_files, TYPE=TYPE, METHOD='spline', SCALE=SCALE)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'GOT'):
             amp,ph = extract_GOT_constants(lon, lat, model_directory,
@@ -405,6 +452,10 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
             #-- convert time to Modified Julian Days for calculating deltat
             delta_file = os.path.join(tide_dir,'deltat.data')
             deltat = calc_delta_time(delta_file, tide_time + 48622.0)
+        elif (model_format == 'FES'):
+            amp,ph = extract_FES_constants(lon,lat,model_directory,model_files,
+                TYPE=TYPE, VERSION=MODEL, METHOD='spline', SCALE=SCALE)
+            deltat = np.zeros_like(tide_time)
 
         #-- calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
@@ -735,7 +786,7 @@ def main():
     model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas','TPXO9.1',
         'TPXO8-atlas','TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
         'AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load',
-        'GOT4.10','GOT4.10_load']
+        'GOT4.10','GOT4.10_load','FES2014','FES2014_load']
     assert MODEL in model_list, 'Unlisted tide model'
 
     #-- run for each input file

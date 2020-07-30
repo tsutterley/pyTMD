@@ -28,10 +28,15 @@ PROGRAM DEPENDENCIES:
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
 
 REFERENCES:
-    A. T. Doodson & H. Warburg, Admiralty Manual of Tides, HMSO, 1941.
+    A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
+    P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides"
+        US Coast and Geodetic Survey, Special Publication, 98, (1958).
+    M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
+        time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
     Updated 07/2020: added function docstrings
+        reduce list of minor constituents if in list of major values
     Updated 11/2019: output as numpy masked arrays instead of nan-filled arrays
     Updated 08/2018: added correction option ATLAS for localized OTIS solutions
     Updated 07/2018: added option to use GSFC GOT nodal corrections
@@ -43,7 +48,7 @@ from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
 def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     """
-    Infer the tidal corrections for minor constituents inferred using
+    Calculate the tidal corrections for minor constituents inferred using
     major constituents
 
     Arguments
@@ -70,10 +75,10 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     n = nt if ((npts == 1) & (nt > 1)) else npts
     #-- allocate for output elevation correction
     dh = np.ma.zeros((n))
-    #-- convert time from days relative to Jan 1, 1992 to modified julian days
+    #-- convert time from days relative to Jan 1, 1992 to modified Julian days
     time_mjd = 48622.0 + time
     cindex = ['q1','o1','p1','k1','n2','m2','s2','k2']
-    #-- re-order zmaj to correspond to cindex
+    #-- re-order major tides to correspond to order of cindex
     z8 = np.ma.zeros((n,8),dtype=np.complex64)
     ni = 0
     for i,c in enumerate(cindex):
@@ -86,31 +91,38 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     if (ni < 6):
         raise Exception('Not enough constituents for inference')
 
+    #-- list of minor constituents
+    minor = ['2q1','sigma1','rho1','m1','m1','chi1','pi1','phi1','theta1','j1',
+        'oo1','2n2','mu2','nu2','lambda2','l2','l2','t2']
+    #-- only add minor consituents that are not on the list of major values
+    minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
+
+    #-- relationship between major and minor constituent amplitude and phase
     zmin = np.zeros((n,18),dtype=np.complex64)
     zmin[:,0] = 0.263*z8[:,0] - 0.0252*z8[:,1]#-- 2Q1
     zmin[:,1] = 0.297*z8[:,0] - 0.0264*z8[:,1]#-- sigma1
-    zmin[:,2] = 0.164*z8[:,0] + 0.0048*z8[:,1]#-- rho1 +
+    zmin[:,2] = 0.164*z8[:,0] + 0.0048*z8[:,1]#-- rho1
     zmin[:,3] = 0.0140*z8[:,1] + 0.0101*z8[:,3]#-- M1
     zmin[:,4] = 0.0389*z8[:,1] + 0.0282*z8[:,3]#-- M1
     zmin[:,5] = 0.0064*z8[:,1] + 0.0060*z8[:,3]#-- chi1
     zmin[:,6] = 0.0030*z8[:,1] + 0.0171*z8[:,3]#-- pi1
     zmin[:,7] = -0.0015*z8[:,1] + 0.0152*z8[:,3]#-- phi1
     zmin[:,8] = -0.0065*z8[:,1] + 0.0155*z8[:,3]#-- theta1
-    zmin[:,9] = -0.0389*z8[:,1] + 0.0836*z8[:,3]#-- J1 +
-    zmin[:,10] = -0.0431*z8[:,1] + 0.0613*z8[:,3]#-- OO1 +
-    zmin[:,11] = 0.264*z8[:,4] - 0.0253*z8[:,5]#-- 2N2 +
-    zmin[:,12] = 0.298*z8[:,4] - 0.0264*z8[:,5]#-- mu2 +
-    zmin[:,13] = 0.165*z8[:,4] + 0.00487*z8[:,5]#-- nu2 +
+    zmin[:,9] = -0.0389*z8[:,1] + 0.0836*z8[:,3]#-- J1
+    zmin[:,10] = -0.0431*z8[:,1] + 0.0613*z8[:,3]#-- OO1
+    zmin[:,11] = 0.264*z8[:,4] - 0.0253*z8[:,5]#-- 2N2
+    zmin[:,12] = 0.298*z8[:,4] - 0.0264*z8[:,5]#-- mu2
+    zmin[:,13] = 0.165*z8[:,4] + 0.00487*z8[:,5]#-- nu2
     zmin[:,14] = 0.0040*z8[:,5] + 0.0074*z8[:,6]#-- lambda2
-    zmin[:,15] = 0.0131*z8[:,5] + 0.0326*z8[:,6]#-- L2 +
-    zmin[:,16] = 0.0033*z8[:,5] + 0.0082*z8[:,6]#-- L2 +
-    zmin[:,17] = 0.0585*z8[:,6]#-- t2 +
+    zmin[:,15] = 0.0131*z8[:,5] + 0.0326*z8[:,6]#-- L2
+    zmin[:,16] = 0.0033*z8[:,5] + 0.0082*z8[:,6]#-- L2
+    zmin[:,17] = 0.0585*z8[:,6]#-- t2
 
     hour = (time % 1)*24.0
     t1 = 15.0*hour
     t2 = 30.0*hour
     #-- set function for astrological longitudes
-    ASTRO5 = True if (CORRECTIONS == 'GOT') else False
+    ASTRO5 = True if CORRECTIONS in ('GOT','FES') else False
     #-- convert from Modified Julian Dates into Ephemeris Time
     S,H,P,omega,pp = calc_astrol_longitudes(time_mjd+DELTAT, ASTRO5=ASTRO5)
 
@@ -175,8 +187,8 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     u[:,15] = u[:,11]#-- L2
     u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr#-- L2
 
-    #-- sum over all tides
-    for k in range(18):
+    #-- sum over the minor tidal constituents of interest
+    for k in minor_indices:
         th = (arg[:,k] + u[:,k])*dtr
         dh += zmin.real[:,k]*f[:,k]*np.cos(th)-zmin.imag[:,k]*f[:,k]*np.sin(th)
     #-- return the inferred elevation

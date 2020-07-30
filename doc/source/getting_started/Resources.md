@@ -6,6 +6,7 @@ Resources
 - [OSU Global and Regional Tide Models](https://www.tpxo.net)  
 - [ESR Polar Tide Models](https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/)  
 - [A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2](https://ntrs.nasa.gov/search.jsp?R=19990089548)  
+- [Finite Element Solution (FES) tide models](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html)  
 - [Delta times from US Naval Observatory (USNO) Earth Orientation Products](http://maia.usno.navy.mil/ser7/deltat.data)  
 - [Delta times from NASA Crustal Dynamics Data Information System (CDDIS)](ftp://cddis.nasa.gov/products/iers/deltat.data)  
 
@@ -22,3 +23,4 @@ Resources
 - [ESR Tide Model Driver (TMD) Matlab Toolbox](https://www.esr.org/research/polar-tide-models/tmd-software/)  
 - [TMD Matlab Toolbox Repository](https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5)
 - [OSU Tidal Prediction Software (OTPS)](https://www.tpxo.net/otps)  
+- [FES (Finite Element Solution) tide model software](https://bitbucket.org/cnes_aviso/fes/src/master/)  

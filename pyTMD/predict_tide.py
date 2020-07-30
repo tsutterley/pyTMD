@@ -74,7 +74,7 @@ def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
             amp,ph,omega,alpha,species = load_constituent(c)
             #-- add component for constituent to output tidal elevation
             th = omega*time*86400.0 + ph + pu[0,k]
-        elif (CORRECTIONS == 'GOT'):
+        elif CORRECTIONS in ('GOT','FES'):
             th = G[0,k]*np.pi/180.0 + pu[0,k]
         #-- sum over all tides
         ht += pf[0,k]*hc.real[:,k]*np.cos(th) - pf[0,k]*hc.imag[:,k]*np.sin(th)

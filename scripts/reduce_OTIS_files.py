@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (02/2020)
+Written by Tyler Sutterley (07/2020)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -21,10 +21,11 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     read_tide_model.py: extract tidal harmonic constants out of a tidal model
-    convert_xy_ll.py: converts lat/lon points to and from projected coordinates
+    convert_ll_xy.py: converts lat/lon points to and from projected coordinates
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 07/2020: renamed coordinate conversion program
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
     Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
@@ -36,7 +37,7 @@ import sys
 import os
 import getopt
 import numpy as np
-from pyTMD.convert_xy_ll import convert_xy_ll
+from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.read_tide_model import *
 from pyTMD.output_otis_tides import *
 
@@ -136,7 +137,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS, MODE=0o775):
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
 
     #-- convert bounds from latitude/longitude to model coordinates
-    x,y = convert_xy_ll(BOUNDS[:2],BOUNDS[2:],EPSG,'F')
+    x,y = convert_ll_xy(BOUNDS[:2],BOUNDS[2:],EPSG,'F')
     #-- find indices to reduce to xmin,xmax,ymin,ymax
     gridx,gridy = np.meshgrid(xi,yi)
     indy,indx = np.nonzero((gridx >= x[0]) & (gridx <= x[1]) &
