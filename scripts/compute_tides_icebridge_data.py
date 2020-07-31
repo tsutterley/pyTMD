@@ -69,7 +69,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
-    Updated 07/2020: added FES2014 and FES2014_load
+    Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
@@ -476,7 +476,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         TYPE = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9-atlas-v2'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas')
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
         grid_file = 'grid_tpxo9_atlas_v2.nc.gz'
         model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
             'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
@@ -721,7 +721,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
             METHOD=METHOD, SCALE=SCALE)
         #-- convert time to Modified Julian Days for calculating deltat
-        delta_file = os.path.join(tide_dir,'deltat.data')
+        delta_file = os.path.join(tide_dir,'merged_deltat.data')
         deltat = calc_delta_time(delta_file, t + 48622.0)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,

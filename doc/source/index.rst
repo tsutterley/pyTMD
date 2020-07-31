@@ -53,10 +53,12 @@ calculating radial pole tide displacements
     user_guide/convert_julian.md
     user_guide/convert_ll_xy.md
     user_guide/count_leap_seconds.md
+    user_guide/iers_delta_time.md
     user_guide/iers_mean_pole.md
     user_guide/infer_minor_corrections.md
     user_guide/load_constituent.md
     user_guide/load_nodal_corrections.md
+    user_guide/merge_delta_time.md
     user_guide/output_otis_tides.md
     user_guide/predict_tidal_ts.md
     user_guide/predict_tide_drift.md

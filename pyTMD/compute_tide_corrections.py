@@ -61,7 +61,8 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
-    Updated 07/2020: added function docstrings
+    Updated 07/2020: added function docstrings, FES2014 and TPX09-atlas-v2
+        use merged delta time files combining biannual, monthly and daily files
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
     Written 03/2020
 """
@@ -177,6 +178,18 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
         model_format = 'netcdf'
         model_type = 'z'
+        SCALE = 1.0/1000.0
+    elif (MODEL == 'TPXO9-atlas-v2'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
+        grid_file = 'grid_tpxo9_atlas_v2.nc.gz'
+        model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
+            'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
+            'h_n2_tpxo9_atlas_30_v2.nc.gz','h_m2_tpxo9_atlas_30_v2.nc.gz',
+            'h_s2_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
+            'h_m4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
+            'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
+        model_format = 'netcdf'
+        TYPE = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9.1'):
         grid_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','grid_tpxo9')
@@ -335,7 +348,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
             METHOD=METHOD, SCALE=SCALE)
         #-- convert time to Modified Julian Days for calculating deltat
-        delta_file = os.path.join(DIRECTORY,'deltat.data')
+        delta_file = os.path.join(DIRECTORY,'merged_deltat.data')
         deltat = calc_delta_time(delta_file, t + 48622.0)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,

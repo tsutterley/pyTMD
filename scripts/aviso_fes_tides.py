@@ -71,7 +71,7 @@ def check_connection(USER, PASSWORD):
 def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
     CURRENTS=False, GZIP=False, LOG=False, MODE=None):
     #-- connect and login to AVISO ftp server
-    f = ftplib.FTP('ftp-access.aviso.altimetry.fr')
+    f = ftplib.FTP('ftp-access.aviso.altimetry.fr',timeout=1000)
     f.login(USER, PASSWORD)
     #-- check if local directory exists and recursively create if not
     localpath = os.path.join(DIRECTORY,MODEL.lower())
