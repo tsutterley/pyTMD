@@ -53,8 +53,9 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    time.py: utilities for calculating time operations
+    utilities: download and management utilities for syncing files
     convert_julian.py: returns the calendar date and time given a Julian date
-    count_leap_seconds.py: determines the number of leap seconds for a GPS time
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -69,6 +70,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 08/2020: using builtin time operations
     Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
@@ -91,8 +93,9 @@ import time
 import h5py
 import getopt
 import numpy as np
+import pyTMD.time
+import pyTMD.utilities
 from pyTMD.convert_julian import convert_julian
-from pyTMD.count_leap_seconds import count_leap_seconds
 from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
@@ -122,7 +125,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
     #-- return the number of lines
     return file_lines
 
-#-- PURPOSE: read the ATM Level-1b data file for variables of interest
+##-- PURPOSE: read the ATM Level-1b data file for variables of interest
 def read_ATM_qfit_file(input_file, input_subsetter):
     #-- regular expression pattern for extracting parameters
     mission_flag = '(BLATM1B|ILATM1B|ILNSA1B)'
@@ -212,12 +215,17 @@ def read_ATM_qfit_file(input_file, input_subsetter):
             second[i] = np.float(line_contents[4:])
         #-- close the input HDF5 file
         fileID.close()
-    #-- leap seconds for converting from GPS time to UTC
-    S = calc_GPS_to_UTC(year,month,day,hour,minute,second)
+    #-- calculate the number of leap seconds between GPS time (seconds
+    #-- since Jan 6, 1980 00:00:00) and UTC
+    gps_seconds = pyTMD.time.convert_calendar_dates(year,month,day,
+        hour=hour,minute=minute,second=second,
+        epoch=(1980,1,6,0,0,0),scale=86400.0)
+    leap_seconds = pyTMD.time.count_leap_seconds(gps_seconds)
     #-- calculation of Julian day taking into account leap seconds
-    JD = calc_julian_day(year,month,day,HOUR=hour,MINUTE=minute,SECOND=second-S)
     #-- converting to J2000 seconds
-    ATM_L1b_input['time'] = (JD - 2451545.0)*86400.0
+    ATM_L1b_input['time'] = pyTMD.time.convert_calendar_dates(year,month,day,
+        hour=hour,minute=minute,second=second-leap_seconds,
+        epoch=(2000,1,1,12,0,0,0),scale=86400.0)
     #-- subset the data to indices if specified
     if input_subsetter:
         for key,val in ATM_L1b_input.items():
@@ -272,14 +280,19 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     second = ATM_L2_input['seconds'] % 60.0
     #-- First column in Pre-IceBridge and ICESSN Version 1 files is GPS time
     if (MISSION == 'BLATM2') or (SFX != 'csv'):
-        #-- leap seconds for converting from GPS time to UTC
-        S = calc_GPS_to_UTC(year,month,day,hour,minute,second)
+        #-- calculate the number of leap seconds between GPS time (seconds
+        #-- since Jan 6, 1980 00:00:00) and UTC
+        gps_seconds = pyTMD.time.convert_calendar_dates(year,month,day,
+            hour=hour,minute=minute,second=second,
+            epoch=(1980,1,6,0,0,0),scale=86400.0)
+        leap_seconds = pyTMD.time.count_leap_seconds(gps_seconds)
     else:
-        S = 0.0
+        leap_seconds = 0.0
     #-- calculation of Julian day
-    JD = calc_julian_day(year,month,day,HOUR=hour,MINUTE=minute,SECOND=second-S)
     #-- converting to J2000 seconds
-    ATM_L2_input['time'] = (JD - 2451545.0)*86400.0
+    ATM_L2_input['time'] = pyTMD.time.convert_calendar_dates(year,month,day,
+        hour=hour,minute=minute,second=second-leap_seconds,
+        epoch=(2000,1,1,12,0,0,0),scale=86400.0)
     #-- convert RMS from centimeters to meters
     ATM_L2_input['error'] = ATM_L2_input['RMS']/100.0
     #-- subset the data to indices if specified
@@ -383,24 +396,6 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
             LVIS_L2_input[key] = val[input_subsetter]
     #-- return the output variables
     return LVIS_L2_input,file_lines,lvis_flag[REGION]
-
-#-- PURPOSE: calculate the Julian day from calendar date
-#-- http://scienceworld.wolfram.com/astronomy/JulianDate.html
-def calc_julian_day(YEAR, MONTH, DAY, HOUR=0, MINUTE=0, SECOND=0):
-    JD = 367.*YEAR - np.floor(7.*(YEAR + np.floor((MONTH+9.)/12.))/4.) - \
-        np.floor(3.*(np.floor((YEAR + (MONTH - 9.)/7.)/100.) + 1.)/4.) + \
-        np.floor(275.*MONTH/9.) + DAY + 1721028.5 + HOUR/24. + MINUTE/1440. + \
-        SECOND/86400.
-    return np.array(JD,dtype=np.float)
-
-#-- PURPOSE: calculate the number of leap seconds between GPS time (seconds
-#-- since Jan 6, 1980 00:00:00) and UTC
-def calc_GPS_to_UTC(YEAR, MONTH, DAY, HOUR, MINUTE, SECOND):
-    GPS = 367.*YEAR - np.floor(7.*(YEAR + np.floor((MONTH+9.)/12.))/4.) - \
-        np.floor(3.*(np.floor((YEAR + (MONTH - 9.)/7.)/100.) + 1.)/4.) + \
-        np.floor(275.*MONTH/9.) + DAY + 1721028.5 - 2444244.5
-    GPS_Time = GPS*86400.0 + HOUR*3600.0 + MINUTE*60.0 + SECOND
-    return count_leap_seconds(GPS_Time)
 
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
@@ -699,33 +694,33 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         #-- load IceBridge LVIS data from input_file
         dinput,file_lines,HEM = read_LVIS_HDF5_file(input_file,input_subsetter)
 
-    #-- extract lat/lon
-    lon = dinput['lon'][:]
-    lat = dinput['lat'][:]
     #-- convert time from J2000 to days relative to Jan 1, 1992 (48622mjd)
     #-- J2000: seconds since 2000-01-01 12:00:00 UTC
-    t = dinput['time'][:]/86400.0 + 2922.5
-    #-- elevation
-    h1 = dinput['data'][:]
+    t = pyTMD.time.convert_delta_time(dinput['time'],
+        epoch1=(2000,1,1,12,0,0), epoch2=(1992,1,1,0,0,0),
+        scale=1.0/86400.0)
 
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
-        amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
-            EPSG, TYPE=TYPE, METHOD=METHOD, GRID=model_format)
+        amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
+            grid_file, model_file, EPSG, TYPE=TYPE, METHOD=METHOD,
+            GRID=model_format)
         deltat = np.zeros_like(t)
     elif model_format in ('netcdf'):
-        amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-            grid_file, model_files, TYPE=TYPE, METHOD=METHOD, SCALE=SCALE)
+        amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
+            model_directory, grid_file, model_files, TYPE=TYPE, METHOD=METHOD,
+            SCALE=SCALE)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
-        amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
-            METHOD=METHOD, SCALE=SCALE)
-        #-- convert time to Modified Julian Days for calculating deltat
-        delta_file = os.path.join(tide_dir,'merged_deltat.data')
-        deltat = calc_delta_time(delta_file, t + 48622.0)
+        amp,ph = extract_GOT_constants(dinput['lon'], dinput['lat'],
+            model_directory, model_files, METHOD=METHOD, SCALE=SCALE)
+        #-- interpolate delta times from calendar dates to tide time
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+        deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
-        amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,
-            TYPE=TYPE, VERSION=MODEL, METHOD=METHOD, SCALE=SCALE)
+        amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
+            model_directory, model_files, TYPE=TYPE, VERSION=MODEL,
+            METHOD=METHOD, SCALE=SCALE)
         deltat = np.zeros_like(t)
 
     #-- calculate complex phase in radians for Euler's
@@ -808,20 +803,20 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     fid.attrs['elevation_file'] = os.path.basename(input_file)
     fid.attrs['tide_model'] = MODEL
     #-- add geospatial and temporal attributes
-    fid.attrs['geospatial_lat_min'] = lat.min()
-    fid.attrs['geospatial_lat_max'] = lat.max()
-    fid.attrs['geospatial_lon_min'] = lon.min()
-    fid.attrs['geospatial_lon_max'] = lon.max()
+    fid.attrs['geospatial_lat_min'] = dinput['lat'].min()
+    fid.attrs['geospatial_lat_max'] = dinput['lat'].max()
+    fid.attrs['geospatial_lon_min'] = dinput['lon'].min()
+    fid.attrs['geospatial_lon_max'] = dinput['lon'].max()
     fid.attrs['geospatial_lat_units'] = "degrees_north"
     fid.attrs['geospatial_lon_units'] = "degrees_east"
     fid.attrs['geospatial_ellipsoid'] = "WGS84"
     fid.attrs['time_type'] = 'UTC'
-
     #-- convert start/end time from days since 1992-01-01 into Julian days
-    JD_start = np.min(t) + 2448622.5
-    JD_end = np.max(t) + 2448622.5
+    time_range = np.array([np.min(t),np.max(t)])
+    time_julian = 2400000.5 + pyTMD.time.convert_delta_time(time_range,
+        epoch1=(1992,1,1,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0)
     #-- convert to calendar date with convert_julian.py
-    cal = convert_julian(np.array([JD_start,JD_end]),ASTYPE=np.int)
+    cal = convert_julian(time_julian,ASTYPE=np.int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)
@@ -831,8 +826,8 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     fid.attrs['RangeBeginningDate'] = '{0:4d}-{1:02d}-{2:02d}'.format(*args)
     args = (cal['year'][-1],cal['month'][-1],cal['day'][-1])
     fid.attrs['RangeEndingDate'] = '{0:4d}-{1:02d}-{2:02d}'.format(*args)
-    duration = np.round(JD_end*86400.0 - JD_start*86400.0)
-    fid.attrs['DurationTimeSeconds'] ='{0:0.0f}'.format(duration)
+    duration = np.round(time_julian[-1]*86400.0 - time_julian[0]*86400.0)
+    fid.attrs['DurationTimeSeconds'] = '{0:0.0f}'.format(duration)
     #-- close the output HDF5 dataset
     fid.close()
     #-- change the permissions level to MODE

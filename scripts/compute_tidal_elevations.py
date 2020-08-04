@@ -54,6 +54,8 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    time.py: utilities for calculating time operations
+    utilities: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -67,6 +69,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 08/2020: using builtin time operations
     Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
@@ -82,6 +85,8 @@ import sys
 import os
 import getopt
 import numpy as np
+import pyTMD.time
+import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
@@ -306,8 +311,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(dinput['lon'], dinput['lat'],
             model_directory, model_files, METHOD='spline', SCALE=SCALE)
-        delta_file = os.path.join(tide_dir,'merged_deltat.data')
-        deltat = calc_delta_time(delta_file,dinput['MJD'])
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+        #-- convert times from modified julian days to days since 1992-01-01
+        deltat = calc_delta_time(delta_file,dinput['MJD'] - 48622.0)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
             model_directory, model_files, TYPE=TYPE, VERSION=TIDE_MODEL,

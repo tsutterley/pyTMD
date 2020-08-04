@@ -1,12 +1,12 @@
 calc_delta_time.py
 ==================
 
- - Calculates the difference between universal time and dynamical time (TT - UT1) following Richard Ray's PERTH3 algorithms
+ - Calculates the difference between dynamic time and universal time (TT - UT1) following Richard Ray's PERTH3 algorithms
 
 #### Calling Sequence
 ```python
 from pyTMD.calc_delta_time import calc_delta_time
-deltat = calc_delta_time(delta_file, iMJD)
+deltat = calc_delta_time(delta_file, idays)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/calc_delta_time.py)
 
@@ -14,7 +14,7 @@ deltat = calc_delta_time(delta_file, iMJD)
  1. `delta_file`:  
     - http://maia.usno.navy.mil/ser7/deltat.data  
     - ftp://cddis.nasa.gov/products/iers/deltat.data  
- 2. `iMJD`: Modified Julian Day of times to interpolate  
+ 2. `idays`: times to interpolate as days since 1992-01-01T00:00:00  
 
 #### Outputs
  - `deltat`: (TT - UT1) in days

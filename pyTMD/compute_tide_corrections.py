@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (08/2020)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -47,6 +47,8 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    time.py: utilities for calculating time operations
+    utilities: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -61,6 +63,7 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
+    Updated 08/2020: using builtin time operations
     Updated 07/2020: added function docstrings, FES2014 and TPX09-atlas-v2
         use merged delta time files combining biannual, monthly and daily files
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
@@ -72,7 +75,7 @@ import os
 import pyproj
 import datetime
 import numpy as np
-from pyTMD.count_leap_seconds import count_leap_seconds
+import pyTMD.time
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide import predict_tide
@@ -87,27 +90,6 @@ def point_to_array(val):
     Convert a value to a numpy array if originally a single point
     """
     return np.array([val]) if (np.ndim(val) == 0) else np.copy(val)
-
-#-- PURPOSE: convert times from seconds since EPOCH1 to time since EPOCH2
-def convert_delta_time(delta_time, EPOCH1=None, EPOCH2=None, SCALE=(1./86400.)):
-    """
-    Convert delta time from seconds since EPOCH1 to time since EPOCH2
-
-    Arguments
-    ---------
-    delta_time: seconds since EPOCH1
-
-    Keyword arguments
-    -----------------
-    EPOCH1: epoch for input delta_time
-    EPOCH2: epoch for output delta_time
-    SCALE: scaling factor for converting time to output units
-    """
-    epoch1 = datetime.datetime(*EPOCH1)
-    epoch2 = datetime.datetime(*EPOCH2)
-    delta_time_epochs = (epoch2 - epoch1).total_seconds()
-    #-- subtract difference in time and rescale to output units
-    return SCALE*(delta_time - delta_time_epochs)
 
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
@@ -320,20 +302,20 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     delta_time = point_to_array(delta_time)
     #-- calculate leap seconds if specified
     if (TIME.upper() == 'GPS'):
-        GPS_Time = convert_delta_time(delta_time, EPOCH1=EPOCH,
-            EPOCH2=(1980,1,6,0,0,0), SCALE=1.0)
-        leap_seconds = count_leap_seconds(GPS_Time)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time)
     elif (TIME.upper() == 'TAI'):
         #-- TAI time is ahead of GPS time by 19 seconds
-        GPS_Time = convert_delta_time(delta_time-19.0, EPOCH1=EPOCH,
-            EPOCH2=(1980,1,6,0,0,0), SCALE=1.0)
-        leap_seconds = count_leap_seconds(GPS_Time)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time)
     else:
         leap_seconds = 0.0
 
     #-- convert time to days relative to Jan 1, 1992 (48622mjd)
-    t = convert_delta_time(delta_time - leap_seconds, EPOCH1=EPOCH,
-        EPOCH2=(1992,1,1,0,0,0), SCALE=(1.0/86400.0))
+    t = pyTMD.time.convert_delta_time(delta_time - leap_seconds, epoch1=EPOCH,
+        epoch2=(1992,1,1,0,0,0), scale=(1.0/86400.0))
 
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
@@ -347,9 +329,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
             METHOD=METHOD, SCALE=SCALE)
-        #-- convert time to Modified Julian Days for calculating deltat
-        delta_file = os.path.join(DIRECTORY,'merged_deltat.data')
-        deltat = calc_delta_time(delta_file, t + 48622.0)
+        #-- interpolate delta times from calendar dates to tide time
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+        deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,
             TYPE=model_type, VERSION=MODEL, METHOD=METHOD, SCALE=SCALE)

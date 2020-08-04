@@ -49,8 +49,9 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     read_ICESat2_ATL12.py: reads ICESat-2 ocean surface height data files
+    time.py: utilities for calculating time operations
+    utilities: download and management utilities for syncing files
     convert_julian.py: returns the calendar date and time given a Julian date
-    count_leap_seconds.py: determines the number of leap seconds for a GPS time
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -64,6 +65,7 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
+    Updated 08/2020: using builtin time operations
     Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 03/2020: use read_ICESat2_ATL12.py from read-ICESat-2 repository
@@ -90,9 +92,9 @@ import h5py
 import getopt
 import datetime
 import numpy as np
-from icesat2_toolkit.read_ICESat2_ATL12 import read_HDF5_ATL12
+import pyTMD.time
+import pyTMD.utilities
 from pyTMD.convert_julian import convert_julian
-from pyTMD.count_leap_seconds import count_leap_seconds
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
@@ -100,6 +102,7 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
+from icesat2_toolkit.read_ICESat2_ATL12 import read_HDF5_ATL12
 
 #-- PURPOSE: read ICESat-2 ocean surface height (ATL12) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
@@ -430,7 +433,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
 
         #-- convert time from ATLAS SDP to days relative to Jan 1, 1992
         gps_seconds = atlas_sdp_gps_epoch + val['delta_time']
-        tide_time = (gps_seconds-count_leap_seconds(gps_seconds))/86400.0-4378.0
+        leap_seconds = pyTMD.time.count_leap_seconds(gps_seconds)
+        tide_time = pyTMD.time.convert_delta_time(gps_seconds-leap_seconds,
+            epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(val['longitude'],
@@ -445,9 +450,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
         elif (model_format == 'GOT'):
             amp,ph = extract_GOT_constants(val['longitude'], val['latitude'],
                 model_directory, model_files, METHOD='spline', SCALE=SCALE)
-            #-- convert time to Modified Julian Days for calculating deltat
-            delta_file = os.path.join(tide_dir,'merged_deltat.data')
-            deltat = calc_delta_time(delta_file, tide_time + 48622.0)
+            #-- interpolate delta times from calendar dates to tide time
+            delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+            deltat = calc_delta_time(delta_file, tide_time)
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(val['longitude'], val['latitude'],
                 model_directory, model_files, TYPE=TYPE, VERSION=MODEL,
@@ -732,11 +737,14 @@ def HDF5_atl12_tide_write(IS2_atl12_tide, IS2_atl12_attrs, INPUT=None,
     fileID.attrs['geospatial_ellipsoid'] = "WGS84"
     fileID.attrs['date_type'] = 'UTC'
     fileID.attrs['time_type'] = 'CCSDS UTC-A'
-    #-- convert start and end time from ATLAS SDP seconds into Julian days
+    #-- convert start and end time from ATLAS SDP seconds into GPS seconds
     atlas_sdp_gps_epoch=IS2_atl12_tide['ancillary_data']['atlas_sdp_gps_epoch']
     gps_seconds = atlas_sdp_gps_epoch + np.array([tmn,tmx])
-    time_leaps = count_leap_seconds(gps_seconds)
-    time_julian = 2444244.5 + (gps_seconds - time_leaps)/86400.0
+    #-- calculate leap seconds
+    leaps = pyTMD.time.count_leap_seconds(gps_seconds)
+    #-- convert from seconds since 1980-01-06T00:00:00 to Julian days
+    time_julian = 2400000.5 + pyTMD.time.convert_delta_time(gps_seconds - leaps,
+        epoch1=(1980,1,6,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- convert to calendar date with convert_julian.py
     YY,MM,DD,HH,MN,SS = convert_julian(time_julian,FORMAT='tuple')
     #-- add attributes with measurement date start, end and duration
