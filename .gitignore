@@ -32,6 +32,7 @@ __pycache__
 build/
 dist/
 develop-eggs/
+run/
 wheels/
 *.egg-info/
 .installed.cfg

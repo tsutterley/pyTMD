@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_icebridge_data.py
-Written by Tyler Sutterley (03/2020)
+Written by Tyler Sutterley (08/2020)
 Calculates load pole tide displacements for correcting Operation IceBridge
     elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -25,14 +25,16 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
 
 PROGRAM DEPENDENCIES:
+    time.py: utilities for calculating time operations
+    utilities: download and management utilities for syncing files
     convert_julian.py: returns the calendar date and time given a Julian date
-    count_leap_seconds.py: determines the number of leap seconds for a GPS time
     convert_calendar_decimal.py: converts from calendar dates into decimal years
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 08/2020: using builtin time operations
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 02/2019: using range for python3 compatibility
     Updated 10/2018: updated GPS time calculation for calculating leap seconds
@@ -48,9 +50,8 @@ import h5py
 import getopt
 import numpy as np
 import scipy.interpolate
+import pyTMD.time
 from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
-from pyTMD.count_leap_seconds import count_leap_seconds
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
@@ -165,12 +166,17 @@ def read_ATM_qfit_file(input_file, input_subsetter):
             second[i] = np.float(line_contents[4:])
         #-- close the input HDF5 file
         fileID.close()
-    #-- leap seconds for converting from GPS time to UTC
-    S = calc_GPS_to_UTC(year,month,day,hour,minute,second)
+    #-- calculate the number of leap seconds between GPS time (seconds
+    #-- since Jan 6, 1980 00:00:00) and UTC
+    gps_seconds = pyTMD.time.convert_calendar_dates(year,month,day,
+        hour=hour,minute=minute,second=second,
+        epoch=(1980,1,6,0,0,0),scale=86400.0)
+    leap_seconds = pyTMD.time.count_leap_seconds(gps_seconds)
     #-- calculation of Julian day taking into account leap seconds
-    JD = calc_julian_day(year,month,day,HOUR=hour,MINUTE=minute,SECOND=second-S)
     #-- converting to J2000 seconds
-    ATM_L1b_input['time'] = (JD - 2451545.0)*86400.0
+    ATM_L1b_input['time'] = pyTMD.time.convert_calendar_dates(year,month,day,
+        hour=hour,minute=minute,second=second-leap_seconds,
+        epoch=(2000,1,1,12,0,0,0),scale=86400.0)
     #-- subset the data to indices if specified
     if input_subsetter:
         for key,val in ATM_L1b_input.items():
@@ -225,14 +231,19 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     second = ATM_L2_input['seconds'] % 60.0
     #-- First column in Pre-IceBridge and ICESSN Version 1 files is GPS time
     if (MISSION == 'BLATM2') or (SFX != 'csv'):
-        #-- leap seconds for converting from GPS time to UTC
-        S = calc_GPS_to_UTC(year,month,day,hour,minute,second)
+        #-- calculate the number of leap seconds between GPS time (seconds
+        #-- since Jan 6, 1980 00:00:00) and UTC
+        gps_seconds = pyTMD.time.convert_calendar_dates(year,month,day,
+            hour=hour,minute=minute,second=second,
+            epoch=(1980,1,6,0,0,0),scale=86400.0)
+        leap_seconds = pyTMD.time.count_leap_seconds(gps_seconds)
     else:
-        S = 0.0
+        leap_seconds = 0.0
     #-- calculation of Julian day
-    JD = calc_julian_day(year,month,day,HOUR=hour,MINUTE=minute,SECOND=second-S)
     #-- converting to J2000 seconds
-    ATM_L2_input['time'] = (JD - 2451545.0)*86400.0
+    ATM_L2_input['time'] = pyTMD.time.convert_calendar_dates(year,month,day,
+        hour=hour,minute=minute,second=second-leap_seconds,
+        epoch=(2000,1,1,12,0,0,0),scale=86400.0)
     #-- convert RMS from centimeters to meters
     ATM_L2_input['error'] = ATM_L2_input['RMS']/100.0
     #-- subset the data to indices if specified
@@ -336,24 +347,6 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
             LVIS_L2_input[key] = val[input_subsetter]
     #-- return the output variables
     return LVIS_L2_input,file_lines,lvis_flag[REGION]
-
-#-- PURPOSE: calculate the Julian day from calendar date
-#-- http://scienceworld.wolfram.com/astronomy/JulianDate.html
-def calc_julian_day(YEAR, MONTH, DAY, HOUR=0, MINUTE=0, SECOND=0):
-    JD = 367.*YEAR - np.floor(7.*(YEAR + np.floor((MONTH+9.)/12.))/4.) - \
-        np.floor(3.*(np.floor((YEAR + (MONTH - 9.)/7.)/100.) + 1.)/4.) + \
-        np.floor(275.*MONTH/9.) + DAY + 1721028.5 + HOUR/24. + MINUTE/1440. + \
-        SECOND/86400.
-    return np.array(JD,dtype=np.float)
-
-#-- PURPOSE: calculate the number of leap seconds between GPS time (seconds
-#-- since Jan 6, 1980 00:00:00) and UTC
-def calc_GPS_to_UTC(YEAR, MONTH, DAY, HOUR, MINUTE, SECOND):
-    GPS = 367.*YEAR - np.floor(7.*(YEAR + np.floor((MONTH+9.)/12.))/4.) - \
-        np.floor(3.*(np.floor((YEAR + (MONTH - 9.)/7.)/100.) + 1.)/4.) + \
-        np.floor(275.*MONTH/9.) + DAY + 1721028.5 - 2444244.5
-    GPS_Time = GPS*86400.0 + HOUR*3600.0 + MINUTE*60.0 + SECOND
-    return count_leap_seconds(GPS_Time)
 
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute load pole tide radial displacements at data points and times

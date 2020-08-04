@@ -11,9 +11,10 @@ matplotlib and cartopy
 
 Documentation is available at https://pytmd.readthedocs.io
 """
+import pyTMD.time
+import pyTMD.utilities
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.convert_julian import convert_julian
-from pyTMD.count_leap_seconds import count_leap_seconds
 from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes

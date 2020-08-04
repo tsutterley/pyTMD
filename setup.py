@@ -14,7 +14,7 @@ scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith(
 
 setup(
     name='pyTMD',
-    version='1.0.2.1',
+    version='1.0.2.2',
     description='Tide Model Driver to read OTIS, GOT and FES formatted tidal solutions and make tidal predictions',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -36,4 +36,5 @@ setup(
     dependency_links=['https://github.com/tsutterley/read-ICESat-2/tarball/master',
         'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/master'],
     scripts=scripts,
+    include_package_data=True,
 )
