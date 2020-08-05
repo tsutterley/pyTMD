@@ -176,9 +176,11 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         #-- use scipy griddata to interpolate values
         interp_points = np.c_[lon.flatten(),lat.flatten()]
         D.data[:] = scipy.interpolate.griddata(interp_points,
-            bathymetry.flatten(), np.c_[ilon,ilat], method=METHOD)
+            bathymetry.data.flatten(), np.c_[ilon,ilat],
+            method=METHOD)
         D.mask[:] = scipy.interpolate.griddata(interp_points,
-            mask.flatten(), np.c_[ilon,ilat], method=METHOD).astype(np.bool)
+            bathymetry.mask.flatten(), np.c_[ilon,ilat],
+            method=METHOD).astype(np.bool)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):

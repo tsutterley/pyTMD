@@ -157,7 +157,7 @@ def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
     #-- close log file and set permissions level to MODE
     if LOG:
         fid.close()
-        os.chmod(os.path.join(LOGDIR,LOGFILE), MODE)
+        os.chmod(os.path.join(DIRECTORY,LOGFILE), MODE)
 
 #-- PURPOSE: pull file from a remote ftp server and decompress if tar file
 def ftp_download_file(fid,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE):
@@ -282,7 +282,7 @@ def main():
         #-- check that AVISO FTP Server credentials were entered
         USER = builtins.input('Username for {0}: '.format(HOST))
         #-- enter password securely from command-line
-        PASSWORD = getpass.getpass('Password for {0}@{1}: '.format(USER,URS))
+        PASSWORD = getpass.getpass('Password for {0}@{1}: '.format(USER,HOST))
     elif NETRC:
         USER,LOGIN,PASSWORD = netrc.netrc(NETRC).authenticators(HOST)
     else:

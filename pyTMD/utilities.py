@@ -14,6 +14,7 @@ import re
 import io
 import ftplib
 import shutil
+import socket
 import inspect
 import hashlib
 import posixpath

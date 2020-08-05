@@ -117,8 +117,8 @@ def get_leap_seconds():
     leap_secs = pyTMD.utilities.get_data_path(['data','leap-seconds.list'])
     #-- find line with file expiration as delta time
     with open(leap_secs,'r') as fid:
-        secs, = [re.findall('\d+',i).pop() for i in fid.read().splitlines()
-            if re.match('^(?=#@)',i)]
+        secs, = [re.findall(r'\d+',i).pop() for i in fid.read().splitlines()
+            if re.match(r'^(?=#@)',i)]
     #-- check that leap seconds file is still valid
     expiry = datetime.datetime(1900,1,1) + datetime.timedelta(seconds=int(secs))
     today = datetime.datetime.now()
@@ -257,7 +257,7 @@ def iers_delta_time(verbose=False, mode=0o775):
     #-- connect to ftp host for IERS bulletins
     HOST = ['ftp.iers.org','products','eop','rapid','bulletina']
     #-- regular expression pattern for finding files
-    rx = re.compile('bulletina-(.*?)-(\d+).txt$',re.VERBOSE)
+    rx = re.compile(r'bulletina-(.*?)-(\d+).txt$',re.VERBOSE)
     #-- open output daily delta time file
     daily_file = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
     fid = open(daily_file,'w')
@@ -322,12 +322,12 @@ def read_iers_bulletin_a(fileID):
         #-- file line at count
         l = file_contents[count]
         #-- check if line contains time offsets
-        if re.search('TT\s\=\sTAI',l):
-            TT_TAI = np.float(re.findall('(\d+\.\d+)',l).pop())
-        if re.search('TAI-UTC',l):
-            TAI_UTC = np.float(re.findall('=\s(\d+\.\d+)',l).pop())
+        if re.search(r'TT\s\=\sTAI',l):
+            TT_TAI = np.float(re.findall(r'(\d+\.\d+)',l).pop())
+        if re.search(r'TAI-UTC',l):
+            TAI_UTC = np.float(re.findall(r'=\s(\d+\.\d+)',l).pop())
         #-- find line to set HEADER flag to True
-        HEADER = bool(re.search('COMBINED\sEARTH\sORIENTATION\sPARAMETERS:',l))
+        HEADER = bool(re.search(r'COMBINED\sEARTH\sORIENTATION\sPARAMETERS:',l))
         #-- add 1 to counter
         count += 1
 
@@ -398,7 +398,7 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
     #-- try downloading from US Naval Oceanography Portal
     REMOTE = ['http://maia.usno.navy.mil','ser7',FILE]
     try:
-        pyTMD.utilities.from_http(HOST,timeout=5,local=LOCAL,hash=HASH,
+        pyTMD.utilities.from_http(REMOTE,timeout=5,local=LOCAL,hash=HASH,
             verbose=verbose,mode=mode)
     except:
         pass

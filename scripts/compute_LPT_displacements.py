@@ -50,7 +50,7 @@ from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 
 #-- PURPOSE: compute the pole load tide radial displacements following
 #-- IERS conventions (2010)
-def compute_LPT_displacements(tide_dir, input_file, output_file, MODE=0775):
+def compute_LPT_displacements(tide_dir, input_file, output_file, MODE=0o775):
 
     #-- read input *.csv file to extract MJD, latitude, longitude and elevation
     dtype = dict(names=('MJD','lat','lon','h'),formats=('f','f','f','f'))
@@ -150,7 +150,7 @@ def main():
     #-- set data directory containing the pole tide files
     tide_dir = None
     #-- permissions mode of the local files (number in octal)
-    MODE = 0775
+    MODE = 0o775
     for opt, arg in optlist:
         if opt in ('-h','--help'):
             usage()
