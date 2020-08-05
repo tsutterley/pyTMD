@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL12.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (08/2020)
 Calculates tidal elevations for correcting ICESat-2 ocean surface height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -65,7 +65,7 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
-    Updated 08/2020: using builtin time operations
+    Updated 08/2020: using builtin time operations.  python3 regular expressions
     Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
     Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
     Updated 03/2020: use read_ICESat2_ATL12.py from read-ICESat-2 repository
@@ -395,7 +395,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
         ATTRIBUTES=True)
     DIRECTORY = os.path.dirname(FILE)
     #-- extract parameters from ICESat-2 ATLAS HDF5 ocean surface file name
-    rx = re.compile('(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
+    rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
         '(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
     SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX = rx.findall(FILE).pop()
 
@@ -456,7 +456,7 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(val['longitude'], val['latitude'],
                 model_directory, model_files, TYPE=TYPE, VERSION=MODEL,
-                METHOD=METHOD, SCALE=SCALE)
+                METHOD='spline', SCALE=SCALE)
             deltat = np.zeros_like(tide_time)
 
         #-- calculate complex phase in radians for Euler's

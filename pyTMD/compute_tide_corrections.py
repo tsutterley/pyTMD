@@ -83,6 +83,7 @@ from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
+from pyTMD.read_FES_model import extract_FES_constants
 
 #-- PURPOSE: convert value to numpy arrays if single point
 def point_to_array(val):
@@ -162,7 +163,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         model_type = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9-atlas-v2'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
+        model_directory = os.path.join(DIRECTORY,'TPXO9_atlas_v2')
         grid_file = 'grid_tpxo9_atlas_v2.nc.gz'
         model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
             'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',

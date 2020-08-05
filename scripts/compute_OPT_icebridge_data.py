@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (03/2020)
+Written by Tyler Sutterley (08/2020)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -36,7 +36,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
-    Updated 08/2020: using builtin time operations
+    Updated 08/2020: using builtin time operations.  python3 regular expressions
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 05/2019: added option interpolate to choose the interpolation method
     Updated 02/2019: using range for python3 compatibility
@@ -77,7 +77,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
-            i = [i for i in f.read().splitlines() if re.match('^(?!#)',i)]
+            i = [i for i in f.read().splitlines() if re.match(r'^(?!#)',i)]
         file_lines = len(i)
     #-- return the number of lines
     return file_lines
@@ -86,7 +86,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
 def read_ATM_qfit_file(input_file, input_subsetter):
     #-- regular expression pattern for extracting parameters
     mission_flag = '(BLATM1B|ILATM1B|ILNSA1B)'
-    regex_pattern = '{0}_(\d+)_(\d+)(.*?).(qi|TXT|h5)'.format(mission_flag)
+    regex_pattern = r'{0}_(\d+)_(\d+)(.*?).(qi|TXT|h5)'.format(mission_flag)
     #-- extract mission and other parameters from filename
     MISSION,YYMMDD,HHMMSS,AUX,SFX = re.findall(regex_pattern,input_file).pop()
     #-- early date strings omitted century and millenia (e.g. 93 for 1993)
@@ -102,12 +102,12 @@ def read_ATM_qfit_file(input_file, input_subsetter):
     #-- do not use the shortened output format from qi2txt
     if (SFX == 'TXT'):
         #-- compile regular expression operator for reading lines
-        regex_pattern = '[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
+        regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
         rx = re.compile(regex_pattern, re.VERBOSE)
         #-- read the input file, split at lines and remove all commented lines
-        f = open(input_file,'r')
-        file_contents=[i for i in f.read().splitlines() if re.match('^(?!#)',i)]
-        f.close()
+        with open(input_file,'r') as f:
+            file_contents = [i for i in f.read().splitlines() if
+                re.match(r'^(?!#)',i)]
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter)
         #-- create output variables with length equal to the number of lines
@@ -199,7 +199,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
 #-- PURPOSE: read the ATM Level-2 data file for variables of interest
 def read_ATM_icessn_file(input_file, input_subsetter):
     #-- regular expression pattern for extracting parameters
-    regex_pattern = '(BLATM2|ILATM2)_(\d+)_(\d+)_smooth_nadir(.*?)(csv|seg|pt)$'
+    regex_pattern=r'(BLATM2|ILATM2)_(\d+)_(\d+)_smooth_nadir(.*?)(csv|seg|pt)$'
     #-- extract mission and other parameters from filename
     MISSION,YYMMDD,HHMMSS,AUX,SFX = re.findall(regex_pattern,input_file).pop()
     #-- early date strings omitted century and millenia (e.g. 93 for 1993)
@@ -212,11 +212,12 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     #-- variables not used: (SNslope:4, WEslope:5, npt_used:7, npt_edit:8, d:9)
     file_dtype = {'seconds':0, 'lat':1, 'lon':2, 'data':3, 'RMS':6, 'track':-1}
     #-- compile regular expression operator for reading lines (extracts numbers)
-    regex_pattern = '[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
+    regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
     rx = re.compile(regex_pattern, re.VERBOSE)
     #-- read the input file, split at lines and remove all commented lines
     with open(input_file,'r') as f:
-        file_contents=[i for i in f.read().splitlines() if re.match('^(?!#)',i)]
+        file_contents = [i for i in f.read().splitlines()
+            if re.match(r'^(?!#)',i)]
     #-- number of lines of data within file
     file_lines = file_length(input_file,input_subsetter)
     #-- output python dictionary with variables
@@ -272,7 +273,7 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
     #-- regular expression pattern for extracting parameters from HDF5 files
     #-- computed in read_icebridge_lvis.py
     mission_flag = '(BLVIS2|BVLIS2|ILVIS2|ILVGH2)'
-    regex_pattern = '{0}_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5'.format(mission_flag)
+    regex_pattern = r'{0}_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5'.format(mission_flag)
     #-- extract mission, region and other parameters from filename
     MISSION,REGION,YY,MMDD,RLD,SS = re.findall(regex_pattern,input_file).pop()
     LDS_VERSION = '2.0.2' if (np.int(RLD[1:3]) >= 18) else '1.04'
@@ -359,13 +360,13 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775):
 
     #-- extract file name and subsetter indices lists
-    match_object = re.match('(.*?)(\[(.*?)\])?$',arg)
+    match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
     input_file = os.path.expanduser(match_object.group(1))
     #-- subset input file to indices
     if match_object.group(2):
         #-- decompress ranges and add to list
         input_subsetter = []
-        for i in re.findall('((\d+)-(\d+)|(\d+))',match_object.group(3)):
+        for i in re.findall(r'((\d+)-(\d+)|(\d+))',match_object.group(3)):
             input_subsetter.append(int(i[3])) if i[3] else \
                 input_subsetter.extend(range(int(i[1]),int(i[2])+1))
     else:
@@ -375,10 +376,10 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
     DIRECTORY = os.path.dirname(input_file)
     #-- calculate if input files are from ATM or LVIS (+GH)
     regex = {}
-    regex['ATM'] = '(BLATM2|ILATM2)_(\d+)_(\d+)_smooth_nadir(.*?)(csv|seg|pt)$'
-    regex['ATM1b'] = '(BLATM1b|ILATM1b)_(\d+)_(\d+)(.*?).(qi|TXT|h5)$'
-    regex['LVIS'] = '(BLVIS2|BVLIS2|ILVIS2)_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5$'
-    regex['LVGH'] = '(ILVGH2)_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5$'
+    regex['ATM'] = r'(BLATM2|ILATM2)_(\d+)_(\d+)_smooth_nadir(.*?)(csv|seg|pt)$'
+    regex['ATM1b'] = r'(BLATM1b|ILATM1b)_(\d+)_(\d+)(.*?).(qi|TXT|h5)$'
+    regex['LVIS'] = r'(BLVIS2|BVLIS2|ILVIS2)_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5$'
+    regex['LVGH'] = r'(ILVGH2)_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5$'
     for key,val in regex.items():
         if re.match(val, os.path.basename(input_file)):
             OIB = key
