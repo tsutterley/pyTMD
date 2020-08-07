@@ -63,7 +63,8 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
-    Updated 08/2020: using builtin time operations
+    Updated 08/2020: using builtin time operations.
+        calculate difference in leap seconds from start of epoch
     Updated 07/2020: added function docstrings, FES2014 and TPX09-atlas-v2
         use merged delta time files combining biannual, monthly and daily files
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
@@ -303,14 +304,22 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     delta_time = point_to_array(delta_time)
     #-- calculate leap seconds if specified
     if (TIME.upper() == 'GPS'):
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(point_to_array(GPS_Epoch_Time))
     elif (TIME.upper() == 'TAI'):
         #-- TAI time is ahead of GPS time by 19 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(point_to_array(GPS_Epoch_Time))
     else:
         leap_seconds = 0.0
 
