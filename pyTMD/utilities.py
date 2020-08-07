@@ -12,6 +12,7 @@ import sys
 import os
 import re
 import io
+import ssl
 import ftplib
 import shutil
 import socket
@@ -180,7 +181,7 @@ def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,
     try:
         #-- Create and submit request.
         request = urllib2.Request(posixpath.join(*HOST))
-        response = urllib2.urlopen(request,timeout=timeout)
+        response = urllib2.urlopen(request,timeout=timeout,context=ssl.SSLContext())
     except:
         raise Exception('Download error from {0}'.format(posixpath.join(*HOST)))
     else:
