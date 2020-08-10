@@ -23,6 +23,7 @@ This software is also dependent on other commonly used Python packages:
 - [numpy: Scientific Computing Tools For Python](https://www.numpy.org)  
 - [scipy: Scientific Tools for Python](https://www.scipy.org/)  
 - [pyproj: Python interface to PROJ library](https://pypi.org/project/pyproj/)  
+- [lxml: processing XML and HTML in Python](https://pypi.python.org/pypi/lxml)  
 - [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
 - [netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
 - [matplotlib: Python 2D plotting library](https://matplotlib.org/)  

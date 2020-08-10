@@ -879,10 +879,10 @@ def main():
         raise Exception('No System Arguments Listed')
 
     #-- verify model before running program
-    model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas','TPXO9.1',
-        'TPXO8-atlas','TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
-        'AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load',
-        'GOT4.10','GOT4.10_load','FES2014','FES2014_load']
+    model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',
+        'TPXO9-atlas-v2','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
+        'AODTM-5','AOTIM-5','AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8',
+        'GOT4.8_load','GOT4.10','GOT4.10_load','FES2014','FES2014_load']
     assert MODEL in model_list, 'Unlisted tide model'
 
     #-- run for each input file

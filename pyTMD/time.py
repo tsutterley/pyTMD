@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (08/2020)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -13,10 +13,12 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 08/2020: added NASA Earthdata routines for downloading from CDDIS
     Written 07/2020
 """
 import os
 import re
+import netrc
 import datetime
 import numpy as np
 import pyTMD.convert_julian
@@ -264,16 +266,87 @@ def iers_delta_time(verbose=False, mode=0o775):
     #-- output file format
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     #-- for each subdirectory
-    for SUB in pyTMD.utilities.ftp_list(HOST,basename=True,sort=True):
+    subdirectory,mtimes = pyTMD.utilities.ftp_list(HOST,basename=True,sort=True)
+    for SUB in subdirectory:
         #-- find Bulletin-A files in ftp subdirectory
         HOST.append(SUB)
-        FILE = pyTMD.utilities.ftp_list(HOST,basename=True,sort=True,pattern=rx)
+        bulletin_files,mtimes = pyTMD.utilities.ftp_list(HOST,basename=True,
+            sort=True,pattern=rx)
         #-- for each Bulletin-A file
-        for f in sorted(FILE):
+        for f in sorted(bulletin_files):
             print(f) if verbose else None
             #-- copy remote file contents to BytesIO object
             HOST.append(f)
             remote_buffer = pyTMD.utilities.from_ftp(HOST,timeout=20)
+            #-- read Bulletin-A file from BytesIO object
+            YY,MM,DD,DELTAT = read_iers_bulletin_a(remote_buffer)
+            #-- print delta time for week to output file
+            for Y,M,D,T in zip(YY,MM,DD,DELTAT):
+                print(file_format.format(Y,M,D,T),file=fid)
+            #-- close the bytesIO object
+            remote_buffer.close()
+            #-- remove the file from the list
+            HOST.remove(f)
+        #-- remove the subdirectory from the list
+        HOST.remove(SUB)
+    #-- close the output file
+    fid.close()
+    #-- change the permissions mode
+    os.chmod(daily_file,mode)
+
+#-- PURPOSE: connects to CDDIS Earthdata https server and finds Bulletin-A files
+def cddis_delta_time(verbose=False, mode=0o775):
+    """
+    Connects to the CDDIS Earthdata server to download Bulletin-A files
+    Reads the IERS Bulletin-A files and calculates the daily delta times
+    Delta times are the difference between universal time and dynamical time
+
+    Servers and Mirrors
+    -------------------
+    https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
+
+    Keyword arguments
+    -----------------
+    verbose: print file information about output file
+    mode: permissions mode of output file
+    """
+    #-- connect to CDDIS Earthdata host for IERS bulletins
+    HOST = ['https://cddis.nasa.gov','archive','products','iers',
+        'iers_bulletins','bulletin_a']
+    #-- get NASA Earthdata credentials
+    urs = 'urs.earthdata.nasa.gov'
+    username,login,password = netrc.netrc().authenticators(urs)
+    #-- build NASA Earthdata opener for CDDIS and check credentials
+    pyTMD.utilities.build_opener(username, password)
+    pyTMD.utilities.check_credentials()
+    #-- regular expression pattern for finding directories
+    R1 = re.compile(r'volume_(.*?)$',re.VERBOSE)
+    #-- regular expression pattern for finding files
+    R2 = re.compile(r'iers_bulletina\.(.*?)_(\d+)$',re.VERBOSE)
+    #-- open output daily delta time file
+    daily_file = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
+    fid = open(daily_file,'w')
+    file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
+    #-- for each subdirectory
+    subdirectory,mtimes=pyTMD.utilities.cddis_list(HOST,build=False,pattern=R1)
+    #-- extract roman numerals from subdirectories
+    roman = [R1.findall(s).pop() for s in subdirectory]
+    #-- sort the list of Roman numerals
+    subdirectory = [subdirectory[i] for i,j in sorted(enumerate(roman),
+        key=lambda i: pyTMD.utilities.roman_to_int(i[1]))]
+    #-- output file format
+    for SUB in subdirectory:
+        #-- find Bulletin-A files in ftp subdirectory
+        HOST.append(SUB)
+        bulletin_files,mtimes = pyTMD.utilities.cddis_list(HOST,build=False,
+            sort=True,pattern=R2)
+        #-- for each Bulletin-A file
+        for f in sorted(bulletin_files):
+            print(f) if verbose else None
+            #-- copy remote file contents to BytesIO object
+            HOST.append(f)
+            remote_buffer = pyTMD.utilities.from_cddis(HOST,
+                build=False,timeout=20)
             #-- read Bulletin-A file from BytesIO object
             YY,MM,DD,DELTAT = read_iers_bulletin_a(remote_buffer)
             #-- print delta time for week to output file
@@ -345,7 +418,7 @@ def read_iers_bulletin_a(fileID):
             MJD[i] = np.float(line_contents[3])
             #-- difference between UT1 and UTC times
             UT1_UTC[i] = np.float(line_contents[8])
-        except IndexError:
+        except (IndexError,ValueError):
             pass
         else:
             valid += 1
@@ -374,17 +447,18 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
     """
     Connects to servers and downloads delta time files
 
+    Servers and Mirrors
+    ===================
+    http://maia.usno.navy.mil/ser7/
+    https://cddis.nasa.gov/archive/products/iers/
+    ftp://cddis.nasa.gov/products/iers/
+    ftp://cddis.gsfc.nasa.gov/pub/products/iers/
+
     Arguments
     ---------
     FILE: delta time file to download from remote servers
         deltat.data: monthly deltat file
         historic_deltat.data: historic deltat file
-
-    Servers and Mirrors
-    ===================
-    http://maia.usno.navy.mil/ser7/
-    ftp://cddis.nasa.gov/products/iers/
-    ftp://cddis.gsfc.nasa.gov/pub/products/iers/
 
     Keyword arguments
     -----------------
@@ -396,9 +470,9 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
     HASH = pyTMD.utilities.get_hash(LOCAL)
 
     #-- try downloading from US Naval Oceanography Portal
-    REMOTE = ['http://maia.usno.navy.mil','ser7',FILE]
+    HOST = ['http://maia.usno.navy.mil','ser7',FILE]
     try:
-        pyTMD.utilities.from_http(REMOTE,timeout=5,local=LOCAL,hash=HASH,
+        pyTMD.utilities.from_http(HOST,timeout=5,local=LOCAL,hash=HASH,
             verbose=verbose,mode=mode)
     except:
         pass
@@ -407,7 +481,7 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
 
     #-- try downloading from NASA Crustal Dynamics Data Information System
     #-- note: anonymous ftp access will be discontinued on 2020-10-31
-    #-- will have to change to an Earthdata login over https or ftp
+    #-- will require using the following https Earthdata server after that date
     server = []
     server.append(['cddis.nasa.gov','pub','products','iers',FILE])
     server.append(['cddis.gsfc.nasa.gov','products','iers',FILE])
@@ -419,3 +493,16 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
             pass
         else:
             return
+
+    #-- try downloading from NASA Crustal Dynamics Data Information System
+    #-- using NASA Earthdata credentials stored in netrc file
+    HOST = ['https://cddis.nasa.gov','archive','products','iers',FILE]
+    try:
+        urs = 'urs.earthdata.nasa.gov'
+        username,login,password = netrc.netrc().authenticators(urs)
+        pyTMD.utilities.from_cddis(HOST,username=username,password=password,
+            timeout=20,local=LOCAL,hash=HASH,verbose=verbose,mode=mode)
+    except:
+        pass
+    else:
+        return
