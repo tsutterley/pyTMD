@@ -5,4 +5,5 @@ matplotlib
 cartopy
 netCDF4
 h5py
+lxml
 ipyleaflet

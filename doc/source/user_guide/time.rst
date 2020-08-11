@@ -144,6 +144,21 @@ General Methods
         `mode`: permissions mode of output file
 
 
+.. method:: pyTMD.time.cddis_delta_time(verbose=False, mode=0o775)
+
+    Connects to the NASA GSFC CDDIS https server to download `Bulletin-A files`__
+
+.. __: https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a
+
+    Reads the IERS Bulletin-A files and calculates the daily delta times
+
+    Keyword arguments:
+
+        `verbose`: print file information about output file
+
+        `mode`: permissions mode of output file
+
+
 .. method:: pyTMD.time.read_iers_bulletin_a(fileID)
 
     Read a weekly `IERS Bulletin-A file`__ and calculate the daily delta times (TT - UT1)

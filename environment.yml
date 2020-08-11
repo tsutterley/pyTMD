@@ -11,6 +11,7 @@ dependencies:
   - matplotlib
   - netCDF4
   - h5py
+  - lxml
   - cartopy
   - pip
   - pip:
