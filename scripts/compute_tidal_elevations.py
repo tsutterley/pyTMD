@@ -143,7 +143,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         SCALE = 1.0/1000.0
     elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
-        grid_file = 'grid_tpxo9_atlas_v2.nc.gz'
+        grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
         model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
             'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
             'h_n2_tpxo9_atlas_30_v2.nc.gz','h_m2_tpxo9_atlas_30_v2.nc.gz',
