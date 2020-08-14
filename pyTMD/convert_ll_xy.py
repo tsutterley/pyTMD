@@ -113,7 +113,7 @@ def xy_ll_PSNorth(i1,i2,BF):
     # #-- projections for converting from latitude/longitude
     # proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))
     # proj2 = pyproj.Proj({'proj':'stere','lat_0':90,'lat_ts':90,'lon_0':270,
-    #     'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84','units':'km'})
+    #     'x_0':0.0,'y_0':0.0,'a':6400000.0,'b':6400000.0,'units':'km'})
     #-- convert lat/lon to Polar-Stereographic x/y
     if (BF.upper() == 'F'):
         # o1,o2 = pyproj.transform(proj1, proj2, i1, i2)
@@ -122,8 +122,8 @@ def xy_ll_PSNorth(i1,i2,BF):
     #-- convert Polar-Stereographic x/y to lat/lon
     elif (BF.upper() == 'B'):
         # o1,o2 = pyproj.transform(proj2, proj1, i1, i2)
-        o1 = 90.0 - np.sqrt(i1**2+i2**2)/111.7
-        o2 = np.arctan2(i2,i1)*180.0/np.pi
+        o1 = np.arctan2(i2,i1)*180.0/np.pi
+        o2 = 90.0 - np.sqrt(i1**2+i2**2)/111.7
         ii, = np.nonzero(o1 < 0)
         o1[ii] += 360.0
     #-- return the output variables
