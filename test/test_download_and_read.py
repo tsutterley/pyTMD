@@ -42,6 +42,14 @@ def test_download_CATS2008():
     #-- close the zipfile object
     zfile.close()
 
+#-- PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
+def test_download_AntTG():
+    #-- download Tide Gauge Database text file
+    HOST = ['https://www.usap-dc.org','dataset','usap-dc','601358',
+        '2020-07-10T19:50:08.8Z','AntTG_ocean_height_v1.txt?dataset_id=601358']
+    local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
+    pyTMD.utilities.from_http(HOST,local=local)
+
 #-- PURPOSE: Test read program that grids and constituents are as expected
 def test_read_CATS2008(ny=2026,nx=1663):
     #-- model parameters for CATS2008
@@ -64,6 +72,85 @@ def test_read_CATS2008(ny=2026,nx=1663):
         assert (z.shape == (ny,nx))
         assert (u.shape == (ny,nx))
         assert (v.shape == (ny,nx))
+
+#-- PURPOSE: Tests that interpolated results are comparable to AntTG database
+def test_compare_CATS2008():
+    #-- model parameters for CATS2008
+    grid_file = os.path.join(filepath,'grid_CATS2008')
+    model_file = os.path.join(filepath,'hf.CATS2008.out')
+    GRID = 'OTIS'
+    EPSG = 'CATS2008'
+    TYPE = 'z'
+
+    #-- open Antarctic Tide Gauge (AntTG) database
+    with open(os.path.join(filepath,'AntTG_ocean_height_v1.txt'),'r') as f:
+        file_contents = f.read().splitlines()
+    #-- counts the number of lines in the header
+    count = 0
+    HEADER = True
+    #-- Reading over header text
+    while HEADER:
+        #-- check if file line at count starts with matlab comment string
+        HEADER = file_contents[count].startswith('%')
+        #-- add 1 to counter
+        count += 1
+    #-- rewind 1 line
+    count -= 1
+    #-- iterate over number of stations
+    AntTG = {}
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2']
+    antarctic_stations = (len(file_contents) - count)//10
+    stations = [None]*antarctic_stations
+    shortname = [None]*antarctic_stations
+    station_lon = np.zeros((antarctic_stations))
+    station_lat = np.zeros((antarctic_stations))
+    station_amp = np.ma.zeros((antarctic_stations,len(constituents)))
+    station_ph = np.ma.zeros((antarctic_stations,len(constituents)))
+    for s in range(antarctic_stations):
+        i = count + s*10
+        stations[s] = file_contents[i + 1].strip()
+        shortname[s] = file_contents[i + 3].strip()
+        lon,lat,aux1,aux2 = file_contents[i + 4].split()
+        station_lon[s] = np.float(lon)
+        station_lat[s] = np.float(lat)
+        amp = file_contents[i + 7].split()
+        ph = file_contents[i + 8].split()
+        station_amp.data[s,:] = np.array(amp,dtype=np.float)
+        station_ph.data[s,:] = np.array(ph,dtype=np.float)
+    #-- update masks where NaN
+    station_amp.mask = np.isnan(station_amp.data) | (station_amp.data == 0.0)
+    station_ph.mask = np.isnan(station_ph.data)
+    #-- replace nans with fill values
+    station_amp.data[station_amp.mask] = station_amp.fill_value
+    station_ph.data[station_ph.mask] = station_ph.fill_value
+
+    #-- extract amplitude and phase from tide model
+    amp,ph,D,cons = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        station_lat, grid_file, model_file, EPSG, TYPE=TYPE, METHOD='spline',
+        GRID=GRID)
+    #-- reorder constituents of model and convert amplitudes to cm
+    model_amp = np.ma.zeros((antarctic_stations,len(constituents)))
+    model_ph = np.ma.zeros((antarctic_stations,len(constituents)))
+    for i,c in enumerate(constituents):
+        j, = [j for j,val in enumerate(cons) if (val == c)]
+        model_amp[:,i] = 100.0*amp[:,j]
+        model_ph[:,i] = ph[:,j]
+    #-- calculate complex constituent oscillations
+    station_z = station_amp*np.exp(-1j*station_ph*np.pi/180.0)
+    model_z = model_amp*np.exp(-1j*model_ph*np.pi/180.0)
+    #-- valid stations for all constituents
+    valid = np.all((~station_z.mask) & (~model_z.mask), axis=1)
+    nv = np.count_nonzero(valid)
+    #-- compare with RMS values from King et al. (2011)
+    #-- https://doi.org/10.1029/2011JC006949
+    RMS = np.array([1.4,2.7,1.7,3.5,2.9,7.3,5.0,1.7])
+    rms = np.zeros((len(constituents)))
+    for i,c in enumerate(constituents):
+        #-- calculate difference and rms
+        difference = np.abs(station_z[valid,i] - model_z[valid,i])
+        rms[i] = np.sqrt(np.sum(difference**2))/(2.0*nv)
+    #-- test RMS differences
+    assert np.all(rms <= RMS)
 
 #-- PURPOSE: Tests that interpolated results are comparable to Matlab program
 def test_verify_CATS2008():
