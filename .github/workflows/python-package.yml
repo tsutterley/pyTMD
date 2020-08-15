@@ -12,9 +12,10 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest]         
         python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
@@ -23,9 +24,21 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+    - name: Install dependencies for Linux
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev libhdf5-dev libnetcdf-dev
+        sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev
+        sudo apt-get install libhdf5-dev libnetcdf-dev
+        pip install --upgrade pip
+        pip install flake8 pytest pytest-cov numpy
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install dependencies for MacOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install proj
+        brew install geos
+        brew install hdf5
+        brew install netcdf
         pip install --upgrade pip
         pip install flake8 pytest pytest-cov numpy
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
