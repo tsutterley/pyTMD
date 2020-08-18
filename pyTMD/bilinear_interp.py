@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-bilinear_interp.py (07/2020)
+bilinear_interp.py (08/2020)
 Bilinear interpolation of input data to output coordinates
 
 CALLING SEQUENCE:
@@ -25,6 +25,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 08/2020: check that output coordinates are within bounds
     Updated 07/2020: split into separate function
     Updated 06/2020: use argmin and argmax in bilinear interpolation
     Updated 09/2017: Rewritten in Python
@@ -57,6 +58,9 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,dtype=np.float):
     #-- grid step size of tide model
     dlon = np.abs(ilon[1] - ilon[0])
     dlat = np.abs(ilat[1] - ilat[0])
+    #-- find valid points (within bounds)
+    valid, = np.nonzero((lon >= ilon.min()) & (lon <= ilon.max()) &
+        (lat > ilat.min()) & (lat < ilat.max()))
     #-- Convert input coordinates to radians
     phi = ilon*dtr
     th = (90.0 - ilat)*dtr
@@ -64,8 +68,12 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,dtype=np.float):
     xphi = lon*dtr
     xth = (90.0 - lat)*dtr
     #-- interpolate gridded data values to data
-    data = np.zeros_like(lon,dtype=dtype)
-    for i,l in enumerate(lon):
+    npts = len(lon)
+    data = np.ma.zeros((npts),dtype=dtype)
+    data.mask = np.ones((npts),dtype=np.bool)
+    data.mask[valid] = False
+    #-- for each valid point
+    for i in valid:
         #-- calculating the indices for the original grid
         dx = (ilon - np.floor(lon[i]/dlon)*dlon)**2
         dy = (ilat - np.floor(lat[i]/dlat)*dlat)**2
@@ -73,13 +81,13 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,dtype=np.float):
         ith = np.argmin(dy)
         #-- if on corner value: use exact
         if ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph])):
-            data[i] = idata[ith,iph]
+            data.data[i] = idata[ith,iph]
         elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph])):
-            data[i] = idata[ith+1,iph]
+            data.data[i] = idata[ith+1,iph]
         elif ((lat[i] == ilat[ith]) & (lon[i] == ilon[iph+1])):
-            data[i] = idata[ith,iph+1]
+            data.data[i] = idata[ith,iph+1]
         elif ((lat[i] == ilat[ith+1]) & (lon[i] == ilon[iph+1])):
-            data[i] = idata[ith+1,iph+1]
+            data.data[i] = idata[ith+1,iph+1]
         else:
             #-- corner weight values for i,j
             Wa = (xphi[i]-phi[iph])*(xth[i]-th[ith])
@@ -94,6 +102,6 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,dtype=np.float):
             Ic = idata[ith+1,iph]#-- (0,1)
             Id = idata[ith+1,iph+1]#-- (1,1)
             #-- calculate interpolated value for i
-            data[i] = (Ia*Wa + Ib*Wb + Ic*Wc + Id*Wd)/W
+            data.data[i] = (Ia*Wa + Ib*Wb + Ic*Wc + Id*Wd)/W
     #-- return interpolated values
     return data

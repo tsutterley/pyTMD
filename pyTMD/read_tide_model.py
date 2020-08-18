@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (07/2020)
+read_tide_model.py (08/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 08/2020: check that interpolated points are within range of model
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         update griddata interpolation. changed TYPE variable to keyword argument
     Updated 06/2020: output currents as numpy masked arrays
@@ -118,6 +119,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
     #-- run wrapper function to convert coordinate systems of input lat/lon
     x,y = convert_ll_xy(ilon,ilat,EPSG,'F')
+    invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
     #-- grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -236,7 +238,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z[z==0] = np.nan
                 #-- use quick bilinear to interpolate values
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
-                z1.data = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
+                z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
                 z1.data[z1.mask] = z1.fill_value
@@ -257,7 +259,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z[z==0] = np.nan
                 #-- use scipy griddata to interpolate values
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
-                z1.data=scipy.interpolate.griddata(interp_points,
+                z1.data[:] = scipy.interpolate.griddata(interp_points,
                     z.flatten(), np.c_[x,y], method=METHOD)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
@@ -283,7 +285,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u[u==0] = np.nan
                 #-- use quick bilinear to interpolate values
                 u1 = np.ma.zeros((npts),dtype=u.dtype)
-                u1.data = bilinear_interp(xi,yi,u,x,y,dtype=np.complex128)
+                u1.data[:] = bilinear_interp(xi,yi,u,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
                 u1.data[u1.mask] = u1.fill_value
@@ -303,7 +305,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u[u==0] = np.nan
                 #-- use scipy griddata to interpolate values
                 u1 = np.ma.zeros((npts),dtype=u.dtype)
-                u1.data=scipy.interpolate.griddata(interp_points,
+                u1.data[:] = scipy.interpolate.griddata(interp_points,
                     u.flatten(), np.c_[x,y], method=METHOD)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
@@ -363,6 +365,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             amplitude.mask[:,i] = np.copy(v1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(v1),np.real(v1))
             ph.mask[:,i] = np.copy(v1.mask)
+        #-- update mask to invalidate points outside model domain
+        ph.mask[:,i] |= invalid
+        amplitude.mask[:,i] |= invalid
 
     #-- convert phase to degrees
     phase = ph*180.0/np.pi
