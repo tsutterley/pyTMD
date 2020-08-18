@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]         
+        os: [ubuntu-20.04, macos-latest]
         python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
@@ -22,12 +22,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies for Linux
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-20.04'
       run: |
-        sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev
+        sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev octave
         sudo apt-get install libhdf5-dev libnetcdf-dev
         pip install --upgrade pip
-        pip install flake8 pytest pytest-cov numpy
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install dependencies for MacOS
       if: matrix.os == 'macos-latest'
@@ -36,8 +36,9 @@ jobs:
         brew install geos
         brew install hdf5
         brew install netcdf
+        brew install octave
         pip install --upgrade pip
-        pip install flake8 pytest pytest-cov numpy
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
@@ -48,4 +49,6 @@ jobs:
     - name: Test with pytest
       run: |
         pip install --no-deps .
-        pytest
+        git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
+        pytest --username=${{ secrets.EARTHDATA_USERNAME }} \
+            --password=${{ secrets.EARTHDATA_PASSWORD }}
