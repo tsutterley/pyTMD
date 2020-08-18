@@ -7,12 +7,11 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-linux:
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
         python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
@@ -21,16 +20,41 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies for Linux
-      if: matrix.os == 'ubuntu-20.04'
+    - name: Install dependencies
       run: |
         sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev octave
         sudo apt-get install libhdf5-dev libnetcdf-dev
         pip install --upgrade pip
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Install dependencies for MacOS
-      if: matrix.os == 'macos-latest'
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        pip install --no-deps .
+        git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
+        pytest --username=${{ secrets.EARTHDATA_USERNAME }} \
+            --password=${{ secrets.EARTHDATA_PASSWORD }}
+
+
+  build-macos:
+
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [3.5, 3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
       run: |
         brew install proj
         brew install geos
@@ -52,3 +76,44 @@ jobs:
         git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
         pytest --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }}
+
+
+  build-windows:
+
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.5, 3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Conda ${{ matrix.python-version }}
+      uses: goanpeca/setup-miniconda@v1.6.0
+      with:
+        auto-update-conda: true
+        auto-activate-base: true
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        conda install -c conda-forge numpy
+        conda install -c conda-forge scipy
+        conda install -c conda-forge pyproj
+        conda install -c conda-forge netCDF4
+        conda install -c conda-forge h5py
+        conda install -c conda-forge lxml
+        conda install -c conda-forge flake8
+        conda install -c conda-forge pytest
+        conda install -c conda-forge pytest-cov
+        conda install -c conda-forge octave
+        conda install -c conda-forge oct2py
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        pip install --no-deps .
+        git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
+        pytest
