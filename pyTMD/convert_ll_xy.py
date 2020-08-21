@@ -108,7 +108,7 @@ def xy_ll_EPSG3976(i1,i2,BF):
     #-- return the output variables
     return (o1,o2)
 
-#-- wrapper function for models in PSNorth projection
+#-- wrapper function for models in (idealized) PSNorth projection
 def xy_ll_PSNorth(i1,i2,BF):
     # #-- projections for converting from latitude/longitude
     # proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))

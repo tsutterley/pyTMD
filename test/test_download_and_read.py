@@ -2,6 +2,7 @@
 u"""
 test_download_and_read.py (08/2020)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
+Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to Matlab TMD program
     https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
@@ -17,11 +18,13 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2020: directly call Matlab program (octave) and compare outputs
+        compare outputs for both Antarctic (CATS2008) and Arctic (AOTIM-5-2018)
         will install octave and oct2py in development requirements
     Updated 08/2020: Download Antarctic tide gauge database and compare with RMS
     Written 08/2020
 """
 import os
+import re
 import pytest
 import inspect
 import zipfile
@@ -52,8 +55,33 @@ def test_download_CATS2008():
     assert all([f2 in [f1.filename for f1 in zfile.filelist] for f2 in files])
     #-- extract each member
     for member in zfile.filelist:
-        local_file = os.path.join(filepath,member.filename)
-        print('\t{0}\n'.format(local_file))
+        #-- strip directories from member filename
+        member.filename = posixpath.basename(member.filename)
+        print('\t{0}\n'.format(os.path.join(filepath,member.filename)))
+        zfile.extract(member, path=filepath)
+    #-- close the zipfile object
+    zfile.close()
+
+#-- PURPOSE: Download AOTIM-5-2018 from NSF ArcticData server
+def test_download_AOTIM5_2018():
+    #-- build host url for model
+    resource_map_doi = 'resource_map_doi:{0}'.format('10.18739/A21R6N14K')
+    HOST = ['https://arcticdata.io','metacat','d1','mn','v2','packages',
+        pyTMD.utilities.quote_plus(posixpath.join('application','bagit-097')),
+        pyTMD.utilities.quote_plus(resource_map_doi)]
+    #-- download zipfile from host
+    FILE = pyTMD.utilities.from_http(HOST)
+    zfile = zipfile.ZipFile(FILE)
+    print('{0} -->\n'.format(posixpath.join(*HOST)))
+    #-- find model files within zip file
+    rx = re.compile('(grid|h[0]?|UV[0]?|Model|xy)_(.*?)',re.VERBOSE)
+    members = [m for m in zfile.filelist if rx.search(m.filename)]
+    #-- extract each member
+    for member in members:
+        #-- strip directories from member filename
+        member.filename = posixpath.basename(member.filename)
+        print('\t{0}\n'.format(os.path.join(filepath,member.filename)))
+        #-- extract file
         zfile.extract(member, path=filepath)
     #-- close the zipfile object
     zfile.close()
@@ -64,6 +92,13 @@ def test_download_AntTG():
     HOST = ['https://www.usap-dc.org','dataset','usap-dc','601358',
         '2020-07-10T19:50:08.8Z','AntTG_ocean_height_v1.txt?dataset_id=601358']
     local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
+    pyTMD.utilities.from_http(HOST,local=local)
+
+#-- PURPOSE: Download Arctic Tidal Current Atlas list of records
+def test_download_Arctic_Tide_Atlas():
+    HOST = ['https://arcticdata.io','metacat','d1','mn','v2','object',
+        'urn%3Auuid%3Ae3abe2cc-f903-44de-9758-0c6bfc5b66c9']
+    local = os.path.join(filepath,'List_of_records.txt')
     pyTMD.utilities.from_http(HOST,local=local)
 
 #-- PURPOSE: Test read program that grids and constituents are as expected
@@ -113,7 +148,6 @@ def test_compare_CATS2008():
     #-- rewind 1 line
     count -= 1
     #-- iterate over number of stations
-    AntTG = {}
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2']
     antarctic_stations = (len(file_contents) - count)//10
     stations = [None]*antarctic_stations
@@ -213,7 +247,6 @@ def test_verify_CATS2008():
     #-- rewind 1 line
     count -= 1
     #-- iterate over number of stations
-    AntTG = {}
     antarctic_stations = (len(file_contents) - count)//10
     stations = [None]*antarctic_stations
     shortname = [None]*antarctic_stations
@@ -275,10 +308,95 @@ def test_verify_CATS2008():
 
         #-- compute validation data from Matlab TMD program using octave
         #-- https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-        TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox_v2.5','TMD')
+        TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
         octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
         octave.addpath(filepath)
+        octave.warning('off', 'all')
         CFname = os.path.join(filepath,'Model_CATS2008')
+        validation,cons = octave.tmd_tide_pred(CFname,SDtime,
+            station_lat[i],station_lon[i],'z',nout=2)
+
+        #-- calculate differences between matlab and python version
+        difference = np.ma.zeros((ndays))
+        difference.data[:] = tide.data - validation.T
+        difference.mask = (tide.mask | np.isnan(validation))
+        if not np.all(difference.mask):
+            assert np.all(np.abs(difference) < eps)
+
+#-- PURPOSE: Tests that interpolated results are comparable to Matlab program
+def test_verify_AOTIM5_2018():
+    #-- model parameters for AOTIM-5-2018
+    grid_file = os.path.join(filepath,'grid_Arc5km2018')
+    elevation_file = os.path.join(filepath,'h_Arc5km2018')
+    transport_file = os.path.join(filepath,'UV_Arc5km2018')
+    GRID = 'OTIS'
+    EPSG = 'PSNorth'
+    TYPE = 'z'
+
+    #-- open Arctic Tidal Current Atlas list of records
+    with open(os.path.join(filepath,'List_of_records.txt'),'r') as f:
+        file_contents = f.read().splitlines()
+    #-- skip 2 header rows
+    count = 2
+    #-- iterate over number of stations
+    arctic_stations = len(file_contents) - count
+    stations = [None]*arctic_stations
+    shortname = [None]*arctic_stations
+    station_lon = np.zeros((arctic_stations))
+    station_lat = np.zeros((arctic_stations))
+    for s in range(arctic_stations):
+        line_contents = file_contents[count+s].split()
+        stations[s] = line_contents[1]
+        shortname[s] = line_contents[2]
+        station_lat[s] = np.float(line_contents[10])
+        station_lon[s] = np.float(line_contents[11])
+
+    #-- calculate daily results for a time period
+    #-- convert time to days since 1992-01-01T00:00:00
+    tide_time = np.arange(pyTMD.time.convert_calendar_dates(2000,1,1),
+        pyTMD.time.convert_calendar_dates(2000,12,31)+1)
+    #-- serial dates for matlab program (days since 0000-01-01T00:00:00)
+    SDtime = np.arange(convert_calendar_serial(2000,1,1),
+        convert_calendar_serial(2000,12,31)+1)
+    #-- presently not converting times to dynamic times for model comparisons
+    deltat = np.zeros_like(tide_time)
+    #-- number of days
+    ndays = len(tide_time)
+
+    #-- extract amplitude and phase from tide model
+    amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        station_lat, grid_file, elevation_file, EPSG, TYPE=TYPE,
+        METHOD='spline', GRID=GRID)
+    #-- calculate complex phase in radians for Euler's
+    cph = -1j*ph*np.pi/180.0
+    #-- will verify differences between model outputs are within tolerance
+    eps = np.finfo(np.float16).eps
+
+    #-- compare daily outputs at each station point
+    invalid_list = ['KS14']
+    #-- remove coastal stations from the list
+    valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
+    for i in valid_stations:
+        #-- calculate constituent oscillation for station
+        hc = amp[i,None,:]*np.exp(cph[i,None,:])
+        #-- allocate for out tides at point
+        tide = np.ma.zeros((ndays))
+        tide.mask = np.zeros((ndays),dtype=np.bool)
+        #-- predict tidal elevations at time and infer minor corrections
+        tide.mask[:] = np.any(hc.mask)
+        tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
+            DELTAT=deltat, CORRECTIONS=GRID)
+        minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
+            DELTAT=deltat, CORRECTIONS=GRID)
+        tide.data[:] += minor.data[:]
+
+        #-- compute validation data from Matlab TMD program using octave
+        #-- https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
+        TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
+        octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
+        octave.addpath(filepath)
+        octave.warning('off', 'all')
+        CFname = os.path.join(filepath,'Model_Arc5km2018')
         validation,cons = octave.tmd_tide_pred(CFname,SDtime,
             station_lat[i],station_lon[i],'z',nout=2)
 

@@ -94,7 +94,7 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     #-- list of minor constituents
     minor = ['2q1','sigma1','rho1','m1','m1','chi1','pi1','phi1','theta1','j1',
         'oo1','2n2','mu2','nu2','lambda2','l2','l2','t2']
-    #-- only add minor consituents that are not on the list of major values
+    #-- only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
 
     #-- relationship between major and minor constituent amplitude and phase

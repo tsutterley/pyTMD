@@ -3,6 +3,9 @@ utilities.py
 Written by Tyler Sutterley (08/2020)
 Download and management utilities for syncing time and auxiliary files
 
+PYTHON DEPENDENCIES:
+    lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
+
 UPDATE HISTORY:
     Updated 08/2020: add GSFC CDDIS opener, login and download functions
     Written 08/2020
@@ -24,9 +27,11 @@ import posixpath
 import lxml.etree
 import calendar,time
 if sys.version_info[0] == 2:
+    from urllib import quote_plus
     from cookielib import CookieJar
     import urllib2
 else:
+    from urllib.parse import quote_plus
     from http.cookiejar import CookieJar
     import urllib.request as urllib2
 
@@ -227,6 +232,23 @@ def from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,
         #-- return the bytesIO object
         remote_buffer.seek(0)
         return remote_buffer
+
+#-- PURPOSE: check internet connection
+def check_connection(HOST):
+    """
+    Check internet connection
+
+    Arguments
+    ---------
+    HOST: remote http host
+    """
+    #-- attempt to connect to https host
+    try:
+        urllib2.urlopen(HOST,timeout=20,context=ssl.SSLContext())
+    except urllib2.URLError:
+        raise RuntimeError('Check internet connection')
+    else:
+        return True
 
 #-- PURPOSE: download a file from a http host
 def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,

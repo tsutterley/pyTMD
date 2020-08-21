@@ -105,6 +105,15 @@ General Methods
         `mode`: permissions mode of output local file
 
 
+.. method:: pyTMD.utilities.check_connection(HOST)
+
+    Check internet connection
+
+    Arguments:
+
+        `HOST`: remote http host
+
+
 .. method:: pyTMD.utilities.from_http(HOST,timeout=None,local=None,hash='',chunk=16384,verbose=False,mode=0o775)
 
     Download a file from a http host
