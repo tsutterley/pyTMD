@@ -27,6 +27,7 @@ jobs:
     - name: Install dependencies for Linux
       if: matrix.os == 'ubuntu-20.04'
       run: |
+        sudo apt-get update
         sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev octave
         sudo apt-get install libhdf5-dev libnetcdf-dev
         pip install --upgrade pip

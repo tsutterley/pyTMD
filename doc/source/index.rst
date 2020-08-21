@@ -26,6 +26,7 @@ calculating radial pole tide displacements
     :caption: Getting Started:
 
     getting_started/Install.md
+    getting_started/Getting_Started.md
     getting_started/Resources.md
     getting_started/Citations.md
 
@@ -33,6 +34,7 @@ calculating radial pole tide displacements
     :maxdepth: 1
     :caption: User Guide:
 
+    user_guide/arcticdata_tides.md
     user_guide/aviso_fes_tides.md
     user_guide/bilinear_interp.md
     user_guide/calc_astrol_longitudes.md
@@ -70,4 +72,5 @@ calculating radial pole tide displacements
     user_guide/reduce_OTIS_files.md
     user_guide/tidal_ellipse.md
     user_guide/time.rst
+    user_guide/usap_cats_tides.md
     user_guide/utilities.rst

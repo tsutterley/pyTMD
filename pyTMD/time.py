@@ -6,6 +6,7 @@ Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python (https://numpy.org)
+    lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 PROGRAM DEPENDENCIES:
     convert_julian.py: returns the calendar date and time given a Julian date
