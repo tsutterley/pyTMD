@@ -18,6 +18,7 @@ from pyTMD.convert_julian import convert_julian
 from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
+from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.load_constituent import load_constituent

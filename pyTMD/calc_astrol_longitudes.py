@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-calc_astrol_longitudes.py (07/2020)
+calc_astrol_longitudes.py (08/2020)
 Modification of ASTROL fortran subroutine by Richard Ray 03/1999
 
 Computes the basic astronomical mean longitudes: s, h, p, N and PP
@@ -10,10 +10,10 @@ Formulae for the period 1990--2010 were derived by David Cartwright
 MEEUS and ASTRO5 formulae are from versions of Meeus's Astronomical Algorithms
 
 CALLING SEQUENCE:
-    s,h,p,N,PP = calc_astrol_longitudes(time, ASTRO5=True)
+    s,h,p,N,PP = calc_astrol_longitudes(MJD, ASTRO5=True)
 
 INPUTS:
-    time: modified julian day of input date
+    MJD: Modified Julian Day of input date
 
 OUTPUTS:
     s: mean longitude of moon (degrees)
@@ -35,6 +35,7 @@ REFERENCES:
     Jean Meeus, Astronomical Algorithms, 2nd edition, 1998.
 
 UPDATE HISTORY:
+    Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
     Updated 07/2018: added option ASTRO5 to use coefficients from Richard Ray
         for use with the GSFC Global Ocean Tides (GOT) model
@@ -48,25 +49,27 @@ UPDATE HISTORY:
 import numpy as np
 
 #-- PURPOSE: calculate the sum of a polynomial function of time
-def polynomial_sum(coefficients, time):
+def polynomial_sum(coefficients, t):
     """
     Calculates the sum of a polynomial function of time
 
     Arguments
     ---------
     coefficients: leading coefficient of polynomials of increasing order
-    time: delta time in units for a given astrological longitudes calculation
+    t: delta time in units for a given astrological longitudes calculation
     """
-    return np.sum([c * (time ** i) for i,c in enumerate(coefficients)])
+    #-- convert time to array if importing a single value
+    t = np.array([t]) if (np.ndim(t) == 0) else np.copy(t)
+    return np.sum([c * (t ** i) for i,c in enumerate(coefficients)],axis=0)
 
 #-- PURPOSE: compute the basic astronomical mean longitudes
-def calc_astrol_longitudes(time, MEEUS=False, ASTRO5=False):
+def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
     """
     Computes the basic astronomical mean longitudes: s, h, p, N and PP
 
     Arguments
     ---------
-    time: Modified Julian Day (MJD) of input date
+    MJD: Modified Julian Day (MJD) of input date
 
     Keyword arguments
     -----------------
@@ -83,8 +86,8 @@ def calc_astrol_longitudes(time, MEEUS=False, ASTRO5=False):
     """
     circle = 360.0
     if MEEUS:
-        #-- convert from MJD to days relative to 2000-01-01
-        T = time - 51544.5
+        #-- convert from MJD to days relative to 2000-01-01T12:00:00
+        T = MJD - 51544.5
         #-- mean longitude of moon
         lunar_longitude = np.array([218.3164591, 13.17639647754579,
             -9.9454632e-13, 3.8086292e-20, -8.6184958e-27])
@@ -104,8 +107,8 @@ def calc_astrol_longitudes(time, MEEUS=False, ASTRO5=False):
         #-- mean longitude of solar perigee (Simon et al., 1994)
         PP = 282.94 + 1.7192 * T
     elif ASTRO5:
-        #-- convert from MJD to centuries relative to 2000-01-01
-        T = (time - 51544.5)/36525.0
+        #-- convert from MJD to centuries relative to 2000-01-01T12:00:00
+        T = (MJD - 51544.5)/36525.0
         #-- mean longitude of moon (p. 338)
         lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
              1.855835e-6, -1.53388e-8])
@@ -124,8 +127,9 @@ def calc_astrol_longitudes(time, MEEUS=False, ASTRO5=False):
         #-- mean longitude of solar perigee (Simon et al., 1994)
         PP = 282.94 + 1.7192 * T
     else:
-        #-- convert from MJD to days relative to 2000-01-01
-        T = time - 51544.4993
+        #-- convert from MJD to days relative to 2000-01-01T12:00:00
+        #-- convert from Universal Time to Dynamic Time at 2000-01-01
+        T = MJD - 51544.4993
         #-- mean longitude of moon
         s = 218.3164 + 13.17639648 * T
         #-- mean longitude of sun

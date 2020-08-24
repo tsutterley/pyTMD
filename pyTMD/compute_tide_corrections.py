@@ -345,7 +345,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,
             TYPE=model_type, VERSION=MODEL, METHOD=METHOD, SCALE=SCALE)
-        deltat = np.zeros_like(t)
+        #-- interpolate delta times from calendar dates to tide time
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+        deltat = calc_delta_time(delta_file, t)
 
     #-- calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0

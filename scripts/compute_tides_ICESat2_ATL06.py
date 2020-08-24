@@ -459,7 +459,9 @@ def compute_tides_ICESat2(tide_dir,FILE,MODEL,VERBOSE=False,MODE=0o775):
             amp,ph = extract_FES_constants(val['longitude'], val['latitude'],
                 model_directory, model_files, TYPE=TYPE, VERSION=MODEL,
                 METHOD='spline', SCALE=SCALE)
-            deltat = np.zeros_like(tide_time)
+            #-- interpolate delta times from calendar dates to tide time
+            delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+            deltat = calc_delta_time(delta_file, tide_time)
 
         #-- calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0

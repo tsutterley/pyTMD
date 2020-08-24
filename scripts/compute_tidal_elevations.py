@@ -311,14 +311,18 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(dinput['lon'], dinput['lat'],
             model_directory, model_files, METHOD='spline', SCALE=SCALE)
-        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         #-- convert times from modified julian days to days since 1992-01-01
+        #-- interpolate delta times from calendar dates to tide time
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file,dinput['MJD'] - 48622.0)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
             model_directory, model_files, TYPE=TYPE, VERSION=TIDE_MODEL,
             METHOD='spline', SCALE=SCALE)
-        deltat = np.zeros_like(dinput['MJD'])
+        #-- convert times from modified julian days to days since 1992-01-01
+        #-- interpolate delta times from calendar dates to tide time
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+        deltat = calc_delta_time(delta_file,dinput['MJD'] - 48622.0)
 
     #-- calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
