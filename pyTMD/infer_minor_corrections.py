@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 u"""
-infer_minor_corrections.py (07/2020)
+infer_minor_corrections.py (08/2020)
 Return correction for minor constituents based on Richard Ray's PERTH3 code
     PERTH: PREdict Tidal Heights
 
 CALLING SEQUENCE:
-    dh = infer_minor_corrections(time,zmajor,constituents)
+    dh = infer_minor_corrections(t,zmajor,constituents)
 
 INPUTS:
+    t: days relative to Jan 1, 1992 (48622 MJD)
+    zmajor: Complex HC for given constituents/points
     constituents: tidal constituent IDs
-    zmajor: Complex HC for GIVEN constituents/points
-    time: days relative to Jan 1, 1992 (48622mjd)
 
 OUTPUT:
     dh: height from minor constituents
@@ -35,6 +35,7 @@ REFERENCES:
         time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
+    Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
         reduce list of minor constituents if in list of major values
     Updated 11/2019: output as numpy masked arrays instead of nan-filled arrays
@@ -46,16 +47,16 @@ UPDATE HISTORY:
 import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
-def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
+def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     """
     Calculate the tidal corrections for minor constituents inferred using
     major constituents
 
     Arguments
     ---------
-    constituents: tidal constituent IDs
+    t: days relative to 1992-01-01T00:00:00
     zmajor: Complex HC for GIVEN constituents/points
-    time: days relative to 1992-01-01T00:00:00
+    constituents: tidal constituent IDs
 
     Keyword arguments
     -----------------
@@ -70,13 +71,14 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     dtr = np.pi/180.0
     #-- number of constituents
     npts,nc = np.shape(zmajor)
-    nt = 1 if (np.ndim(time) == 0) else len(time)
+    nt = 1 if (np.ndim(t) == 0) else len(t)
     #-- number of data points to calculate if running time series/drift/map
     n = nt if ((npts == 1) & (nt > 1)) else npts
     #-- allocate for output elevation correction
     dh = np.ma.zeros((n))
-    #-- convert time from days relative to Jan 1, 1992 to modified Julian days
-    time_mjd = 48622.0 + time
+    #-- convert time from days relative to Jan 1, 1992 to Modified Julian Days
+    MJD = 48622.0 + t
+    #-- major constituents used for inferring minor tides
     cindex = ['q1','o1','p1','k1','n2','m2','s2','k2']
     #-- re-order major tides to correspond to order of cindex
     z8 = np.ma.zeros((n,8),dtype=np.complex64)
@@ -118,13 +120,13 @@ def infer_minor_corrections(time,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     zmin[:,16] = 0.0033*z8[:,5] + 0.0082*z8[:,6]#-- L2
     zmin[:,17] = 0.0585*z8[:,6]#-- t2
 
-    hour = (time % 1)*24.0
+    hour = (t % 1)*24.0
     t1 = 15.0*hour
     t2 = 30.0*hour
     #-- set function for astrological longitudes
     ASTRO5 = True if CORRECTIONS in ('GOT','FES') else False
     #-- convert from Modified Julian Dates into Ephemeris Time
-    S,H,P,omega,pp = calc_astrol_longitudes(time_mjd+DELTAT, ASTRO5=ASTRO5)
+    S,H,P,omega,pp = calc_astrol_longitudes(MJD+DELTAT, ASTRO5=ASTRO5)
 
     #-- determine equilibrium tidal arguments
     arg = np.zeros((n,18))

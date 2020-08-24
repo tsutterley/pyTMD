@@ -7,12 +7,12 @@ load_nodal_corrections.py
 #### Calling Sequence
 ```python
 from pyTMD.load_nodal_corrections import load_nodal_corrections
-pu,pf,G = load_nodal_corrections(time,constituents)
+pu,pf,G = load_nodal_corrections(MJD,constituents)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/load_nodal_corrections.py)
 
 #### Inputs
- 1. `time`: modified julian day of input date
+ 1. `MJD`: Modified Julian Day of input date
  2. `zmajor`: Complex oscillations for given constituents/points
  3. `constituents`: tidal constituent IDs
 

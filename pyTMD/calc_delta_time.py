@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 calc_delta_time.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (08/2020)
 Calculates the difference between dynamic time and universal time (TT - UT1)
     following Richard Ray's PERTH3 algorithms
 
@@ -12,7 +12,7 @@ INPUTS:
     idays: input times to interpolate (days since 1992-01-01T00:00:00)
 
 OUTPUTS:
-    deltat: delta time estimates at the output times
+    deltat: delta time estimates at the output times in days
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -23,6 +23,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2020: using builtin time operations, interpolate with tide time
+        convert output units to be in days
     Updated 07/2020: added function docstrings. scipy interpolating splines
     Updated 11/2019: pad input time dimension if entering a single value
     Updated 07/2018: linearly extrapolate if using dates beyond the table
@@ -55,5 +56,5 @@ def calc_delta_time(delta_file,idays):
         epoch=(1992,1,1,0,0,0))
     #-- use scipy interpolating splines to interpolate delta times
     spl=scipy.interpolate.UnivariateSpline(days,dinput[:,3],k=1,s=0,ext=0)
-    #-- return the delta time for the input date
-    return spl(idays)
+    #-- return the delta time for the input date converted to days
+    return spl(idays)/86400.0

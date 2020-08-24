@@ -40,6 +40,8 @@ calculating radial pole tide displacements
     user_guide/calc_astrol_longitudes.md
     user_guide/calc_delta_time.md
     user_guide/calc_iers_mean_pole.md
+    user_guide/compute_equilibrium_tide.md
+    user_guide/compute_LPET_icebridge_data.md
     user_guide/compute_LPT_displacements.md
     user_guide/compute_LPT_icebridge_data.md
     user_guide/compute_OPT_displacements.md

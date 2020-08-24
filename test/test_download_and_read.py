@@ -17,10 +17,10 @@ PYTHON DEPENDENCIES:
         https://oct2py.readthedocs.io/en/latest/
 
 UPDATE HISTORY:
-    Updated 08/2020: directly call Matlab program (octave) and compare outputs
+    Updated 08/2020: Download Antarctic tide gauge database and compare with RMS
+        directly call Matlab program (octave+oct2py) and compare outputs
         compare outputs for both Antarctic (CATS2008) and Arctic (AOTIM-5-2018)
         will install octave and oct2py in development requirements
-    Updated 08/2020: Download Antarctic tide gauge database and compare with RMS
     Written 08/2020
 """
 import os
@@ -52,6 +52,7 @@ def test_download_CATS2008():
     print('{0} -->\n'.format(posixpath.join(*HOST)))
     #-- model files
     files = ['grid_CATS2008','hf.CATS2008.out','uv.CATS2008.out']
+    #-- verify that model files are within downloaded zip file
     assert all([f2 in [f1.filename for f1 in zfile.filelist] for f2 in files])
     #-- extract each member
     for member in zfile.filelist:
@@ -76,6 +77,8 @@ def test_download_AOTIM5_2018():
     #-- find model files within zip file
     rx = re.compile('(grid|h[0]?|UV[0]?|Model|xy)_(.*?)',re.VERBOSE)
     members = [m for m in zfile.filelist if rx.search(m.filename)]
+    #-- verify that model files are within downloaded zip file
+    assert all(members)
     #-- extract each member
     for member in members:
         #-- strip directories from member filename
@@ -93,6 +96,7 @@ def test_download_AntTG():
         '2020-07-10T19:50:08.8Z','AntTG_ocean_height_v1.txt?dataset_id=601358']
     local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
     pyTMD.utilities.from_http(HOST,local=local)
+    assert os.access(local, os.F_OK)
 
 #-- PURPOSE: Download Arctic Tidal Current Atlas list of records
 def test_download_Arctic_Tide_Atlas():
@@ -100,6 +104,7 @@ def test_download_Arctic_Tide_Atlas():
         'urn%3Auuid%3Ae3abe2cc-f903-44de-9758-0c6bfc5b66c9']
     local = os.path.join(filepath,'List_of_records.txt')
     pyTMD.utilities.from_http(HOST,local=local)
+    assert os.access(local, os.F_OK)
 
 #-- PURPOSE: Test read program that grids and constituents are as expected
 def test_read_CATS2008(ny=2026,nx=1663):

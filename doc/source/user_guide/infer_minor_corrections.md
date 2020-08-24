@@ -7,13 +7,13 @@ infer_minor_corrections.py
 #### Calling Sequence
 ```python
 from pyTMD.infer_minor_corrections import infer_minor_corrections
-dh = infer_minor_corrections(time, zmajor, constituents,
+dh = infer_minor_corrections(t, zmajor, constituents,
     DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/infer_minor_corrections.py)
 
 #### Inputs
- 1. `time`: days relative to Jan 1, 1992 (48622mjd)
+ 1. `t`: days relative to Jan 1, 1992 (48622mjd)
  2. `zmajor`: Complex oscillations for given constituents/points
  3. `constituents`: tidal constituent IDs
 

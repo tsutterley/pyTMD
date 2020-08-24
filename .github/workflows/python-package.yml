@@ -55,4 +55,7 @@ jobs:
         pip install --no-deps .
         git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
         pytest --username=${{ secrets.EARTHDATA_USERNAME }} \
-            --password=${{ secrets.EARTHDATA_PASSWORD }}
+            --password=${{ secrets.EARTHDATA_PASSWORD }} \
+            --aws-access=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            --aws-secret=${{ secrets.AWS_SECRET_KEY }} \
+            --aws-region=${{ secrets.AWS_REGION_NAME }}

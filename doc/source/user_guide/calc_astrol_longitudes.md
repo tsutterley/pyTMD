@@ -8,12 +8,12 @@ calc_astrol_longitudes.py
 #### Calling Sequence
 ```python
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
-s,h,p,N,PP = calc_astrol_longitudes(time, ASTRO5=True)
+s,h,p,N,PP = calc_astrol_longitudes(MJD, ASTRO5=True)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/calc_astrol_longitudes.py)
 
 #### Inputs
- 1. `time`: modified Julian day of input date
+ 1. `MJD`: Modified Julian Day of input date
 
 #### Options
  - `MEEUS`: use additional coefficients from Meeus Astronomical Algorithms

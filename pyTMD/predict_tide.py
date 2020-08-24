@@ -4,10 +4,10 @@ predict_tide.py (07/2020)
 Predict tides at a single time using harmonic constants
 
 CALLING SEQUENCE:
-    ht = predict_tide(time,hc,con)
+    ht = predict_tide(t,hc,con)
 
 INPUTS:
-    time: days relative to Jan 1, 1992 (48622mjd)
+    t: days relative to Jan 1, 1992 (48622mjd)
     hc: harmonic constant vector (complex)
     constituents: tidal constituent IDs
 
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
     Updated 11/2019: can output an array of heights with a single time stamp
         such as for estimating tide height maps from imagery
@@ -40,13 +41,13 @@ import numpy as np
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
-def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+def predict_tide(t,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     """
     Predict tides at a single time using harmonic constants
 
     Arguments
     ---------
-    time: days relative to 1992-01-01T00:00:00
+    t: days relative to 1992-01-01T00:00:00
     hc: harmonic constant vector (complex)
     constituents: tidal constituent IDs
 
@@ -63,7 +64,8 @@ def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     #-- number of points and number of constituents
     npts,nc = np.shape(hc)
     #-- load the nodal corrections
-    pu,pf,G = load_nodal_corrections(time + 48622.0, constituents,
+    #-- convert time to Modified Julian Days (MJD)
+    pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
         DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
     #-- allocate for output tidal elevation
     ht = np.ma.zeros((npts))
@@ -73,7 +75,7 @@ def predict_tide(time,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
             #-- load parameters for each constituent
             amp,ph,omega,alpha,species = load_constituent(c)
             #-- add component for constituent to output tidal elevation
-            th = omega*time*86400.0 + ph + pu[0,k]
+            th = omega*t*86400.0 + ph + pu[0,k]
         elif CORRECTIONS in ('GOT','FES'):
             th = G[0,k]*np.pi/180.0 + pu[0,k]
         #-- sum over all tides

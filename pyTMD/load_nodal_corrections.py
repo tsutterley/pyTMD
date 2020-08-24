@@ -5,10 +5,10 @@ Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
 CALLING SEQUENCE:
-    pu,pf,G = load_nodal_corrections(time,constituents)
+    pu,pf,G = load_nodal_corrections(MJD,constituents)
 
 INPUTS:
-    time: modified julian day of input date
+    MJD: Modified Julian Day of input date
     constituents: tidal constituent IDs
 
 OUTPUTS:
@@ -35,6 +35,7 @@ REFERENCES:
         time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
+    Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings.  add shallow water constituents
     Updated 09/2019: added netcdf option to CORRECTIONS option
     Updated 08/2018: added correction option ATLAS for localized OTIS solutions
@@ -46,13 +47,13 @@ UPDATE HISTORY:
 import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
-def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     """
     Calculates the nodal corrections for tidal constituents
 
     Arguments
     ---------
-    time: modified julian day of input date
+    MJD: modified julian day of input date
     constituents: tidal constituent IDs
 
     Keyword arguments
@@ -80,11 +81,11 @@ def load_nodal_corrections(time,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     #-- set function for astrological longitudes
     ASTRO5 = True if CORRECTIONS in ('GOT','FES') else False
     #-- convert from Modified Julian Dates into Ephemeris Time
-    s,h,p,omega,pp = calc_astrol_longitudes(time+DELTAT, ASTRO5=ASTRO5)
-    hour = (time % 1)*24.0
+    s,h,p,omega,pp = calc_astrol_longitudes(MJD+DELTAT, ASTRO5=ASTRO5)
+    hour = (MJD % 1)*24.0
     t1 = 15.0*hour
     t2 = 30.0*hour
-    nt = 1 if (np.ndim(time) == 0) else len(time)
+    nt = 1 if (np.ndim(MJD) == 0) else len(MJD)
 
     #-- Determine equilibrium arguments
     arg = np.zeros((nt,60))
