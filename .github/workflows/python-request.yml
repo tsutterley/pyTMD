@@ -14,6 +14,9 @@ jobs:
       matrix:
         os: [ubuntu-20.04, macos-latest]
         python-version: [3.5, 3.6, 3.7, 3.8]
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
 
     steps:
     - uses: actions/checkout@v2
@@ -47,12 +50,31 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Install from source
       run: |
         pip install --no-deps .
+        pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
+        pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
+    - name: Test with pytest
+      run: |
         git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
-        pytest --username=${{ secrets.EARTHDATA_USERNAME }} \
+        pytest --cov=./ --cov-report=xml \
+            --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \
             --aws-access=${{ secrets.AWS_ACCESS_KEY_ID }} \
             --aws-secret=${{ secrets.AWS_SECRET_KEY }} \
             --aws-region=${{ secrets.AWS_REGION_NAME }}
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: OS,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: true
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v2
+      with:
+        name: code-coverage-report
+        path: ./coverage.xml

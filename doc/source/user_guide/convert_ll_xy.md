@@ -17,6 +17,9 @@ lon,lat = convert_ll_xy(x,y,PROJ,'B')
  3. `PROJ`: spatial reference system code for coordinate transformations
  4. `BF`: backwards ('B') or forward ('F') translations
 
+#### Options
+ - `EPSG`: spatial reference system code for input (F) and output (B) coordinates
+
 #### Outputs
  - `o1`: projection easting x ('F') or longitude ('B')
  - `o2`: projection northing y ('F') or latitude ('B')

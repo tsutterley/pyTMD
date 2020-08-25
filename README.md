@@ -3,8 +3,9 @@ pyTMD
 
 [![Language](https://img.shields.io/badge/python-v3.7-green.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/pyTMD/blob/master/LICENSE)
-[![Documentation Status](https://readthedocs.org/projects/pytmd/badge/?version=latest)](https://pytmd.readthedocs.io/en/latest/?badge=latest)
 [![PyPI Version](https://img.shields.io/pypi/v/pyTMD.svg)](https://pypi.python.org/pypi/pyTMD/)
+[![Documentation Status](https://readthedocs.org/projects/pytmd/badge/?version=latest)](https://pytmd.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/tsutterley/pyTMD/branch/master/graph/badge.svg)](https://codecov.io/gh/tsutterley/pyTMD)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)
 [![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/master)
 

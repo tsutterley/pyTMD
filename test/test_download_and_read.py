@@ -50,12 +50,13 @@ def test_download_CATS2008():
     FILE = pyTMD.utilities.from_http(HOST)
     zfile = zipfile.ZipFile(FILE)
     print('{0} -->\n'.format(posixpath.join(*HOST)))
-    #-- model files
-    files = ['grid_CATS2008','hf.CATS2008.out','uv.CATS2008.out']
+    #-- find model files within zip file
+    rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)',re.IGNORECASE)
+    m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
     #-- verify that model files are within downloaded zip file
-    assert all([f2 in [f1.filename for f1 in zfile.filelist] for f2 in files])
-    #-- extract each member
-    for member in zfile.filelist:
+    assert all(m)
+    #-- extract each member (model and configuration files)
+    for member in m:
         #-- strip directories from member filename
         member.filename = posixpath.basename(member.filename)
         print('\t{0}\n'.format(os.path.join(filepath,member.filename)))
@@ -75,12 +76,12 @@ def test_download_AOTIM5_2018():
     zfile = zipfile.ZipFile(FILE)
     print('{0} -->\n'.format(posixpath.join(*HOST)))
     #-- find model files within zip file
-    rx = re.compile('(grid|h[0]?|UV[0]?|Model|xy)_(.*?)',re.VERBOSE)
-    members = [m for m in zfile.filelist if rx.search(m.filename)]
+    rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)',re.IGNORECASE)
+    m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
     #-- verify that model files are within downloaded zip file
-    assert all(members)
-    #-- extract each member
-    for member in members:
+    assert all(m)
+    #-- extract each member (model and configuration files)
+    for member in m:
         #-- strip directories from member filename
         member.filename = posixpath.basename(member.filename)
         print('\t{0}\n'.format(os.path.join(filepath,member.filename)))
