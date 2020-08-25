@@ -1,7 +1,7 @@
 Installation
 ============
 
-Presently pyTMD is available for use as a [GitHub repository](https://github.com/tsutterley/pyTMD) and from the [Python Package Index (pypi)](https://pypi.org/project/pyTMD/1.0.1.6/).
+Presently pyTMD is available for use as a [GitHub repository](https://github.com/tsutterley/pyTMD) and from the [Python Package Index (pypi)](https://pypi.org/project/pyTMD/).
 The contents of the repository can be download from GitHub as a [zipped file](https://github.com/tsutterley/pyTMD/archive/master.zip) or cloned.
 To use this repository from GitHub, please fork into your own account and then clone onto your system.  
 ```bash

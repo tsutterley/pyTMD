@@ -65,6 +65,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 08/2020: using builtin time operations.
         calculate difference in leap seconds from start of epoch
+        using conversion protocols following pyproj-2 updates
     Updated 07/2020: added function docstrings, FES2014 and TPX09-atlas-v2
         use merged delta time files combining biannual, monthly and daily files
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
@@ -296,9 +297,10 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         raise Exception("Unlisted tide model")
 
     #-- converting x,y from EPSG to latitude/longitude
-    proj1 = pyproj.Proj("+init=EPSG:{0:d}".format(EPSG))
-    proj2 = pyproj.Proj("+init=EPSG:{0:d}".format(4326))
-    lon,lat = pyproj.transform(proj1, proj2, x.flatten(), y.flatten())
+    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    lon,lat = transformer.transform(x.flatten(), y.flatten())
 
     #-- convert delta time from point to array
     delta_time = point_to_array(delta_time)
