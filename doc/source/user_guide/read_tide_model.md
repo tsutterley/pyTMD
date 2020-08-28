@@ -29,7 +29,7 @@ amp,ph,D,c = read_tide_model(ilon, ilat, grid_file, model_file, EPSG,
  - `METHOD`: interpolation method
     * `'bilinear'`: quick bilinear interpolation
     * `'spline'`: scipy bivariate spline interpolation
-    * `'linear'`, `'cubic'`, `'nearest'`: scipy griddata interpolations
+    * `'linear'`, `'nearest'`: scipy regular grid interpolations
  - `GRID`: binary file type to read
     * `'ATLAS'`: reading a global solution with high-resolution local solutions
     * `'OTIS'`: combined global solution

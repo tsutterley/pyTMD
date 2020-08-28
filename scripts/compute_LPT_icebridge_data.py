@@ -457,7 +457,7 @@ def compute_LPT_icebridge_data(tide_dir, arg, VERBOSE=False, MODE=0o775):
     atr = np.pi/648000.0
     #-- earth and physical parameters (IERS and WGS84)
     G = 6.67428e-11#-- universal constant of gravitation [m^3/(kg*s^2)]
-    GM = 3.98004418e14#-- geocentric gravitational constant [m^3/s^2]
+    GM = 3.986004418e14#-- geocentric gravitational constant [m^3/s^2]
     ge = 9.7803278#-- mean equatorial gravity [m/s^2]
     a_axis = 6378136.6#-- semimajor axis of the WGS84 ellipsoid [m]
     flat = 1.0/298.257223563#-- flattening of the WGS84 ellipsoid

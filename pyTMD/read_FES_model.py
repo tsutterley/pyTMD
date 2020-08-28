@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (07/2020)
+read_FES_model.py (08/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -29,7 +29,7 @@ OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     GZIP: input ascii or netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Written 07/2020
 """
 import os
@@ -89,7 +90,7 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     GZIP: input files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -137,23 +138,23 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
             hci.data[hci.mask] = hci.fill_value
         elif (METHOD == 'spline'):
             #-- interpolate complex form of the constituent with scipy
-            f1=scipy.interpolate.RectBivariateSpline(lon,lat,hc.data.real.T,kx=1,ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(lon,lat,hc.data.imag.T,kx=1,ky=1)
-            f3=scipy.interpolate.RectBivariateSpline(lon,lat,hc.mask.T,kx=1,ky=1)
+            f1=scipy.interpolate.RectBivariateSpline(lon,lat,
+                hc.data.real.T,kx=1,ky=1)
+            f2=scipy.interpolate.RectBivariateSpline(lon,lat,
+                hc.data.imag.T,kx=1,ky=1)
+            f3=scipy.interpolate.RectBivariateSpline(lon,lat,
+                hc.mask.T,kx=1,ky=1)
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
             hci.mask[:] = f3.ev(ilon,ilat).astype(np.bool)
         else:
-            #-- create mesh grids of latitude and longitude
-            X,Y = np.meshgrid(lon,lat)
-            interp_points = np.c_[X.flatten(),Y.flatten()]
-            #-- replace invalid values with nan
-            hc[hc.mask] = np.nan
-            #-- interpolate complex form of the constituent with scipy
-            hci.data[:] = scipy.interpolate.griddata(interp_points,
-                hc.flatten(), np.c_[ilon,ilat], method=METHOD)
-            #-- mask invalid values
-            hci.mask[:] = np.isnan(hci.data[:])
+            #-- use scipy regular grid to interpolate values for a given method
+            r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                hc.data, method=METHOD)
+            r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                hc.mask, method=METHOD)
+            hci.data[:] = r1.__call__(np.c_[ilat,ilon])
+            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
         #-- convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci)*SCALE
         amplitude.mask[:,i] = np.copy(hci.mask)

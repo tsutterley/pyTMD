@@ -37,6 +37,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache
+pythonenv*/
 # OS generated files #
 ######################
 .DS_Store

@@ -35,7 +35,7 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
  - `METHOD`: interpolation method
      * `bilinear`: quick bilinear interpolation
      * `spline`: scipy bivariate spline interpolation (default)
-     * `linear`, `cubic`, `nearest`: scipy griddata interpolations
+     * `linear`, `nearest`: scipy regular grid interpolations
  - `FILL_VALUE`: output invalid value
 
 #### Outputs

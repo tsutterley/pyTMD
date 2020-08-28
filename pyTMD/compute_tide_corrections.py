@@ -32,7 +32,7 @@ OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     FILL_VALUE: output invalid value (default NaN)
 
 PYTHON DEPENDENCIES:
@@ -125,7 +125,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     FILL_VALUE: output invalid value (default NaN)
 
     Returns
@@ -174,7 +174,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             'h_m4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
             'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
         model_format = 'netcdf'
-        TYPE = 'z'
+        model_type = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9.1'):
         grid_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','grid_tpxo9')

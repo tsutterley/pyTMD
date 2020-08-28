@@ -21,7 +21,7 @@ amp,ph = read_GOT_model(ilon,ilat,directory,model_files,METHOD='spline')
  - `METHOD`: interpolation method
     * `'bilinear'`: quick bilinear interpolation
     * `'spline'`: scipy bivariate spline interpolation
-    * `'linear'`, `'cubic'`, `'nearest'`: scipy griddata interpolations
+    * `'linear'`, `'nearest'`: scipy regular grid interpolations
  - `GZIP`: input files are compressed
  - `SCALE`: scaling factor for converting to output units
 
