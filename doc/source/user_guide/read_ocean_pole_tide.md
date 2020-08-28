@@ -7,8 +7,10 @@ read_ocean_pole_tide.py
 
 #### Calling Sequence
 ```python
+from pyTMD.utilities import get_data_path
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
-ht = read_ocean_pole_tide(input_file)
+ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
+ur,un,ue,glon,glat = read_ocean_pole_tide(ocean_pole_tide_file)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_ocean_pole_tide.py)
 
@@ -16,6 +18,8 @@ ht = read_ocean_pole_tide(input_file)
   1. `input_file`: [IERS 0.5x0.5 map of ocean pole tide coefficients](ftp://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)
 
 #### Outputs
- - `ur`: ocean pole tide coefficients
+ - `ur`: radial ocean pole tide coefficients
+ - `un`: north ocean pole tide coefficients
+ - `ue`: east ocean pole tide coefficients
  - `glon`: grid longitude
  - `glat`: grid latitude

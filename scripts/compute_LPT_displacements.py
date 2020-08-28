@@ -63,7 +63,7 @@ def compute_LPT_displacements(tide_dir, input_file, output_file, MODE=0o775):
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     #-- earth and physical parameters (IERS and WGS84)
-    GM = 3.98004418e14#-- geocentric gravitational constant [m^3/s^2]
+    GM = 3.986004418e14#-- geocentric gravitational constant [m^3/s^2]
     a_axis = 6378136.6#-- semimajor axis of the WGS84 ellipsoid [m]
     flat = 1.0/298.257223563#-- flattening of the WGS84 ellipsoid
     b_axis = (1.0 -flat)*a_axis#-- semiminor axis of the WGS84 ellipsoid [m]

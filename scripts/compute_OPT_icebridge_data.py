@@ -37,6 +37,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2020: using builtin time operations.  python3 regular expressions
+        replaced griddata interpolation with scipy regular grid interpolators
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
     Updated 05/2019: added option interpolate to choose the interpolation method
     Updated 02/2019: using range for python3 compatibility
@@ -55,6 +56,7 @@ import getopt
 import numpy as np
 import scipy.interpolate
 import pyTMD.time
+from pyTMD.utilities import get_data_path
 from pyTMD.convert_julian import convert_julian
 from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
@@ -462,12 +464,13 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
     atr = np.pi/648000.0
     #-- earth and physical parameters (IERS)
     G = 6.67428e-11#-- universal constant of gravitation [m^3/(kg*s^2)]
-    GM = 3.98004418e14#-- geocentric gravitational constant [m^3/s^2]
+    GM = 3.986004418e14#-- geocentric gravitational constant [m^3/s^2]
     ge = 9.7803278#-- mean equatorial gravity [m/s^2]
     a_axis = 6378136.6#-- equatorial radius of the Earth [m]
     flat = 1.0/298.257223563#-- flattening of the ellipsoid
     omega = 7.292115e-5#-- mean rotation rate of the Earth [radians/s]
     rho_w = 1025.0#-- density of sea water [kg/m^3]
+    ge = 9.7803278#-- mean equatorial gravitational acceleration [m/s^2]
     #-- Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
     ecc1 = lin_ecc/a_axis
@@ -489,11 +492,12 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
 
     #-- pole tide displacement scale factor
     Hp = np.sqrt(8.0*np.pi/15.0)*(omega**2*a_axis**4)/GM
-    K = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
+    K = 4.0*np.pi*G*rho_w*Hp*a_axis/(3.0*ge)
+    K1 = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
 
     #-- read ocean pole tide map from Desai (2002)
-    ocean_pole_tide_file = os.path.join(tide_dir,'opoleloadcoefcmcor.txt.gz')
-    iur,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
+    ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
+    iur,iun,iue,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
 
     #-- pole tide files (mean and daily)
     # mean_pole_file = os.path.join(tide_dir,'mean-pole.tab')
@@ -537,12 +541,10 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
         UR.real = f1.ev(lon,latitude_geocentric)
         UR.imag = f2.ev(lon,latitude_geocentric)
     else:
-        #-- create mesh grids of latitude and longitude
-        gridlon,gridlat = np.meshgrid(ilon, ilat, indexing='ij')
-        interp_points = zip(gridlon.flatten(),gridlat.flatten())
-        #-- use scipy griddata to interpolate to output points
-        UR = scipy.interpolate.griddata(interp_points, iur.flatten(),
-            zip(lon,latitude_geocentric), method=METHOD)
+        #-- use scipy regular grid to interpolate values for a given method
+        r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
+            iur[:,::-1], method=METHOD)
+        UR = r1.__call__(np.c_[lon,latitude_geocentric])
 
     #-- calculate angular coordinates of mean pole at time tdec
     mpx,mpy,fl = iers_mean_pole(mean_pole_file,tdec,'2015')

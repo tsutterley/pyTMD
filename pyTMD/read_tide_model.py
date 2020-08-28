@@ -27,7 +27,7 @@ OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
         OTIS: combined global solution
@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2020: check that interpolated points are within range of model
+        replaced griddata interpolation with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         update griddata interpolation. changed TYPE variable to keyword argument
     Updated 06/2020: output currents as numpy masked arrays
@@ -95,7 +96,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
         OTIS: combined global solution
@@ -192,20 +193,18 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             mu1 = np.ceil(f3.ev(x,y)).astype(mu.dtype)
             mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
-        #-- use scipy griddata to interpolate values
-        interp_points = np.c_[X.flatten(),Y.flatten()]
-        D = scipy.interpolate.griddata(interp_points,
-            hz.flatten(), np.c_[x,y], method=METHOD)
-        mz1 = scipy.interpolate.griddata(interp_points,
-            mz.real.flatten(), np.c_[x,y], method=METHOD)
-        mz1 = np.ceil(mz1).astype(mz.dtype)
+        #-- use scipy regular grid to interpolate values for a given method
+        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),hz,method=METHOD)
+        r2 = scipy.interpolate.RegularGridInterpolator((yi,xi),mz,method=METHOD)
+        D = r1.__call__(np.c_[y,x])
+        mz1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mz.dtype)
         if (TYPE != 'z'):
-            mu1 = scipy.interpolate.griddata(interp_points,
-                mu.flatten(), np.c_[x,y], method=METHOD)
-            mv1 = scipy.interpolate.griddata(interp_points,
-                mv.flatten(), np.c_[x,y], method=METHOD)
-            mu1 = np.ceil(mu1).astype(mu.dtype)
-            mv1 = np.ceil(mv1).astype(mv.dtype)
+            r3 = scipy.interpolate.RegularGridInterpolator((yi,xi),mu,
+                method=METHOD)
+            r4 = scipy.interpolate.RegularGridInterpolator((yi,xi),mv,
+                method=METHOD)
+            mu1 = np.ceil(r3.__call__(np.c_[y,x])).astype(mu.dtype)
+            mv1 = np.ceil(r4.__call__(np.c_[y,x])).astype(mv.dtype)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
@@ -255,14 +254,13 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z1.mask = (~mz1.astype(np.bool))
                 z1.data[z1.mask] = z1.fill_value
             else:
-                #-- replace zero values with nan
-                z[z==0] = np.nan
-                #-- use scipy griddata to interpolate values
+                #-- use scipy regular grid to interpolate values
+                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),z,
+                    method=METHOD)
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
-                z1.data[:] = scipy.interpolate.griddata(interp_points,
-                    z.flatten(), np.c_[x,y], method=METHOD)
-                #-- replace nan values with fill_value
-                z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
+                z1.data[:] = r1.__call__(np.c_[y,x])
+                #-- replace zero values with fill_value
+                z1.mask = (~mz1.astype(np.bool))
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
@@ -301,14 +299,13 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.mask = (~mu1.astype(np.bool))
                 u1.data[u1.mask] = u1.fill_value
             else:
-                #-- replace zero values with nan
-                u[u==0] = np.nan
-                #-- use scipy griddata to interpolate values
+                #-- use scipy regular grid to interpolate values
+                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),u,
+                    method=METHOD)
                 u1 = np.ma.zeros((npts),dtype=u.dtype)
-                u1.data[:] = scipy.interpolate.griddata(interp_points,
-                    u.flatten(), np.c_[x,y], method=METHOD)
-                #-- replace nan values with fill_value
-                u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
+                u1.data[:] = r1.__call__(np.c_[y,x])
+                #-- replace zero values with fill_value
+                u1.mask = (~mu1.astype(np.bool))
                 u1.data[u1.mask] = u1.fill_value
             #-- convert units
             u1 = u1/unit_conv
@@ -349,14 +346,13 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.mask = (~mv1.astype(np.bool))
                 v1.data[v1.mask] = v1.fill_value
             else:
-                #-- replace zero values with nan
-                v[u==0] = np.nan
-                #-- use scipy griddata to interpolate values
+                #-- use scipy regular grid to interpolate values
+                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),v,
+                    method=METHOD)
                 v1 = np.ma.zeros((npts),dtype=v.dtype)
-                v1.data=scipy.interpolate.griddata(interp_points,
-                    v.flatten(), np.c_[x,y], method=METHOD)
-                #-- replace nan values with fill_value
-                v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
+                v1.data[:] = r1.__call__(np.c_[y,x])
+                #-- replace zero values with fill_value
+                v1.mask = (~mv1.astype(np.bool))
                 v1.data[v1.mask] = v1.fill_value
             #-- convert units
             v1 = v1/unit_conv

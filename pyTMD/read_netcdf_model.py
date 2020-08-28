@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (07/2020)
+read_netcdf_model.py (08/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -28,7 +28,7 @@ OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     GZIP: input netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         changed TYPE variable to keyword argument. update griddata interpolation
     Updated 06/2020: use argmin and argmax in bilinear interpolation
@@ -90,7 +91,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
-        linear, cubic, nearest: scipy griddata interpolations
+        linear, nearest: scipy regular grid interpolations
     GZIP: input netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -166,21 +167,20 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         D.mask[:] = bilinear_interp(lon,lat,bathymetry.mask,ilon,ilat)
     elif (METHOD == 'spline'):
         #-- use scipy bivariate splines to interpolate values
-        f1=scipy.interpolate.RectBivariateSpline(lon,lat,
+        f1 = scipy.interpolate.RectBivariateSpline(lon,lat,
             bathymetry.data.T,kx=1,ky=1)
-        f2=scipy.interpolate.RectBivariateSpline(lon,lat,
+        f2 = scipy.interpolate.RectBivariateSpline(lon,lat,
             bathymetry.mask.T,kx=1,ky=1)
         D.data[:] = f1.ev(ilon,ilat)
         D.mask[:] = f2.ev(ilon,ilat).astype(np.bool)
     else:
-        #-- use scipy griddata to interpolate values
-        interp_points = np.c_[lon.flatten(),lat.flatten()]
-        D.data[:] = scipy.interpolate.griddata(interp_points,
-            bathymetry.data.flatten(), np.c_[ilon,ilat],
-            method=METHOD)
-        D.mask[:] = scipy.interpolate.griddata(interp_points,
-            bathymetry.mask.flatten(), np.c_[ilon,ilat],
-            method=METHOD).astype(np.bool)
+        #-- use scipy regular grid to interpolate values for a given method
+        r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+            bathymetry.data, method=METHOD)
+        r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+            bathymetry.mask, method=METHOD)
+        D.data[:] = r1.__call__(np.c_[ilat,ilon])
+        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
@@ -228,12 +228,14 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 #-- mask invalid values
                 z1.data[z1.mask] = z1.fill_value
             else:
-                #-- replace zero values with nan
-                z[z==0] = np.nan
-                #-- use scipy griddata to interpolate values
-                z1.data = scipy.interpolate.griddata(interp_points,
-                    z.flatten(), np.c_[ilon,ilat], method=METHOD)
-                z1.mask[np.isnan(z1.data)] = True
+                #-- use scipy regular grid to interpolate values
+                r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                    z.data, method=METHOD)
+                r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                    z.mask, method=METHOD)
+                z1.data[:]=r1.__call__(np.c_[ilat,ilon])
+                z1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+                #-- mask invalid values
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             ampl[:,i] = np.abs(z1)
@@ -266,13 +268,15 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 #-- mask invalid values
                 tr1.data[tr1.mask] = z1.fill_value
             else:
-                #-- replace zero values with nan
-                tr[tr==0] = np.nan
-                #-- use scipy interpolate to interpolate values
-                tr1 = scipy.interpolate.griddata(interp_points,
-                    tr.flatten(), np.c_[ilon,ilat], method=METHOD)
-                tr1.mask[np.isnan(tr1.data)] = True
-                tr1.data[tr1.mask] = tr1.fill_value
+                #-- use scipy regular grid to interpolate values
+                r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                    tr.data, method=METHOD)
+                r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                    tr.mask, method=METHOD)
+                tr1.data[:]=r1.__call__(np.c_[ilat,ilon])
+                tr1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+                #-- mask invalid values
+                tr1.data[tr1.mask] = z1.fill_value
             #-- convert units
             tr1 = tr1/unit_conv
             #-- amplitude and phase of the constituent
