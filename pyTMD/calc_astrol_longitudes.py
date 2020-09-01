@@ -56,7 +56,7 @@ def polynomial_sum(coefficients, t):
     Arguments
     ---------
     coefficients: leading coefficient of polynomials of increasing order
-    t: delta time in units for a given astrological longitudes calculation
+    t: delta time in units for a given astronomical longitudes calculation
     """
     #-- convert time to array if importing a single value
     t = np.array([t]) if (np.ndim(t) == 0) else np.copy(t)

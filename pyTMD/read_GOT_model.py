@@ -119,7 +119,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
             #-- use quick bilinear to interpolate values
             hci.data[:] = bilinear_interp(lon,lat,hc,ilon,ilat,dtype=hc.dtype)
             #-- replace nan values with fill_value
-            hci.mask[:] = np.isnan(hci.data)
+            hci.mask[:] |= np.isnan(hci.data)
             hci.data[hci.mask] = hci.fill_value
         elif (METHOD == 'spline'):
             #-- interpolate complex form of the constituent with scipy
@@ -134,9 +134,9 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
             hci.mask[:] = f3.ev(ilon,ilat).astype(np.bool)
         else:
             #-- use scipy regular grid to interpolate values for a given method
-            r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+            r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                 hc.data, method=METHOD)
-            r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+            r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                 hc.mask, method=METHOD)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)

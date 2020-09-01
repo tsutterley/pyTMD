@@ -18,7 +18,9 @@ data = bilinear_interp(ilon,ilat,idata,lon,lat)
  5. `lat`: output latitude
 
 #### Options
+ - `fill_value`: invalid value
  - `dtype`: output data type
+ - `extrapolate`: extrapolate points
 
 #### Outputs
  - `data`: interpolated data
