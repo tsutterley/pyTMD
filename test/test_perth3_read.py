@@ -3,7 +3,7 @@ u"""
 test_perth3_read.py (08/2020)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
-Tests that interpolated results are comparable to NASA PERTH3 program program
+Tests that interpolated results are comparable to NASA PERTH3 program
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -31,12 +31,14 @@ import pyTMD.utilities
 import pyTMD.read_GOT_model
 import pyTMD.predict_tide_drift
 import pyTMD.infer_minor_corrections
+import pyTMD.compute_tide_corrections
 import pyTMD.calc_delta_time
 
 #-- current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
+#-- PURPOSE: Download GOT4.7 constituents from AWS S3 bucket
 def test_download_GOT47(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
@@ -63,8 +65,10 @@ def test_download_GOT47(aws_access_key_id,aws_secret_access_key,aws_region_name)
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
 
+#-- parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
 #-- PURPOSE: Tests that interpolated results are comparable to PERTH3 program
-def test_verify_GOT47():
+def test_verify_GOT47(METHOD):
     #-- model parameters for GOT4.7
     model_directory = os.path.join(filepath,'GOT4.7','grids_oceantide')
     #-- perth3 test program infers m4 tidal constituent
@@ -98,7 +102,7 @@ def test_verify_GOT47():
 
     #-- extract amplitude and phase from tide model
     amp,ph = pyTMD.read_GOT_model.extract_GOT_constants(longitude, latitude,
-        model_directory, model_files, METHOD='spline', SCALE=SCALE)
+        model_directory, model_files, METHOD=METHOD, SCALE=SCALE)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)
@@ -126,3 +130,26 @@ def test_verify_GOT47():
     difference.mask = (tide.mask | validation.mask)
     if not np.all(difference.mask):
         assert np.all(np.abs(difference) <= eps)
+
+#-- parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline','nearest','bilinear'])
+#-- PURPOSE: test the tide correction wrapper function
+def test_Ross_Ice_Shelf(METHOD):
+    #-- create an image around the Ross Ice Shelf
+    xlimits = np.array([-740000,520000])
+    ylimits = np.array([-1430000,-300000])
+    spacing = np.array([5e3,-5e3])
+    #-- x and y coordinates
+    x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
+    y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])
+    xgrid,ygrid = np.meshgrid(x,y)
+    #-- x and y dimensions
+    nx = np.int((xlimits[1]-xlimits[0])/spacing[0])+1
+    ny = np.int((ylimits[0]-ylimits[1])/spacing[1])+1
+    #-- time dimension
+    delta_time = 0.0
+    #-- calculate tide map
+    tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
+        DIRECTORY=filepath, MODEL='GOT4.7', EPOCH=(2018,1,1,0,0,0),
+        TYPE='grid', TIME='GPS', EPSG=3031, METHOD=METHOD)
+    assert np.any(tide)

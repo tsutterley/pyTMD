@@ -4,6 +4,7 @@ test_ocean_pole_tide.py (08/2020)
 """
 import os
 import re
+import inspect
 import warnings
 import pytest
 import numpy as np
@@ -14,6 +15,10 @@ from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
+
+#-- current file path
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+filepath = os.path.dirname(os.path.abspath(filename))
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest','linear'])
@@ -47,7 +52,7 @@ def test_ocean_pole_tide(METHOD):
     assert (np.abs(K - 5.3394043696e+03) < eps)
 
     #-- read test file for values
-    ocean_pole_test_file = get_data_path(['data','opoleloadcmcor.test'])
+    ocean_pole_test_file = os.path.join(filepath,'opoleloadcmcor.test')
     names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2','u_radial','u_north')
     formats = ('i','f','f','f','f','f','f','f','f')
     validation = np.loadtxt(ocean_pole_test_file,skiprows=26,
