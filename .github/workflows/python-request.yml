@@ -55,9 +55,14 @@ jobs:
         pip install --no-deps .
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
+    - name: Checkout Matlab TMD Toolbox
+      uses: actions/checkout@v2
+      with:
+        repository: tsutterley/TMD_Matlab_Toolbox_v2.5
+        path: TMD_Matlab_Toolbox
+        ref: inferminor
     - name: Test with pytest
       run: |
-        git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
         pytest --cov=./ --cov-report=xml \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \

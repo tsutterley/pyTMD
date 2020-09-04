@@ -57,6 +57,23 @@ General Methods
         `format`: format for input time string
 
 
+.. method:: pyTMD.utilities.copy(source, destination, verbose=False, move=False)
+
+    Copy or move a file with all system information
+
+    Arguments:
+
+        `source`: source file
+
+        `destination`: copied destination file
+
+    Keyword arguments:
+
+        `verbose`: print file transfer information
+
+        `move`: remove the source file
+
+
 .. method:: pyTMD.utilities.ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False)
 
     List a directory on a ftp host
