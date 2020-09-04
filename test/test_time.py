@@ -3,8 +3,9 @@ u"""
 test_time.py (08/2020)
 Verify time conversion functions
 """
-import warnings
+import os
 import pytest
+import warnings
 import numpy as np
 import pyTMD.time
 from pyTMD.convert_julian import convert_julian
@@ -94,3 +95,21 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
     output_time = pyTMD.time.convert_delta_time(gps_seconds - time_leaps,
         epoch1=(1980,1,6,0,0,0), epoch2=(2018,1,1,0,0,0), scale=1.0)
     assert (delta_time == output_time)
+
+#-- PURPOSE: update leap second file
+def test_update_leap_seconds():
+    pyTMD.time.update_leap_seconds(verbose=False, mode=0o775)
+    FILE = 'leap-seconds.list'
+    assert os.access(pyTMD.utilities.get_data_path(['data',FILE]),os.F_OK)
+
+#-- PURPOSE: update delta time values
+def test_update_delta_time(username, password):
+    pyTMD.time.merge_delta_time(username=username,password=password)
+    #-- confirm delta time files
+    delta_time_files = []
+    delta_time_files.append('historic_deltat.data')
+    delta_time_files.append('deltat.data')
+    delta_time_files.append('iers_deltat.data')
+    delta_time_files.append('merged_deltat.data')
+    for FILE in delta_time_files:
+        assert os.access(pyTMD.utilities.get_data_path(['data',FILE]),os.F_OK)

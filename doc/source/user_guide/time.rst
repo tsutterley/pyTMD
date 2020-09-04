@@ -112,7 +112,7 @@ General Methods
         `mode`: permissions mode of output file
 
 
-.. method:: pyTMD.time.merge_delta_time(verbose=False, mode=0o775)
+.. method:: pyTMD.time.merge_delta_time(username=None, password=None, verbose=False, mode=0o775)
 
     Connects to servers to download `differences between dynamic and universal time`__
 
@@ -124,12 +124,33 @@ General Methods
 
     Keyword arguments:
 
+        `username`: NASA Earthdata username
+
+        `password`: NASA Earthdata password
+
         `verbose`: print file information about output file
 
         `mode`: permissions mode of output file
 
 
-.. method:: pyTMD.time.iers_delta_time(verbose=False, mode=0o775)
+.. method:: pyTMD.time.merge_bulletin_a_files(username=None, password=None, verbose=False, mode=0o775)
+
+    Attempt to connects to the IERS server and the CDDIS Earthdata server to download and merge Bulletin-A files
+
+    Reads the IERS Bulletin-A files and calculates the daily delta times
+
+    Keyword arguments:
+
+        `username`: NASA Earthdata username
+
+        `password`: NASA Earthdata password
+
+        `verbose`: print file information about output file
+
+        `mode`: permissions mode of output file
+
+
+.. method:: pyTMD.time.iers_delta_time(daily_file, verbose=False, mode=0o775)
 
     Connects to the IERS server to download `Bulletin-A files`__
 
@@ -137,6 +158,10 @@ General Methods
 
     Reads the IERS Bulletin-A files and calculates the daily delta times
 
+    Arguments:
+
+        `daily_file`: output daily delta time file from merged Bulletin-A files
+
     Keyword arguments:
 
         `verbose`: print file information about output file
@@ -144,7 +169,7 @@ General Methods
         `mode`: permissions mode of output file
 
 
-.. method:: pyTMD.time.cddis_delta_time(verbose=False, mode=0o775)
+.. method:: pyTMD.time.cddis_delta_time(daily_file, username=None, password=None, verbose=False, mode=0o775)
 
     Connects to the NASA GSFC CDDIS https server to download `Bulletin-A files`__
 
@@ -152,7 +177,15 @@ General Methods
 
     Reads the IERS Bulletin-A files and calculates the daily delta times
 
+    Arguments:
+
+        `daily_file`: output daily delta time file from merged Bulletin-A files
+
     Keyword arguments:
+
+        `username`: NASA Earthdata username
+
+        `password`: NASA Earthdata password
 
         `verbose`: print file information about output file
 
@@ -170,7 +203,7 @@ General Methods
         fileID: open file object for Bulletin-A file
 
 
-.. method:: pyTMD.time.pull_deltat_file(FILE, verbose=False, mode=0o775)
+.. method:: pyTMD.time.pull_deltat_file(FILE, username=None, password=None, verbose=False, mode=0o775)
 
     Connects to `servers`__ and downloads monthly or historic delta time files
 
@@ -181,6 +214,10 @@ General Methods
         `FILE`: delta time file to download from remote servers
 
     Keyword arguments:
+
+        `username`: NASA Earthdata username
+
+        `password`: NASA Earthdata password
 
         `verbose`: print file information about output file
 

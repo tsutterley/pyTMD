@@ -175,9 +175,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         D.mask[:] = f2.ev(ilon,ilat).astype(np.bool)
     else:
         #-- use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+        r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
             bathymetry.data, method=METHOD)
-        r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+        r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
             bathymetry.mask, method=METHOD)
         D.data[:] = r1.__call__(np.c_[ilat,ilon])
         D.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
@@ -229,9 +229,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 z1.data[z1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                     z.data, method=METHOD)
-                r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                     z.mask, method=METHOD)
                 z1.data[:]=r1.__call__(np.c_[ilat,ilon])
                 z1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
@@ -269,9 +269,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 tr1.data[tr1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                     tr.data, method=METHOD)
-                r2 = scipy.interpolate.RegularGridInterpolator((lon,lat),
+                r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                     tr.mask, method=METHOD)
                 tr1.data[:]=r1.__call__(np.c_[ilat,ilon])
                 tr1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)

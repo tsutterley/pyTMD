@@ -106,10 +106,31 @@ def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
     """
     try:
         parsed_time = time.strptime(time_string.rstrip(), format)
-    except:
+    except (TypeError, ValueError):
         return None
     else:
         return calendar.timegm(parsed_time)
+
+#-- PURPOSE: make a copy of a file with all system information
+def copy(source, destination, verbose=False, move=False):
+    """
+    Copy or move a file with all system information
+
+    Arguments
+    ---------
+    source: source file
+    destination: copied destination file
+
+    Keyword arguments
+    -----------------
+    verbose: print file transfer information
+    move: remove the source file
+    """
+    print('{0} -->\n\t{1}'.format(source,destination)) if verbose else None
+    shutil.copyfile(source, destination)
+    shutil.copystat(source, destination)
+    if move:
+        os.remove(source)
 
 #-- PURPOSE: list a directory on a ftp host
 def ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False):
@@ -148,13 +169,12 @@ def ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False):
             try:
                 #-- try sending modification time command
                 mdtm = ftp.sendcmd('MDTM {0}'.format(f))
-            except:
+            except ftplib.error_perm:
                 #-- directories will return with an error
                 pass
             else:
                 #-- convert the modification time into unix time
-                mtimes[i] = get_unix_time(time.strptime(mdtm[4:],
-                    format="%Y%m%d%H%M%S"))
+                mtimes[i] = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
         #-- reduce to basenames
         if basename:
             output = [posixpath.basename(i) for i in output]

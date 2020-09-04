@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (08/2020)
+Written by Tyler Sutterley (09/2020)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -14,6 +14,7 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 09/2020: added wrapper function for merging Bulletin-A files
     Updated 08/2020: added NASA Earthdata routines for downloading from CDDIS
     Written 07/2020
 """
@@ -161,9 +162,8 @@ def update_leap_seconds(verbose=False, mode=0o775):
     #-- try downloading from NIST ftp servers
     HOST = ['ftp.nist.gov','pub','time','iers',FILE]
     try:
-        pyTMD.utilities.from_ftp(HOST,timeout=20,
-            local=pyTMD.utilities.get_data_path(LOCAL),hash=HASH,
-            verbose=verbose,mode=mode)
+        pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
+            hash=HASH, verbose=verbose, mode=mode)
     except:
         pass
     else:
@@ -172,19 +172,15 @@ def update_leap_seconds(verbose=False, mode=0o775):
     #-- try downloading from Internet Engineering Task Force (IETF) mirror
     REMOTE = ['https://www.ietf.org','timezones','data',FILE]
     try:
-        pyTMD.utilities.from_http(REMOTE,timeout=5,
-            local=pyTMD.utilities.get_data_path(LOCAL),hash=HASH,
-            verbose=verbose,mode=mode)
+        pyTMD.utilities.from_http(REMOTE, timeout=5, local=LOCAL,
+            hash=HASH, verbose=verbose, mode=mode)
     except:
         pass
     else:
         return
 
-    #-- return exception that no server could be connected
-    raise Exception('All Server Connection Error')
-
 #-- PURPOSE: Download delta time files and merge into a single
-def merge_delta_time(verbose=False, mode=0o775):
+def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
     """
     Connects to servers to download historic_deltat.data and deltat.data files
     Reads IERS Bulletin-A produced iers_deltat.data files
@@ -195,23 +191,31 @@ def merge_delta_time(verbose=False, mode=0o775):
 
     Keyword arguments
     -----------------
+    username: NASA Earthdata username
+    password: NASA Earthdata password
     verbose: print file information about output file
     mode: permissions mode of output file
     """
-    #-- retrieve history and monthly delta time files
-    for FILE in ['deltat.data','historic_deltat.data']:
-        pull_deltat_file(FILE,verbose=verbose,mode=mode)
+    #-- retrieve history delta time files
+    pull_deltat_file('historic_deltat.data',username=username,password=password,
+        verbose=verbose,mode=mode)
     #-- read historic delta time file
     historic_file=pyTMD.utilities.get_data_path(['data','historic_deltat.data'])
     historic = np.loadtxt(historic_file, skiprows=2)
     HY = np.floor(historic[:,0])
     HM = 12.0*np.mod(historic[:,0],1.0) + 1.0
     HD = np.ones_like(historic[:,0])
+    #-- retrieve monthly delta time files
+    pull_deltat_file('deltat.data',username=username,password=password,
+        verbose=verbose,mode=mode)
     #-- read modern monthly delta time file
     monthly_file = pyTMD.utilities.get_data_path(['data','deltat.data'])
     monthly = np.loadtxt(monthly_file)
     monthly_time = pyTMD.convert_calendar_decimal(monthly[:,0],monthly[:,1],
         DAY=monthly[:,2])
+    #-- retrieve daily delta time files
+    merge_bulletin_a_files(username=username,password=password,
+        verbose=verbose,mode=mode)
     #-- read modern daily delta time file from IERS Bulletin A files
     daily_file = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
     daily = np.loadtxt(daily_file)
@@ -240,8 +244,53 @@ def merge_delta_time(verbose=False, mode=0o775):
     fid.close()
     os.chmod(merged_file,mode)
 
+#-- PURPOSE: connect to IERS or CDDIS server and merge Bulletin-A files
+def merge_bulletin_a_files(username=None,password=None,
+    verbose=False,mode=0o775):
+    """
+    Attempt to connects to the IERS server and the CDDIS Earthdata server
+        to download and merge Bulletin-A files
+    Reads the IERS Bulletin-A files and calculates the daily delta times
+    Delta times are the difference between universal time and dynamical time
+
+    Servers and Mirrors
+    -------------------
+    ftp://ftp.iers.org/products/eop/rapid/bulletina/
+    https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
+
+    Keyword arguments
+    -----------------
+    username: NASA Earthdata username
+    password: NASA Earthdata password
+    verbose: print file information about output file
+    mode: permissions mode of output file
+    """
+    #-- if complete: replace previous version of file
+    LOCAL = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
+    COPY = pyTMD.utilities.get_data_path(['data','iers_deltat.temp'])
+    #-- try connecting to IERS ftp servers and merge Bulletin-A files
+    try:
+        iers_delta_time(COPY, verbose=verbose, mode=mode)
+    except:
+        os.remove(COPY) if os.access(COPY, os.F_OK) else None
+        pass
+    else:
+        pyTMD.utilities.copy(COPY, LOCAL, move=True)
+        return
+
+    #-- try connecting to CDDIS https servers and merge Bulletin-A files
+    try:
+        cddis_delta_time(COPY, username=username, password=password,
+            verbose=verbose, mode=mode)
+    except:
+        os.remove(COPY) if os.access(COPY, os.F_OK) else None
+        pass
+    else:
+        pyTMD.utilities.copy(COPY, LOCAL, move=True)
+        return
+
 #-- PURPOSE: connects to IERS servers and finds Bulletin-A files
-def iers_delta_time(verbose=False, mode=0o775):
+def iers_delta_time(daily_file, verbose=False, mode=0o775):
     """
     Connects to the IERS server to download Bulletin-A files
         https://datacenter.iers.org/productMetadata.php?id=6
@@ -251,6 +300,10 @@ def iers_delta_time(verbose=False, mode=0o775):
     Servers and Mirrors
     -------------------
     ftp://ftp.iers.org/products/eop/rapid/bulletina/
+
+    Arguments
+    ---------
+    daily_file: output daily delta time file from merged Bulletin-A files
 
     Keyword arguments
     -----------------
@@ -262,7 +315,6 @@ def iers_delta_time(verbose=False, mode=0o775):
     #-- regular expression pattern for finding files
     rx = re.compile(r'bulletina-(.*?)-(\d+).txt$',re.VERBOSE)
     #-- open output daily delta time file
-    daily_file = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
     fid = open(daily_file,'w')
     #-- output file format
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
@@ -296,7 +348,8 @@ def iers_delta_time(verbose=False, mode=0o775):
     os.chmod(daily_file,mode)
 
 #-- PURPOSE: connects to CDDIS Earthdata https server and finds Bulletin-A files
-def cddis_delta_time(verbose=False, mode=0o775):
+def cddis_delta_time(daily_file, username=None, password=None,
+    verbose=False, mode=0o775):
     """
     Connects to the CDDIS Earthdata server to download Bulletin-A files
     Reads the IERS Bulletin-A files and calculates the daily delta times
@@ -306,8 +359,14 @@ def cddis_delta_time(verbose=False, mode=0o775):
     -------------------
     https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
 
+    Arguments
+    ---------
+    daily_file: output daily delta time file from merged Bulletin-A files
+
     Keyword arguments
     -----------------
+    username: NASA Earthdata username
+    password: NASA Earthdata password
     verbose: print file information about output file
     mode: permissions mode of output file
     """
@@ -316,7 +375,8 @@ def cddis_delta_time(verbose=False, mode=0o775):
         'iers_bulletins','bulletin_a']
     #-- get NASA Earthdata credentials
     urs = 'urs.earthdata.nasa.gov'
-    username,login,password = netrc.netrc().authenticators(urs)
+    if not (username or password):
+        username,login,password = netrc.netrc().authenticators(urs)
     #-- build NASA Earthdata opener for CDDIS and check credentials
     pyTMD.utilities.build_opener(username, password)
     pyTMD.utilities.check_credentials()
@@ -325,7 +385,6 @@ def cddis_delta_time(verbose=False, mode=0o775):
     #-- regular expression pattern for finding files
     R2 = re.compile(r'iers_bulletina\.(.*?)_(\d+)$',re.VERBOSE)
     #-- open output daily delta time file
-    daily_file = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
     fid = open(daily_file,'w')
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     #-- for each subdirectory
@@ -337,7 +396,7 @@ def cddis_delta_time(verbose=False, mode=0o775):
         key=lambda i: pyTMD.utilities.roman_to_int(i[1]))]
     #-- output file format
     for SUB in subdirectory:
-        #-- find Bulletin-A files in ftp subdirectory
+        #-- find Bulletin-A files in https subdirectory
         HOST.append(SUB)
         bulletin_files,mtimes = pyTMD.utilities.cddis_list(HOST,build=False,
             sort=True,pattern=R2)
@@ -431,8 +490,8 @@ def read_iers_bulletin_a(fileID):
     Y,M,D,h,m,s = pyTMD.convert_julian(MJD[:valid]+2400000.5,FORMAT='tuple')
     #-- calculate GPS Time (seconds since 1980-01-06T00:00:00)
     #-- by converting the Modified Julian days (days since 1858-11-17T00:00:00)
-    GPS_Time = convert_delta_time(MJD[:valid], epoch1=(1858,11,17,0,0,0),
-        epoch2=(1980,1,6,0,0,0), scale=86400.0) + TAI_UTC - TAI_GPS
+    GPS_Time = convert_delta_time(MJD[:valid]*8.64e4, epoch1=(1858,11,17,0,0,0),
+        epoch2=(1980,1,6,0,0,0), scale=1.0) + TAI_UTC - TAI_GPS
     #-- number of leap seconds between GPS and UTC
     #-- this finds the daily correction for weeks with leap seconds
     GPS_UTC = count_leap_seconds(GPS_Time)
@@ -444,7 +503,7 @@ def read_iers_bulletin_a(fileID):
     return (Y,M,D,DELTAT)
 
 #-- PURPOSE: connects to servers and downloads delta time files
-def pull_deltat_file(FILE, verbose=False, mode=0o775):
+def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     """
     Connects to servers and downloads delta time files
 
@@ -463,6 +522,8 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
 
     Keyword arguments
     -----------------
+    username: NASA Earthdata username
+    password: NASA Earthdata password
     verbose: print file information about output file
     mode: permissions mode of output file
     """
@@ -500,7 +561,8 @@ def pull_deltat_file(FILE, verbose=False, mode=0o775):
     HOST = ['https://cddis.nasa.gov','archive','products','iers',FILE]
     try:
         urs = 'urs.earthdata.nasa.gov'
-        username,login,password = netrc.netrc().authenticators(urs)
+        if not (username or password):
+            username,login,password = netrc.netrc().authenticators(urs)
         pyTMD.utilities.from_cddis(HOST,username=username,password=password,
             timeout=20,local=LOCAL,hash=HASH,verbose=verbose,mode=mode)
     except:
