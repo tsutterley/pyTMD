@@ -228,15 +228,20 @@ def convert_calendar_serial(year, month, day, hour=0.0, minute=0.0, second=0.0):
         second/86400.0 - 30.0
     return sd
 
+#-- parameterize type: heights versus currents
+parameters = []
+parameters.append(dict(type='z',model='hf.CATS2008.out',grid='grid_CATS2008'))
+parameters.append(dict(type='U',model='uv.CATS2008.out',grid='grid_CATS2008'))
+parameters.append(dict(type='V',model='uv.CATS2008.out',grid='grid_CATS2008'))
+@pytest.mark.parametrize("parameters", parameters)
 #-- PURPOSE: Tests that interpolated results are comparable to Matlab program
-def test_verify_CATS2008():
+def test_verify_CATS2008(parameters):
     #-- model parameters for CATS2008
-    grid_file = os.path.join(filepath,'grid_CATS2008')
-    elevation_file = os.path.join(filepath,'hf.CATS2008.out')
-    transport_file = os.path.join(filepath,'uv.CATS2008.out')
+    grid_file = os.path.join(filepath,parameters['grid'])
+    model_file = os.path.join(filepath,parameters['model'])
+    TYPE = parameters['type']
     GRID = 'OTIS'
     EPSG = 'CATS2008'
-    TYPE = 'z'
 
     #-- open Antarctic Tide Gauge (AntTG) database
     with open(os.path.join(filepath,'AntTG_ocean_height_v1.txt'),'r') as f:
@@ -282,7 +287,7 @@ def test_verify_CATS2008():
 
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
-        station_lat, grid_file, elevation_file, EPSG, TYPE=TYPE,
+        station_lat, grid_file, model_file, EPSG, TYPE=TYPE,
         METHOD='spline', GRID=GRID)
     #-- calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -320,7 +325,7 @@ def test_verify_CATS2008():
         octave.warning('off', 'all')
         CFname = os.path.join(filepath,'Model_CATS2008')
         validation,cons = octave.tmd_tide_pred(CFname,SDtime,
-            station_lat[i],station_lon[i],'z',nout=2)
+            station_lat[i],station_lon[i],TYPE,nout=2)
 
         #-- calculate differences between matlab and python version
         difference = np.ma.zeros((ndays))
@@ -329,15 +334,20 @@ def test_verify_CATS2008():
         if not np.all(difference.mask):
             assert np.all(np.abs(difference) < eps)
 
+#-- parameterize type: heights versus currents
+parameters = []
+parameters.append(dict(type='z',model='h_Arc5km2018',grid='grid_Arc5km2018'))
+parameters.append(dict(type='u',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+parameters.append(dict(type='v',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+@pytest.mark.parametrize("parameters", parameters)
 #-- PURPOSE: Tests that interpolated results are comparable to Matlab program
-def test_verify_AOTIM5_2018():
+def test_verify_AOTIM5_2018(parameters):
     #-- model parameters for AOTIM-5-2018
-    grid_file = os.path.join(filepath,'grid_Arc5km2018')
-    elevation_file = os.path.join(filepath,'h_Arc5km2018')
-    transport_file = os.path.join(filepath,'UV_Arc5km2018')
+    grid_file = os.path.join(filepath,parameters['grid'])
+    model_file = os.path.join(filepath,parameters['model'])
+    TYPE = parameters['type']
     GRID = 'OTIS'
     EPSG = 'PSNorth'
-    TYPE = 'z'
 
     #-- open Arctic Tidal Current Atlas list of records
     with open(os.path.join(filepath,'List_of_records.txt'),'r') as f:
@@ -371,7 +381,7 @@ def test_verify_AOTIM5_2018():
 
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
-        station_lat, grid_file, elevation_file, EPSG, TYPE=TYPE,
+        station_lat, grid_file, model_file, EPSG, TYPE=TYPE,
         METHOD='spline', GRID=GRID)
     #-- calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -404,7 +414,7 @@ def test_verify_AOTIM5_2018():
         octave.warning('off', 'all')
         CFname = os.path.join(filepath,'Model_Arc5km2018')
         validation,cons = octave.tmd_tide_pred(CFname,SDtime,
-            station_lat[i],station_lon[i],'z',nout=2)
+            station_lat[i],station_lon[i],TYPE,nout=2)
 
         #-- calculate differences between matlab and python version
         difference = np.ma.zeros((ndays))

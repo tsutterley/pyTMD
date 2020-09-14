@@ -1,12 +1,14 @@
 """
 utilities.py
-Written by Tyler Sutterley (08/2020)
+Written by Tyler Sutterley (09/2020)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 09/2020: copy from http and https to bytesIO object in chunks
+        use netrc credentials if not entered from CDDIS functions
     Updated 08/2020: add GSFC CDDIS opener, login and download functions
     Written 08/2020
 """
@@ -17,6 +19,7 @@ import os
 import re
 import io
 import ssl
+import netrc
 import ftplib
 import shutil
 import base64
@@ -302,7 +305,8 @@ def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,
         raise Exception('Download error from {0}'.format(posixpath.join(*HOST)))
     else:
         #-- copy remote file contents to bytesIO object
-        remote_buffer = io.BytesIO(response.read())
+        remote_buffer = io.BytesIO()
+        shutil.copyfileobj(response, remote_buffer, chunk)
         remote_buffer.seek(0)
         #-- save file basename with bytesIO object
         remote_buffer.filename = HOST[-1]
@@ -402,6 +406,10 @@ def cddis_list(HOST,username=None,password=None,build=True,timeout=None,
     colnames: list of column names in a directory
     collastmod: list of last modification times for items in the directory
     """
+    #-- use netrc credentials
+    if not (username or password):
+        urs = 'urs.earthdata.nasa.gov'
+        username,login,password = netrc.netrc().authenticators(urs)
     #-- build urllib2 opener and check credentials
     if build:
         #-- build urllib2 opener with credentials
@@ -470,6 +478,10 @@ def from_cddis(HOST,username=None,password=None,build=True,timeout=None,
     -------
     remote_buffer: BytesIO representation of file
     """
+    #-- use netrc credentials
+    if not (username or password):
+        urs = 'urs.earthdata.nasa.gov'
+        username,login,password = netrc.netrc().authenticators(urs)
     #-- build urllib2 opener and check credentials
     if build:
         #-- build urllib2 opener with credentials
@@ -489,7 +501,8 @@ def from_cddis(HOST,username=None,password=None,build=True,timeout=None,
         raise Exception('Download error from {0}'.format(posixpath.join(*HOST)))
     else:
         #-- copy remote file contents to bytesIO object
-        remote_buffer = io.BytesIO(response.read())
+        remote_buffer = io.BytesIO()
+        shutil.copyfileobj(response, remote_buffer, chunk)
         remote_buffer.seek(0)
         #-- save file basename with bytesIO object
         remote_buffer.filename = HOST[-1]

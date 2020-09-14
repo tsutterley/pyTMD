@@ -86,7 +86,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     hour = (MJD % 1)*24.0
     t1 = 15.0*hour
     t2 = 30.0*hour
-    nt = 1 if (np.ndim(MJD) == 0) else len(MJD)
+    nt = len(np.atleast_1d(MJD))
 
     #-- Determine equilibrium arguments
     arg = np.zeros((nt,60))

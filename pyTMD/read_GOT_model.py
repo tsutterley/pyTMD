@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (08/2020)
+read_GOT_model.py (09/2020)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -35,6 +35,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 09/2020: set bounds error to false for regular grid interpolations
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         update griddata interpolation. add option GZIP for compression
@@ -132,14 +133,20 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
             hci.mask[:] = f3.ev(ilon,ilat).astype(np.bool)
+            #-- replace invalid values with fill_value
+            hci.data[hci.mask] = hci.fill_value
         else:
             #-- use scipy regular grid to interpolate values for a given method
             r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.data, method=METHOD)
+                hc.data, method=METHOD, bounds_error=False,
+                fill_value=hci.fill_value)
             r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.mask, method=METHOD)
+                hc.mask, method=METHOD, bounds_error=False, fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+            #-- replace invalid values with fill_value
+            hci.mask[:] |= (hci.data == hci.fill_value)
+            hci.data[hci.mask] = hci.fill_value
         #-- convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci)*SCALE
         amplitude.mask[:,i] = np.copy(hci.mask)
