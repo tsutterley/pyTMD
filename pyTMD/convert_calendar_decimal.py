@@ -70,12 +70,7 @@ def convert_calendar_decimal(year, month, DAY=None, HOUR=None, MINUTE=None,
     """
 
     #-- number of dates
-    if (np.ndim(np.squeeze(year)) == 0):
-        #-- single date entered
-        n_dates = 1
-    else:
-        #-- array of dates entered
-        n_dates = len(np.squeeze(year))
+    n_dates = len(np.atleast_1d(year))
 
     #-- create arrays for calendar date variables
     cal_date = {}

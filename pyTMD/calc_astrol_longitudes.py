@@ -59,7 +59,7 @@ def polynomial_sum(coefficients, t):
     t: delta time in units for a given astronomical longitudes calculation
     """
     #-- convert time to array if importing a single value
-    t = np.array([t]) if (np.ndim(t) == 0) else np.copy(t)
+    t = np.atleast_1d(t)
     return np.sum([c * (t ** i) for i,c in enumerate(coefficients)],axis=0)
 
 #-- PURPOSE: compute the basic astronomical mean longitudes

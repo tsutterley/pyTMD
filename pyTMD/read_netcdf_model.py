@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (08/2020)
+read_netcdf_model.py (09/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 09/2020: set bounds error to false for regular grid interpolations
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         changed TYPE variable to keyword argument. update griddata interpolation
@@ -176,15 +177,15 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-            bathymetry.data, method=METHOD)
+            bathymetry.data, method=METHOD, bounds_error=False)
         r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-            bathymetry.mask, method=METHOD)
+            bathymetry.mask, method=METHOD, bounds_error=False, fill_value=1)
         D.data[:] = r1.__call__(np.c_[ilat,ilon])
         D.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
-        unit_conv = (D.data*100.0)
+        unit_conv = (D.data/100.0)
     #-- U and V are transports in m^2/s
     elif TYPE in ('V','U'):
         unit_conv = 1.0
@@ -230,12 +231,14 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             else:
                 #-- use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                    z.data, method=METHOD)
+                    z.data, method=METHOD, bounds_error=False,
+                    fill_value=z1.fill_value)
                 r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                    z.mask, method=METHOD)
+                    z.mask, method=METHOD, bounds_error=False, fill_value=1)
                 z1.data[:]=r1.__call__(np.c_[ilat,ilon])
                 z1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
                 #-- mask invalid values
+                z1.mask |= (z1.data == z1.fill_value)
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             ampl[:,i] = np.abs(z1)
@@ -247,7 +250,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             constituents.append(con)
             #-- replace original values with extend matrices
             tr = extend_matrix(tr)
-            #-- interpolate values
+            #-- interpolate amplitude and phase of the constituent
             tr1 = np.ma.zeros((npts),dtype=tr.dtype)
             tr1.mask = np.zeros((npts),dtype=np.bool)
             if (METHOD == 'bilinear'):
@@ -270,13 +273,15 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             else:
                 #-- use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                    tr.data, method=METHOD)
+                    tr.data, method=METHOD, bounds_error=False,
+                    fill_value=tr1.fill_value)
                 r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                    tr.mask, method=METHOD)
+                    tr.mask, method=METHOD, bounds_error=False, fill_value=1)
                 tr1.data[:]=r1.__call__(np.c_[ilat,ilon])
                 tr1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
                 #-- mask invalid values
-                tr1.data[tr1.mask] = z1.fill_value
+                tr1.mask |= (tr1.data == tr1.fill_value)
+                tr1.data[tr1.mask] = tr1.fill_value
             #-- convert units
             tr1 = tr1/unit_conv
             #-- amplitude and phase of the constituent

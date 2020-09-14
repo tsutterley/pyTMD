@@ -30,7 +30,8 @@ def test_julian(YEAR,MONTH):
         hour=HOUR, minute=MINUTE, second=SECOND,
         epoch=(1858,11,17,0,0,0))
     #-- convert MJD to calendar date
-    YY,MM,DD,HH,MN,SS = convert_julian(MJD+2400000.5, FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = convert_julian(np.squeeze(MJD) + 2400000.5,
+        FORMAT='tuple', ASTYPE=np.float)
     #-- assert dates
     eps = np.finfo(np.float16).eps
     assert (YY == YEAR)
@@ -86,8 +87,7 @@ def test_decimal_dates(YEAR,MONTH):
 @pytest.mark.parametrize("delta_time", np.random.randint(1,31536000,size=4))
 def test_delta_time(delta_time, gps_epoch=1198800018.0):
     #-- convert to array if single value
-    if (np.ndim(delta_time) == 0):
-        delta_time = np.array([delta_time])
+    delta_time = np.atleast_1d(delta_time)
     #-- calculate gps time from delta_time
     gps_seconds = gps_epoch + delta_time
     time_leaps = pyTMD.time.count_leap_seconds(gps_seconds)
@@ -95,12 +95,6 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
     output_time = pyTMD.time.convert_delta_time(gps_seconds - time_leaps,
         epoch1=(1980,1,6,0,0,0), epoch2=(2018,1,1,0,0,0), scale=1.0)
     assert (delta_time == output_time)
-
-#-- PURPOSE: update leap second file
-def test_update_leap_seconds():
-    pyTMD.time.update_leap_seconds(verbose=False, mode=0o775)
-    FILE = 'leap-seconds.list'
-    assert os.access(pyTMD.utilities.get_data_path(['data',FILE]),os.F_OK)
 
 #-- PURPOSE: update delta time values
 def test_update_delta_time(username, password):

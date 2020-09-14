@@ -87,13 +87,6 @@ from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 
-#-- PURPOSE: convert value to numpy arrays if single point
-def point_to_array(val):
-    """
-    Convert a value to a numpy array if originally a single point
-    """
-    return np.array([val]) if (np.ndim(val) == 0) else np.copy(val)
-
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC',
@@ -302,8 +295,8 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
 
-    #-- convert delta time from point to array
-    delta_time = point_to_array(delta_time)
+    #-- assert delta time is an array
+    delta_time = np.atleast_1d(delta_time)
     #-- calculate leap seconds if specified
     if (TIME.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
@@ -312,7 +305,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         #-- calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(point_to_array(GPS_Epoch_Time))
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'TAI'):
         #-- TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
@@ -321,7 +314,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         #-- calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(point_to_array(GPS_Epoch_Time))
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     else:
         leap_seconds = 0.0
 

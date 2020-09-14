@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (08/2020)
+read_FES_model.py (09/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 09/2020: set bounds error to false for regular grid interpolations
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Written 07/2020
 """
@@ -147,14 +148,20 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
             hci.mask[:] = f3.ev(ilon,ilat).astype(np.bool)
+            #-- replace invalid values with fill_value
+            hci.data[hci.mask] = hci.fill_value
         else:
             #-- use scipy regular grid to interpolate values for a given method
             r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.data, method=METHOD)
+                hc.data, method=METHOD, bounds_error=False,
+                fill_value=hci.fill_value)
             r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.mask, method=METHOD)
+                hc.mask, method=METHOD, bounds_error=False, fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+            #-- replace invalid values with fill_value
+            hci.mask[:] |= (hci.data == hci.fill_value)
+            hci.data[hci.mask] = hci.fill_value
         #-- convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci)*SCALE
         amplitude.mask[:,i] = np.copy(hci.mask)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (08/2020)
+read_tide_model.py (09/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 09/2020: set bounds error to false for regular grid interpolations
     Updated 08/2020: check that interpolated points are within range of model
         replaced griddata interpolation with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
@@ -150,13 +151,6 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         gt180, = np.nonzero(x > 180)
         x[gt180] -= 360.0
 
-    #-- create meshes from latitude and longitude
-    ux = xi - dx/2.0
-    vy = yi - dy/2.0
-    X,Y = np.meshgrid(xi,yi)
-    Xu,Yu = np.meshgrid(ux,yi)
-    Xv,Yv = np.meshgrid(xi,vy)
-
     #-- masks zero values
     hz = np.ma.array(hz,mask=(hz==0))
     if (TYPE != 'z'):
@@ -194,21 +188,23 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
         #-- use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),hz,method=METHOD)
-        r2 = scipy.interpolate.RegularGridInterpolator((yi,xi),mz,method=METHOD)
+        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),hz,
+            method=METHOD,bounds_error=False)
+        r2 = scipy.interpolate.RegularGridInterpolator((yi,xi),mz,
+            method=METHOD,bounds_error=False,fill_value=0)
         D = r1.__call__(np.c_[y,x])
         mz1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mz.dtype)
         if (TYPE != 'z'):
             r3 = scipy.interpolate.RegularGridInterpolator((yi,xi),mu,
-                method=METHOD)
+                method=METHOD,bounds_error=False,fill_value=0)
             r4 = scipy.interpolate.RegularGridInterpolator((yi,xi),mv,
-                method=METHOD)
+                method=METHOD,bounds_error=False,fill_value=0)
             mu1 = np.ceil(r3.__call__(np.c_[y,x])).astype(mu.dtype)
             mv1 = np.ceil(r4.__call__(np.c_[y,x])).astype(mv.dtype)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
-        unit_conv = (D*100.0)
+        unit_conv = (D/100.0)
     #-- U and V are transports in m^2/s
     elif TYPE in ('V','U'):
         unit_conv = 1.0
@@ -232,11 +228,11 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             if GLOBAL:
                 z = extend_matrix(z)
             #-- interpolate amplitude and phase of the constituent
+            z1 = np.ma.zeros((npts),dtype=z.dtype)
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
                 z[z==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
@@ -247,7 +243,6 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                     z.real.T,kx=1,ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     z.imag.T,kx=1,ky=1)
-                z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data.real = f1.ev(x,y)
                 z1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
@@ -256,11 +251,11 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             else:
                 #-- use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),z,
-                    method=METHOD)
+                    method=METHOD,bounds_error=False,fill_value=z1.fill_value)
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data[:] = r1.__call__(np.c_[y,x])
-                #-- replace zero values with fill_value
-                z1.mask = (~mz1.astype(np.bool))
+                #-- replace invalid values with fill_value
+                z1.mask = (z1.data == z1.fill_value) | (~mz1.astype(np.bool))
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
@@ -277,22 +272,23 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             #-- replace original values with extend matrices
             if GLOBAL:
                 u = extend_matrix(u)
-            #-- interpolate values
+            #-- x coordinates for u transports
+            xu = xi - dx/2.0
+            #-- interpolate amplitude and phase of the constituent
+            u1 = np.ma.zeros((npts),dtype=u.dtype)
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
                 u[u==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                u1 = np.ma.zeros((npts),dtype=u.dtype)
-                u1.data[:] = bilinear_interp(xi,yi,u,x,y,dtype=np.complex128)
+                u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
                 u1.data[u1.mask] = u1.fill_value
             elif (METHOD == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
+                f1 = scipy.interpolate.RectBivariateSpline(xu,yi,
                     u.real.T,kx=1,ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
+                f2 = scipy.interpolate.RectBivariateSpline(xu,yi,
                     u.imag.T,kx=1,ky=1)
-                u1 = np.ma.zeros((npts),dtype=u.dtype)
                 u1.data.real = f1.ev(x,y)
                 u1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
@@ -300,12 +296,11 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.data[u1.mask] = u1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),u,
-                    method=METHOD)
-                u1 = np.ma.zeros((npts),dtype=u.dtype)
+                r1 = scipy.interpolate.RegularGridInterpolator((yi,xu),u,
+                    method=METHOD,bounds_error=False,fill_value=u1.fill_value)
                 u1.data[:] = r1.__call__(np.c_[y,x])
-                #-- replace zero values with fill_value
-                u1.mask = (~mu1.astype(np.bool))
+                #-- replace invalid values with fill_value
+                u1.mask = (u1.data == u1.fill_value) | (~mu1.astype(np.bool))
                 u1.data[u1.mask] = u1.fill_value
             #-- convert units
             u1 = u1/unit_conv
@@ -324,22 +319,23 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             #-- replace original values with extend matrices
             if GLOBAL:
                 v = extend_matrix(v)
-            #-- interpolate values
+            #-- y coordinates for v transports
+            yv = yi - dy/2.0
+            #-- interpolate amplitude and phase of the constituent
+            v1 = np.ma.zeros((npts),dtype=v.dtype)
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
                 v[v==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                v1 = np.ma.zeros((npts),dtype=v.dtype)
-                v1.data = bilinear_interp(xi,yi,v,x,y,dtype=np.complex128)
+                v1.data = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
                 v1.data[v1.mask] = v1.fill_value
             elif (METHOD == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
+                f1 = scipy.interpolate.RectBivariateSpline(xi,yv,
                     v.real.T,kx=1,ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
+                f2 = scipy.interpolate.RectBivariateSpline(xi,yv,
                     v.imag.T,kx=1,ky=1)
-                v1 = np.ma.zeros((npts),dtype=v.dtype)
                 v1.data.real = f1.ev(x,y)
                 v1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
@@ -347,12 +343,11 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.data[v1.mask] = v1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),v,
-                    method=METHOD)
-                v1 = np.ma.zeros((npts),dtype=v.dtype)
+                r1 = scipy.interpolate.RegularGridInterpolator((yv,xi),v,
+                    method=METHOD,bounds_error=False,fill_value=v1.fill_value)
                 v1.data[:] = r1.__call__(np.c_[y,x])
-                #-- replace zero values with fill_value
-                v1.mask = (~mv1.astype(np.bool))
+                #-- replace invalid values with fill_value
+                v1.mask = (v1.data == v1.fill_value) | (~mv1.astype(np.bool))
                 v1.data[v1.mask] = v1.fill_value
             #-- convert units
             v1 = v1/unit_conv

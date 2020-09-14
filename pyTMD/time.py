@@ -20,7 +20,6 @@ UPDATE HISTORY:
 """
 import os
 import re
-import netrc
 import datetime
 import numpy as np
 import pyTMD.convert_julian
@@ -373,10 +372,6 @@ def cddis_delta_time(daily_file, username=None, password=None,
     #-- connect to CDDIS Earthdata host for IERS bulletins
     HOST = ['https://cddis.nasa.gov','archive','products','iers',
         'iers_bulletins','bulletin_a']
-    #-- get NASA Earthdata credentials
-    urs = 'urs.earthdata.nasa.gov'
-    if not (username or password):
-        username,login,password = netrc.netrc().authenticators(urs)
     #-- build NASA Earthdata opener for CDDIS and check credentials
     pyTMD.utilities.build_opener(username, password)
     pyTMD.utilities.check_credentials()
@@ -560,9 +555,6 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     #-- using NASA Earthdata credentials stored in netrc file
     HOST = ['https://cddis.nasa.gov','archive','products','iers',FILE]
     try:
-        urs = 'urs.earthdata.nasa.gov'
-        if not (username or password):
-            username,login,password = netrc.netrc().authenticators(urs)
         pyTMD.utilities.from_cddis(HOST,username=username,password=password,
             timeout=20,local=LOCAL,hash=HASH,verbose=verbose,mode=mode)
     except:

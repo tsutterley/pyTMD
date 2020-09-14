@@ -72,7 +72,7 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     dtr = np.pi/180.0
     #-- number of constituents
     npts,nc = np.shape(zmajor)
-    nt = 1 if (np.ndim(t) == 0) else len(t)
+    nt = len(np.atleast_1d(t))
     #-- number of data points to calculate if running time series/drift/map
     n = nt if ((npts == 1) & (nt > 1)) else npts
     #-- allocate for output elevation correction
