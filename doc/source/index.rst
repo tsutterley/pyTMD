@@ -41,6 +41,7 @@ calculating radial pole tide displacements
     user_guide/calc_delta_time.md
     user_guide/calc_iers_mean_pole.md
     user_guide/compute_equilibrium_tide.md
+    user_guide/compute_LPET_elevations.md
     user_guide/compute_LPET_icebridge_data.md
     user_guide/compute_LPT_displacements.md
     user_guide/compute_LPT_icebridge_data.md
@@ -72,6 +73,7 @@ calculating radial pole tide displacements
     user_guide/read_ocean_pole_tide.md
     user_guide/read_tide_model.md
     user_guide/reduce_OTIS_files.md
+    user_guide/spatial.rst
     user_guide/tidal_ellipse.md
     user_guide/time.rst
     user_guide/usap_cats_tides.md

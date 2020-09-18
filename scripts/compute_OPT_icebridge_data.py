@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (08/2020)
+Written by Tyler Sutterley (09/2020)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -36,6 +36,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 09/2020: output modified julian days as time variable
     Updated 08/2020: using builtin time operations.  python3 regular expressions
         replaced griddata interpolation with scipy regular grid interpolators
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
@@ -386,7 +387,10 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
         if re.match(val, os.path.basename(input_file)):
             OIB = key
 
-    #-- HDF5 file attributes
+    #-- invalid value
+    fill_value = -9999.0
+    #-- output netCDF4 and HDF5 file attributes
+    #-- will be added to YAML header in csv files
     attrib = {}
     #-- latitude
     attrib['lat'] = {}
@@ -410,10 +414,11 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
         'chapter7/opoleloadcoefcmcor.txt.gz')
     attrib['tide_oc_pole']['units'] = 'meters'
     #-- Modified Julian Days
-    attrib['MJD'] = {}
-    attrib['MJD']['long_name'] = 'Time'
-    attrib['MJD']['description'] = 'Modified Julian Days'
-    attrib['MJD']['units'] = 'Days'
+    attrib['time'] = {}
+    attrib['time']['long_name'] = 'Time'
+    attrib['time']['units'] = 'days since 1858-11-17T00:00:00'
+    attrib['time']['description'] = 'Modified Julian Days'
+    attrib['time']['calendar'] = 'standard'
 
     #-- extract information from first input file
     #-- acquisition year, month and day
@@ -555,12 +560,12 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
     mx = px - mpx
     my = -(py - mpy)
     #-- calculate radial displacement at time
-    U = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
+    Urad = np.ma.zeros((file_lines),fill_value=fill_value)
+    Urad.data[:] = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
         (my*gamma.real - mx*gamma.imag)*UR.imag)
-
-    #-- replace nan values with fill value
-    inan, = np.nonzero(np.isnan(U))
-    U[inan] = fill_value
+    #-- replace fill values
+    Urad.mask = np.isnan(Urad.data)
+    Urad.data[Urad.mask] = Urad.fill_value
 
     #-- add latitude and longitude to output file
     for key in ['lat','lon']:
@@ -574,8 +579,8 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
         h5.dims[0].label = 'RECORD_SIZE'
 
     #-- output tides to HDF5 dataset
-    h5 = fid.create_dataset('tide_oc_pole', (file_lines,), data=U,
-        dtype=U.dtype, fillvalue=fill_value, compression='gzip')
+    h5 = fid.create_dataset('tide_oc_pole', (file_lines,), data=Urad,
+        dtype=Urad.dtype, fillvalue=fill_value, compression='gzip')
     #-- add HDF5 variable attributes
     h5.attrs['_FillValue'] = fill_value
     for att_name,att_val in attrib['tide_oc_pole'].items():
@@ -584,10 +589,10 @@ def compute_OPT_icebridge_data(tide_dir,arg,METHOD=None,VERBOSE=False,MODE=0o775
     h5.dims[0].label = 'RECORD_SIZE'
 
     #-- output days to HDF5 dataset
-    h5 = fid.create_dataset('MJD', (file_lines,), data=t, dtype=t.dtype,
+    h5 = fid.create_dataset('time', (file_lines,), data=t, dtype=t.dtype,
         compression='gzip')
     #-- add HDF5 variable attributes
-    for att_name,att_val in attrib['MJD'].items():
+    for att_name,att_val in attrib['time'].items():
         h5.attrs[att_name] = att_val
     #-- attach dimensions
     h5.dims[0].label = 'RECORD_SIZE'

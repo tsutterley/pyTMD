@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_time.py (08/2020)
+test_time.py (09/2020)
 Verify time conversion functions
 """
 import os
@@ -82,6 +82,15 @@ def test_decimal_dates(YEAR,MONTH):
     assert (np.floor(hour_temp) == HOUR)
     assert (np.floor(minute_temp) == MINUTE)
     assert (np.abs(second - SECOND) < eps)
+
+#-- PURPOSE: test parsing time strings
+def test_parse_date_string():
+    #-- time string for Modified Julian Days
+    time_string = 'days since 1858-11-17T00:00:00'
+    epoch,to_secs = pyTMD.time.parse_date_string(time_string)
+    #-- check the epoch and the time unit conversion factors
+    assert np.all(epoch == [1858,11,17,0,0,0])
+    assert (to_secs == 1.0/86400.0)
 
 #-- PURPOSE: verify forward and backwards delta time conversions
 @pytest.mark.parametrize("delta_time", np.random.randint(1,31536000,size=4))

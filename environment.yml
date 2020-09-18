@@ -8,10 +8,12 @@ dependencies:
   - numpy
   - scipy
   - pyproj
+  - python-dateutil
   - matplotlib
   - netCDF4
   - h5py
   - lxml
+  - pyyaml
   - cartopy
   - pip
   - pip:

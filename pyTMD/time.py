@@ -5,8 +5,12 @@ Written by Tyler Sutterley (09/2020)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
-    numpy: Scientific Computing Tools For Python (https://numpy.org)
-    lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
+    numpy: Scientific Computing Tools For Python
+        https://numpy.org
+    dateutil: powerful extensions to datetime
+        https://dateutil.readthedocs.io/en/stable/
+    lxml: processing XML and HTML in Python
+        https://pypi.python.org/pypi/lxml
 
 PROGRAM DEPENDENCIES:
     convert_julian.py: returns the calendar date and time given a Julian date
@@ -15,6 +19,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2020: added wrapper function for merging Bulletin-A files
+        can parse date strings in form "time-units since yyyy-mm-dd hh:mm:ss"
     Updated 08/2020: added NASA Earthdata routines for downloading from CDDIS
     Written 07/2020
 """
@@ -22,9 +27,61 @@ import os
 import re
 import datetime
 import numpy as np
+import dateutil.parser
 import pyTMD.convert_julian
 import pyTMD.convert_calendar_decimal
 import pyTMD.utilities
+
+#-- PURPOSE: parse a date string into epoch and units scale
+def parse_date_string(date_string):
+    """
+    parse a date string of the form time-units since yyyy-mm-dd hh:mm:ss
+
+    Arguments
+    ---------
+    date_string: time-units since yyyy-mm-dd hh:mm:ss
+    """
+    units,epoch = split_date_string(date_string)
+    conversion_factors = {'microseconds': 1e6,'microsecond': 1e6,
+        'microsec': 1e6,'microsecs': 1e6,
+        'milliseconds': 1e3,'millisecond': 1e3,'millisec': 1e3,
+        'millisecs': 1e3,'msec': 1e3,'msecs': 1e3,'ms': 1e3,
+        'seconds': 1.0,'second': 1.0,'sec': 1.0,'secs': 1.0,'s': 1.0,
+        'minutes': 1.0/60.0,'minute': 1.0/60.0,'min': 1.0/60.0,'mins': 1.0/60.0,
+        'hours': 1.0/3600.0,'hour': 1.0/3600.0,'hr': 1.0/3600.0,
+        'hrs': 1.0/3600.0,'h': 1.0/3600.0,
+        'day': 1.0/86400.0,'days': 1.0/86400.0,'d': 1.0/86400.0}
+    if units not in conversion_factors.keys():
+        raise ValueError('Invalid units: {0}'.format(units))
+    #-- return the epoch (as list) and the time unit conversion factors
+    return datetime_to_list(epoch),conversion_factors[units]
+
+#-- PURPOSE: split a date string into units and epoch
+def split_date_string(date_string):
+    """
+    split a date string into units and epoch
+
+    Arguments
+    ---------
+    date_string: time-units since yyyy-mm-dd hh:mm:ss
+    """
+    try:
+        units,since,epoch = date_string.split(None,2)
+    except ValueError:
+        raise ValueError('Invalid format: {0}'.format(date_string))
+    else:
+        return (units.lower(),dateutil.parser.parse(epoch))
+
+#-- PURPOSE: convert a datetime object into a list
+def datetime_to_list(date):
+    """
+    convert a datetime object into a list [year,month,day,hour,minute,second]
+
+    Arguments
+    ---------
+    date: datetime object
+    """
+    return [date.year,date.month,date.day,date.hour,date.minute,date.second]
 
 #-- PURPOSE: convert times from seconds since epoch1 to time since epoch2
 def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
@@ -50,9 +107,9 @@ def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
 #-- PURPOSE: calculate the delta time from calendar date
 #-- http://scienceworld.wolfram.com/astronomy/JulianDate.html
 def convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0,
-    epoch=(1992,1,1,0,0,0)):
+    epoch=(1992,1,1,0,0,0), scale=1.0):
     """
-    Calculate the time in days since epoch from calendar dates
+    Calculate the time in time units since epoch from calendar dates
 
     Arguments
     ---------
@@ -66,6 +123,7 @@ def convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0,
     minute: minute of the hour
     second: second of the minute
     epoch: epoch for output delta_time
+    scale: scaling factor for converting time to output units
 
     Returns
     -------
@@ -81,7 +139,7 @@ def convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0,
     epoch2 = datetime.datetime(*epoch)
     delta_time_epochs = (epoch2 - epoch1).total_seconds()
     #-- return the date in days since epoch
-    return np.array(MJD - delta_time_epochs/86400.0,dtype=np.float)
+    return scale*np.array(MJD - delta_time_epochs/86400.0,dtype=np.float)
 
 #-- PURPOSE: Count number of leap seconds that have passed for each GPS time
 def count_leap_seconds(GPS_Time):
