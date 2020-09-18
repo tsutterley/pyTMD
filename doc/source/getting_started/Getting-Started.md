@@ -43,3 +43,26 @@ This structure was chosen based on the different formats of each tide model.
 - Finite Element Solution tide models
     * [FES2014](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html): `<path_to_tide_models>/fes2014/ocean_tide/`
     * [FES2014_load](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html): `<path_to_tide_models>/fes2014/load_tide/`
+
+#### Programs
+For users wanting to compute tide corrections for use with numpy arrays or pandas data structures, [`compute_tide_corrections.py`](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/compute_tide_corrections.py) is the place to start.  It is a function that takes x, y, and time coordinates and computes the corresponding tidal elevation.
+```python
+tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=path_to_tide_models,
+    MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='GPS',
+    METHOD='spline', FILL_VALUE=np.nan)
+```
+
+For users wanting to calculate tidal elevations or currents for a series of files, the [`compute_tidal_elevations.py`](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tidal_elevations.py) and [`compute_tidal_currents.py`](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tidal_currents.py) programs cover most use cases.  They take an input file (in csv, netCDF4 or HDF5) and compute the tidal elevations or currents (zonal and meridonal) for each point.
+```bash
+python compute_tidal_elevations.py --directory=<path_to_tide_models> --tide=CATS2008 \
+    --format=HDF5 --variables=t_sec,lat,lon,h_cor --projection=4326 \
+    --epoch='seconds since 1970-01-01T00:00:00' --verbose --mode=0o775 \
+    input_file.H5 output_file.H5
+
+python compute_tidal_currents.py --directory=<path_to_tide_models> --tide=CATS2008 \
+    --format=HDF5 --variables=t_sec,lat,lon,h_cor --projection=4326 \
+    --epoch='seconds since 1970-01-01T00:00:00' --verbose --mode=0o775 \
+    input_file.H5 output_file.H5
+```
+
+There are specific programs for correcting NASA [Operation IceBridge](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tides_icebridge_data.py), [ICESat-2 ATL03 geolocated photon](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tides_ICESat2_ATL03.py), [ICESat-2 ATL06 land ice](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tides_ICESat2_ATL06.py), [ICESat-2 ATL07 sea ice](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tides_ICESat2_ATL07.py) and [ICESat-2 ATL12 ocean surface](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tides_ICESat2_ATL12.py) data.

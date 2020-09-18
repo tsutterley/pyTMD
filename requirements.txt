@@ -1,9 +1,11 @@
 numpy
 scipy
 pyproj
+python-dateutil
 matplotlib
 cartopy
 netCDF4
 h5py
 lxml
+pyyaml
 ipyleaflet
