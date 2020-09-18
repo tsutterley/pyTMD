@@ -62,9 +62,9 @@ General Methods
         `scale`: scaling factor for converting time to output units
 
 
-.. method:: pyTMD.time.convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0, epoch=None)
+.. method:: pyTMD.time.convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0, epoch=None, scale=1.0)
 
-    Calculate the time in days since epoch from calendar dates
+    Calculate the time in time units since epoch from calendar dates
 
     Arguments:
 
@@ -83,6 +83,8 @@ General Methods
         `second`: second of the minute
 
         `epoch`: epoch for output delta_time
+
+        `scale`: scaling factor for converting time to output units
 
 
 .. method:: pyTMD.time.count_leap_seconds(GPS_Time)

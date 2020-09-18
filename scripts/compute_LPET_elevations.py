@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 u"""
-compute_LPT_displacements.py
-Written by Tyler Sutterley (09/2020)
-Calculates radial pole load tide displacements for an input file
-    following IERS Convention (2010) guidelines
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
+compute_LPET_elevations.py
+Written by Tyler Sutterley (08/2020)
+Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
     csv file with columns for spatial and temporal coordinates
@@ -13,7 +10,6 @@ INPUTS:
     netCDF4 file with variables for spatial and temporal coordinates
 
 COMMAND LINE OPTIONS:
-    -D X, --directory=X: Working data directory
     --format=X: input and output data format
         csv (default)
         netCDF4
@@ -48,14 +44,11 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for reading and writing spatial data
     utilities: download and management utilities for syncing files
     convert_julian.py: returns the calendar date and time given a Julian date
-    convert_calendar_decimal.py: converts from calendar dates into decimal years
-    iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
-    read_iers_EOP.py: read daily earth orientation parameters from IERS
+    calc_delta_time.py: calculates difference between universal and dynamic time
+    compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
-    Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
-    Updated 10/2017: use mean pole coordinates from calc_mean_iers_pole.py
-    Written 10/2017 for public release
+    Written 09/2020
 """
 from __future__ import print_function
 
@@ -66,22 +59,18 @@ import pyproj
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
-import scipy.interpolate
+from pyTMD.utilities import get_data_path
 from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
-from pyTMD.iers_mean_pole import iers_mean_pole
-from pyTMD.read_iers_EOP import read_iers_EOP
-from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
+from pyTMD.calc_delta_time import calc_delta_time
+from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 
-#-- PURPOSE: compute the pole load tide radial displacements following
-#-- IERS conventions (2010)
-def compute_LPT_displacements(tide_dir, input_file, output_file,
+#-- PURPOSE: read csv, netCDF or HDF5 data
+#-- compute long-period equilibrium tides at points and times
+def compute_LPET_elevations(input_file, output_file,
     FORMAT='csv', VARIABLES=['time','lat','lon','data'],
     TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
     VERBOSE=False, MODE=0o775):
 
-    #-- invalid value
-    fill_value = -9999.0
     #-- output netCDF4 and HDF5 file attributes
     #-- will be added to YAML header in csv files
     attrib = {}
@@ -93,20 +82,18 @@ def compute_LPT_displacements(tide_dir, input_file, output_file,
     attrib['lon'] = {}
     attrib['lon']['long_name'] = 'Longitude'
     attrib['lon']['units'] = 'Degrees_East'
-    #-- load pole tides
-    attrib['tide_pole'] = {}
-    attrib['tide_pole']['long_name'] = 'Solid_Earth_Pole_Tide'
-    attrib['tide_pole']['description'] = ('Solid_Earth_pole_tide_radial_'
-        'displacements_due_to_polar_motion')
-    attrib['tide_pole']['reference'] = ('ftp://tai.bipm.org/iers/conv2010/'
-        'chapter7/opoleloadcoefcmcor.txt.gz')
-    attrib['tide_pole']['units'] = 'meters'
-    attrib['tide_pole']['_FillValue'] = fill_value
+    #-- long-period equilibrium tides
+    attrib['tide_lpe'] = {}
+    attrib['tide_lpe']['long_name'] = 'Equilibrium_Tide'
+    attrib['tide_lpe']['description'] = ('Long-period_equilibrium_tidal_'
+        'elevation_from_the_summation_of_fifteen_tidal_spectral_lines')
+    attrib['tide_lpe']['reference'] = ('https://doi.org/10.1111/'
+        'j.1365-246X.1973.tb03420.x')
+    attrib['tide_lpe']['units'] = 'meters'
     #-- time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1858-11-17T00:00:00'
-    attrib['time']['description'] = 'Modified Julian Days'
+    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
 
     #-- read input file to extract time, spatial coordinates and data
@@ -139,93 +126,21 @@ def compute_LPT_displacements(tide_dir, input_file, output_file,
         epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     else:
         epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
-    #-- convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
-    MJD = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
-        epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
-    #-- add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = convert_julian(2400000.5 + MJD, FORMAT='tuple')
-    #-- calculate time in year-decimal format
-    time_decimal = convert_calendar_decimal(Y,M,DAY=D,HOUR=h,MINUTE=m,SECOND=s)
-    #-- number of data points
-    n_time = len(time_decimal)
+    #-- convert time from units to days since 1992-01-01T00:00:00
+    tide_time = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
+        epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
+    #-- interpolate delta times from calendar dates to tide time
+    delta_file = get_data_path(['data','merged_deltat.data'])
+    deltat = calc_delta_time(delta_file, tide_time)
 
-    #-- degrees to radians
-    dtr = np.pi/180.0
-    atr = np.pi/648000.0
-    #-- earth and physical parameters (IERS and WGS84)
-    GM = 3.986004418e14#-- geocentric gravitational constant [m^3/s^2]
-    a_axis = 6378136.6#-- semimajor axis of the WGS84 ellipsoid [m]
-    flat = 1.0/298.257223563#-- flattening of the WGS84 ellipsoid
-    b_axis = (1.0 - flat)*a_axis#-- semiminor axis of the WGS84 ellipsoid [m]
-    omega = 7.292115e-5#-- mean rotation rate of the Earth [radians/s]
-    #-- tidal love number appropriate for the load tide
-    hb2 = 0.6207
-    #-- Linear eccentricity, first and second numerical eccentricity
-    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
-    ecc1 = lin_ecc/a_axis
-    ecc2 = lin_ecc/b_axis
-    #-- m parameter [omega^2*a^2*b/(GM)]. p. 70, Eqn.(2-137)
-    m = omega**2*((1 -flat)*a_axis**3)/GM
-    #-- flattening components
-    f_2 = -flat + (5.0/2.0)*m + (1.0/2.0)*flat**2.0 - (26.0/7.0)*flat*m + \
-        (15.0/4.0)*m**2.0
-    f_4 = -(1.0/2.0)*flat**2.0 + (5.0/2.0)*flat*m
-
-    #-- convert from geodetic latitude to geocentric latitude
-    #-- geodetic latitude in radians
-    latitude_geodetic_rad = lat*dtr
-    #-- prime vertical radius of curvature
-    N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
-    #-- calculate X, Y and Z from geodetic latitude and longitude
-    X = (N+dinput['data'])*np.cos(latitude_geodetic_rad)*np.cos(lon*dtr)
-    Y = (N+dinput['data'])*np.cos(latitude_geodetic_rad)*np.sin(lon*dtr)
-    Z = (N * (1.0 - ecc1**2.0) + dinput['data']) * np.sin(latitude_geodetic_rad)
-    rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
-    #-- calculate geocentric latitude and convert to degrees
-    latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
-    #-- geocentric colatitude and longitude in radians
-    theta = dtr*(90.0 - latitude_geocentric)
-    phi = lon*dtr
-
-    #-- compute normal gravity at spatial location and elevation of points.
-    #-- normal gravity at the equator. p. 79, Eqn.(2-186)
-    gamma_a = (GM/(a_axis*b_axis)) * (1.0-(3.0/2.0)*m - (3.0/14.0)*ecc2**2.0*m)
-    #-- Normal gravity. p. 80, Eqn.(2-199)
-    gamma_0 = gamma_a*(1.0 + f_2*np.cos(theta)**2.0 +
-        f_4*np.sin(np.pi*latitude_geocentric/180.0)**4.0)
-    #-- Normal gravity at height h. p. 82, Eqn.(2-215)
-    gamma_h = gamma_0*(1.0-(2.0/a_axis)*(1.0+flat+m-2.0*flat*np.cos(theta)**2.0)
-        *dinput['data'] + (3.0/a_axis**2.0)*dinput['data']**2.0)
-
-    #-- pole tide files (mean and daily)
-    mean_pole_file = os.path.join(tide_dir,'mean_pole_2017-10-23.tab')
-    pole_tide_file = os.path.join(tide_dir,'finals_all_2017-09-01.tab')
-    #-- calculate angular coordinates of mean pole at time
-    mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,'2015')
-    #-- read IERS daily polar motion values
-    EOP = read_iers_EOP(pole_tide_file)
-    #-- interpolate daily polar motion values to t1 using cubic splines
-    xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
-    ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
-    px = xSPL(MJD)
-    py = ySPL(MJD)
-    #-- calculate differentials from mean pole positions
-    mx = px - mpx
-    my = -(py - mpy)
-
-    #-- calculate radial displacement at time
-    dfactor = -hb2*atr*(omega**2*rr**2)/(2.0*gamma_h)
-    Srad = np.ma.zeros((n_time),fill_value=fill_value)
-    Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
-    #-- replace fill values
-    Srad.mask = np.isnan(Srad.data)
-    Srad.data[Srad.mask] = Srad.fill_value
+    #-- predict long-period equilibrium tides at time
+    tide_lpe = compute_equilibrium_tide(tide_time + deltat, lat)
 
     #-- output to file
-    output = dict(time=MJD,lon=lon,lat=lat,tide_pole=Srad)
+    output = dict(time=tide_time,lon=lon,lat=lat,tide_lpe=tide_lpe)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
-            columns=['time','lat','lon','tide_pole'], verbose=VERBOSE)
+            columns=['time','lat','lon','tide_lpe'], verbose=VERBOSE)
     elif (FORMAT == 'netCDF4'):
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
     elif (FORMAT == 'HDF5'):
@@ -236,7 +151,6 @@ def compute_LPT_displacements(tide_dir, input_file, output_file,
 #-- PURPOSE: help module to describe the optional input parameters
 def usage():
     print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
     print(' --format=X\t\tInput and output data format')
     print('\tcsv\n\tnetCDF4\n\tHDF5')
     print(' --variables=X\t\tVariable names of data in input file')
@@ -246,16 +160,14 @@ def usage():
     print(' -V, --verbose\t\tVerbose output of processing run')
     print(' -M X, --mode=X\t\tPermission mode of output file\n')
 
-#-- Main program that calls compute_LPT_displacements()
+#-- Main program that calls compute_LPET_elevations()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','variables=','epoch=','projection=',
-        'format=','verbose','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:], 'hD:VM:', long_options)
+    long_options = ['help','variables=','epoch=','projection=','format=',
+        'verbose','mode=']
+    optlist,arglist = getopt.getopt(sys.argv[1:], 'hVM:', long_options)
 
     #-- command line options
-    #-- set data directory containing the pole tide files
-    tide_dir = None
     #-- input and output data format
     FORMAT = 'csv'
     #-- variable names (for csv names of columns)
@@ -272,8 +184,6 @@ def main():
         if opt in ('-h','--help'):
             usage()
             sys.exit()
-        elif opt in ("-D","--directory"):
-            tide_dir = os.path.expanduser(arg)
         elif opt in ("--format",):
             FORMAT = arg
         elif opt in ("--variables",):
@@ -298,13 +208,11 @@ def main():
         output_file=os.path.expanduser(arglist[1])
     except IndexError:
         fileBasename,fileExtension = os.path.splitext(input_file)
-        args = (fileBasename,'pole_tide',fileExtension)
+        args = (fileBasename,'lpe_tide',fileExtension)
         output_file = '{0}_{1}{2}'.format(*args)
-    #-- set base directory from the input file if not currently set
-    tide_dir = os.path.dirname(input_file) if (tide_dir is None) else tide_dir
 
-    #-- run load pole tide program for input file
-    compute_LPT_displacements(tide_dir, input_file, output_file, FORMAT=FORMAT,
+    #-- run long period equilibrium tide program for input file
+    compute_LPET_elevations(input_file, output_file, FORMAT=FORMAT,
         VARIABLES=VARIABLES, TIME_UNITS=TIME_UNITS, PROJECTION=PROJECTION,
         VERBOSE=VERBOSE, MODE=MODE)
 

@@ -8,7 +8,8 @@ Uses OTIS format tidal solutions provided by Ohio State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/
-or Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
+Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
+or Finite Element Solution (FES) models provided by AVISO
 
 INPUTS:
     x: x-coordinates in projection EPSG

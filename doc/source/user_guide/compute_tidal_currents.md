@@ -1,15 +1,15 @@
-compute_OPT_displacements.py
-============================
+compute_tidal_currents.py
+=========================
 
- - Calculates radial ocean pole load tide displacements for an input file following IERS Convention (2010) guidelines
- - http://maia.usno.navy.mil/conventions/2010officialinfo.php
- - http://maia.usno.navy.mil/conventions/chapter7.php
+- Calculates tidal currents for an input file
+- Can use OTIS format tidal solutions provided by Ohio State University and ESR
+- Can use Finite Element Solution (FES) models provided by AVISO
 
 #### Calling Sequence
 ```bash
-python compute_OPT_displacements.py --directory=<path_to_directory> input_file output_file
+python compute_tidal_currents.py --directory=<path_to_directory> --tide=<model> input_file output_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_OPT_displacements.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tidal_currents.py)
 
 #### Inputs
  1. `input_file`: name of input file
@@ -17,6 +17,17 @@ python compute_OPT_displacements.py --directory=<path_to_directory> input_file o
 
 #### Command Line Options
  - `-D X`, `--directory=X`: Working data directory
+ - `-T X`, `--tide=X`: Tide model to use in correction
+     * CATS0201
+     * CATS2008
+     * TPXO9-atlas
+     * TPXO9.1
+     * TPXO8-atlas
+     * TPXO7.2
+     * AODTM-5
+     * AOTIM-5
+     * AOTIM-5-2018
+     * FES2014
  - `--format=X`: input and output data format
      * `'csv'` (default)
      * `'netCDF4'`

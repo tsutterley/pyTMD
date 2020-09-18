@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_icebridge_data.py
-Written by Tyler Sutterley (08/2020)
+Written by Tyler Sutterley (09/2020)
 Calculates long-period equilibrium tidal elevations for correcting Operation
     IceBridge elevation data
 
@@ -29,10 +29,12 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
     convert_julian.py: returns the calendar date and time given a Julian date
-
+    calc_delta_time.py: calculates difference between universal and dynamic time
+    compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 09/2020: output days since 1992-01-01 as time variable
     Written 08/2020
 """
 from __future__ import print_function
@@ -45,7 +47,7 @@ import h5py
 import getopt
 import numpy as np
 import pyTMD.time
-import pyTMD.utilities
+from pyTMD.utilities import get_data_path
 from pyTMD.convert_julian import convert_julian
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
@@ -393,10 +395,11 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     attrib['tide_lpe']['reference'] = ('https://doi.org/10.1111/'
         'j.1365-246X.1973.tb03420.x')
     attrib['tide_lpe']['units'] = 'meters'
-    #-- days
-    attrib['day']['long_name'] = 'Time'
-    attrib['day']['description'] = 'Days relative to 1992-01-01 (MJD:48622)'
-    attrib['day']['units'] = 'Days'
+    #-- time
+    attrib['time'] = {}
+    attrib['time']['long_name'] = 'Time'
+    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+    attrib['time']['calendar'] = 'standard'
 
     #-- extract information from first input file
     #-- acquisition year, month and day
@@ -435,7 +438,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
         epoch1=(2000,1,1,12,0,0), epoch2=(1992,1,1,0,0,0),
         scale=1.0/86400.0)
     #-- interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+    delta_file = get_data_path(['data','merged_deltat.data'])
     deltat = calc_delta_time(delta_file, tide_time)
 
     #-- output tidal HDF5 file
@@ -457,7 +460,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     fid = h5py.File(os.path.join(DIRECTORY,FILENAME), 'w')
 
     #-- predict long-period equilibrium tides at time
-    tide_lpe = compute_equilibrium_tide(tide_time, dinput['lat'])
+    tide_lpe = compute_equilibrium_tide(tide_time + deltat, dinput['lat'])
 
     #-- add latitude and longitude to output file
     for key in ['lat','lon']:
@@ -480,10 +483,10 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     h5.dims[0].label = 'RECORD_SIZE'
 
     #-- output days to HDF5 dataset
-    h5 = fid.create_dataset('day', (file_lines,), data=tide_time,
+    h5 = fid.create_dataset('time', (file_lines,), data=tide_time,
         dtype=tide_time.dtype, compression='gzip')
     #-- add HDF5 variable attributes
-    for att_name,att_val in attrib['day'].items():
+    for att_name,att_val in attrib['time'].items():
         h5.attrs[att_name] = att_val
     #-- attach dimensions
     h5.dims[0].label = 'RECORD_SIZE'

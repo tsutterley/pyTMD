@@ -4,6 +4,7 @@ compute_tides_icebridge_data.py
 - Calculates tidal elevations for correcting Operation IceBridge elevation data
 - Can use OTIS format tidal solutions provided by Ohio State University and ESR
 - Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
+- Can use Finite Element Solution (FES) models provided by AVISO
 
 #### Calling Sequence
 ```bash
@@ -34,5 +35,7 @@ python compute_tides_icebridge_data.py --directory=<path_to_directory> --tide=<m
      * GOT4.8_load
      * GOT4.10
      * GOT4.10_load
+     * FES2014
+     * FES2014_load
  - `-M X`, `--mode=X`: Permission mode of output file
  - `-V`, `--verbose`: Output information about each created file
