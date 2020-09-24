@@ -11,7 +11,7 @@ output_otis_grid(grid_file,xlim,ylim,hz,mz,iob,dt)
 output_otis_elevation(elevation_file,h,xlim,ylim,constituents)
 output_otis_transport(transport_file,u,v,xlim,ylim,constituents)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/output_otis_tides.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/output_otis_tides.py)
 
 #### Inputs
  - `output_otis_grid()`

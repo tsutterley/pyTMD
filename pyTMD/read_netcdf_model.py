@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2020: set bounds error to false for regular grid interpolations
+        adjust dimensions of input coordinates to be iterable
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         changed TYPE variable to keyword argument. update griddata interpolation
@@ -152,6 +153,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     #-- create meshes from latitude and longitude
     gridlon,gridlat = np.meshgrid(lon,lat)
 
+    #-- adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(ilon)
+    ilat = np.atleast_1d(ilat)
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
     lt0, = np.nonzero(ilon < 0)

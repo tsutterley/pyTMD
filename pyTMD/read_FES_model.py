@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2020: set bounds error to false for regular grid interpolations
+        adjust dimensions of input coordinates to be iterable
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Written 07/2020
 """
@@ -101,6 +102,9 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
     phase: phases of tidal constituents
     """
 
+    #-- adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(ilon)
+    ilat = np.atleast_1d(ilat)
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
     if (np.min(ilon) < 0.0):

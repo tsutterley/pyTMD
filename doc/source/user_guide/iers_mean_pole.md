@@ -10,7 +10,7 @@ iers_mean_pole.py
 from pyTMD.iers_mean_pole import iers_mean_pole
 x,y,flag = iers_mean_pole(input_file,input_epoch,version,FILL_VALUE=FILL_VALUE)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/iers_mean_pole.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/iers_mean_pole.py)
 
 #### Inputs
  1. `input_file`: full path to mean-pole.tab file provided by IERS

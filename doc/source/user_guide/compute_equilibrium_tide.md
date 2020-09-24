@@ -9,7 +9,7 @@ compute_equilibrium_tide.py
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 lpet = compute_equilibrium_tide(time,lat)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/compute_equilibrium_tide.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_equilibrium_tide.py)
 
 #### Inputs
  1. `t`: days relative to Jan 1, 1992 (48622mjd)

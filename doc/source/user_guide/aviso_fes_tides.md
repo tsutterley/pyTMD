@@ -9,7 +9,7 @@ aviso_fes_tides.py
 ```bash
 python aviso_fes_tides.py --directory=<path_to_tide_directory> --tide=fes2014
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/aviso_fes_tides.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/aviso_fes_tides.py)
 
 #### Command Line Options
  - `-D X`, `--directory=X`: Working Data Directory

@@ -10,7 +10,7 @@ Download and management utilities for syncing time and auxiliary files
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/pyTMD/blob/master/pyTMD/utilities.py
+.. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/utilities.py
 
 
 General Methods

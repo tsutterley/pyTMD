@@ -10,7 +10,7 @@ calc_astrol_longitudes.py
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 s,h,p,N,PP = calc_astrol_longitudes(MJD, ASTRO5=True)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/calc_astrol_longitudes.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/calc_astrol_longitudes.py)
 
 #### Inputs
  1. `MJD`: Modified Julian Day of input date

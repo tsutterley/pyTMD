@@ -36,6 +36,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2020: set bounds error to false for regular grid interpolations
+        adjust dimensions of input coordinates to be iterable
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         update griddata interpolation. add option GZIP for compression
@@ -85,6 +86,10 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     amplitude: amplitudes of tidal constituents
     phase: phases of tidal constituents
     """
+
+    #-- adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(ilon)
+    ilat = np.atleast_1d(ilat)
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
     if (np.min(ilon) < 0.0):

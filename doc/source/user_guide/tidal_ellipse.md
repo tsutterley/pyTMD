@@ -8,7 +8,7 @@ tidal_ellipse.py
 from pyTMD.tidal_ellipse import tidal_ellipse
 umajor,uminor,uincl,uphase = tidal_ellipse(u,v)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/tidal_ellipse.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/tidal_ellipse.py)
 
 #### Inputs
  1. `u`: zonal current (EW)

@@ -9,7 +9,7 @@ from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 t_date = convert_calendar_decimal(year, month, DAY=day, \
     HOUR=hour, MINUTE=minute, SECOND=second)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/convert_calendar_decimal.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_calendar_decimal.py)
 
 #### Inputs
  1. `year`: calendar year  

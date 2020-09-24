@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2020: set bounds error to false for regular grid interpolations
+        adjust dimensions of input coordinates to be iterable
     Updated 08/2020: check that interpolated points are within range of model
         replaced griddata interpolation with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
@@ -109,7 +110,6 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     D: bathymetry of tide model
     constituents: list of model constituents
     """
-
     #-- read the OTIS-format tide grid file
     if (GRID == 'ATLAS'):
         #-- if reading a global solution with localized solutions
@@ -117,10 +117,11 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
     else:
-        #-- if reading a pure global solution
+        #-- if reading a single OTIS solution
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
+    #-- adjust dimensions of input coordinates to be iterable
     #-- run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_ll_xy(ilon,ilat,EPSG,'F')
+    x,y = convert_ll_xy(np.atleast_1d(ilon),np.atleast_1d(ilat),EPSG,'F')
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
     #-- grid step size of tide model
     dx = xi[1] - xi[0]
@@ -142,12 +143,10 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
 
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
-    xmin = np.min(x)
-    xmax = np.max(y)
-    if (xmin < xi[0]) & (EPSG == '4326'):
+    if (np.min(x) < np.min(xi)) & (EPSG == '4326'):
         lt0, = np.nonzero(x < 0)
         x[lt0] += 360.0
-    if (xmax > xi[-1]) & (EPSG == '4326'):
+    if (np.max(x) > np.max(xi)) & (EPSG == '4326'):
         gt180, = np.nonzero(x > 180)
         x[gt180] -= 360.0
 
