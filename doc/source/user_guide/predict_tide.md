@@ -9,7 +9,7 @@ predict_tide.py
 from pyTMD.predict_tide import predict_tide
 ht = predict_tide(time,hc,con)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/predict_tide.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/predict_tide.py)
 
 #### Inputs
  1. `time`: days relative to Jan 1, 1992 (48622mjd)

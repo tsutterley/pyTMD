@@ -10,7 +10,7 @@ from pyTMD.infer_minor_corrections import infer_minor_corrections
 dh = infer_minor_corrections(t, zmajor, constituents,
     DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/infer_minor_corrections.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/infer_minor_corrections.py)
 
 #### Inputs
  1. `t`: days relative to Jan 1, 1992 (48622mjd)

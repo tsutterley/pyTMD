@@ -38,7 +38,7 @@ Convert a calendar date into Modified Julian Days
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/pyTMD/blob/master/pyTMD/time.py
+.. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py
 
 
 General Methods

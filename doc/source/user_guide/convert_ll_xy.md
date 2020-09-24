@@ -9,7 +9,7 @@ from pyTMD.convert_ll_xy import convert_ll_xy
 x,y = convert_ll_xy(lon,lat,PROJ,'F')
 lon,lat = convert_ll_xy(x,y,PROJ,'B')
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/convert_ll_xy.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py)
 
 #### Inputs
  1. `i1`: longitude ('F') or projection easting x ('B')

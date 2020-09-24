@@ -68,6 +68,6 @@ def tidal_ellipse(u,v):
     uincl[uincl > 180.0] -= 180.0
     uphase = -0.5*(ep - em)
     uphase[uphase < 0.0] += 360.0
-    uphase[uphase >- 360.0] -= 360.0
+    uphase[uphase >= 360.0] -= 360.0
     #-- return values
     return (umajor,uminor,uincl,uphase)

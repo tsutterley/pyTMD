@@ -30,6 +30,7 @@ from pyTMD.read_FES_model import extract_FES_constants
 from pyTMD.predict_tidal_ts import predict_tidal_ts
 from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.predict_tide import predict_tide
+from pyTMD.tidal_ellipse import tidal_ellipse
 from pyTMD.calc_iers_mean_pole import calc_iers_mean_pole
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP

@@ -9,7 +9,7 @@ compute_tidal_currents.py
 ```bash
 python compute_tidal_currents.py --directory=<path_to_directory> --tide=<model> input_file output_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/compute_tidal_currents.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py)
 
 #### Inputs
  1. `input_file`: name of input file

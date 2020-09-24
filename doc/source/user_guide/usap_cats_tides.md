@@ -8,7 +8,7 @@ usap_cats_tides.py
 ```bash
 python usap_cats_tides.py --directory=<path_to_tide_directory> --tide=CATS2008
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/usap_cats_tides.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/usap_cats_tides.py)
 
 #### Command Line Options
  - `-D X`, `--directory=X`: Working Data Directory

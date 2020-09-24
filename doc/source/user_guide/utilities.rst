@@ -10,7 +10,7 @@ Download and management utilities for syncing time and auxiliary files
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/pyTMD/blob/master/pyTMD/utilities.py
+.. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/utilities.py
 
 
 General Methods
@@ -152,6 +152,31 @@ General Methods
         `verbose`: print file transfer information
 
         `mode`: permissions mode of output local file
+
+
+.. method:: pyTMD.utilities.build_opener(username, password, context=ssl.SSLContext(ssl.PROTOCOL_TLS), password_manager=True, get_ca_certs=True, redirect=True, authorization_header=False, urs='https://urs.earthdata.nasa.gov')
+
+    build urllib opener for NASA Earthdata with supplied credentials
+
+    Arguments:
+
+        `username`: NASA Earthdata username
+
+        `password`: NASA Earthdata password
+
+    Keyword arguments:
+
+        `context`: SSL context for opener object
+
+        `password_manager`: create password manager context using default realm
+
+        `get_ca_certs`: get list of loaded “certification authority” certificates
+
+        `redirect`: create redirect handler object
+
+        `authorization_header`: add base64 encoded authorization header to opener
+
+        `urs`: Earthdata login URS 3 host
 
 
 .. method:: pyTMD.utilities.check_credentials()

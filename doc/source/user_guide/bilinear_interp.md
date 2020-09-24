@@ -8,7 +8,7 @@ bilinear_interp.py
 from pyTMD.bilinear_interp import bilinear_interp
 data = bilinear_interp(ilon,ilat,idata,lon,lat)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/bilinear_interp.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/bilinear_interp.py)
 
 #### Inputs
  1. `ilon`: longitude of tidal model

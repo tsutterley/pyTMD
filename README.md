@@ -2,12 +2,12 @@ pyTMD
 =====
 
 [![Language](https://img.shields.io/badge/python-v3.7-green.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/pyTMD/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/tsutterley/pyTMD/blob/main/LICENSE)
 [![PyPI Version](https://img.shields.io/pypi/v/pyTMD.svg)](https://pypi.python.org/pypi/pyTMD/)
 [![Documentation Status](https://readthedocs.org/projects/pytmd/badge/?version=latest)](https://pytmd.readthedocs.io/en/latest/?badge=latest)
-[![codecov](https://codecov.io/gh/tsutterley/pyTMD/branch/master/graph/badge.svg)](https://codecov.io/gh/tsutterley/pyTMD)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/master)
-[![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/master)
+[![codecov](https://codecov.io/gh/tsutterley/pyTMD/branch/main/graph/badge.svg)](https://codecov.io/gh/tsutterley/pyTMD)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tsutterley/pyTMD/main)
+[![Binder](https://binder.pangeo.io/badge.svg)](https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/main)
 
 #### Python-based tidal prediction software that reads OTIS, GOT and FES formatted tidal solutions for calculating ocean and load tides
 
@@ -57,7 +57,7 @@ L. Padman, M. R. Siegfried, H. A. Fricker,
 The program homepage is:  
 https://github.com/tsutterley/pyTMD  
 A zip archive of the latest version is available directly at:  
-https://github.com/tsutterley/pyTMD/archive/master.zip  
+https://github.com/tsutterley/pyTMD/archive/main.zip  
 
 #### Software
 Matlab Tide Model Driver from Earth & Space Research is available at:  

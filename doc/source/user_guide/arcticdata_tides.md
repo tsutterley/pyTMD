@@ -10,7 +10,7 @@ arcticdata_tides.py
 ```bash
 python arcticdata_tides.py --directory=<path_to_tide_directory> --tide=AOTIM-5-2018
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/scripts/arcticdata_tides.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/arcticdata_tides.py)
 
 #### Command Line Options
  - `-D X`, `--directory=X`: Working Data Directory

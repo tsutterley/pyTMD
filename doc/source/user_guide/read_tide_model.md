@@ -10,7 +10,7 @@ from pyTMD.read_tide_model import read_tide_model
 amp,ph,D,c = read_tide_model(ilon, ilat, grid_file, model_file, EPSG,
     TYPE=type, METHOD='spline', GRID='OTIS')
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_tide_model.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_tide_model.py)
 
 #### Inputs
  1. `ilon`: longitude to interpolate

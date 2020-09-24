@@ -10,7 +10,7 @@ from pyTMD.read_FES_model import read_FES_model
 amp,ph = read_FES_model(ilon,ilat,directory,model_files,TYPE=type,
     VERSION=version,METHOD='spline',GZIP=True,SCALE=1.0/100.0)
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/master/pyTMD/read_FES_model.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_FES_model.py)
 
 #### Inputs
   1. `ilon`: longitude to interpolate
