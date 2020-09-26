@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide.py (07/2020)
+predict_tide.py (09/2020)
 Predict tides at a single time using harmonic constants
 
 CALLING SEQUENCE:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 09/2020: append output mask over each constituent
     Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
     Updated 11/2019: can output an array of heights with a single time stamp
@@ -69,6 +70,7 @@ def predict_tide(t,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
     #-- allocate for output tidal elevation
     ht = np.ma.zeros((npts))
+    ht.mask = np.zeros((npts),dtype=np.bool)
     #-- for each constituent
     for k,c in enumerate(constituents):
         if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
@@ -79,6 +81,8 @@ def predict_tide(t,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         elif CORRECTIONS in ('GOT','FES'):
             th = G[0,k]*np.pi/180.0 + pu[0,k]
         #-- sum over all tides
-        ht += pf[0,k]*hc.real[:,k]*np.cos(th) - pf[0,k]*hc.imag[:,k]*np.sin(th)
+        ht.data[:] += pf[0,k]*hc.real[:,k]*np.cos(th) - \
+            pf[0,k]*hc.imag[:,k]*np.sin(th)
+        ht.mask[:] |= (hc.real.mask[:,k] | hc.imag.mask[:,k])
     #-- return the tidal elevation after removing singleton dimensions
     return np.squeeze(ht)
