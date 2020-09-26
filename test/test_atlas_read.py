@@ -62,7 +62,7 @@ def test_download_TPX08(aws_access_key_id,aws_secret_access_key,aws_region_name)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
 
 #-- PURPOSE: Download TPXO9 ATLAS V2 netCDF constituents from AWS S3 bucket
-def test_download_TPX08(aws_access_key_id,aws_secret_access_key,aws_region_name):
+def test_download_TPX09_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
