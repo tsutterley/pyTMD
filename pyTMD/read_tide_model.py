@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
+        use masked arrays with atlas models and grids. make 2' grid with nearest
     Updated 08/2020: check that interpolated points are within range of model
         replaced griddata interpolation with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
@@ -545,8 +546,10 @@ def read_atlas_grid(input_file):
         iz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nd)
         jz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nd)
         fid.seek(8,1)
-        depth = np.full((ny1,nx1),np.nan)
-        depth[jz-1,iz-1] = np.fromfile(fid, dtype=np.dtype('>f4'), count=nd)
+        depth = np.ma.zeros((ny1,nx1))
+        depth.mask = np.ones((ny1,nx1),dtype=np.bool)
+        depth.data[jz-1,iz-1] = np.fromfile(fid,dtype=np.dtype('>f4'),count=nd)
+        depth.mask[jz-1,iz-1] = False
         fid.seek(4,1)
         #-- save to dictionary
         local[name] = dict(lon=ln1,lat=lt1,depth=depth)
@@ -687,10 +690,11 @@ def read_atlas_elevation(input_file,ic,constituent):
             fid.seek(nskip,1)
             #-- real and imaginary components of elevation
             h1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
-            h1.mask = np.zeros((ny1,nx1),dtype=np.bool)
+            h1.mask = np.ones((ny1,nx1),dtype=np.bool)
             temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nz)
             h1.data.real[jz-1,iz-1] = temp[0:2*nz-1:2]
             h1.data.imag[jz-1,iz-1] = temp[1:2*nz:2]
+            h1.mask[jz-1,iz-1] = False
             #-- save constituent to dictionary
             local[name] = dict(lon=ln1,lat=lt1,z=h1)
             #-- skip records after constituent
@@ -833,13 +837,15 @@ def read_atlas_transport(input_file,ic,constituent):
             tmpu = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nu)
             u1.data.real[ju-1,iu-1] = tmpu[0:2*nu-1:2]
             u1.data.imag[ju-1,iu-1] = tmpu[1:2*nu:2]
+            u1.mask[ju-1,iu-1] = False
             fid.seek(8,1)
             #-- real and imaginary components of v transport
             v1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
-            v1.mask = np.zeros((ny1,nx1),dtype=np.bool)
+            v1.mask = np.ones((ny1,nx1),dtype=np.bool)
             tmpv = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nv)
             v1.data.real[jv-1,iv-1] = tmpv[0:2*nv-1:2]
             v1.data.imag[jv-1,iv-1] = tmpv[1:2*nv:2]
+            v1.mask[jv-1,iv-1] = False
             #-- save constituent to dictionary
             local[name] = dict(lon=ln1,lat=lt1,u=u1,v=v1)
             #-- skip records after constituent
@@ -882,18 +888,20 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)
     y30 = np.arange(-90.0+d30/2.0, 90.0+d30/2.0, d30)
     #-- interpolate global mask to create initial 2 arc-minute mask
-    m30 = np.zeros((len(y30),len(x30)),dtype=mz.dtype)
-    f = scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)
-    m30[:,:] = f(x30,y30).T
+    xcoords=np.clip((len(xi)-1)*(x30-xi[0])/(xi[-1]-xi[0]),0,len(xi)-1)
+    ycoords=np.clip((len(yi)-1)*(y30-yi[0])/(yi[-1]-yi[0]),0,len(yi)-1)
+    gridy,gridx=np.meshgrid(np.around(ycoords),np.around(xcoords),indexing='ij')
+    #-- interpolate with nearest-neighbors
+    m30 = np.ma.zeros((len(y30),len(x30)),dtype=np.int8,fill_value=0)
+    m30.data[:,:] = mz[gridy.astype(np.int32),gridx.astype(np.int32)]
     #-- iterate over localized solutions to fill in high-resolution coastlines
     for key,val in local.items():
-        #-- local model output
-        zlocal = val[VARIABLE][:]
-        validy,validx = np.nonzero(np.isfinite(zlocal.real))
         #-- create latitude and longitude for local model
         ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
         ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
         X,Y = np.meshgrid(ilon,ilat)
+        #-- local model output
+        validy,validx = np.nonzero(~val[VARIABLE].mask)
         for indy,indx in zip(validy,validx):
             #-- check if model is -180:180
             lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
@@ -902,6 +910,7 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
             #-- fill global mask with regional solution
             m30[jj,ii] = 1
     #-- return the 2 arc-minute mask
+    m30.mask = (m30.data == m30.fill_value)
     return m30
 
 #-- PURPOSE: combines global and local atlas solutions
@@ -952,7 +961,7 @@ def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
     for key,val in local.items():
         #-- local model output
         zlocal = val[VARIABLE][:]
-        validy,validx = np.nonzero(np.isfinite(zlocal.data.real))
+        validy,validx = np.nonzero(~zlocal.mask)
         #-- create latitude and longitude for local model
         ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
         ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)

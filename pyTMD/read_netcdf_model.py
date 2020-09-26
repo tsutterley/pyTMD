@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
+        reduce number of interpolations by copying bathmetry mask to variables
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         changed TYPE variable to keyword argument. update griddata interpolation
@@ -167,9 +168,13 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     D = np.ma.zeros((npts))
     D.mask = np.zeros((npts),dtype=np.bool)
     if (METHOD == 'bilinear'):
+        #-- replace invalid values with nan
+        bathymetry[bathymetry.mask] = np.nan
         #-- use quick bilinear to interpolate values
-        D.data[:] = bilinear_interp(lon,lat,bathymetry.data,ilon,ilat)
-        D.mask[:] = bilinear_interp(lon,lat,bathymetry.mask,ilon,ilat)
+        D.data[:] = bilinear_interp(lon,lat,bathymetry,ilon,ilat)
+        #-- replace nan values with fill_value
+        D.mask[:] = np.isnan(D.data)
+        D.data[D.mask] = D.fill_value
     elif (METHOD == 'spline'):
         #-- use scipy bivariate splines to interpolate values
         f1 = scipy.interpolate.RectBivariateSpline(lon,lat,
@@ -177,7 +182,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         f2 = scipy.interpolate.RectBivariateSpline(lon,lat,
             bathymetry.mask.T,kx=1,ky=1)
         D.data[:] = f1.ev(ilon,ilat)
-        D.mask[:] = f2.ev(ilon,ilat).astype(np.bool)
+        D.mask[:] = np.ceil(f2.ev(ilon,ilat).astype(np.bool))
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
@@ -217,32 +222,27 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             z1.mask = np.zeros((npts),dtype=np.bool)
             if (METHOD == 'bilinear'):
                 z1.data[:] = bilinear_interp(lon,lat,z,ilon,ilat,dtype=z.dtype)
-                #-- mask zero values
-                z1.mask[z1.data == 0] = True
+                #-- mask invalid values
+                z1.mask[:] |= np.copy(D.mask)
                 z1.data[z1.mask] = z1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(lon,lat,
                     z.data.real.T,kx=1,ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(lon,lat,
                     z.data.imag.T,kx=1,ky=1)
-                f3 = scipy.interpolate.RectBivariateSpline(lon,lat,
-                    z.mask.T,kx=1,ky=1)
                 z1.data.real = f1.ev(ilon,ilat)
                 z1.data.imag = f2.ev(ilon,ilat)
-                z1.mask = f3.ev(ilon,ilat).astype(np.bool)
                 #-- mask invalid values
+                z1.mask[:] |= np.copy(D.mask)
                 z1.data[z1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                     z.data, method=METHOD, bounds_error=False,
                     fill_value=z1.fill_value)
-                r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                    z.mask, method=METHOD, bounds_error=False, fill_value=1)
-                z1.data[:]=r1.__call__(np.c_[ilat,ilon])
-                z1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+                z1.data[:] = r1.__call__(np.c_[ilat,ilon])
                 #-- mask invalid values
-                z1.mask |= (z1.data == z1.fill_value)
+                z1.mask[:] |= np.copy(D.mask)
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             ampl[:,i] = np.abs(z1)
@@ -259,32 +259,27 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             tr1.mask = np.zeros((npts),dtype=np.bool)
             if (METHOD == 'bilinear'):
                 tr1.data[:]=bilinear_interp(lon,lat,tr,ilon,ilat,dtype=tr.dtype)
-                #-- mask zero values
-                tr1.mask[tr1.data == 0] = True
+                #-- mask invalid values
+                tr1.mask[:] |= np.copy(D.mask)
                 tr1.data[tr1.mask] = tr1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(lon,lat,
                     tr.data.real.T,kx=1,ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(lon,lat,
                     tr.data.imag.T,kx=1,ky=1)
-                f3 = scipy.interpolate.RectBivariateSpline(lon,lat,
-                    tr.mask.T,kx=1,ky=1)
                 tr1.data.real = f1.ev(ilon,ilat)
                 tr1.data.imag = f2.ev(ilon,ilat)
-                tr1.mask = f3.ev(ilon,ilat).astype(np.bool)
                 #-- mask invalid values
+                tr1.mask[:] |= np.copy(D.mask)
                 tr1.data[tr1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                     tr.data, method=METHOD, bounds_error=False,
                     fill_value=tr1.fill_value)
-                r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                    tr.mask, method=METHOD, bounds_error=False, fill_value=1)
-                tr1.data[:]=r1.__call__(np.c_[ilat,ilon])
-                tr1.mask=np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+                tr1.data[:] = r1.__call__(np.c_[ilat,ilon])
                 #-- mask invalid values
-                tr1.mask |= (tr1.data == tr1.fill_value)
+                tr1.mask[:] |= np.copy(D.mask)
                 tr1.data[tr1.mask] = tr1.fill_value
             #-- convert units
             tr1 = tr1/unit_conv

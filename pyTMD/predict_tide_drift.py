@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide_drift.py (07/2020)
+predict_tide_drift.py (09/2020)
 Predict tides at multiple times and locations using harmonic constants
 
 CALLING SEQUENCE:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 09/2020: append output mask over each constituent
     Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
     Updated 11/2019: output as numpy masked arrays instead of nan-filled arrays
@@ -67,6 +68,7 @@ def predict_tide_drift(t,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
     #-- allocate for output time series
     ht = np.ma.zeros((nt))
+    ht.mask = np.zeros((nt),dtype=np.bool)
     #-- for each constituent
     for k,c in enumerate(constituents):
         if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
@@ -77,6 +79,8 @@ def predict_tide_drift(t,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         elif CORRECTIONS in ('GOT','FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         #-- sum over all tides
-        ht += pf[:,k]*hc.real[:,k]*np.cos(th) - pf[:,k]*hc.imag[:,k]*np.sin(th)
+        ht.data[:] += pf[:,k]*hc.real[:,k]*np.cos(th) - \
+            pf[:,k]*hc.imag[:,k]*np.sin(th)
+        ht.mask[:] |= (hc.real.mask[:,k] | hc.imag.mask[:,k])
     #-- return tides
     return ht
