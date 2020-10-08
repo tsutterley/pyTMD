@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (10/2020)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
-    -D X, --directory=X: working data directory
-    -T X, --tide=X: Tide model to use
-    -B X, --bounds=X: Grid Bounds (xmin,xmax,ymin,ymax)
-    --projection=X: spatial projection of bounds as EPSG code or PROJ4 string
+    -D X, --directory X: working data directory
+    -T X, --tide X: Tide model to use
+    -B X, --bounds X: Grid Bounds (xmin,xmax,ymin,ymax)
+    --projection X: spatial projection of bounds as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
-    -M X, --mode=X: permissions mode of the output files
+    -M X, --mode X: permissions mode of the output files
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -24,9 +24,10 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     read_tide_model.py: extract tidal harmonic constants out of a tidal model
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates
-    output_otis_tides.py: writes OTIS-format tide files    
+    output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use projected coordinates for output model bounds
         compatibility updates for python3
     Updated 07/2020: renamed coordinate conversion program
@@ -39,8 +40,8 @@ from __future__ import print_function
 
 import sys
 import os
-import getopt
 import pyproj
+import argparse
 import numpy as np
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.read_tide_model import *
@@ -232,55 +233,45 @@ def create_unique_filename(filename):
         filename = '{0}{1}{2}_{3:d}'.format(*args)
         counter += 1
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {0}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' -T X, --tide=X\t\tTide model to use in correction')
-    print(' -B X, --bounds=X\tGrid Bounds (xmin,xmax,ymin,ymax)')
-    print(' --projection=X\t\tSpatial projection as EPSG code or PROJ4 string')
-    print(' -M X, --mode=X\t\tPermission mode of the output files\n')
-
 #-- This is the main part of the program that calls the individual modules
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','tide=','bounds=','projection=','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:],'hD:T:B:M:',long_options)
-
-    #-- command line parameters
-    tide_dir = os.getcwd()
+    parser = argparse.ArgumentParser(
+        description="""Read OTIS-format tidal files and reduce to a regional
+            subset
+            """
+    )
+    #-- command line options
+    #-- set data directory containing the tidal data
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
     #-- tide model to use
-    TIDE_MODEL = 'TPXO9.1'
+    model_choices = ('CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',
+        'TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
+        'AOTIM-5-2018')
+    parser.add_argument('--tide','-T',
+        metavar='TIDE', type=str, default='TPXO9.1',
+        choices=model_choices,
+        help='Tide model to use')
+    #-- spatial projection (EPSG code or PROJ4 string)
+    parser.add_argument('--projection','-P',
+        type=str, default='4326',
+        help='Spatial projection as EPSG code or PROJ4 string')
     #-- bounds for reducing model (xmin,xmax,ymin,ymax)
-    BOUNDS = 4*[None]
-    #-- spatial projection of input bounds (EPSG code or PROJ4 string)
-    PROJECTION = '4326'
-    #-- permissions mode of output reduced files
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            tide_dir = os.path.expanduser(arg)
-        elif opt in ("-T","--tide"):
-            TIDE_MODEL = arg
-        elif opt in ("-B","--bounds"):
-            BOUNDS = np.array(arg.split(','),dtype=np.float)
-        elif opt in ("--projection",):
-            PROJECTION = arg
-        elif opt in ("-M","--mode"):
-            MODE = int(arg,8)
-
-    #-- verify model before running program
-    model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas','TPXO9.1',
-        'TPXO8-atlas','TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
-        'AOTIM-5-2018']
-    assert TIDE_MODEL in model_list, 'Unlisted tide model'
+    parser.add_argument('--bounds','-B',
+        metavar=('xmin','xmax','ymin','ymax'), type=float, nargs=4,
+        help='Grid bounds for reducing model')
+    #-- permissions mode of output reduced files (number in octal)
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permission mode of the output files')
+    args = parser.parse_args()
 
     #-- run program
-    make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=BOUNDS,
-        PROJECTION=PROJECTION, MODE=MODE)
+    make_regional_OTIS_files(args.directory, args.tide, BOUNDS=args.bounds,
+        PROJECTION=args.projection, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

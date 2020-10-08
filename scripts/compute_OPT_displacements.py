@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (10/2020)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -13,20 +13,24 @@ INPUTS:
     netCDF4 file with variables for spatial and temporal coordinates
 
 COMMAND LINE OPTIONS:
-    -D X, --directory=X: Working data directory
-    --format=X: input and output data format
+    -D X, --directory X: Working data directory
+    -F X, --format X: input and output data format
         csv (default)
         netCDF4
         HDF5
-    --variables=X: variable names of data in csv, HDF5 or netCDF4 file
+    -v X, --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5 and netCDF4 files: time, y, x and data variable names
-    --epoch=X: Reference epoch of input time (default Modified Julian Day)
+    -E X, --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
-    --projection=X: spatial projection as EPSG code or PROJ4 string
+    -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
+    -I X, --interpolate X: Interpolation method
+        spline
+        linear
+        nearest
     -V, --verbose: Verbose output of processing run
-    -M X, --mode=X: Permission mode of output file
+    -M X, --mode X: Permission mode of output file
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -54,6 +58,7 @@ PROGRAM DEPENDENCIES:
     read_ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 10/2017: use mean pole coordinates from calc_mean_iers_pole.py
@@ -63,8 +68,8 @@ from __future__ import print_function
 
 import sys
 import os
-import getopt
 import pyproj
+import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
@@ -81,7 +86,7 @@ from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 def compute_OPT_displacements(tide_dir, input_file, output_file,
     FORMAT='csv', VARIABLES=['time','lat','lon','data'],
     TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
-    METHOD=None, VERBOSE=False, MODE=0o775):
+    METHOD='spline', VERBOSE=False, MODE=0o775):
 
     #-- invalid value
     fill_value = -9999.0
@@ -241,80 +246,71 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' --format=X\t\tInput and output data format')
-    print('\tcsv\n\tnetCDF4\n\tHDF5')
-    print(' --variables=X\t\tVariable names of data in input file')
-    print(' --epoch=X\t\tReference epoch of input time')
-    print('\tin form "time-units since yyyy-mm-dd hh:mm:ss"')
-    print(' --projection=X\t\tSpatial projection as EPSG code or PROJ4 string')
-    print(' -V, --verbose\t\tVerbose output of processing run')
-    print(' -M X, --mode=X\t\tPermission mode of output file\n')
-
 #-- Main program that calls compute_OPT_displacements()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','variables=','epoch=','projection=',
-        'format=','verbose','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:], 'hD:VM:', long_options)
-
+    parser = argparse.ArgumentParser(
+        description="""Calculates radial ocean pole load tide displacements for
+            an input file following IERS Convention (2010) guidelines
+            """
+    )
     #-- command line options
+    #-- input and output file
+    parser.add_argument('infile',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        help='Input file')
+    parser.add_argument('outfile',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        help='Output file')
     #-- set data directory containing the pole tide files
-    tide_dir = None
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
     #-- input and output data format
-    FORMAT = 'csv'
+    parser.add_argument('--format','-F',
+        type=str, default='csv', choices=('csv','netCDF4','HDF5'),
+        help='Input and output data format')
     #-- variable names (for csv names of columns)
-    VARIABLES = ['time','lat','lon','data']
+    parser.add_argument('--variables','-v',
+        type=str, nargs='+', default=['time','lat','lon','data'],
+        help='Variable names of data in input file')
     #-- time epoch (default Modified Julian Days)
-    TIME_UNITS = 'days since 1858-11-17T00:00:00'
+    #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
+    parser.add_argument('--epoch','-E',
+        type=str, default='days since 1858-11-17T00:00:00',
+        help='Reference epoch of input time')
     #-- spatial projection (EPSG code or PROJ4 string)
-    PROJECTION = '4326'
+    parser.add_argument('--projection','-P',
+        type=str, default='4326',
+        help='Spatial projection as EPSG code or PROJ4 string')
+    #-- interpolation method
+    parser.add_argument('--interpolate','-I',
+        metavar='METHOD', type=str, default='spline',
+        choices=('spline','linear','nearest'),
+        help='Spatial interpolation method')
     #-- verbose output of processing run
-    VERBOSE = False
+    #-- print information about each input and output file
+    parser.add_argument('--verbose','-V',
+        default=False, action='store_true',
+        help='Verbose output of run')
     #-- permissions mode of the local files (number in octal)
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            tide_dir = os.path.expanduser(arg)
-        elif opt in ("--format",):
-            FORMAT = arg
-        elif opt in ("--variables",):
-            VARIABLES = arg.split(',')
-        elif opt in ("--epoch",):
-            TIME_UNITS = arg
-        elif opt in ("--projection",):
-            PROJECTION = arg
-        elif opt in ("-V","--verbose"):
-            VERBOSE = True
-        elif opt in ("-M","--mode"):
-            MODE = int(arg, 8)
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permission mode of output file')
+    args = parser.parse_args()
 
-    #-- enter input and output files as system argument
-    if not arglist:
-        raise Exception('No System Arguments Listed')
-
-    #-- tilde-expand input and output files
     #-- set output file from input filename if not entered
-    input_file=os.path.expanduser(arglist[0])
-    try:
-        output_file=os.path.expanduser(arglist[1])
-    except IndexError:
-        fileBasename,fileExtension = os.path.splitext(input_file)
-        args = (fileBasename,'ocean_pole_tide',fileExtension)
-        output_file = '{0}_{1}{2}'.format(*args)
-    #-- set base directory from the input file if not currently set
-    tide_dir = os.path.dirname(input_file) if (tide_dir is None) else tide_dir
+    if not args.outfile:
+        fileBasename,fileExtension = os.path.splitext(args.infile)
+        vars = (fileBasename,'ocean_pole_tide',fileExtension)
+        args.outfile = '{0}_{1}{2}'.format(*vars)
 
-    #-- run load pole tide program for input file
-    compute_OPT_displacements(tide_dir, input_file, output_file, FORMAT=FORMAT,
-        VARIABLES=VARIABLES, TIME_UNITS=TIME_UNITS, PROJECTION=PROJECTION,
-        METHOD='spline', VERBOSE=VERBOSE, MODE=MODE)
+    #-- run ocean pole tide program for input file
+    compute_OPT_displacements(args.directory, args.infile, args.outfile,
+        FORMAT=args.format, VARIABLES=args.variables, TIME_UNITS=args.epoch,
+        PROJECTION=args.projection, METHOD=args.interpolate,
+        VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

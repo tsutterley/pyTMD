@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (10/2020)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
 
@@ -10,10 +10,10 @@ CALLING SEQUENCE:
 
 COMMAND LINE OPTIONS:
     --help: list the command line options
-    --directory=X: working data directory
-    --tide=X: tide model to download
+    -D X, --directory X: working data directory
+    -T X, --tide X: Circum-Antarctic tide model to download
         CATS2008
-    -M X, --mode=X: Local permissions mode of the files downloaded
+    -M X, --mode X: Local permissions mode of the files downloaded
 
 PYTHON DEPENDENCIES:
     future: Compatibility layer between Python 2 and Python 3
@@ -23,6 +23,7 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Written 08/2020
 """
 from __future__ import print_function
@@ -31,8 +32,8 @@ import sys
 import os
 import re
 import time
-import getopt
 import zipfile
+import argparse
 import posixpath
 import pyTMD.utilities
 
@@ -66,40 +67,35 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     #-- close the zipfile object
     zfile.close()
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' --tide=X\t\tCircum-Antarctic Tidal Simulation to download')
-    print('\tCATS2008')
-    print(' -M X, --mode=X\t\tPermission mode of files downloaded\n')
-
 #-- Main program that calls usap_cats_tides()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','tide=','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:],'hD:M:',long_options)
-
+    parser = argparse.ArgumentParser(
+        description="""Download Circum-Antarctic Tidal Simulations from the
+            US Antarctic Program
+            """
+    )
     #-- command line parameters
-    DIRECTORY = os.getcwd()
-    MODELS = ['CATS2008']
+    #-- working data directory for location of tide models
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
+    #-- Antarctic Ocean tide model to download
+    parser.add_argument('--tide','-T',
+        metavar='TIDE', type=str, nargs='+', default=['CATS2008'],
+        choices=('CATS2008'),
+        help='Circum-Antarctic tide model to download')
     #-- permissions mode of the local directories and files (number in octal)
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            DIRECTORY = os.path.expanduser(arg)
-        elif opt in ("--tide",):
-            MODELS = arg.upper().split(',')
-        elif opt in ("-M","--mode"):
-            MODE = int(arg, 8)
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permissions mode of the files downloaded')
+    args = parser.parse_args()
 
     #-- check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://www.usap-dc.org'):
-        for m in MODELS:
-            usap_cats_tides(m,DIRECTORY=DIRECTORY,MODE=MODE)
+        for m in args.tide:
+            usap_cats_tides(m,DIRECTORY=args.directory,MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

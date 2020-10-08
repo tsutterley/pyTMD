@@ -14,5 +14,5 @@ python compute_LPET_icebridge_data.py --verbose input_file
  1. `input_file`: input ATM1B, ATM icessn or LVIS file from NSIDC
 
 #### Command Line Options
- - `-M X`, `--mode=X`: Permission mode of output file
+ - `-M X`, `--mode X`: Permission mode of output file
  - `-V`, `--verbose`: Output information about each created file
