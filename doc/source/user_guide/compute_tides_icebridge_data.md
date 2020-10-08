@@ -8,7 +8,7 @@ compute_tides_icebridge_data.py
 
 #### Calling Sequence
 ```bash
-python compute_tides_icebridge_data.py --directory=<path_to_directory> --tide=<model> input_file
+python compute_tides_icebridge_data.py --directory <path_to_directory> --tide <model> input_file
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py)
 
@@ -16,26 +16,31 @@ python compute_tides_icebridge_data.py --directory=<path_to_directory> --tide=<m
  1. `input_file`: input ATM1B, ATM icessn or LVIS file from NSIDC
 
 #### Command Line Options
- - `-D X`, `--directory=X`: Working data directory
- - `-T X`, `--tide=X`: Tide model to use in correction
-     * CATS0201
-     * CATS2008
-     * CATS2008_load
-     * TPXO9-atlas
-     * TPXO9.1
-     * TPXO8-atlas
-     * TPXO7.2
-     * TPXO7.2_load
-     * AODTM-5
-     * AOTIM-5
-     * AOTIM-5-2018
-     * GOT4.7
-     * GOT4.7_load
-     * GOT4.8
-     * GOT4.8_load
-     * GOT4.10
-     * GOT4.10_load
-     * FES2014
-     * FES2014_load
- - `-M X`, `--mode=X`: Permission mode of output file
+ - `-D X`, `--directory X`: Working data directory
+ - `-T X`, `--tide X`: Tide model to use in correction
+     * `'CATS0201'`
+     * `'CATS2008'`
+     * `'CATS2008_load'`
+     * `'TPXO9-atlas'`
+     * `'TPXO9.1'`
+     * `'TPXO8-atlas'`
+     * `'TPXO7.2'`
+     * `'TPXO7.2_load'`
+     * `'AODTM-5'`
+     * `'AOTIM-5'`
+     * `'AOTIM-5-2018'`
+     * `'GOT4.7'`
+     * `'GOT4.7_load'`
+     * `'GOT4.8'`
+     * `'GOT4.8_load'`
+     * `'GOT4.10'`
+     * `'GOT4.10_load'`
+     * `'FES2014'`
+     * `'FES2014_load'`
+ - `-I X`, `--interpolate X`: Interpolation method
+     * `'spline'`
+     * `'linear'`
+     * `'nearest'`
+     * `'bilinear'`
+ - `-M X`, `--mode X`: Permission mode of output file
  - `-V`, `--verbose`: Output information about each created file

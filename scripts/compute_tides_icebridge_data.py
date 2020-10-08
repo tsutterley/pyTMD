@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (10/2020)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -15,8 +15,8 @@ INPUTS:
     ATM1B, ATM icessn or LVIS file from NSIDC
 
 COMMAND LINE OPTIONS:
-    -D X, --directory=X: Working data directory
-    -T X, --tide=X: Tide model to use in correction
+    -D X, --directory X: Working data directory
+    -T X, --tide X: Tide model to use in correction
         CATS0201
         CATS2008
         CATS2008_load
@@ -37,7 +37,12 @@ COMMAND LINE OPTIONS:
         GOT4.10_load
         FES2014
         FES2014_load
-    -M X, --mode=X: Permission mode of directories and files created
+    -I X, --interpolate X: Interpolation method
+        spline
+        linear
+        nearest
+        bilinear
+    -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
 PYTHON DEPENDENCIES:
@@ -71,6 +76,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output ocean and load tide as tide_ocean and tide_load
     Updated 08/2020: using builtin time operations.  python3 regular expressions
     Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
@@ -93,7 +99,7 @@ import os
 import re
 import time
 import h5py
-import getopt
+import argparse
 import numpy as np
 import pyTMD.time
 from pyTMD.utilities import get_data_path
@@ -402,8 +408,8 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
-    VERBOSE=False, MODE=0o775):
+def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
+    METHOD='spline', VERBOSE=False, MODE=0o775):
 
     #-- extract file name and subsetter indices lists
     match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
@@ -431,7 +437,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
             OIB = key
 
     #-- select between tide models
-    if (MODEL == 'CATS0201'):
+    if (TIDE_MODEL == 'CATS0201'):
         grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
         model_file = os.path.join(tide_dir,'cats0201_tmd','h0_CATS02_01')
         reference = 'https://mail.esr.org/polar_tide_models/Model_CATS0201.html'
@@ -440,7 +446,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = '4326'
         TYPE = 'z'
-    elif (MODEL == 'CATS2008'):
+    elif (TIDE_MODEL == 'CATS2008'):
         grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
         model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
         reference = ('https://www.esr.org/research/polar-tide-models/'
@@ -450,7 +456,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = 'CATS2008'
         TYPE = 'z'
-    elif (MODEL == 'CATS2008_load'):
+    elif (TIDE_MODEL == 'CATS2008_load'):
         grid_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
         model_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
         reference = ('https://www.esr.org/research/polar-tide-models/'
@@ -460,7 +466,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = 'CATS2008'
         TYPE = 'z'
-    elif (MODEL == 'TPXO9-atlas'):
+    elif (TIDE_MODEL == 'TPXO9-atlas'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas')
         grid_file = 'grid_tpxo9_atlas.nc.gz'
         model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
@@ -475,7 +481,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
-    elif (MODEL == 'TPXO9-atlas-v2'):
+    elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
         grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
         model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
@@ -490,7 +496,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
-    elif (MODEL == 'TPXO9.1'):
+    elif (TIDE_MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
         model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
         reference = 'http://volkov.oce.orst.edu/tides/global.html'
@@ -499,7 +505,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = '4326'
         TYPE = 'z'
-    elif (MODEL == 'TPXO8-atlas'):
+    elif (TIDE_MODEL == 'TPXO8-atlas'):
         grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
         model_file = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
         reference = 'http://volkov.oce.orst.edu/tides/tpxo8_atlas.html'
@@ -508,7 +514,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'ATLAS'
         EPSG = '4326'
         TYPE = 'z'
-    elif (MODEL == 'TPXO7.2'):
+    elif (TIDE_MODEL == 'TPXO7.2'):
         grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_tmd','h_tpxo7.2')
         reference = 'http://volkov.oce.orst.edu/tides/global.html'
@@ -517,7 +523,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = '4326'
         TYPE = 'z'
-    elif (MODEL == 'TPXO7.2_load'):
+    elif (TIDE_MODEL == 'TPXO7.2_load'):
         grid_file = os.path.join(tide_dir,'TPXO7.2_load','grid_tpxo6.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_load','h_tpxo7.2_load')
         reference = 'http://volkov.oce.orst.edu/tides/global.html'
@@ -526,7 +532,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = '4326'
         TYPE = 'z'
-    elif (MODEL == 'AODTM-5'):
+    elif (TIDE_MODEL == 'AODTM-5'):
         grid_file = os.path.join(tide_dir,'aodtm5_tmd','grid_Arc5km')
         model_file = os.path.join(tide_dir,'aodtm5_tmd','h0_Arc5km.oce')
         reference = ('https://www.esr.org/research/polar-tide-models/'
@@ -536,7 +542,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = 'PSNorth'
         TYPE = 'z'
-    elif (MODEL == 'AOTIM-5'):
+    elif (TIDE_MODEL == 'AOTIM-5'):
         grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
         model_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
         reference = ('https://www.esr.org/research/polar-tide-models/'
@@ -546,7 +552,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = 'PSNorth'
         TYPE = 'z'
-    elif (MODEL == 'AOTIM-5-2018'):
+    elif (TIDE_MODEL == 'AOTIM-5-2018'):
         grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
         model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
         reference = ('https://www.esr.org/research/polar-tide-models/'
@@ -556,7 +562,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'OTIS'
         EPSG = 'PSNorth'
         TYPE = 'z'
-    elif (MODEL == 'GOT4.7'):
+    elif (TIDE_MODEL == 'GOT4.7'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
             'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
@@ -567,7 +573,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         variable_long_name = 'Ocean_Tide'
         model_format = 'GOT'
         SCALE = 1.0/100.0
-    elif (MODEL == 'GOT4.7_load'):
+    elif (TIDE_MODEL == 'GOT4.7_load'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
             'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
@@ -579,7 +585,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         variable_long_name = 'Load_Tide'
         model_format = 'GOT'
         SCALE = 1.0/1000.0
-    elif (MODEL == 'GOT4.8'):
+    elif (TIDE_MODEL == 'GOT4.8'):
         model_directory = os.path.join(tide_dir,'got4.8','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
             'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
@@ -590,7 +596,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         variable_long_name = 'Ocean_Tide'
         model_format = 'GOT'
         SCALE = 1.0/100.0
-    elif (MODEL == 'GOT4.8_load'):
+    elif (TIDE_MODEL == 'GOT4.8_load'):
         model_directory = os.path.join(tide_dir,'got4.8','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
             'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
@@ -602,7 +608,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         variable_long_name = 'Load_Tide'
         model_format = 'GOT'
         SCALE = 1.0/1000.0
-    elif (MODEL == 'GOT4.10'):
+    elif (TIDE_MODEL == 'GOT4.10'):
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
             'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
@@ -613,7 +619,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         variable_long_name = 'Ocean_Tide'
         model_format = 'GOT'
         SCALE = 1.0/100.0
-    elif (MODEL == 'GOT4.10_load'):
+    elif (TIDE_MODEL == 'GOT4.10_load'):
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
             'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
@@ -625,7 +631,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         variable_long_name = 'Load_Tide'
         model_format = 'GOT'
         SCALE = 1.0/1000.0
-    elif (MODEL == 'FES2014'):
+    elif (TIDE_MODEL == 'FES2014'):
         model_directory = os.path.join(tide_dir,'fes2014','ocean_tide')
         model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
             'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
@@ -644,7 +650,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         model_format = 'FES'
         TYPE = 'z'
         SCALE = 1.0/100.0
-    elif (MODEL == 'FES2014_load'):
+    elif (TIDE_MODEL == 'FES2014_load'):
         model_directory = os.path.join(tide_dir,'fes2014','load_tide')
         model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
             'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
@@ -683,7 +689,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     attrib[output_variable]['description'] = ('Tidal_elevation_from_harmonic_'
         'constants_at_the_measurement_position_at_the_acquisition_time')
     attrib[output_variable]['reference'] = reference
-    attrib[output_variable]['model'] = MODEL
+    attrib[output_variable]['model'] = TIDE_MODEL
     attrib[output_variable]['units'] = 'meters'
     attrib[output_variable]['long_name'] = variable_long_name
     #-- time
@@ -750,7 +756,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
         deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
-            model_directory, model_files, TYPE=TYPE, VERSION=MODEL,
+            model_directory, model_files, TYPE=TYPE, VERSION=TIDE_MODEL,
             METHOD=METHOD, SCALE=SCALE)
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
@@ -764,7 +770,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     #-- output tidal HDF5 file
     #-- form: rg_NASA_model_TIDES_WGS84_fl1yyyymmddjjjjj.H5
     #-- where rg is the hemisphere flag (GR or AN) for the region
-    #-- model is the tidal MODEL flag (e.g. CATS0201)
+    #-- model is the tidal TIDE_MODEL flag (e.g. CATS0201)
     #-- fl1 and fl2 are the data flags (ATM, LVIS, GLAS)
     #-- yymmddjjjjj is the year, month, day and second of the input file
     #-- output region flags: GR for Greenland and AN for Antarctica
@@ -772,7 +778,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     #-- use starting second to distinguish between files for the day
     JJ1 = np.min(dinput['time']) % 86400
     #-- output file format
-    args = (hem_flag[HEM],MODEL,OIB,YY1,MM1,DD1,JJ1)
+    args = (hem_flag[HEM],TIDE_MODEL,OIB,YY1,MM1,DD1,JJ1)
     FILENAME = '{0}_NASA_{1}_TIDES_WGS84_{2}{3}{4}{5}{6:05.0f}.H5'.format(*args)
     #-- print file information
     print('\t{0}'.format(FILENAME)) if VERBOSE else None
@@ -834,7 +840,7 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     fid.attrs['date_created'] = time.strftime('%Y-%m-%d',time.localtime())
     #-- add attributes for input files
     fid.attrs['elevation_file'] = os.path.basename(input_file)
-    fid.attrs['tide_model'] = MODEL
+    fid.attrs['tide_model'] = TIDE_MODEL
     #-- add geospatial and temporal attributes
     fid.attrs['geospatial_lat_min'] = dinput['lat'].min()
     fid.attrs['geospatial_lat_max'] = dinput['lat'].max()
@@ -866,61 +872,52 @@ def compute_tides_icebridge_data(tide_dir, arg, MODEL, METHOD=None,
     #-- change the permissions level to MODE
     os.chmod(os.path.join(DIRECTORY,FILENAME), MODE)
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' -T X, --tide=X\t\tTide model to use in correction')
-    print(' -I X, --interpolate\tInterpolation method (default spline)')
-    print(' -M X, --mode=X\t\tPermission mode of directories and files created')
-    print(' -V, --verbose\t\tOutput information about each created file\n')
-
 #-- Main program that calls compute_tides_icebridge_data()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','tide=','interpolate=','verbose','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:], 'hD:T:I:VM:', long_options)
-
+    parser = argparse.ArgumentParser(
+        description="""Calculates tidal elevations for correcting Operation
+            IceBridge elevation data
+            """
+    )
+    #-- command line parameters
+    parser.add_argument('infile',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
+        help='Input Operation IceBridge file')
     #-- directory with tide data
-    tide_dir = os.getcwd()
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
     #-- tide model to use
-    MODEL = 'CATS2008'
-    #-- interpolation method
-    METHOD = 'spline'
-    #-- verbosity settings
-    VERBOSE = False
-    #-- permissions mode of the local files (number in octal)
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            tide_dir = os.path.expanduser(arg)
-        elif opt in ("-T","--tide"):
-            MODEL = arg
-        elif opt in ("-I","--interpolate"):
-            METHOD = arg.lower()
-        elif opt in ("-V","--verbose"):
-            VERBOSE = True
-        elif opt in ("-M","--mode"):
-            MODE = int(arg, 8)
-
-    #-- enter input file from NSIDC as system argument
-    if not arglist:
-        raise Exception('No System Arguments Listed')
-
-    #-- verify model before running program
-    model_list = ['CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',
+    model_choices = ('CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',
         'TPXO9-atlas-v2','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
         'AODTM-5','AOTIM-5','AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8',
-        'GOT4.8_load','GOT4.10','GOT4.10_load','FES2014','FES2014_load']
-    assert MODEL in model_list, 'Unlisted tide model'
+        'GOT4.8_load','GOT4.10','GOT4.10_load','FES2014','FES2014_load')
+    parser.add_argument('--tide','-T',
+        metavar='TIDE', type=str, default='CATS2008',
+        choices=model_choices,
+        help='Tide model to use in correction')
+    #-- interpolation method
+    parser.add_argument('--interpolate','-I',
+        metavar='METHOD', type=str, default='spline',
+        choices=('spline','linear','nearest','bilinear'),
+        help='Spatial interpolation method')
+    #-- verbosity settings
+    #-- verbose will output information about each output file
+    parser.add_argument('--verbose','-V',
+        default=False, action='store_true',
+        help='Output information about each created file')
+    #-- permissions mode of the local files (number in octal)
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permission mode of directories and files created')
+    args = parser.parse_args()
 
-    #-- run for each input file
-    for arg in arglist:
-        compute_tides_icebridge_data(tide_dir, os.path.expanduser(arg), MODEL,
-            METHOD=METHOD, VERBOSE=VERBOSE,MODE=MODE)
+    #-- run for each input Operation IceBridge file
+    for arg in args.infile:
+        compute_tides_icebridge_data(args.directory, arg, TIDE_MODEL=args.tide,
+            METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

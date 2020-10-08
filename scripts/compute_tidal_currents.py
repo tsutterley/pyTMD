@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (09/2020)
-Calculates tidal currents for an input file
+Written by Tyler Sutterley (10/2020)
+Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
@@ -16,8 +16,8 @@ INPUTS:
     netCDF4 file with variables for spatial and temporal coordinates
 
 COMMAND LINE OPTIONS:
-    -D X, --directory=X: Working data directory
-    -T X, --tide=X: Tide model to use in correction
+    -D X, --directory X: Working data directory
+    -T X, --tide X: Tide model to use in correction
         CATS0201
         CATS2008
         TPX09-atlas-v2
@@ -30,19 +30,24 @@ COMMAND LINE OPTIONS:
         AOTIM-5
         AOTIM-5-2018
         FES2014
-    --format=X: input and output data format
+    --format X: input and output data format
         csv (default)
         netCDF4
         HDF5
-    --variables=X: variable names of data in csv, HDF5 or netCDF4 file
+    --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5 and netCDF4 files: time, y, x and data variable names
-    --epoch=X: Reference epoch of input time (default Modified Julian Day)
+    --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
-    --projection=X: spatial projection as EPSG code or PROJ4 string
+    --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
+    -I X, --interpolate X: Interpolation method
+        spline
+        linear
+        nearest
+        bilinear
     -V, --verbose: Verbose output of processing run
-    -M X, --mode=X: Permission mode of output file
+    -M X, --mode X: Permission mode of output file
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -75,6 +80,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Forked 09/2020 from compute_tidal_elevations.py
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 08/2020: using builtin time operations
@@ -91,8 +97,8 @@ from __future__ import print_function
 
 import sys
 import os
-import getopt
 import pyproj
+import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
@@ -107,9 +113,9 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_currents(tide_dir, input_file, output_file,
-    TIDE_MODEL='', FORMAT='csv', VARIABLES=['time','lat','lon','data'],
+    TIDE_MODEL=None, FORMAT='csv', VARIABLES=['time','lat','lon','data'],
     TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
-    VERBOSE=False, MODE=0o775):
+    METHOD='spline', VERBOSE=False, MODE=0o775):
 
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -313,16 +319,16 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file,
-                model_file, EPSG, TYPE=TYPE, METHOD='spline', GRID=model_format)
+                model_file, EPSG, TYPE=TYPE, METHOD=METHOD, GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-                grid_file, model_files[TYPE], TYPE=TYPE, METHOD='spline',
+                grid_file, model_files[TYPE], TYPE=TYPE, METHOD=METHOD,
                 SCALE=SCALE, GZIP=GZIP)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(lon, lat, model_directory[TYPE],
-                model_files, TYPE=TYPE, VERSION=TIDE_MODEL, METHOD='spline',
+                model_files, TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
                 SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = get_data_path(['data','merged_deltat.data'])
@@ -355,90 +361,79 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' -T X, --tide=X\t\tTide model to use in correction')
-    print(' --format=X\t\tInput and output data format')
-    print('\tcsv\n\tnetCDF4\n\tHDF5')
-    print(' --variables=X\t\tVariable names of data in input file')
-    print(' --epoch=X\t\tReference epoch of input time')
-    print('\tin form "time-units since yyyy-mm-dd hh:mm:ss"')
-    print(' --projection=X\t\tSpatial projection as EPSG code or PROJ4 string')
-    print(' -V, --verbose\t\tVerbose output of processing run')
-    print(' -M X, --mode=X\t\tPermission mode of output file\n')
-
 #-- Main program that calls compute_tidal_currents()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','tide=','variables=','epoch=',
-        'projection=','format=','verbose','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:], 'hD:T:VM:', long_options)
-
+    parser = argparse.ArgumentParser(
+        description="""Calculates zonal and meridional tidal currents for
+            an input file
+            """
+    )
     #-- command line options
+    #-- input and output file
+    parser.add_argument('infile',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        help='Input file')
+    parser.add_argument('outfile',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        help='Output file')
     #-- set data directory containing the tidal data
-    tide_dir = None
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
     #-- tide model to use
-    TIDE_MODEL = 'CATS2008'
+    model_choices = ('CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
+        'TPXO9.1','TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018',
+        'FES2014')
+    parser.add_argument('--tide','-T',
+        metavar='TIDE', type=str, default='CATS2008',
+        choices=model_choices,
+        help='Tide model to use in calculating currents')
     #-- input and output data format
-    FORMAT = 'csv'
+    parser.add_argument('--format','-F',
+        type=str, default='csv', choices=('csv','netCDF4','HDF5'),
+        help='Input and output data format')
     #-- variable names (for csv names of columns)
-    VARIABLES = ['time','lat','lon','data']
+    parser.add_argument('--variables','-v',
+        type=str, nargs='+', default=['time','lat','lon','data'],
+        help='Variable names of data in input file')
     #-- time epoch (default Modified Julian Days)
-    TIME_UNITS = 'days since 1858-11-17T00:00:00'
+    #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
+    parser.add_argument('--epoch','-E',
+        type=str, default='days since 1858-11-17T00:00:00',
+        help='Reference epoch of input time')
     #-- spatial projection (EPSG code or PROJ4 string)
-    PROJECTION = '4326'
+    parser.add_argument('--projection','-P',
+        type=str, default='4326',
+        help='Spatial projection as EPSG code or PROJ4 string')
+    #-- interpolation method
+    parser.add_argument('--interpolate','-I',
+        metavar='METHOD', type=str, default='spline',
+        choices=('spline','linear','nearest','bilinear'),
+        help='Spatial interpolation method')
     #-- verbose output of processing run
-    VERBOSE = False
+    #-- print information about each input and output file
+    parser.add_argument('--verbose','-V',
+        default=False, action='store_true',
+        help='Verbose output of run')
     #-- permissions mode of the local files (number in octal)
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            tide_dir = os.path.expanduser(arg)
-        elif opt in ("-T","--tide"):
-            TIDE_MODEL = arg
-        elif opt in ("--format",):
-            FORMAT = arg
-        elif opt in ("--variables",):
-            VARIABLES = arg.split(',')
-        elif opt in ("--epoch",):
-            TIME_UNITS = arg
-        elif opt in ("--projection",):
-            PROJECTION = arg
-        elif opt in ("-V","--verbose"):
-            VERBOSE = True
-        elif opt in ("-M","--mode"):
-            MODE = int(arg, 8)
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permission mode of output file')
+    args = parser.parse_args()
 
-    #-- enter input and output files as system argument
-    if not arglist:
-        raise Exception('No System Arguments Listed')
-
-    #-- verify model before running program
-    model_list=['CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2','TPXO9.1',
-        'TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018','FES2014']
-    assert TIDE_MODEL in model_list, 'Unlisted tide model'
-
-    #-- tilde-expand input and output files
     #-- set output file from input filename if not entered
-    input_file=os.path.expanduser(arglist[0])
-    try:
-        output_file=os.path.expanduser(arglist[1])
-    except IndexError:
-        fileBasename,fileExtension = os.path.splitext(input_file)
-        args = (fileBasename,TIDE_MODEL,fileExtension)
-        output_file = '{0}_{1}_currents{2}'.format(*args)
-    #-- set base directory from the input file if not currently set
-    tide_dir = os.path.dirname(input_file) if (tide_dir is None) else tide_dir
+    if not args.outfile:
+        fileBasename,fileExtension = os.path.splitext(args.infile)
+        vars = (fileBasename,args.tide,'_currents',fileExtension)
+        args.outfile = '{0}_{1}{2}{3}'.format(*vars)
 
     #-- run tidal current program for input file
-    compute_tidal_currents(tide_dir, input_file, output_file, FORMAT=FORMAT,
-        TIDE_MODEL=TIDE_MODEL, VARIABLES=VARIABLES, TIME_UNITS=TIME_UNITS,
-        PROJECTION=PROJECTION, VERBOSE=VERBOSE, MODE=MODE)
+    compute_tidal_currents(args.directory, args.infile, args.outfile,
+        FORMAT=args.format, TIDE_MODEL=args.tide, VARIABLES=args.variables,
+        TIME_UNITS=args.epoch, PROJECTION=args.projection,
+        METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

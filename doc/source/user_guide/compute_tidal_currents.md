@@ -7,7 +7,7 @@ compute_tidal_currents.py
 
 #### Calling Sequence
 ```bash
-python compute_tidal_currents.py --directory=<path_to_directory> --tide=<model> input_file output_file
+python compute_tidal_currents.py --directory <path_to_directory> --tide <model> input_file output_file
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py)
 
@@ -16,28 +16,33 @@ python compute_tidal_currents.py --directory=<path_to_directory> --tide=<model> 
  2. `output_file`: name of output file
 
 #### Command Line Options
- - `-D X`, `--directory=X`: Working data directory
- - `-T X`, `--tide=X`: Tide model to use in correction
-     * CATS0201
-     * CATS2008
-     * TPXO9-atlas
-     * TPXO9.1
-     * TPXO8-atlas
-     * TPXO7.2
-     * AODTM-5
-     * AOTIM-5
-     * AOTIM-5-2018
-     * FES2014
- - `--format=X`: input and output data format
+ - `-D X`, `--directory X`: Working data directory
+ - `-T X`, `--tide X`: Tide model to use in correction
+     * `'CATS0201'`
+     * `'CATS2008'`
+     * `'TPXO9-atlas'`
+     * `'TPXO9.1'`
+     * `'TPXO8-atlas'`
+     * `'TPXO7.2'`
+     * `'AODTM-5'`
+     * `'AOTIM-5'`
+     * `'AOTIM-5-2018'`
+     * `'FES2014'`
+ - `--format X`: input and output data format
      * `'csv'` (default)
      * `'netCDF4'`
      * `'HDF5'`
- - `--variables=X`: variable names of data in csv, HDF5 or netCDF4 file
+ - `--variables X`: variable names of data in csv, HDF5 or netCDF4 file
      * for csv files: the order of the columns within the file
      * for HDF5 and netCDF4 files: time, y, x and data variable names
- - `--epoch=X`: Reference epoch of input time
+ - `--epoch X`: Reference epoch of input time
      * `'days since 1858-11-17T00:00:00'` (default Modified Julian Days)
- - `--projection=X`: spatial projection as EPSG code or PROJ4 string
+ - `--projection X`: spatial projection as EPSG code or PROJ4 string
      * `4326`: latitude and longitude coordinates on WGS84 reference ellipsoid
+ - `-I X`, `--interpolate X`: Interpolation method
+     * `'spline'`
+     * `'linear'`
+     * `'nearest'`
+     * `'bilinear'`
  - `-V`, `--verbose`: Verbose output of processing run
- - `-M X`, `--mode=X`: Permission mode of output file
+ - `-M X`, `--mode X`: Permission mode of output file

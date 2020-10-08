@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 aviso_fes_tides.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (10/2020)
 Downloads the FES (Finite Element Solution) global tide model from AVISO
 Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/data/products/auxiliary-products/
@@ -9,15 +9,15 @@ Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/en/data/data-access.html
 
 CALLING SEQUENCE:
-    python aviso_fes_tides.py --user=<username> --tide=fes2014
+    python aviso_fes_tides.py --user <username> --tide FES2014
     where <username> is your AVISO data dissemination server username
 
 COMMAND LINE OPTIONS:
     --help: list the command line options
-    --directory=X: working data directory
-    --user=X: username for AVISO FTP servers (email)
-    -N X, --netrc=X: path to .netrc file for authentication
-    --tide=X: FES tide model to download
+    --directory X: working data directory
+    --user X: username for AVISO FTP servers (email)
+    -N X, --netrc X: path to .netrc file for authentication
+    --tide X: FES tide model to download
         FES1999
         FES2004
         FES2012
@@ -25,13 +25,14 @@ COMMAND LINE OPTIONS:
     --load: download load tide model outputs (fes2014)
     --currents: download tide model current outputs (fes2012 and fes2014)
     --log: output log of files downloaded
-    -M X, --mode=X: Local permissions mode of the files downloaded
+    -M X, --mode X: Local permissions mode of the files downloaded
 
 PYTHON DEPENDENCIES:
     future: Compatibility layer between Python 2 and Python 3
         https://python-future.org/
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Updated 07/2020: add gzip option to compress output ascii and netCDF4 files
     Updated 06/2020: added netrc option for alternative authentication
     Updated 05/2019: new authenticated ftp host (changed 2018-05-31)
@@ -44,10 +45,10 @@ import os
 import io
 import gzip
 import netrc
-import getopt
 import shutil
 import tarfile
 import getpass
+import argparse
 import builtins
 import posixpath
 import calendar, time
@@ -217,83 +218,76 @@ def ftp_download_file(fid,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE):
         os.utime(local_file, (os.stat(local_file).st_atime, remote_mtime))
         os.chmod(local_file, MODE)
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' -U X, --user=X\t\tUsername for AVISO FTP servers')
-    print(' -N X, --netrc=X\tpath to .netrc file for authentication')
-    print(' --tide=X\t\tFES tide model to download')
-    print('\tFES1999\n\tFES2004\n\tFES2012\n\tFES2014')
-    print(' --load\t\t\tDownload load tide model outputs')
-    print(' --currents\t\tDownload tide model current outputs')
-    print(' -G, --gzip\t\tCompress output ascii and netCDF4 tide files')
-    print(' -M X, --mode=X\t\tPermission mode of files downloaded')
-    print(' -l, --log\t\tOutput log file')
-    today = time.strftime('%Y-%m-%d',time.localtime())
-    LOGFILE = 'AVISO_FES_tides_{0}.log'.format(today)
-    print('    Log file format: {}\n'.format(LOGFILE))
-
 #-- Main program that calls aviso_fes_tides()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','user=','netrc=','tide=','load',
-        'currents','gzip','log','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:],'hD:U:N:M:l',long_options)
-
+    parser = argparse.ArgumentParser(
+        description="""Downloads the FES (Finite Element Solution) global tide
+            model from AVISO.  Decompresses the model tar files into the
+            constituent files and auxiliary files.
+            """
+    )
     #-- command line parameters
-    DIRECTORY = os.getcwd()
-    USER = ''
-    NETRC = None
-    MODELS = ['FES2014']
-    LOAD = False
-    CURRENTS = False
-    GZIP = False
-    LOG = False
+    #-- AVISO FTP credentials
+    parser.add_argument('--user','-U',
+        type=str, default='',
+        help='Username for AVISO FTP servers')
+    parser.add_argument('--netrc','-N',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        help='Path to .netrc file for authentication')
+    #-- working data directory
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
+    #-- FES tide models
+    parser.add_argument('--tide','-T',
+        metavar='TIDE', type=str, nargs='+',
+        default=['FES2014'], choices=['FES1999','FES2004','FES2012','FES2014'],
+        help='FES tide model to download')
+    #-- download FES load tides
+    parser.add_argument('--load',
+        default=False, action='store_true',
+        help='Download load tide model outputs')
+    #-- download FES tidal currents
+    parser.add_argument('--currents',
+        default=False, action='store_true',
+        help='Download tide model current outputs')
+    #-- download FES tidal currents
+    parser.add_argument('--gzip','-G',
+        default=False, action='store_true',
+        help='Compress output ascii and netCDF4 tide files')
+    #-- Output log file in form
+    #-- AVISO_FES_tides_2002-04-01.log
+    parser.add_argument('--log','-l',
+        default=False, action='store_true',
+        help='Output log file')
     #-- permissions mode of the local directories and files (number in octal)
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            DIRECTORY = os.path.expanduser(arg)
-        elif opt in ("-U","--user"):
-            USER = arg
-        elif opt in ("-N","--netrc"):
-            NETRC = os.path.expanduser(arg)
-        elif opt in ("--tide",):
-            MODELS = arg.upper().split(',')
-        elif opt in ("--load",):
-            LOAD = True
-        elif opt in ("--currents",):
-            CURRENTS = True
-        elif opt in ("-G","--gzip",):
-            GZIP = True
-        elif opt in ("-l","--log"):
-            LOG = True
-        elif opt in ("-M","--mode"):
-            MODE = int(arg, 8)
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permission mode of directories and files downloaded')
+    args = parser.parse_args()
 
     #-- AVISO FTP Server hostname
     HOST = 'ftp.aviso.altimetry.fr'
     #-- get AVISO FTP Server credentials
-    if not USER and not NETRC:
+    if not args.user and not args.netrc:
         #-- check that AVISO FTP Server credentials were entered
-        USER = builtins.input('Username for {0}: '.format(HOST))
+        args.user=builtins.input('Username for {0}: '.format(HOST))
         #-- enter password securely from command-line
-        PASSWORD = getpass.getpass('Password for {0}@{1}: '.format(USER,HOST))
-    elif NETRC:
-        USER,LOGIN,PASSWORD = netrc.netrc(NETRC).authenticators(HOST)
+        PASSWORD=getpass.getpass('Password for {0}@{1}: '.format(args.user,HOST))
+    elif args.netrc:
+        args.user,LOGIN,PASSWORD=netrc.netrc(args.netrc).authenticators(HOST)
     else:
         #-- enter password securely from command-line
-        PASSWORD = getpass.getpass('Password for {0}@{1}: '.format(USER,HOST))
+        PASSWORD=getpass.getpass('Password for {0}@{1}: '.format(args.user,HOST))
 
     #-- check internet connection before attempting to run program
-    if check_connection(USER,PASSWORD):
-        for m in MODELS:
-            aviso_fes_tides(m,DIRECTORY=DIRECTORY,USER=USER,PASSWORD=PASSWORD,
-                LOAD=LOAD,CURRENTS=CURRENTS,GZIP=GZIP,LOG=LOG,MODE=MODE)
+    if check_connection(args.user,PASSWORD):
+        for m in args.tide:
+            aviso_fes_tides(m, DIRECTORY=args.directory, USER=args.user,
+                PASSWORD=PASSWORD, LOAD=args.load, CURRENTS=args.currents,
+                GZIP=args.gzip, LOG=args.log, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

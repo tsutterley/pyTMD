@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_icebridge_data.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (10/2020)
 Calculates load pole tide displacements for correcting Operation IceBridge
     elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -11,8 +11,8 @@ INPUTS:
     ATM1B, ATM icessn or LVIS file from NSIDC
 
 COMMAND LINE OPTIONS:
-    -D X, --directory=X: Working data directory
-    -M X, --mode=X: Permission mode of directories and files created
+    -D X, --directory X: Working data directory
+    -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
 PYTHON DEPENDENCIES:
@@ -34,6 +34,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output modified julian days as time variable
     Updated 08/2020: using builtin time operations.  python3 regular expressions
     Updated 03/2020: use read_ATM1b_QFIT_binary from repository
@@ -48,7 +49,7 @@ import os
 import re
 import time
 import h5py
-import getopt
+import argparse
 import numpy as np
 import pyTMD.time
 import scipy.interpolate
@@ -621,43 +622,38 @@ def compute_LPT_icebridge_data(tide_dir, arg, VERBOSE=False, MODE=0o775):
     #-- change the permissions level to MODE
     os.chmod(os.path.join(DIRECTORY,FILENAME), MODE)
 
-#-- PURPOSE: help module to describe the optional input parameters
-def usage():
-    print('\nHelp: {}'.format(os.path.basename(sys.argv[0])))
-    print(' -D X, --directory=X\tWorking data directory')
-    print(' -M X, --mode=X\t\tPermission mode of directories and files created')
-    print(' -V, --verbose\t\tOutput information about each created file\n')
-
 #-- Main program that calls compute_LPT_icebridge_data()
 def main():
     #-- Read the system arguments listed after the program
-    long_options = ['help','directory=','verbose','mode=']
-    optlist,arglist = getopt.getopt(sys.argv[1:], 'hD:VM:', long_options)
-
-    #-- directory with tide data
-    tide_dir = os.getcwd()
+    parser = argparse.ArgumentParser(
+        description="""Calculates load pole tide displacements for
+            correcting Operation IceBridge elevation data following IERS
+            Convention (2010) guidelines
+            """
+    )
+    #-- command line options
+    parser.add_argument('infile',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
+        help='Input Operation IceBridge file')
+    #-- set data directory containing the pole tide files
+    parser.add_argument('--directory','-D',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        default=os.getcwd(),
+        help='Working data directory')
     #-- verbosity settings
-    VERBOSE = False
+    parser.add_argument('--verbose','-V',
+        default=False, action='store_true',
+        help='Output information about each created file')
     #-- permissions mode of the local files (number in octal)
-    MODE = 0o775
-    for opt, arg in optlist:
-        if opt in ('-h','--help'):
-            usage()
-            sys.exit()
-        elif opt in ("-D","--directory"):
-            tide_dir = os.path.expanduser(arg)
-        elif opt in ("-V","--verbose"):
-            VERBOSE = True
-        elif opt in ("-M","--mode"):
-            MODE = int(arg, 8)
-
-    #-- enter input file from NSIDC as system argument
-    if not arglist:
-        raise Exception('No System Arguments Listed')
+    parser.add_argument('--mode','-M',
+        type=lambda x: int(x,base=8), default=0o775,
+        help='Permission mode of output file')
+    args = parser.parse_args()
 
     #-- run for each input file
-    for arg in arglist:
-        compute_LPT_icebridge_data(tide_dir, arg, VERBOSE=VERBOSE, MODE=MODE)
+    for arg in args.infile:
+        compute_LPT_icebridge_data(args.directory, arg,
+            VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':
