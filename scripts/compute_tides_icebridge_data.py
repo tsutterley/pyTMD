@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -20,8 +20,9 @@ COMMAND LINE OPTIONS:
         CATS0201
         CATS2008
         CATS2008_load
-        TPXO9-atlas-v2
         TPXO9-atlas
+        TPXO9-atlas-v2
+        TPXO9-atlas-v3
         TPXO9.1
         TPXO8-atlas
         TPXO7.2
@@ -76,6 +77,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 11/2020: added model constituents from TPX09-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output ocean and load tide as tide_ocean and tide_load
     Updated 08/2020: using builtin time operations.  python3 regular expressions
@@ -496,6 +498,22 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
+    elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
+        grid_file = 'grid_tpxo9_atlas_30_v3.nc.gz'
+        model_files = ['h_q1_tpxo9_atlas_30_v3.nc.gz','h_o1_tpxo9_atlas_30_v3.nc.gz',
+            'h_p1_tpxo9_atlas_30_v3.nc.gz','h_k1_tpxo9_atlas_30_v3.nc.gz',
+            'h_n2_tpxo9_atlas_30_v3.nc.gz','h_m2_tpxo9_atlas_30_v3.nc.gz',
+            'h_s2_tpxo9_atlas_30_v3.nc.gz','h_k2_tpxo9_atlas_30_v3.nc.gz',
+            'h_m4_tpxo9_atlas_30_v3.nc.gz','h_ms4_tpxo9_atlas_30_v3.nc.gz',
+            'h_mn4_tpxo9_atlas_30_v3.nc.gz','h_2n2_tpxo9_atlas_30_v3.nc.gz',
+            'h_mf_tpxo9_atlas_30_v3.nc.gz','h_mm_tpxo9_atlas_30_v3.nc.gz']
+        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        output_variable = 'tide_ocean'
+        variable_long_name = "Ocean Tide"
+        model_format = 'netcdf'
+        TYPE = 'z'
+        SCALE = 1.0/1000.0
     elif (TIDE_MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
         model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
@@ -890,10 +908,12 @@ def main():
         default=os.getcwd(),
         help='Working data directory')
     #-- tide model to use
-    model_choices = ('CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',
-        'TPXO9-atlas-v2','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
-        'AODTM-5','AOTIM-5','AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8',
-        'GOT4.8_load','GOT4.10','GOT4.10_load','FES2014','FES2014_load')
+    model_choices = ('CATS0201','CATS2008','CATS2008_load',
+        'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+        'TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
+        'AODTM-5','AOTIM-5','AOTIM-5-2018',
+        'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
+        'FES2014','FES2014_load')
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, default='CATS2008',
         choices=model_choices,

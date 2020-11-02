@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -22,8 +22,9 @@ COMMAND LINE OPTIONS:
         CATS0201
         CATS2008
         CATS2008_load
-        TPX09-atlas-v2
         TPXO9-atlas
+        TPXO9-atlas-v2
+        TPXO9-atlas-v3
         TPXO9.1
         TPXO8-atlas
         TPXO7.2
@@ -90,6 +91,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 11/2020: added model constituents from TPX09-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 08/2020: using builtin time operations
@@ -184,6 +186,22 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
+        model_format = 'netcdf'
+        TYPE = 'z'
+        SCALE = 1.0/1000.0
+    elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
+        grid_file = 'grid_tpxo9_atlas_30_v3.nc.gz'
+        model_files = ['h_q1_tpxo9_atlas_30_v3.nc.gz','h_o1_tpxo9_atlas_30_v3.nc.gz',
+            'h_p1_tpxo9_atlas_30_v3.nc.gz','h_k1_tpxo9_atlas_30_v3.nc.gz',
+            'h_n2_tpxo9_atlas_30_v3.nc.gz','h_m2_tpxo9_atlas_30_v3.nc.gz',
+            'h_s2_tpxo9_atlas_30_v3.nc.gz','h_k2_tpxo9_atlas_30_v3.nc.gz',
+            'h_m4_tpxo9_atlas_30_v3.nc.gz','h_ms4_tpxo9_atlas_30_v3.nc.gz',
+            'h_mn4_tpxo9_atlas_30_v3.nc.gz','h_2n2_tpxo9_atlas_30_v3.nc.gz',
+            'h_mf_tpxo9_atlas_30_v3.nc.gz','h_mm_tpxo9_atlas_30_v3.nc.gz']
+        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        variable = 'tide_ocean'
+        long_name = "Ocean_Tide"
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
@@ -496,10 +514,12 @@ def main():
         default=os.getcwd(),
         help='Working data directory')
     #-- tide model to use
-    model_choices = ('CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',
-        'TPXO9-atlas-v2','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
-        'AODTM-5','AOTIM-5','AOTIM-5-2018','GOT4.7','GOT4.7_load','GOT4.8',
-        'GOT4.8_load','GOT4.10','GOT4.10_load','FES2014','FES2014_load')
+    model_choices = ('CATS0201','CATS2008','CATS2008_load',
+        'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+        'TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
+        'AODTM-5','AOTIM-5','AOTIM-5-2018',
+        'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
+        'FES2014','FES2014_load')
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, default='CATS2008',
         choices=model_choices,
