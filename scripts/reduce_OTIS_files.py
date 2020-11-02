@@ -77,9 +77,9 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, TYPE=['z','uv'],
         model_format = 'ATLAS'
         EPSG = '4326'
     elif (TIDE_MODEL == 'TPXO9.1'):
-        grid_file = os.path.join(tide_dir,'TPX09.1','DATA','grid_tpxo9')
-        model_file['z'] = os.path.join(tide_dir,'TPX09.1','DATA','h_tpxo9.v1')
-        model_file['uv'] = os.path.join(tide_dir,'TPX09.1','DATA','u_tpxo9.v1')
+        grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
+        model_file['z'] = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
+        model_file['uv'] = os.path.join(tide_dir,'TPXO9.1','DATA','u_tpxo9.v1')
         model_format = 'OTIS'
         EPSG = '4326'
     elif (TIDE_MODEL == 'TPXO8-atlas'):

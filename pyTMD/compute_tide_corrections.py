@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (08/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -64,10 +64,11 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
+    Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 08/2020: using builtin time operations.
         calculate difference in leap seconds from start of epoch
         using conversion protocols following pyproj-2 updates
-    Updated 07/2020: added function docstrings, FES2014 and TPX09-atlas-v2
+    Updated 07/2020: added function docstrings, FES2014 and TPXO9-atlas-v2
         use merged delta time files combining biannual, monthly and daily files
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
     Written 03/2020
@@ -169,6 +170,19 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
         model_format = 'netcdf'
         model_type = 'z'
+        SCALE = 1.0/1000.0
+    elif (MODEL == 'TPXO9-atlas-v3'):
+        model_directory = os.path.join(DIRECTORY,'TPXO9_atlas_v3')
+        grid_file = 'grid_tpxo9_atlas_30_v3.nc.gz'
+        model_files = ['h_q1_tpxo9_atlas_30_v3.nc.gz','h_o1_tpxo9_atlas_30_v3.nc.gz',
+            'h_p1_tpxo9_atlas_30_v3.nc.gz','h_k1_tpxo9_atlas_30_v3.nc.gz',
+            'h_n2_tpxo9_atlas_30_v3.nc.gz','h_m2_tpxo9_atlas_30_v3.nc.gz',
+            'h_s2_tpxo9_atlas_30_v3.nc.gz','h_k2_tpxo9_atlas_30_v3.nc.gz',
+            'h_m4_tpxo9_atlas_30_v3.nc.gz','h_ms4_tpxo9_atlas_30_v3.nc.gz',
+            'h_mn4_tpxo9_atlas_30_v3.nc.gz','h_2n2_tpxo9_atlas_30_v3.nc.gz',
+            'h_mf_tpxo9_atlas_30_v3.nc.gz','h_mm_tpxo9_atlas_30_v3.nc.gz']
+        model_format = 'netcdf'
+        TYPE = 'z'
         SCALE = 1.0/1000.0
     elif (MODEL == 'TPXO9.1'):
         grid_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','grid_tpxo9')

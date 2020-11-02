@@ -22,6 +22,8 @@ python compute_tides_ICESat2_ATL03.py --directory <path_to_directory> --tide <mo
      * `'CATS2008'`
      * `'CATS2008_load'`
      * `'TPXO9-atlas'`
+     * `'TPXO9-atlas-v2'`
+     * `'TPXO9-atlas-v3'`
      * `'TPXO9.1'`
      * `'TPXO8-atlas'`
      * `'TPXO7.2'`

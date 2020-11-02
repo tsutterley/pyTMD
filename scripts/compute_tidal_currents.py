@@ -20,7 +20,7 @@ COMMAND LINE OPTIONS:
     -T X, --tide X: Tide model to use in correction
         CATS0201
         CATS2008
-        TPX09-atlas-v2
+        TPXO9-atlas-v2
         TPXO9-atlas
         TPXO9.1
         TPXO8-atlas
@@ -85,7 +85,7 @@ UPDATE HISTORY:
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 08/2020: using builtin time operations
     Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
-    Updated 06/2020: added version 2 of TPX09-atlas (TPX09-atlas-v2)
+    Updated 06/2020: added version 2 of TPXO9-atlas (TPXO9-atlas-v2)
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
     Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)

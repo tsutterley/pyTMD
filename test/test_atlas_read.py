@@ -37,7 +37,7 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
 #-- PURPOSE: Download TPXO8 ATLAS compact constituents from AWS S3 bucket
-def test_download_TPX08(aws_access_key_id,aws_secret_access_key,aws_region_name):
+def test_download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -47,7 +47,7 @@ def test_download_TPX08(aws_access_key_id,aws_secret_access_key,aws_region_name)
     s3 = session.resource('s3')
     bucket = s3.Bucket('pytmd')
 
-    #-- model parameters for TPX08-ATLAS
+    #-- model parameters for TPXO8-ATLAS
     model_directory = os.path.join(filepath,'tpxo8_atlas')
     #-- recursively create model directory
     os.makedirs(model_directory)
@@ -62,7 +62,7 @@ def test_download_TPX08(aws_access_key_id,aws_secret_access_key,aws_region_name)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
 
 #-- PURPOSE: Download TPXO9 ATLAS V2 netCDF constituents from AWS S3 bucket
-def test_download_TPX09_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
+def test_download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,

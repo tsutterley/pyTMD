@@ -27,6 +27,7 @@ This structure was chosen based on the different formats of each tide model.
 - TOPEX/POSEIDON global tide models
     * [TPXO9-atlas](https://www.tpxo.net/tpxo-products-and-registration): `<path_to_tide_models>/TPXO9_atlas/`
     * [TPXO9-atlas-v2](https://www.tpxo.net/tpxo-products-and-registration): `<path_to_tide_models>/TPXO9_atlas_v2/`
+    * [TPXO9-atlas-v3](https://www.tpxo.net/tpxo-products-and-registration): `<path_to_tide_models>/TPXO9_atlas_v3/`
     * [TPXO9.1](https://www.tpxo.net/tpxo-products-and-registration): `<path_to_tide_models>/TPXO9.1/DATA/`
     * [TPXO8-atlas](https://www.tpxo.net/tpxo-products-and-registration): `<path_to_tide_models>/tpxo8_atlas/`
     * TPXO7.2: `<path_to_tide_models>/TPXO7.2_tmd/`

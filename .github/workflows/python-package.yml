@@ -54,6 +54,8 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Install from source
       run: |
+        pip install zarr
+        pip install pandas
         pip install --no-deps .
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
