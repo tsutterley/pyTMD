@@ -7,7 +7,7 @@ compute_OPT_icebridge_data.py
 
 #### Calling Sequence
 ```bash
-python compute_OPT_icebridge_data.py --directory <path_to_directory> input_file
+python compute_OPT_icebridge_data.py input_file
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_OPT_icebridge_data.py)
 
@@ -15,7 +15,6 @@ python compute_OPT_icebridge_data.py --directory <path_to_directory> input_file
  1. `input_file`: input ATM1B, ATM icessn or LVIS file from NSIDC
 
 #### Command Line Options
- - `-D X`, `--directory X`: Working data directory
  - `-I X`, `--interpolate X`: Interpolation method
      * `'spline'`
      * `'linear'`

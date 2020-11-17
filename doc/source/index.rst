@@ -39,7 +39,6 @@ calculating radial pole tide displacements
     user_guide/bilinear_interp.md
     user_guide/calc_astrol_longitudes.md
     user_guide/calc_delta_time.md
-    user_guide/calc_iers_mean_pole.md
     user_guide/compute_equilibrium_tide.md
     user_guide/compute_LPET_elevations.md
     user_guide/compute_LPET_icebridge_data.md
@@ -59,6 +58,7 @@ calculating radial pole tide displacements
     user_guide/convert_julian.md
     user_guide/convert_ll_xy.md
     user_guide/count_leap_seconds.md
+    user_guide/eop.rst
     user_guide/iers_mean_pole.md
     user_guide/infer_minor_corrections.md
     user_guide/load_constituent.md

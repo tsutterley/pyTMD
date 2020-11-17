@@ -195,7 +195,7 @@ def get_leap_seconds():
     #-- return the GPS times of leap second occurance
     return leap_GPS[leap_GPS >= 0].astype(np.float)
 
-#-- PURPOSE: connects to servers and downloads leap esconds files
+#-- PURPOSE: connects to servers and downloads leap second files
 def update_leap_seconds(verbose=False, mode=0o775):
     """
     Connects to servers to download leap-seconds.list files from NIST servers

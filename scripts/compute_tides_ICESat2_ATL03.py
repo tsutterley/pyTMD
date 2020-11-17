@@ -3,6 +3,8 @@ u"""
 compute_tides_ICESat2_ATL03.py
 Written by Tyler Sutterley (11/2020)
 Calculates tidal elevations for correcting ICESat-2 photon height data
+Calculated at ATL03 segment level using reference photon geolocation and time
+Segment level corrections can be applied to the individual photon events (PEs)
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
