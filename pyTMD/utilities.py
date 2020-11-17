@@ -1,12 +1,13 @@
 """
 utilities.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (11/2020)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 11/2020: normalize source and destination paths in copy
     Updated 09/2020: copy from http and https to bytesIO object in chunks
         use netrc credentials if not entered from CDDIS functions
         generalize build opener function for different Earthdata instances
@@ -130,6 +131,8 @@ def copy(source, destination, verbose=False, move=False):
     verbose: print file transfer information
     move: remove the source file
     """
+    source = os.path.abspath(os.path.expanduser(source))
+    destination = os.path.abspath(os.path.expanduser(destination))
     print('{0} -->\n\t{1}'.format(source,destination)) if verbose else None
     shutil.copyfile(source, destination)
     shutil.copystat(source, destination)

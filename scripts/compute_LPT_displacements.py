@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -13,7 +13,6 @@ INPUTS:
     netCDF4 file with variables for spatial and temporal coordinates
 
 COMMAND LINE OPTIONS:
-    -D X, --directory X: Working data directory
     -F X, --format X: input and output data format
         csv (default)
         netCDF4
@@ -53,6 +52,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 11/2020: use internal mean pole and finals EOP files
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 10/2017: use mean pole coordinates from calc_mean_iers_pole.py
@@ -76,7 +76,7 @@ from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 
 #-- PURPOSE: compute the pole load tide radial displacements following
 #-- IERS conventions (2010)
-def compute_LPT_displacements(tide_dir, input_file, output_file,
+def compute_LPT_displacements(input_file, output_file,
     FORMAT='csv', VARIABLES=['time','lat','lon','data'],
     TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
     VERBOSE=False, MODE=0o775):
@@ -199,8 +199,8 @@ def compute_LPT_displacements(tide_dir, input_file, output_file,
         *dinput['data'] + (3.0/a_axis**2.0)*dinput['data']**2.0)
 
     #-- pole tide files (mean and daily)
-    mean_pole_file = os.path.join(tide_dir,'mean_pole_2017-10-23.tab')
-    pole_tide_file = os.path.join(tide_dir,'finals_all_2017-09-01.tab')
+    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     #-- calculate angular coordinates of mean pole at time
     mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,'2015')
     #-- read IERS daily polar motion values
@@ -250,11 +250,6 @@ def main():
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
         help='Output file')
-    #-- set data directory containing the pole tide files
-    parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
-        help='Working data directory')
     #-- input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5'),
@@ -290,7 +285,7 @@ def main():
         args.outfile = '{0}_{1}{2}'.format(*vars)
 
     #-- run load pole tide program for input file
-    compute_LPT_displacements(args.directory, args.infile, args.outfile,
+    compute_LPT_displacements(args.infile, args.outfile,
         FORMAT=args.format, VARIABLES=args.variables, TIME_UNITS=args.epoch,
         PROJECTION=args.projection, VERBOSE=args.verbose, MODE=args.mode)
 

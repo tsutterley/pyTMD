@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_icebridge_data.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates load pole tide displacements for correcting Operation IceBridge
     elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -11,7 +11,6 @@ INPUTS:
     ATM1B, ATM icessn or LVIS file from NSIDC
 
 COMMAND LINE OPTIONS:
-    -D X, --directory X: Working data directory
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -34,6 +33,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 11/2020: use internal mean pole and finals EOP files
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output modified julian days as time variable
     Updated 08/2020: using builtin time operations.  python3 regular expressions
@@ -354,7 +354,7 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute load pole tide radial displacements at data points and times
-def compute_LPT_icebridge_data(tide_dir, arg, VERBOSE=False, MODE=0o775):
+def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
 
     #-- extract file name and subsetter indices lists
     match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
@@ -506,9 +506,8 @@ def compute_LPT_icebridge_data(tide_dir, arg, VERBOSE=False, MODE=0o775):
         *h1 + (3.0/a_axis**2.0)*h1**2.0)
 
     #-- pole tide files (mean and daily)
-    # mean_pole_file = os.path.join(tide_dir,'mean-pole.tab')
-    mean_pole_file = os.path.join(tide_dir,'mean_pole_2017-10-23.tab')
-    pole_tide_file = os.path.join(tide_dir,'finals_all_2017-09-01.tab')
+    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     #-- read IERS daily polar motion values
     EOP = read_iers_EOP(pole_tide_file)
     #-- create cubic spline interpolations of daily polar motion values
@@ -635,11 +634,6 @@ def main():
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
         help='Input Operation IceBridge file')
-    #-- set data directory containing the pole tide files
-    parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
-        help='Working data directory')
     #-- verbosity settings
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
@@ -652,8 +646,7 @@ def main():
 
     #-- run for each input file
     for arg in args.infile:
-        compute_LPT_icebridge_data(args.directory, arg,
-            VERBOSE=args.verbose, MODE=args.mode)
+        compute_LPT_icebridge_data(arg, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

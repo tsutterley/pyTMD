@@ -7,7 +7,7 @@ compute_OPT_displacements.py
 
 #### Calling Sequence
 ```bash
-python compute_OPT_displacements.py --directory <path_to_directory> input_file output_file
+python compute_OPT_displacements.py input_file output_file
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_OPT_displacements.py)
 
@@ -16,7 +16,6 @@ python compute_OPT_displacements.py --directory <path_to_directory> input_file o
  2. `output_file`: name of output file
 
 #### Command Line Options
- - `-D X`, `--directory X`: Working data directory
  - `--format X`: input and output data format
      * `'csv'` (default)
      * `'netCDF4'`
