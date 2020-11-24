@@ -4,8 +4,8 @@ spatial.py
 
 Utilities for reading and writing spatial data
 
- - Can read ascii, netCDF4, HDF5 files
- - Can output to ascii, netCDF4 or HDF5 files
+ - Can read ascii, netCDF4, HDF5 or geotiff files
+ - Can output to ascii, netCDF4, HDF5 or geotiff files
 
 Calling Sequence
 ================
@@ -93,6 +93,18 @@ General Methods
             `varname` input data variable units in HDF5 file
 
 
+    .. method:: pyTMD.spatial.from_geotiff(filename, compression=None, verbose=False)
+
+        Read data from a geotiff file
+
+        Inputs: full path of input geotiff file
+
+        Options:
+            `compression` geotiff file is compressed using gzip
+
+            `verbose` print geotiff filename
+
+
     .. method:: pyTMD.spatial.to_ascii(output, attributes, filename, delimiter=',', columns=['time','lat','lon','tide'], header=False, verbose=False)
 
         Write data to an ascii file
@@ -148,3 +160,34 @@ General Methods
         Options:
 
             `verbose` print HDF5 file information
+
+
+    .. method:: pyTMD.spatial.to_geotiff(output, attributes, filename, verbose=False, varname='data', dtype=osgeo.gdal.GDT_Float64)
+
+        Write data to a HDF5 file
+
+        Inputs:
+
+            `output` python dictionary of output data
+
+            `attributes` python dictionary of output attributes
+
+            `filename` full path of output HDF5 file
+
+
+        Options:
+
+            `verbose` print geotiff filename
+
+            `varname` output variable name
+
+            `dtype` GDAL data type
+
+
+    .. method:: pyTMD.spatial.expand_dims(obj, varname='data')
+
+        Add a singleton dimension to a spatial dictionary if non-existent
+
+        Options:
+
+            variable name to modify

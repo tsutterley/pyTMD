@@ -1,20 +1,26 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (11/2020)
 
 Utilities for reading and writing spatial data
 
 PYTHON DEPENDENCIES:
-    numpy: Scientific Computing Tools For Python (https://numpy.org)
+    numpy: Scientific Computing Tools For Python
+        https://numpy.org
+        https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     netCDF4: Python interface to the netCDF C library
-        (https://unidata.github.io/netcdf4-python/netCDF4/index.html)
-    h5py: Pythonic interface to the HDF5 binary data format.
-        (https://www.h5py.org/)Data class
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
+    h5py: Pythonic interface to the HDF5 binary data format
+        https://www.h5py.org/
+    gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
+        https://pypi.python.org/pypi/GDAL
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 11/2020: output data as masked arrays if containing fill values
+        add functions to read from and write to geotiff image formats
     Written 09/2020
 """
 import os
@@ -27,6 +33,7 @@ import yaml
 import netCDF4
 import datetime
 import numpy as np
+import osgeo.gdal, osgeo.osr
 
 def case_insensitive_filename(filename):
     """
@@ -100,7 +107,7 @@ def from_ascii(filename, compression=None, verbose=False,
     else:
         #-- output spatial data and attributes
         dinput = {c:np.zeros((file_lines-header)) for c in columns}
-        dinput['attributes'] = None
+        dinput['attributes'] = {c:dict() for c in columns}
     #-- extract spatial data array
     #-- for each line in the file
     for i,line in enumerate(file_contents[header:]):
@@ -110,6 +117,11 @@ def from_ascii(filename, compression=None, verbose=False,
         #-- copy variables from column dict to output dictionary
         for c in columns:
             dinput[c][i] = np.float(column[c])
+    #-- convert to masked array if fill values
+    if '_FillValue' in dinput['attributes']['data'].keys():
+        dinput['data'] = np.ma.asarray(dinput['data'])
+        dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
+        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
     #-- return the spatial variables
     return dinput
 
@@ -166,6 +178,11 @@ def from_netCDF4(filename, compression=None, verbose=False,
                     getattr(fileID.variables[nc],ncattr)
             except (ValueError,AttributeError):
                 pass
+    #-- convert to masked array if fill values
+    if '_FillValue' in dinput['attributes']['data'].keys():
+        dinput['data'] = np.ma.asarray(dinput['data'])
+        dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
+        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
     #-- Closing the NetCDF file
     fileID.close()
     #-- return the spatial variables
@@ -217,7 +234,7 @@ def from_HDF5(filename, compression=None, verbose=False,
     variable_mapping = dict(x=xname,y=yname,data=varname,time=timename)
     #-- for each variable
     for key,h5 in variable_mapping.items():
-        #-- Getting the data from each NetCDF variable
+        #-- Getting the data from each HDF5 variable
         dinput[key] = np.copy(fileID[h5][:])
         #-- get attributes for the included variables
         dinput['attributes'][key] = {}
@@ -227,8 +244,73 @@ def from_HDF5(filename, compression=None, verbose=False,
                 dinput['attributes'][key][attr] = fileID[h5].attrs[attr]
             except (KeyError,AttributeError):
                 pass
-    #-- Closing the NetCDF file
+    #-- convert to masked array if fill values
+    if '_FillValue' in dinput['attributes']['data'].keys():
+        dinput['data'] = np.ma.asarray(dinput['data'])
+        dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
+        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
+    #-- Closing the HDF5 file
     fileID.close()
+    #-- return the spatial variables
+    return dinput
+
+def from_geotiff(filename, compression=None, verbose=False):
+    """
+    Read data from a geotiff file
+    Inputs: full path of input geotiff file
+    Options:
+        geotiff file is compressed using gzip
+        verbose output of file information
+    """
+    #-- Open the geotiff file for reading
+    if (compression == 'gzip'):
+        #-- read gzip compressed file and extract into memory-mapped object
+        mmap_name = "/vsimem/{0}".format(uuid.uuid4().hex)
+        with gzip.open(case_insensitive_filename(filename),'r') as f:
+            osgeo.gdal.FileFromMemBuffer(mmap_name, f.read())
+        #-- read as GDAL memory-mapped (diskless) geotiff dataset
+        ds = osgeo.gdal.Open(mmap_name)
+    else:
+        #-- read geotiff dataset
+        ds = osgeo.gdal.Open(case_insensitive_filename(filename))
+    #-- print geotiff file if verbose
+    print(filename) if verbose else None
+    #-- create python dictionary for output variables and attributes
+    dinput = {}
+    dinput['attributes'] = {c:dict() for c in ['x','y','data']}
+    #-- get the spatial projection reference information
+    srs = ds.GetSpatialRef()
+    dinput['attributes']['projection'] = srs.ExportToProj4()
+    dinput['attributes']['wkt'] = srs.ExportToWkt()
+    #-- get dimensions
+    xsize = ds.RasterXSize
+    ysize = ds.RasterYSize
+    #-- get geotiff info
+    info_geotiff = ds.GetGeoTransform()
+    dinput['attributes']['spacing'] = (info_geotiff[1],info_geotiff[5])
+    #-- calculate image extents
+    xmin = info_geotiff[0]
+    ymax = info_geotiff[3]
+    xmax = xmin + (xsize-1)*info_geotiff[1]
+    ymin = ymax + (ysize-1)*info_geotiff[5]
+    dinput['attributes']['extent'] = (xmin,xmax,ymin,ymax)
+    #-- x and y pixel center coordinates (converted from upper left)
+    dinput['x'] = xmin + info_geotiff[1]/2.0 + np.arange(xsize)*info_geotiff[1]
+    dinput['y'] = ymax + info_geotiff[5]/2.0 + np.arange(ysize)*info_geotiff[5]
+    #-- read full image with GDAL
+    dinput['data'] = ds.ReadAsArray()
+    #-- check if image has fill values
+    if ds.GetRasterBand(1).GetNoDataValue():
+        #-- convert to masked array if fill values
+        dinput['data'] = np.ma.asarray(dinput['data'])
+        #-- mask invalid values
+        dinput['data'].fill_value = ds.GetRasterBand(1).GetNoDataValue()
+        #-- create mask array for bad values
+        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
+        #-- set attribute for fill value
+        dinput['attributes']['data']['_FillValue'] = dinput['data'].fill_value
+    #-- close the dataset
+    ds = None
     #-- return the spatial variables
     return dinput
 
@@ -354,3 +436,67 @@ def to_HDF5(output, attributes, filename, verbose=False):
         print(list(fileID.keys()))
     #-- Closing the HDF5 file
     fileID.close()
+
+def to_geotiff(output, attributes, filename, verbose=False,
+    varname='data', dtype=osgeo.gdal.GDT_Float64):
+    """
+    Write data to a geotiff file
+    Inputs:
+        python dictionary of output data
+        python dictionary of output attributes
+        full path of output geotiff file
+    Options:
+        verbose output
+        output variable name
+        GDAL data type
+    """
+    #-- verify grid dimensions to be iterable
+    output = expand_dims(output, varname=varname)
+    #-- grid shape
+    ny,nx,nband = np.shape(output[varname])
+    #-- output as geotiff
+    driver = osgeo.gdal.GetDriverByName("GTiff")
+    #-- set up the dataset with compression options
+    ds = driver.Create(filename,nx,ny,nband,dtype,['COMPRESS=LZW'])
+    #-- top left x, w-e pixel resolution, rotation
+    #-- top left y, rotation, n-s pixel resolution
+    xmin,xmax,ymin,ymax = attributes['extent']
+    dx,dy = attributes['spacing']
+    ds.SetGeoTransform([xmin,dx,0,ymax,0,dy])
+    #-- set the spatial projection reference information
+    srs = osgeo.osr.SpatialReference()
+    srs.ImportFromWkt(attributes['wkt'])
+    #-- export
+    ds.SetProjection( srs.ExportToWkt() )
+    #-- for each band
+    for band in range(nband):
+        #-- set fill value for band
+        if '_FillValue' in attributes[varname].keys():
+            fill_value = attributes[varname]['_FillValue']
+            ds.GetRasterBand(band+1).SetNoDataValue(fill_value)
+        #-- write band to geotiff array
+        ds.GetRasterBand(band+1).WriteArray(output[varname][:,:,band])
+    #-- print filename if verbose
+    print(filename) if verbose else None
+    #-- close dataset
+    ds.FlushCache()
+
+def expand_dims(obj, varname='data'):
+    """
+    Add a singleton dimension to a spatial dictionary if non-existent
+    Options:
+        variable name to modify
+    """
+    #-- change time dimensions to be iterableinformation
+    try:
+        obj['time'] = np.atleast_1d(obj['time'])
+    except:
+        pass
+    #-- output spatial with a third dimension
+    if isinstance(varname,list):
+        for v in varname:
+            obj[v] = np.atleast_3d(obj[v])
+    elif isinstance(varname,str):
+        obj[varname] = np.atleast_3d(obj[varname])
+    #-- return reformed spatial dictionary
+    return obj

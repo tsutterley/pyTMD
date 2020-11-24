@@ -21,15 +21,13 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev octave
-        sudo apt-get install libhdf5-dev libnetcdf-dev
+        sudo apt-get install gdal-bin libgdal-dev libproj-dev proj-data proj-bin \
+            libgeos-dev libhdf5-dev libnetcdf-dev octave
+        export CPLUS_INCLUDE_PATH=/usr/include/gdal
+        export C_INCLUDE_PATH=/usr/include/gdal
         pip install --upgrade pip
+        pip install .
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Update required files
-      run: |
-        pip install --no-deps .
-        pytest test/test_leap_seconds.py
     - name: Test with pytest
       run: |
         pytest test/test_leap_seconds.py test/test_time.py test/test_eop.py

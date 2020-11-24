@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
     csv file with columns for spatial and temporal coordinates
     HDF5 file with variables for spatial and temporal coordinates
     netCDF4 file with variables for spatial and temporal coordinates
+    geotiff file with bands in spatial coordinates
 
 COMMAND LINE OPTIONS:
     -F X, --format X: input and output data format
@@ -17,8 +18,14 @@ COMMAND LINE OPTIONS:
     -v X, --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5 and netCDF4 files: time, y, x and data variable names
+    -H X, --header X: number of header lines for csv files
+    -t X, --type X: input data type
+        drift: drift buoys or satellite/airborne altimetry (time per data point)
+        grid: spatial grids or images (single time for all data points)
     -E X, --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
+    -d X, --deltatime X: Input delta time for files without date information
+        can be set to 0 to use exact calendar date from epoch
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -V, --verbose: Verbose output of processing run
@@ -34,6 +41,8 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
+    gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
+        https://pypi.python.org/pypi/GDAL
     dateutil: powerful extensions to datetime
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
@@ -48,6 +57,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 11/2020: added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
     Written 09/2020
 """
@@ -68,8 +78,8 @@ from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute long-period equilibrium tides at points and times
 def compute_LPET_elevations(input_file, output_file,
-    FORMAT='csv', VARIABLES=['time','lat','lon','data'],
-    TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
+    FORMAT='csv', VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
+    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
     VERBOSE=False, MODE=0o775):
 
     #-- output netCDF4 and HDF5 file attributes
@@ -100,7 +110,7 @@ def compute_LPET_elevations(input_file, output_file,
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=0, verbose=VERBOSE)
+            header=HEADER, verbose=VERBOSE)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
@@ -109,6 +119,14 @@ def compute_LPET_elevations(input_file, output_file,
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
             verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        #-- copy global geotiff attributes for projection and grid parameters
+        for att_name in ['projection','wkt','spacing','extent']:
+            attrib[att_name] = dinput['attributes'][att_name]
+    #-- update time variable if entered as argument
+    if TIME is not None:
+        dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
     #-- could try to extract projection attributes from netCDF4 and HDF5 files
@@ -118,7 +136,13 @@ def compute_LPET_elevations(input_file, output_file,
         crs1 = pyproj.CRS.from_string(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(dinput['x'].flatten(),dinput['y'].flatten())
+    if (TYPE == 'grid'):
+        ny,nx = (len(dinput['y']),len(dinput['x']))
+        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
+        lon,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+    elif (TYPE == 'drift'):
+        lon,lat = transformer.transform(dinput['x'].flatten(),
+            dinput['y'].flatten())
 
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
@@ -133,9 +157,17 @@ def compute_LPET_elevations(input_file, output_file,
     #-- interpolate delta times from calendar dates to tide time
     delta_file = get_data_path(['data','merged_deltat.data'])
     deltat = calc_delta_time(delta_file, tide_time)
+    #-- number of time points
+    nt = len(tide_time)
 
     #-- predict long-period equilibrium tides at time
-    tide_lpe = compute_equilibrium_tide(tide_time + deltat, lat)
+    if (TYPE == 'grid'):
+        tide_lpe = np.zeros((ny,nx,nt))
+        for i in range(nt):
+            lpet = compute_equilibrium_tide(tide_time[i] + deltat[i], lat)
+            tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
+    elif (TYPE == 'drift'):
+        tide_lpe = compute_equilibrium_tide(tide_time + deltat, lat)
 
     #-- output to file
     output = dict(time=tide_time,lon=lon,lat=lat,tide_lpe=tide_lpe)
@@ -146,6 +178,9 @@ def compute_LPET_elevations(input_file, output_file,
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+            varname='tide_lpe')
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
@@ -167,17 +202,32 @@ def main():
         help='Output file')
     #-- input and output data format
     parser.add_argument('--format','-F',
-        type=str, default='csv', choices=('csv','netCDF4','HDF5'),
+        type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Input and output data format')
     #-- variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
         type=str, nargs='+', default=['time','lat','lon','data'],
         help='Variable names of data in input file')
+    #-- number of header lines for csv files
+    parser.add_argument('--header','-H',
+        type=int, default=0,
+        help='Number of header lines for csv files')
+    #-- input data type
+    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
+    #-- grid: spatial grids or images (single time for all data points)
+    parser.add_argument('--type','-t',
+        type=str, default='drift',
+        choices=('drift','grid'),
+        help='Input data type')
     #-- time epoch (default Modified Julian Days)
     #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
     parser.add_argument('--epoch','-E',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
+    #-- input delta time for files without date information
+    parser.add_argument('--deltatime','-d',
+        type=float, nargs='+',
+        help='Input delta time for files without date variables')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
@@ -200,9 +250,10 @@ def main():
         args.outfile = '{0}_{1}{2}'.format(*vars)
 
     #-- run long period equilibrium tide program for input file
-    compute_LPET_elevations(args.infile, args.outfile,
-        FORMAT=args.format, VARIABLES=args.variables, TIME_UNITS=args.epoch,
-        PROJECTION=args.projection, VERBOSE=args.verbose, MODE=args.mode)
+    compute_LPET_elevations(args.infile, args.outfile, FORMAT=args.format,
+        VARIABLES=args.variables, HEADER=args.header, TYPE=args.type,
+        TIME_UNITS=args.epoch, TIME=args.deltatime, PROJECTION=args.projection,
+        VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

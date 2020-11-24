@@ -453,7 +453,7 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     #-- convert calendar dates into year decimal
     tdec = convert_calendar_decimal(YY,MM,DAY=DD,HOUR=HH,MINUTE=MN,SECOND=SS)
     #-- elevation
-    h1 = dinput['data'][:]
+    h1 = np.copy(dinput['data'][:])
 
     #-- degrees to radians
     dtr = np.pi/180.0
@@ -502,8 +502,9 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     gamma_0 = gamma_a*(1.0 + f_2*np.cos(theta)**2.0 +
         f_4*np.sin(np.pi*latitude_geocentric/180.0)**4.0)
     #-- Normal gravity at height h. p. 82, Eqn.(2-215)
-    gamma_h = gamma_0*(1.0-(2.0/a_axis)*(1.0+flat+m-2.0*flat*np.cos(theta)**2.0)
-        *h1 + (3.0/a_axis**2.0)*h1**2.0)
+    gamma_h = gamma_0*(1.0 -
+        (2.0/a_axis)*(1.0+flat+m-2.0*flat*np.cos(theta)**2.0)*h1 + \
+        (3.0/a_axis**2.0)*h1**2.0)
 
     #-- pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
