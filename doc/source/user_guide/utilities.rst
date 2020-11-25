@@ -131,7 +131,7 @@ General Methods
         `HOST`: remote http host
 
 
-.. method:: pyTMD.utilities.from_http(HOST,timeout=None,local=None,hash='',chunk=16384,verbose=False,mode=0o775)
+.. method:: pyTMD.utilities.from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',chunk=16384,verbose=False,mode=0o775)
 
     Download a file from a http host
 
@@ -142,6 +142,8 @@ General Methods
     Keyword arguments:
 
         `timeout`: timeout in seconds for blocking operations
+
+        `context`: SSL context for url opener object
 
         `local`: path to local file
 

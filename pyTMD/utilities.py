@@ -8,6 +8,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2020: normalize source and destination paths in copy
+        make context an optional keyword argument in from_http
     Updated 09/2020: copy from http and https to bytesIO object in chunks
         use netrc credentials if not entered from CDDIS functions
         generalize build opener function for different Earthdata instances
@@ -278,8 +279,8 @@ def check_connection(HOST):
         return True
 
 #-- PURPOSE: download a file from a http host
-def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,
-    verbose=False,mode=0o775):
+def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
+    chunk=16384,verbose=False,mode=0o775):
     """
     Download a file from a http host
 
@@ -290,6 +291,7 @@ def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,
     Keyword arguments
     -----------------
     timeout: timeout in seconds for blocking operations
+    context: SSL context for url opener object
     local: path to local file
     hash: MD5 hash of local file
     chunk: chunk size for transfer encoding
@@ -304,7 +306,7 @@ def from_http(HOST,timeout=None,local=None,hash='',chunk=16384,
     try:
         #-- Create and submit request.
         request = urllib2.Request(posixpath.join(*HOST))
-        response = urllib2.urlopen(request,timeout=timeout,context=ssl.SSLContext())
+        response = urllib2.urlopen(request,timeout=timeout,context=context)
     except:
         raise Exception('Download error from {0}'.format(posixpath.join(*HOST)))
     else:

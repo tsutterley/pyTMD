@@ -53,7 +53,7 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=path_to_tide_models,
     METHOD='spline', FILL_VALUE=np.nan)
 ```
 
-For users wanting to calculate tidal elevations or currents for a series of files, the [`compute_tidal_elevations.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_elevations.py) and [`compute_tidal_currents.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py) programs cover most use cases.  They take an input file (in csv, netCDF4 or HDF5) and compute the tidal elevations or currents (zonal and meridonal) for each point.
+For users wanting to calculate tidal elevations or currents for a series of files, the [`compute_tidal_elevations.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_elevations.py) and [`compute_tidal_currents.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py) programs cover most use cases.  They take an input file (in csv, netCDF4, HDF5 or geotiff) and compute the tidal elevations or currents (zonal and meridional) for each point.
 ```bash
 python compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
     --format HDF5 --variables t_sec lat lon h_cor --projection 4326 \

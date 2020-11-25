@@ -11,17 +11,25 @@ INPUTS:
     csv file with columns for spatial and temporal coordinates
     HDF5 file with variables for spatial and temporal coordinates
     netCDF4 file with variables for spatial and temporal coordinates
+    geotiff file with bands in spatial coordinates
 
 COMMAND LINE OPTIONS:
     -F X, --format X: input and output data format
         csv (default)
         netCDF4
         HDF5
+        geotiff
     -v X, --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5 and netCDF4 files: time, y, x and data variable names
+    -H X, --header X: number of header lines for csv files
+    -t X, --type X: input data type
+        drift: drift buoys or satellite/airborne altimetry (time per data point)
+        grid: spatial grids or images (single time for all data points)
     -E X, --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
+    -d X, --deltatime X: Input delta time for files without date information
+        can be set to 0 to use exact calendar date from epoch
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -I X, --interpolate X: Interpolation method
@@ -41,6 +49,8 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
+    gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
+        https://pypi.python.org/pypi/GDAL
     dateutil: powerful extensions to datetime
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
@@ -58,6 +68,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2020: use internal mean pole and finals EOP files
+        added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
@@ -84,8 +95,8 @@ from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 #-- PURPOSE: compute the ocean pole load tide radial displacements following
 #-- IERS conventions (2010) and using data from Desai (2002)
 def compute_OPT_displacements(tide_dir, input_file, output_file,
-    FORMAT='csv', VARIABLES=['time','lat','lon','data'],
-    TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
+    FORMAT='csv', VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
+    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
     METHOD='spline', VERBOSE=False, MODE=0o775):
 
     #-- invalid value
@@ -120,7 +131,7 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=0, verbose=VERBOSE)
+            header=HEADER, verbose=VERBOSE)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
@@ -129,6 +140,14 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
             verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        #-- copy global geotiff attributes for projection and grid parameters
+        for att_name in ['projection','wkt','spacing','extent']:
+            attrib[att_name] = dinput['attributes'][att_name]
+    #-- update time variable if entered as argument
+    if TIME is not None:
+        dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
     #-- could try to extract projection attributes from netCDF4 and HDF5 files
@@ -138,7 +157,13 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
         crs1 = pyproj.CRS.from_string(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(dinput['x'].flatten(),dinput['y'].flatten())
+    if (TYPE == 'grid'):
+        ny,nx = (len(dinput['y']),len(dinput['x']))
+        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
+        longitude,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+    elif (TYPE == 'drift'):
+        longitude,lat = transformer.transform(dinput['x'].flatten(),
+            dinput['y'].flatten())
 
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
@@ -154,8 +179,8 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     Y,M,D,h,m,s = convert_julian(2400000.5 + MJD, FORMAT='tuple')
     #-- calculate time in year-decimal format
     time_decimal = convert_calendar_decimal(Y,M,DAY=D,HOUR=h,MINUTE=m,SECOND=s)
-    #-- number of data points
-    n_time = len(time_decimal)
+    #-- number of time points
+    nt = len(time_decimal)
 
     #-- degrees to radians and arcseconds to radians
     dtr = np.pi/180.0
@@ -174,15 +199,17 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     #-- tidal love number differential (1 + kl - hl) for pole tide frequencies
     gamma = 0.6870 + 0.0036j
 
+    #-- flatten heights
+    h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     #-- convert from geodetic latitude to geocentric latitude
     #-- geodetic latitude in radians
     latitude_geodetic_rad = lat*dtr
     #-- prime vertical radius of curvature
     N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     #-- calculate X, Y and Z from geodetic latitude and longitude
-    X = (N+dinput['data'])*np.cos(latitude_geodetic_rad)*np.cos(lon*dtr)
-    Y = (N+dinput['data'])*np.cos(latitude_geodetic_rad)*np.sin(lon*dtr)
-    Z = (N * (1.0 - ecc1**2.0) + dinput['data']) * np.sin(latitude_geodetic_rad)
+    X = (N+h)*np.cos(latitude_geodetic_rad)*np.cos(longitude*dtr)
+    Y = (N+h)*np.cos(latitude_geodetic_rad)*np.sin(longitude*dtr)
+    Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
     #-- calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
 
@@ -217,25 +244,35 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((n_time),dtype=np.complex128)
-        UR.real = f1.ev(lon,latitude_geocentric)
-        UR.imag = f2.ev(lon,latitude_geocentric)
+        UR = np.zeros((len(latitude_geocentric)),dtype=np.complex128)
+        UR.real = f1.ev(longitude,latitude_geocentric)
+        UR.imag = f2.ev(longitude,latitude_geocentric)
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
             iur[:,::-1], method=METHOD)
-        UR = r1.__call__(np.c_[lon,latitude_geocentric])
+        UR = r1.__call__(np.c_[longitude,latitude_geocentric])
 
     #-- calculate radial displacement at time
-    Urad = np.ma.zeros((n_time),fill_value=fill_value)
-    Urad.data[:] = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
-        (my*gamma.real - mx*gamma.imag)*UR.imag)
-    #-- replace fill values
-    Urad.mask = np.isnan(Urad.data)
+    if (TYPE == 'grid'):
+        Urad = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
+        Urad.mask = np.zeros((ny,nx,nt),dtype=np.bool)
+        for i in range(nt):
+            URAD = K*atr*np.real((mx[i]*gamma.real + my[i]*gamma.imag)*UR.real +
+                (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag)
+            #-- reform grid
+            Urad.data[:,:,i] = np.reshape(URAD, (ny,nx))
+            Urad.mask[:,:,i] = np.isnan(URAD)
+    elif (TYPE == 'drift'):
+        Urad = np.ma.zeros((nt),fill_value=fill_value)
+        Urad.data[:] = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
+            (my*gamma.real - mx*gamma.imag)*UR.imag)
+        Urad.mask = np.isnan(Urad.data)
+    #-- replace invalid data with fill values
     Urad.data[Urad.mask] = Urad.fill_value
 
     #-- output to file
-    output = dict(time=MJD,lon=lon,lat=lat,tide_oc_pole=Urad)
+    output = dict(time=MJD,lon=longitude,lat=lat,tide_oc_pole=Urad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
             columns=['time','lat','lon','tide_oc_pole'], verbose=VERBOSE)
@@ -243,6 +280,9 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+            varname='tide_oc_pole')
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
@@ -264,12 +304,23 @@ def main():
         help='Output file')
     #-- input and output data format
     parser.add_argument('--format','-F',
-        type=str, default='csv', choices=('csv','netCDF4','HDF5'),
+        type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Input and output data format')
     #-- variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
         type=str, nargs='+', default=['time','lat','lon','data'],
         help='Variable names of data in input file')
+    #-- number of header lines for csv files
+    parser.add_argument('--header','-H',
+        type=int, default=0,
+        help='Number of header lines for csv files')
+    #-- input data type
+    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
+    #-- grid: spatial grids or images (single time for all data points)
+    parser.add_argument('--type','-t',
+        type=str, default='drift',
+        choices=('drift','grid'),
+        help='Input data type')
     #-- time epoch (default Modified Julian Days)
     #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
     parser.add_argument('--epoch','-E',
@@ -302,10 +353,10 @@ def main():
         args.outfile = '{0}_{1}{2}'.format(*vars)
 
     #-- run ocean pole tide program for input file
-    compute_OPT_displacements(args.infile, args.outfile,
-        FORMAT=args.format, VARIABLES=args.variables, TIME_UNITS=args.epoch,
-        PROJECTION=args.projection, METHOD=args.interpolate,
-        VERBOSE=args.verbose, MODE=args.mode)
+    compute_OPT_displacements(args.infile, args.outfile, FORMAT=args.format,
+        VARIABLES=args.variables, HEADER=args.header, TYPE=args.type,
+        TIME_UNITS=args.epoch, TIME=args.deltatime, PROJECTION=args.projection,
+        METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

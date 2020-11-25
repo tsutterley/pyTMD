@@ -36,6 +36,7 @@ pyTMD
  - [dateutil: powerful extensions to datetime](https://dateutil.readthedocs.io/en/stable/)  
  - [lxml: processing XML and HTML in Python](https://pypi.python.org/pypi/lxml)  
  - [PyYAML: YAML parser and emitter for Python](https://github.com/yaml/pyyaml)  
+ - [gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)](https://pypi.python.org/pypi/GDAL)  
  - [h5py: Python interface for Hierarchal Data Format 5 (HDF5)](https://www.h5py.org/)  
  - [netCDF4: Python interface to the netCDF C library](https://unidata.github.io/netcdf4-python/)  
  - [matplotlib: Python 2D plotting library](https://matplotlib.org/)  

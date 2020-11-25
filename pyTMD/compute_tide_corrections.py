@@ -23,7 +23,7 @@ OPTIONS:
         default: J2000 (seconds since 2000-01-01T00:00:00)
     TYPE: input data type
         drift: drift buoys or satellite/airborne altimetry (time per data point)
-        grid: spatial grids or images (single time per image)
+        grid: spatial grids or images (single time for all data points)
     TIME: time type if need to compute leap seconds to convert to UTC
         GPS: leap seconds needed
         TAI: leap seconds needed (TAI = GPS + 19 seconds)

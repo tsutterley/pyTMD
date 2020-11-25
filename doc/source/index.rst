@@ -42,6 +42,8 @@ calculating radial pole tide displacements
     user_guide/compute_equilibrium_tide.md
     user_guide/compute_LPET_elevations.md
     user_guide/compute_LPET_icebridge_data.md
+    user_guide/compute_LPET_ICESat2_ATL03.md
+    user_guide/compute_LPET_ICESat2_ATL06.md
     user_guide/compute_LPT_displacements.md
     user_guide/compute_LPT_icebridge_data.md
     user_guide/compute_OPT_displacements.md

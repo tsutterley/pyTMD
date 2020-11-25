@@ -1,4 +1,5 @@
-"""
+#!/usr/bin/env python
+u"""
 compute_equilibrium_tide.py (08/2020)
 Calculates the long-period equilibrium ocean tides
 Uses the summation of fifteen tidal spectral lines from the
@@ -16,6 +17,9 @@ REFERENCES:
     Cartwright & Edden, Geophys. J. R.A.S., 33, 253, 1973.
 
 UPDATE HISTORY:
+    Updated 11/2020: check sizes of inputs to check if using grid or drift data
+        drift: drift buoys or satellite/airborne altimetry (time per data point)
+        grid: spatial grids or images (single time for all data points)
     Updated 08/2020: use Load love number value of 0.693 for gamma_2
     Written 08/2020
 """
@@ -30,9 +34,10 @@ def compute_equilibrium_tide(t, lat):
     DPD = np.array([13.1763965,0.9856473,0.1114041,0.0529539])
 
     #-- number of input points
-    npts = len(t)
+    nt = len(np.atleast_1d(t))
+    nlat = len(np.atleast_1d(lat))
     #-- compute 4 principal mean longitudes in radians at delta time (SHPN)
-    SHPN = np.zeros((4,npts))
+    SHPN = np.zeros((4,nt))
     for N in range(4):
         #-- convert time from days relative to 1992-01-01 to 1987-01-01
         ANGLE = PHC[N] + (t + 1826.0)*DPD[N]
@@ -40,8 +45,8 @@ def compute_equilibrium_tide(t, lat):
 
     #-- assemble long-period tide potential from 15 CTE terms greater than 1 mm
     #-- nodal term is included but not the constant term.
-    PH = np.zeros((npts))
-    Z = np.zeros((npts))
+    PH = np.zeros((nt))
+    Z = np.zeros((nt))
     Z += 2.79*np.cos(SHPN[3,:]) - 0.49*np.cos(SHPN[1,:] - \
         283.0*np.pi/180.0) - 3.10*np.cos(2.0*SHPN[1,:])
     PH += SHPN[0,:]
@@ -60,5 +65,9 @@ def compute_equilibrium_tide(t, lat):
     gamma_2 = 0.693
     P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)
     #-- calculate long-period equilibrium tide and convert to meters
-    lpet = gamma_2*np.sqrt((4.0 + 1.0)/(4.0*np.pi))*P20*(Z/100.0)
+    if (nlat != nt):
+        lpet = gamma_2*np.sqrt((4.0+1.0)/(4.0*np.pi))*np.outer(P20,Z/100.0)
+    else:
+        lpet = gamma_2*np.sqrt((4.0+1.0)/(4.0*np.pi))*P20*(Z/100.0)
+    #-- return the long-period equilibrium tides
     return lpet

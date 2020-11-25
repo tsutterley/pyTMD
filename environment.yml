@@ -12,6 +12,7 @@ dependencies:
   - matplotlib
   - netCDF4
   - h5py
+  - gdal
   - lxml
   - pyyaml
   - cartopy

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (11/2020)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -14,6 +14,7 @@ INPUTS:
     csv file with columns for spatial and temporal coordinates
     HDF5 file with variables for spatial and temporal coordinates
     netCDF4 file with variables for spatial and temporal coordinates
+    geotiff file with bands in spatial coordinates
 
 COMMAND LINE OPTIONS:
     -D X, --directory X: Working data directory
@@ -34,12 +35,19 @@ COMMAND LINE OPTIONS:
         csv (default)
         netCDF4
         HDF5
+        geotiff
     --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5 and netCDF4 files: time, y, x and data variable names
+    -H X, --header X: number of header lines for csv files
+    -t X, --type X: input data type
+        drift: drift buoys or satellite/airborne altimetry (time per data point)
+        grid: spatial grids or images (single time for all data points)
     --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
-    --projection X: spatial projection as EPSG code or PROJ4 string
+    -d X, --deltatime X: Input delta time for files without date information
+        can be set to 0 to use exact calendar date from epoch
+    -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -I X, --interpolate X: Interpolation method
         spline
@@ -59,6 +67,8 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
+    gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
+        https://pypi.python.org/pypi/GDAL
     dateutil: powerful extensions to datetime
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
@@ -80,6 +90,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 11/2020: added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
     Forked 09/2020 from compute_tidal_elevations.py
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
@@ -105,6 +116,7 @@ import pyTMD.spatial
 from pyTMD.utilities import get_data_path
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
+from pyTMD.predict_tide import predict_tide
 from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
@@ -114,8 +126,8 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_currents(tide_dir, input_file, output_file,
     TIDE_MODEL=None, FORMAT='csv', VARIABLES=['time','lat','lon','data'],
-    TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
-    METHOD='spline', VERBOSE=False, MODE=0o775):
+    HEADER=0, TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
+    TIME=None, PROJECTION='4326', METHOD='spline', VERBOSE=False, MODE=0o775):
 
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -152,7 +164,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
         model_format = 'netcdf'
         TYPES = ['u','v']
-        SCALE = 1.0/100.0
+        model_scale = 1.0/100.0
         GZIP = True
     elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
@@ -173,7 +185,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         model_format = 'netcdf'
         TYPES = ['u','v']
-        SCALE = 1.0/100.0
+        model_scale = 1.0/100.0
         GZIP = True
     elif (TIDE_MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
@@ -193,8 +205,6 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_tmd','u_tpxo7.2')
         reference = 'http://volkov.oce.orst.edu/tides/global.html'
-        output_variable = 'tide_ocean'
-        variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
         TYPES = ['u','v']
@@ -240,7 +250,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             'auxiliary-products/global-tide-fes.html')
         model_format = 'FES'
         TYPES = ['u','v']
-        SCALE = 1.0/100.0
+        model_scale = 1.0/100.0
 
     #-- invalid value
     fill_value = -9999.0
@@ -280,7 +290,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=0, verbose=VERBOSE)
+            header=HEADER, verbose=VERBOSE)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
@@ -289,6 +299,14 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
             verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        #-- copy global geotiff attributes for projection and grid parameters
+        for att_name in ['projection','wkt','spacing','extent']:
+            attrib[att_name] = dinput['attributes'][att_name]
+    #-- update time variable if entered as argument
+    if TIME is not None:
+        dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
     #-- could try to extract projection attributes from netCDF4 and HDF5 files
@@ -298,7 +316,12 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         crs1 = pyproj.CRS.from_string(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(dinput['x'].flatten(),dinput['y'].flatten())
+    if (TYPE == 'grid'):
+        ny,nx = (len(dinput['y']),len(dinput['x']))
+        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
+        lon,lat = transformer.transform(gridx,gridy)
+    elif (TYPE == 'drift'):
+        lon,lat = transformer.transform(dinput['x'],dinput['y'])
 
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
@@ -310,26 +333,28 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- convert time from units to days since 1992-01-01T00:00:00
     tide_time = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
         epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
-    n_time = len(tide_time)
+    #-- number of time points
+    nt = len(tide_time)
 
     #-- python dictionary with output data
     output = {'time':tide_time,'lon':lon,'lat':lat}
     #-- iterate over u and v currents
-    for TYPE in TYPES:
+    for t in TYPES:
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
-            amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file,
-                model_file, EPSG, TYPE=TYPE, METHOD=METHOD, GRID=model_format)
-            deltat = np.zeros_like(tide_time)
+            amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
+                grid_file, model_file, EPSG, TYPE=t, METHOD=METHOD,
+                GRID=model_format)
+            deltat = np.zeros((nt))
         elif (model_format == 'netcdf'):
-            amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-                grid_file, model_files[TYPE], TYPE=TYPE, METHOD=METHOD,
-                SCALE=SCALE, GZIP=GZIP)
-            deltat = np.zeros_like(tide_time)
+            amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
+                model_directory, grid_file, model_files[t], TYPE=t,
+                METHOD=METHOD, SCALE=model_scale, GZIP=GZIP)
+            deltat = np.zeros((nt))
         elif (model_format == 'FES'):
-            amp,ph = extract_FES_constants(lon, lat, model_directory[TYPE],
-                model_files, TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
-                SCALE=SCALE)
+            amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
+                model_directory[t], model_files, TYPE=t, VERSION=TIDE_MODEL,
+                METHOD=METHOD, SCALE=model_scale)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
@@ -340,24 +365,43 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         hc = amp*np.exp(cph)
 
         #-- predict tidal currents at time and infer minor corrections
-        output[TYPE] = np.ma.zeros((n_time), fill_value=fill_value)
-        output[TYPE].mask = np.any(hc.mask,axis=1)
-        output[TYPE].data[:] = predict_tide_drift(tide_time, hc, c,
-            DELTAT=deltat, CORRECTIONS=model_format)
-        minor = infer_minor_corrections(tide_time, hc, c,
-            DELTAT=deltat, CORRECTIONS=model_format)
-        output[TYPE].data[:] += minor.data[:]
+        if (TYPE == 'grid'):
+            output[t] = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
+            output[t].mask = np.zeros((ny,nx,nt),dtype=np.bool)
+            for i in range(nt):
+                TIDE = predict_tide(tide_time[i], hc, c,
+                    DELTAT=deltat[i], CORRECTIONS=model_format)
+                MINOR = infer_minor_corrections(tide_time[i], hc, c,
+                    DELTAT=deltat[i], CORRECTIONS=model_format)
+                #-- add major and minor components and reform grid
+                output[t][:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
+                output[t].mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask),
+                    (ny,nx))
+        elif (TYPE == 'drift'):
+            output[t] = np.ma.zeros((nt), fill_value=fill_value)
+            output[t].mask = np.any(hc.mask,axis=1)
+            output[t].data[:] = predict_tide_drift(tide_time, hc, c,
+                DELTAT=deltat, CORRECTIONS=model_format)
+            minor = infer_minor_corrections(tide_time, hc, c,
+                DELTAT=deltat, CORRECTIONS=model_format)
+            output[t].data[:] += minor.data[:]
         #-- replace invalid values with fill value
-        output[TYPE].data[output[TYPE].mask] = output[TYPE].fill_value
+        output[t].data[output[t].mask] = output[t].fill_value
 
     #-- output to file
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
-            columns=['time','lat','lon',output_variable], verbose=VERBOSE)
+            columns=['time','lat','lon','u','v'], verbose=VERBOSE)
     elif (FORMAT == 'netCDF4'):
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        #-- merge current variables into a single variable
+        output['data'] = np.concatenate((output['u'],output['v']),axis=-1)
+        attrib['data'] = {'_FillValue':fill_value}
+        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+            varname='data')
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
@@ -392,17 +436,32 @@ def main():
         help='Tide model to use in calculating currents')
     #-- input and output data format
     parser.add_argument('--format','-F',
-        type=str, default='csv', choices=('csv','netCDF4','HDF5'),
+        type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Input and output data format')
     #-- variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
         type=str, nargs='+', default=['time','lat','lon','data'],
         help='Variable names of data in input file')
+    #-- number of header lines for csv files
+    parser.add_argument('--header','-H',
+        type=int, default=0,
+        help='Number of header lines for csv files')
+    #-- input data type
+    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
+    #-- grid: spatial grids or images (single time for all data points)
+    parser.add_argument('--type','-t',
+        type=str, default='drift',
+        choices=('drift','grid'),
+        help='Input data type')
     #-- time epoch (default Modified Julian Days)
     #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
     parser.add_argument('--epoch','-E',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
+    #-- input delta time for files without date information
+    parser.add_argument('--deltatime','-d',
+        type=float, nargs='+',
+        help='Input delta time for files without date variables')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
@@ -432,7 +491,8 @@ def main():
     #-- run tidal current program for input file
     compute_tidal_currents(args.directory, args.infile, args.outfile,
         FORMAT=args.format, TIDE_MODEL=args.tide, VARIABLES=args.variables,
-        TIME_UNITS=args.epoch, PROJECTION=args.projection,
+        HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
+        TIME=args.deltatime, PROJECTION=args.projection,
         METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program

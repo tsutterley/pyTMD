@@ -30,38 +30,47 @@ jobs:
       if: matrix.os == 'ubuntu-20.04'
       run: |
         sudo apt-get update
-        sudo apt-get install libproj-dev proj-data proj-bin libgeos-dev octave
-        sudo apt-get install libhdf5-dev libnetcdf-dev
+        sudo apt-get install gdal-bin libgdal-dev libproj-dev proj-data proj-bin \
+            libgeos-dev libhdf5-dev libnetcdf-dev octave
+        export CPLUS_INCLUDE_PATH=/usr/include/gdal
+        export C_INCLUDE_PATH=/usr/include/gdal
         pip install --upgrade pip
+        pip install zarr
+        pip install pandas
+        pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
+        pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
+        pip install .
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install dependencies for MacOS
       if: matrix.os == 'macos-latest'
       run: |
         brew install proj
         brew install geos
+        brew install gdal
         brew install hdf5
         brew install netcdf
         brew install octave
         pip install --upgrade pip
+        pip install zarr
+        pip install pandas
+        pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
+        pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
+        pip install .
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Install from source
-      run: |
-        pip install zarr
-        pip install pandas
-        pip install --no-deps .
-        pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
-        pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
+    - name: Checkout Matlab TMD Toolbox
+      uses: actions/checkout@v2
+      with:
+        repository: tsutterley/TMD_Matlab_Toolbox_v2.5
+        path: TMD_Matlab_Toolbox
+        ref: inferminor
     - name: Test with pytest
       run: |
-        git clone ${{ secrets.TMD_MATLAB_TOOLBOX }}
         pytest --cov=./ --cov-report=xml \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \

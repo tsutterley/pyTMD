@@ -15,6 +15,7 @@ INPUTS:
     csv file with columns for spatial and temporal coordinates
     HDF5 file with variables for spatial and temporal coordinates
     netCDF4 file with variables for spatial and temporal coordinates
+    geotiff file with bands in spatial coordinates
 
 COMMAND LINE OPTIONS:
     -D X, --directory X: Working data directory
@@ -44,12 +45,19 @@ COMMAND LINE OPTIONS:
         csv (default)
         netCDF4
         HDF5
+        geotiff
     --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5 and netCDF4 files: time, y, x and data variable names
+    -H X, --header X: number of header lines for csv files
+    -t X, --type X: input data type
+        drift: drift buoys or satellite/airborne altimetry (time per data point)
+        grid: spatial grids or images (single time for all data points)
     --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
-    --projection X: spatial projection as EPSG code or PROJ4 string
+    -d X, --deltatime X: Input delta time for files without date information
+        can be set to 0 to use exact calendar date from epoch
+    -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -I X, --interpolate X: Interpolation method
         spline
@@ -69,6 +77,8 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
+    gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
+        https://pypi.python.org/pypi/GDAL
     dateutil: powerful extensions to datetime
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
@@ -92,6 +102,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
+        added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use HDF5 and netCDF4 as inputs and outputs
     Updated 08/2020: using builtin time operations
@@ -116,6 +127,7 @@ import pyTMD.spatial
 from pyTMD.utilities import get_data_path
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
+from pyTMD.predict_tide import predict_tide
 from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
@@ -126,8 +138,8 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_elevations(tide_dir, input_file, output_file,
     TIDE_MODEL=None, FORMAT='csv', VARIABLES=['time','lat','lon','data'],
-    TIME_UNITS='days since 1858-11-17T00:00:00', PROJECTION='4326',
-    METHOD='spline', VERBOSE=False, MODE=0o775):
+    HEADER=0, TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
+    TIME=None, PROJECTION='4326', METHOD='spline', VERBOSE=False, MODE=0o775):
 
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -138,7 +150,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'CATS2008'):
         grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
         model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
@@ -148,7 +160,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'CATS2008'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'CATS2008_load'):
         grid_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
         model_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
@@ -158,7 +170,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Load_Tide'
         model_format = 'OTIS'
         EPSG = 'CATS2008'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'TPXO9-atlas'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas')
         grid_file = 'grid_tpxo9_atlas.nc.gz'
@@ -172,8 +184,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'netcdf'
-        TYPE = 'z'
-        SCALE = 1.0/1000.0
+        model_type = 'z'
+        model_scale = 1.0/1000.0
     elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
         grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
@@ -187,8 +199,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'netcdf'
-        TYPE = 'z'
-        SCALE = 1.0/1000.0
+        model_type = 'z'
+        model_scale = 1.0/1000.0
     elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
         grid_file = 'grid_tpxo9_atlas_30_v3.nc.gz'
@@ -203,8 +215,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable = 'tide_ocean'
         long_name = "Ocean_Tide"
         model_format = 'netcdf'
-        TYPE = 'z'
-        SCALE = 1.0/1000.0
+        model_type = 'z'
+        model_scale = 1.0/1000.0
     elif (TIDE_MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
         model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
@@ -213,7 +225,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'TPXO8-atlas'):
         grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
         model_file = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
@@ -222,7 +234,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'ATLAS'
         EPSG = '4326'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'TPXO7.2'):
         grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_tmd','h_tpxo7.2')
@@ -231,7 +243,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'TPXO7.2_load'):
         grid_file = os.path.join(tide_dir,'TPXO7.2_load','grid_tpxo6.2')
         model_file = os.path.join(tide_dir,'TPXO7.2_load','h_tpxo7.2_load')
@@ -240,7 +252,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Load_Tide'
         model_format = 'OTIS'
         EPSG = '4326'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'AODTM-5'):
         grid_file = os.path.join(tide_dir,'aodtm5_tmd','grid_Arc5km')
         model_file = os.path.join(tide_dir,'aodtm5_tmd','h0_Arc5km.oce')
@@ -250,7 +262,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'PSNorth'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'AOTIM-5'):
         grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
         model_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
@@ -260,7 +272,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'PSNorth'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'AOTIM-5-2018'):
         grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
         model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
@@ -270,7 +282,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'PSNorth'
-        TYPE = 'z'
+        model_type = 'z'
     elif (TIDE_MODEL == 'GOT4.7'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -281,7 +293,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'GOT'
-        SCALE = 1.0/100.0
+        model_scale = 1.0/100.0
     elif (TIDE_MODEL == 'GOT4.7_load'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
@@ -293,7 +305,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_load'
         variable_long_name = 'Load_Tide'
         model_format = 'GOT'
-        SCALE = 1.0/1000.0
+        model_scale = 1.0/1000.0
     elif (TIDE_MODEL == 'GOT4.8'):
         model_directory = os.path.join(tide_dir,'got4.8','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -304,7 +316,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'GOT'
-        SCALE = 1.0/100.0
+        model_scale = 1.0/100.0
     elif (TIDE_MODEL == 'GOT4.8_load'):
         model_directory = os.path.join(tide_dir,'got4.8','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
@@ -316,7 +328,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_load'
         variable_long_name = 'Load_Tide'
         model_format = 'GOT'
-        SCALE = 1.0/1000.0
+        model_scale = 1.0/1000.0
     elif (TIDE_MODEL == 'GOT4.10'):
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -327,7 +339,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'GOT'
-        SCALE = 1.0/100.0
+        model_scale = 1.0/100.0
     elif (TIDE_MODEL == 'GOT4.10_load'):
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
@@ -339,7 +351,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_load'
         variable_long_name = 'Load_Tide'
         model_format = 'GOT'
-        SCALE = 1.0/1000.0
+        model_scale = 1.0/1000.0
     elif (TIDE_MODEL == 'FES2014'):
         model_directory = os.path.join(tide_dir,'fes2014','ocean_tide')
         model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
@@ -357,8 +369,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'FES'
-        TYPE = 'z'
-        SCALE = 1.0/100.0
+        model_type = 'z'
+        model_scale = 1.0/100.0
     elif (TIDE_MODEL == 'FES2014_load'):
         model_directory = os.path.join(tide_dir,'fes2014','load_tide')
         model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
@@ -376,8 +388,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         output_variable = 'tide_load'
         variable_long_name = 'Load_Tide'
         model_format = 'FES'
-        TYPE = 'z'
-        SCALE = 1.0/100.0
+        model_type = 'z'
+        model_scale = 1.0/100.0
 
     #-- invalid value
     fill_value = -9999.0
@@ -409,7 +421,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=0, verbose=VERBOSE)
+            header=HEADER, verbose=VERBOSE)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
@@ -418,6 +430,14 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
             verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        #-- copy global geotiff attributes for projection and grid parameters
+        for att_name in ['projection','wkt','spacing','extent']:
+            attrib[att_name] = dinput['attributes'][att_name]
+    #-- update time variable if entered as argument
+    if TIME is not None:
+        dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
     #-- could try to extract projection attributes from netCDF4 and HDF5 files
@@ -427,7 +447,12 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         crs1 = pyproj.CRS.from_string(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(dinput['x'].flatten(),dinput['y'].flatten())
+    if (TYPE == 'grid'):
+        ny,nx = (len(dinput['y']),len(dinput['x']))
+        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
+        lon,lat = transformer.transform(gridx,gridy)
+    elif (TYPE == 'drift'):
+        lon,lat = transformer.transform(dinput['x'],dinput['y'])
 
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
@@ -439,27 +464,30 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     #-- convert time from units to days since 1992-01-01T00:00:00
     tide_time = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
         epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
-    n_time = len(tide_time)
+    #-- number of time points
+    nt = len(tide_time)
 
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
-        amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
-            EPSG, TYPE=TYPE, METHOD=METHOD)
-        deltat = np.zeros((n_time))
+        amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
+            grid_file, model_file, EPSG, TYPE=model_type, METHOD=METHOD)
+        deltat = np.zeros((nt))
     elif (model_format == 'netcdf'):
-        amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-            grid_file, model_files, TYPE=TYPE, METHOD=METHOD, SCALE=SCALE)
-        deltat = np.zeros((n_time))
+        amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
+            model_directory, grid_file, model_files, TYPE=model_type,
+            METHOD=METHOD, SCALE=model_scale)
+        deltat = np.zeros((nt))
     elif (model_format == 'GOT'):
-        amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
-            METHOD=METHOD, SCALE=SCALE)
+        amp,ph = extract_GOT_constants(lon.flatten(), lat.flatten(),
+            model_directory, model_files, METHOD=METHOD, SCALE=model_scale)
         #-- convert times from modified julian days to days since 1992-01-01
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file,tide_time)
     elif (model_format == 'FES'):
-        amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,
-            TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD, SCALE=SCALE)
+        amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
+            model_directory, model_files, TYPE=model_type, VERSION=TIDE_MODEL,
+            METHOD=METHOD, SCALE=model_scale)
         #-- convert times from modified julian days to days since 1992-01-01
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
@@ -471,13 +499,25 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     hc = amp*np.exp(cph)
 
     #-- predict tidal elevations at time and infer minor corrections
-    tide = np.ma.zeros((n_time), fill_value=fill_value)
-    tide.mask = np.any(hc.mask,axis=1)
-    tide.data[:] = predict_tide_drift(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model_format)
-    minor = infer_minor_corrections(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model_format)
-    tide.data[:] += minor.data[:]
+    if (TYPE == 'grid'):
+        tide = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
+        tide.mask = np.zeros((ny,nx,nt),dtype=np.bool)
+        for i in range(nt):
+            TIDE = predict_tide(tide_time[i], hc, c,
+                DELTAT=deltat[i], CORRECTIONS=model_format)
+            MINOR = infer_minor_corrections(tide_time[i], hc, c,
+                DELTAT=deltat[i], CORRECTIONS=model_format)
+            #-- add major and minor components and reform grid
+            tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
+            tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
+    elif (TYPE == 'drift'):
+        tide = np.ma.zeros((nt), fill_value=fill_value)
+        tide.mask = np.any(hc.mask,axis=1)
+        tide.data[:] = predict_tide_drift(tide_time, hc, c,
+            DELTAT=deltat, CORRECTIONS=model_format)
+        minor = infer_minor_corrections(tide_time, hc, c,
+            DELTAT=deltat, CORRECTIONS=model_format)
+        tide.data[:] += minor.data[:]
     #-- replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
 
@@ -490,6 +530,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+    elif (FORMAT == 'geotiff'):
+        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+            varname=output_variable)
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
@@ -526,17 +569,32 @@ def main():
         help='Tide model to use in correction')
     #-- input and output data format
     parser.add_argument('--format','-F',
-        type=str, default='csv', choices=('csv','netCDF4','HDF5'),
+        type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Input and output data format')
     #-- variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
         type=str, nargs='+', default=['time','lat','lon','data'],
         help='Variable names of data in input file')
+    #-- number of header lines for csv files
+    parser.add_argument('--header','-H',
+        type=int, default=0,
+        help='Number of header lines for csv files')
+    #-- input data type
+    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
+    #-- grid: spatial grids or images (single time for all data points)
+    parser.add_argument('--type','-t',
+        type=str, default='drift',
+        choices=('drift','grid'),
+        help='Input data type')
     #-- time epoch (default Modified Julian Days)
     #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
     parser.add_argument('--epoch','-E',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
+    #-- input delta time for files without date information
+    parser.add_argument('--deltatime','-d',
+        type=float, nargs='+',
+        help='Input delta time for files without date variables')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
@@ -566,7 +624,8 @@ def main():
     #-- run tidal elevation program for input file
     compute_tidal_elevations(args.directory, args.infile, args.outfile,
         FORMAT=args.format, TIDE_MODEL=args.tide, VARIABLES=args.variables,
-        TIME_UNITS=args.epoch, PROJECTION=args.projection,
+        HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
+        TIME=args.deltatime, PROJECTION=args.projection,
         METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
