@@ -414,7 +414,7 @@ def extend_matrix(input_matrix):
 #-- PURPOSE: read tide grid file
 def read_tide_grid(input_file):
     """
-    Read grid file to extract model coordinates, bathymety, masks and indices
+    Read grid file to extract model coordinates, bathymetry, masks and indices
 
     Arguments
     ---------
@@ -424,7 +424,7 @@ def read_tide_grid(input_file):
     -------
     x: x-coordinates of input grid
     y: y-coordinates of input grid
-    hz: model bathymety
+    hz: model bathymetry
     mz: land/water mask
     iob: open boundary index
     dt: time step
@@ -470,7 +470,7 @@ def read_tide_grid(input_file):
 #-- PURPOSE: read tide grid file with localized solutions
 def read_atlas_grid(input_file):
     """
-    Read ATLAS grid file to extract model coordinates, bathymety, masks and
+    Read ATLAS grid file to extract model coordinates, bathymetry, masks and
     indices for both global and local solutions
 
     Arguments
@@ -481,13 +481,13 @@ def read_atlas_grid(input_file):
     -------
     x: x-coordinates of input ATLAS grid
     y: y-coordinates of input ATLAS grid
-    hz: model bathymety
+    hz: model bathymetry
     mz: land/water mask
     iob: open boundary index
     dt: time step
     pmask: global mask
     local: dictionary of local tidal solutions for grid variables
-        depth: model bathymety
+        depth: model bathymetry
     """
     #-- read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
@@ -875,7 +875,7 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     Keyword arguments
     -----------------
     VARIABLE: key for variable within each local solution
-        depth: model bathymety
+        depth: model bathymetry
 
     Returns
     -------
@@ -930,7 +930,7 @@ def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
     Keyword arguments
     -----------------
     VARIABLE: key for variable within each local solution
-        depth: model bathymety
+        depth: model bathymetry
         z: tidal elevation
         u: zonal tidal transport
         v: meridional zonal transport
@@ -999,10 +999,10 @@ def Muv(hz):
     mv[:,indx] = mz*mz[:,indx]
     return (mu,mv,mz)
 
-#-- PURPOSE: Interpolate bathymety to zeta, u and v nodes on a C-grid
+#-- PURPOSE: Interpolate bathymetry to zeta, u and v nodes on a C-grid
 def Huv(hz):
     """
-    Interpolate bathymety to zeta, u and v nodes on a C-grid
+    Interpolate bathymetry to zeta, u and v nodes on a C-grid
     """
     ny,nx = np.shape(hz)
     mu,mv,mz = Muv(hz)

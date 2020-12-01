@@ -69,7 +69,9 @@ pyTMD was incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:
 https://github.com/fspaolo/captoolkit  
 
 #### Disclaimer  
-This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.  It is provided here for your convenience but _with no guarantees whatsoever_.  
+This package includes software developed at NASA Goddard Space Flight Center (GSFC) and the University of Washington Applied Physics Laboratory (UW-APL).
+It is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.
+It is provided here for your convenience but _with no guarantees whatsoever_.  
 
 #### Credits
 The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman, Lana Erofeeva and Susan Howard.

@@ -274,7 +274,6 @@ def read_netcdf_file(input_file,GZIP=False,TYPE=None,VERSION=None):
     lat: latitude of tidal model
     """
     #-- read the netcdf format tide elevation file
-    #-- reading a combined global solution with localized solutions
     if GZIP:
         f = gzip.open(input_file,'rb')
         fileID = netCDF4.Dataset(input_file,'r',memory=f.read())

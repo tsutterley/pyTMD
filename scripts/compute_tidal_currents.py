@@ -250,7 +250,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             'auxiliary-products/global-tide-fes.html')
         model_format = 'FES'
         TYPES = ['u','v']
-        model_scale = 1.0/100.0
+        model_scale = 1.0
 
     #-- invalid value
     fill_value = -9999.0
