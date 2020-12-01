@@ -31,7 +31,7 @@ def output_otis_grid(grid_file,xlim,ylim,hz,mz,iob,dt):
     grid_file: output OTIS grid file name
     xlim: x-coordinate grid-cell edges of output grid
     ylim: y-coordinate grid-cell edges of output grid
-    hz: bathymety
+    hz: bathymetry
     mz: land/water mask
     iob: open boundary index
     dt: time step

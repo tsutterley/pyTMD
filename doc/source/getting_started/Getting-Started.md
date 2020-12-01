@@ -1,8 +1,20 @@
 Getting Started
 ===============
 
+This documentation is intended to explain how to compute ocean, load and pole tide variations using the set of pyTMD programs.
+Ocean tides are typically observed using float gauges, GPS stations, pressure recorders, and satellite altimetry.
+Ocean and load tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation.
+The tidal oscillations can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
+Ocean and load tide constituent files are available from different modeling groups in different formats.
+pyTMD can access the harmonic constituents for the OTIS, GOT and FES families of ocean and load tide models.
+These tide models will be one of following categories depending on the version: 1) an empirically adjusted model, 2) a barotropic hydrodynamic model constrained by data assimilation, or 3) an unconstrained hydrodynamic model [(Stammer et al., 2014)](https://doi.org/10.1002/2014RG000450).
+
+Load and ocean pole tides are driven by variations in the Earth's figure axis.
+These pole tides are due to Earth's ellipsoidal shape shifting as the rotation axis of the Earth moves with respect to the mean pole location, and for the case of ocean pole tides the centripetal effects of polar motion on the ocean.
+The Earth Orientation Parameters (EOPs) necessary for computing load pole and ocean pole tide variations are included within the pyTMD program.
+
 #### Tide Model Formats
-OTIS and ATLAS formatted data use a single binary file to store all the constituents for either heights (`z`) or transports (`u`, `v`).
+OTIS and ATLAS formatted data use a single binary file to store all the constituents for either heights (`z`) or zonal and meridional transports (`u`, `v`).
 Arctic Ocean models can be downloaded from the NSF ArcticData server using the [`arcticdata_tides.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/arcticdata_tides.py) program.
 CATS2008 can be downloaded from the US Antarctic Program (USAP) using the [`usap_cats_tides.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/usap_cats_tides.py) program.
 ATLAS netCDF formatted data use netCDF4 files for each constituent and variable type (`z`, `u`, `v`).
@@ -46,14 +58,14 @@ This structure was chosen based on the different formats of each tide model.
     * [FES2014_load](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html): `<path_to_tide_models>/fes2014/load_tide/`
 
 #### Programs
-For users wanting to compute tide corrections for use with numpy arrays or pandas data structures, [`compute_tide_corrections.py`](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py) is the place to start.  It is a function that takes x, y, and time coordinates and computes the corresponding tidal elevation.
+For users wanting to compute tide corrections for use with numpy arrays or pandas dataframes [`compute_tide_corrections.py`](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py) is the place to start.  It is a function that takes x, y, and time coordinates and computes the corresponding tidal elevation.
 ```python
 tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=path_to_tide_models,
     MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='GPS',
     METHOD='spline', FILL_VALUE=np.nan)
 ```
 
-For users wanting to calculate tidal elevations or currents for a series of files, the [`compute_tidal_elevations.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_elevations.py) and [`compute_tidal_currents.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py) programs cover most use cases.  They take an input file (in csv, netCDF4, HDF5 or geotiff) and compute the tidal elevations or currents (zonal and meridional) for each point.
+For users wanting to calculate tidal elevations or currents for a series of files, the [`compute_tidal_elevations.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_elevations.py) and [`compute_tidal_currents.py`](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py) programs cover most use cases.  They take an input file (in csv, netCDF4, HDF5 or geotiff formats) and compute the tidal elevations or currents (zonal and meridional) for each point.
 ```bash
 python compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
     --format HDF5 --variables t_sec lat lon h_cor --projection 4326 \
@@ -67,3 +79,17 @@ python compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS20
 ```
 
 There are specific programs for correcting NASA [Operation IceBridge](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py), [ICESat-2 ATL03 geolocated photon](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py), [ICESat-2 ATL06 land ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py), [ICESat-2 ATL07 sea ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py) and [ICESat-2 ATL12 ocean surface](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py) data.
+
+#### Time
+The default time in pyTMD is days (UTC) since a given epoch.
+For ocean, load and equilibrium tide programs, the epoch is 1992-01-01T00:00:00.
+For pole tide programs, the epoch is 1858-11-17T00:00:00 (Modified Julian Days).
+pyTMD can convert different time formats to the necessary time format of a given program.
+pyTMD keeps updated [tables of leap seconds](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list) for converting from GPS and TAI times.
+pyTMD keeps updated [tables of delta times](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data) for converting between dynamic (TT) and universal (UT1) times.
+
+#### Spatial Coordinates
+The default coordinate system in pyTMD is WGS84 geodetic coordinates in latitude and longitude.
+pyTMD uses [pyproj](https://pypi.org/project/pyproj/) to convert from different coordinate systems and datums.
+Some regional tide models are projected in a different coordinate system.
+For these cases, pyTMD will [convert from latitude and longitude to the model coordinate system](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py).

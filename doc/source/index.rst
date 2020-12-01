@@ -1,30 +1,15 @@
 pyTMD
 =====
 
-Python-based tidal prediction software that reads OTIS, GOT and FES formatted
-tidal solutions for predicting ocean and load tides and IERS conventions for
-calculating radial pole tide displacements
-
-.. graphviz::
-    :caption: pyTMD Ocean and Load Tide Framework
-    :align: center
-
-    digraph {
-        M [label="Tide Model" shape=box style="filled" color="darkorchid"]
-        T [label="pyTMD" shape=box style="filled" color="gray"]
-        P [label="Tide Predictions" shape=box style="filled" color="mediumseagreen"]
-        H [label="Tide Heights" shape=box style="filled" color="mediumseagreen"]
-        C [label="Average Tidal Currents" shape=box style="filled" color="mediumseagreen"]
-        M -> T
-        T -> P
-        T -> H
-        T -> C
-    }
+pyTMD is a Python-based tidal prediction software that reads OTIS, GOT and FES
+formatted tidal solutions for predicting ocean and load tides and can use IERS
+conventions for calculating radial pole tide displacements.
 
 .. toctree::
     :maxdepth: 2
     :caption: Getting Started:
 
+    getting_started/Overview.rst
     getting_started/Install.md
     getting_started/Getting-Started.md
     getting_started/Resources.md

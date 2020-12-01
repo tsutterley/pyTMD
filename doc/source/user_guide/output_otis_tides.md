@@ -18,7 +18,7 @@ output_otis_transport(transport_file,u,v,xlim,ylim,constituents)
     1. `grid_file`: output OTIS grid file name
     2. `xlim`: x-coordinate grid-cell edges of output grid
     3. `ylim`: y-coordinate grid-cell edges of output grid
-    4. `hz`: bathymety
+    4. `hz`: bathymetry
     5. `mz`: land/water mask
     6. `iob`: open boundary index
     7. `dt`: time step

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (09/2020)
+read_netcdf_model.py (11/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -51,9 +51,10 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to specified coordinates
 
 UPDATE HISTORY:
+    Updated 11/2020: create function to read bathymetry and spatial coordinates
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
-        reduce number of interpolations by copying bathmetry mask to variables
+        reduce number of interpolations by copying bathymetry mask to variables
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
         changed TYPE variable to keyword argument. update griddata interpolation
@@ -106,43 +107,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     constituents: list of model constituents
     """
 
-    #-- read the netcdf format tide grid file
-    #-- reading a combined global solution with localized solutions
-    if GZIP:
-        #-- open remote file with netCDF4
-        #-- read GZIP file
-        f = gzip.open(os.path.join(directory,grid_file),'rb')
-        fileID = netCDF4.Dataset(grid_file,'r',memory=f.read())
-    else:
-        fileID = netCDF4.Dataset(os.path.join(directory,grid_file),'r')
-    #-- variable dimensions
-    nx = fileID.dimensions['nx'].size
-    ny = fileID.dimensions['ny'].size
-    #-- allocate numpy masked array for bathymetry
-    bathymetry = np.ma.zeros((ny,nx))
-    #-- read bathmetry and coordinates for variable type
-    if (TYPE == 'z'):
-        #-- get bathymetry at nodes
-        bathymetry.data[:,:] = fileID.variables['hz'][:,:].T
-        #-- read latitude and longitude at z-nodes
-        lon = fileID.variables['lon_z'][:].copy()
-        lat = fileID.variables['lat_z'][:].copy()
-    elif TYPE in ('U','u'):
-        #-- get bathymetry at u-nodes
-        bathymetry.data[:,:] = fileID.variables['hu'][:,:].T
-        #-- read latitude and longitude at u-nodes
-        lon = fileID.variables['lon_u'][:].copy()
-        lat = fileID.variables['lat_u'][:].copy()
-    elif TYPE in ('V','v'):
-        #-- get bathymetry at v-nodes
-        bathymetry.data[:,:] = fileID.variables['hv'][:,:].T
-        #-- read latitude and longitude at v-nodes
-        lon = fileID.variables['lon_v'][:].copy()
-        lat = fileID.variables['lat_v'][:].copy()
-    #-- close the grid file
-    fileID.close()
-    f.close() if GZIP else None
-
+    #-- read the tide grid file for bathymetry and spatial coordinates
+    lon,lat,bathymetry = read_netcdf_grid(os.path.join(directory,grid_file),
+        GZIP=GZIP, TYPE=TYPE)
     #-- grid step size of tide model
     dlon = lon[1] - lon[0]
     dlat = lat[1] - lat[0]
@@ -336,6 +303,61 @@ def extend_matrix(input_matrix):
     temp[:,1:-1] = input_matrix[:,:]
     temp[:,-1] = input_matrix[:,0]
     return temp
+
+#-- PURPOSE: read grid file
+def read_netcdf_grid(input_file,GZIP=False,TYPE=None):
+    """
+    Read grid file to extract model coordinates and bathymetry
+
+    Arguments
+    ---------
+    input_file: input grid file
+
+    Returns
+    -------
+    lon: longitudinal coordinates of input grid
+    lat: latitudinal coordinates of input grid
+    bathymetry: model bathymetry
+    """
+    #-- read the netcdf format tide grid file
+    #-- reading a combined global solution with localized solutions
+    if GZIP:
+        #-- open remote file with netCDF4
+        #-- read GZIP file
+        f = gzip.open(input_file,'rb')
+        fileID=netCDF4.Dataset(os.path.basename(input_file),'r',memory=f.read())
+    else:
+        fileID=netCDF4.Dataset(input_file,'r')
+    #-- variable dimensions
+    nx = fileID.dimensions['nx'].size
+    ny = fileID.dimensions['ny'].size
+    #-- allocate numpy masked array for bathymetry
+    bathymetry = np.ma.zeros((ny,nx))
+    #-- read bathymetry and coordinates for variable type
+    if (TYPE == 'z'):
+        #-- get bathymetry at nodes
+        bathymetry.data[:,:] = fileID.variables['hz'][:,:].T
+        #-- read latitude and longitude at z-nodes
+        lon = fileID.variables['lon_z'][:].copy()
+        lat = fileID.variables['lat_z'][:].copy()
+    elif TYPE in ('U','u'):
+        #-- get bathymetry at u-nodes
+        bathymetry.data[:,:] = fileID.variables['hu'][:,:].T
+        #-- read latitude and longitude at u-nodes
+        lon = fileID.variables['lon_u'][:].copy()
+        lat = fileID.variables['lat_u'][:].copy()
+    elif TYPE in ('V','v'):
+        #-- get bathymetry at v-nodes
+        bathymetry.data[:,:] = fileID.variables['hv'][:,:].T
+        #-- read latitude and longitude at v-nodes
+        lon = fileID.variables['lon_v'][:].copy()
+        lat = fileID.variables['lat_v'][:].copy()
+    #-- set bathymetry mask
+    bathymetry.mask = (bathymetry.data == 0.0)
+    #-- close the grid file
+    fileID.close()
+    f.close() if GZIP else None
+    return (lon,lat,bathymetry)
 
 #-- PURPOSE: read elevation file to extract real and imaginary components for
 #-- constituent

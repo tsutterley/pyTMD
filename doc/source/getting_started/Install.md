@@ -2,7 +2,7 @@ Setup and Installation
 ======================
 
 #### Dependencies
-pyTMD is dependent on open source programs:
+pyTMD is dependent on open source programs that can be installed using OS-specific package management systems, [conda](https://anaconda.org/conda-forge/repo) or from source:
 - [GDAL](https://gdal.org/index.html)
 - [GEOS](https://trac.osgeo.org/geos)
 - [PROJ](https://proj.org/)
