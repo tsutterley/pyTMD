@@ -219,8 +219,8 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     K1 = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
 
     #-- pole tide files (mean and daily)
-    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
+    mean_pole_file = get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = get_data_path(['data','finals.all'])
     #-- calculate angular coordinates of mean pole at time
     mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,'2015')
     #-- read IERS daily polar motion values

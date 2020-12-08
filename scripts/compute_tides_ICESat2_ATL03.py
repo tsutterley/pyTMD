@@ -624,8 +624,6 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['source'] = TIDE_MODEL
         IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['reference'] = reference
         IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['coordinates'] = \
-            "segment_id delta_time reference_photon_lat reference_photon_lon"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['coordinates'] = \
             ("../geolocation/segment_id ../geolocation/delta_time "
             "../geolocation/reference_photon_lat ../geolocation/reference_photon_lon")
 

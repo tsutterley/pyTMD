@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 
-Utilities for reading and writing spatial data
+Utilities for reading, writing and operating on spatial data
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 12/2020: added module for converting ellipsoids
     Updated 11/2020: output data as masked arrays if containing fill values
         add functions to read from and write to geotiff image formats
     Written 09/2020
@@ -500,3 +501,136 @@ def expand_dims(obj, varname='data'):
         obj[varname] = np.atleast_3d(obj[varname])
     #-- return reformed spatial dictionary
     return obj
+
+def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
+    """
+    Convert latitudes and heights to a different ellipsoid using Newton-Raphson
+
+    Inputs:
+        phi1: latitude of input ellipsoid in degrees
+        h1: height above input ellipsoid in meters
+        a1: semi-major axis of input ellipsoid
+        f1: flattening of input ellipsoid
+        a2: semi-major axis of output ellipsoid
+        f2: flattening of output ellipsoid
+
+    Options:
+        eps: tolerance to prevent division by small numbers
+            and to determine convergence
+        itmax: maximum number of iterations to use in Newton-Raphson
+
+    Returns:
+        phi2: latitude of output ellipsoid in degrees
+        h2: height above output ellipsoid in meters
+
+    References:
+        Astronomical Algorithms, Jean Meeus, 1991, Willmann-Bell, Inc.
+            pp. 77-82
+    """
+    if (len(phi1) != len(h1)):
+        raise ValueError('phi and h have incompatable dimensions')
+    #-- semiminor axis of input and output ellipsoid
+    b1 = (1.0 - f1)*a1
+    b2 = (1.0 - f2)*a2
+    #-- initialize output arrays
+    npts = len(phi1)
+    phi2 = np.zeros((npts))
+    h2 = np.zeros((npts))
+    #-- for each point
+    for N in range(npts):
+        #-- force phi1 into range -90 <= phi1 <= 90
+        if (np.abs(phi1[N]) > 90.0):
+            phi1[N] = np.sign(phi1[N])*90.0
+        #-- handle special case near the equator
+        #-- phi2 = phi1 (latitudes congruent)
+        #-- h2 = h1 + a1 - a2
+        if (np.abs(phi1[N]) < eps):
+            phi2[N] = np.copy(phi1[N])
+            h2[N] = h1[N] + a1 - a2
+        #-- handle special case near the poles
+        #-- phi2 = phi1 (latitudes congruent)
+        #-- h2 = h1 + b1 - b2
+        elif ((90.0 - np.abs(phi1[N])) < eps):
+            phi2[N] = np.copy(phi1[N])
+            h2[N] = h1[N] + b1 - b2
+        #-- handle case if latitude is within 45 degrees of equator
+        elif (np.abs(phi1[N]) <= 45):
+            #-- convert phi1 to radians
+            phi1r = phi1[N] * np.pi/180.0
+            sinphi1 = np.sin(phi1r)
+            cosphi1 = np.cos(phi1r)
+            #-- prevent division by very small numbers
+            cosphi1 = np.copy(eps) if (cosphi1 < eps) else cosphi1
+            #-- calculate tangent
+            tanphi1 = sinphi1 / cosphi1
+            u1 = np.arctan(b1 / a1 * tanphi1)
+            hpr1sin = b1 * np.sin(u1) + h1[N] * sinphi1
+            hpr1cos = a1 * np.cos(u1) + h1[N] * cosphi1
+            #-- set initial value for u2
+            u2 = np.copy(u1)
+            #-- setup constants
+            k0 = b2 * b2 - a2 * a2
+            k1 = a2 * hpr1cos
+            k2 = b2 * hpr1sin
+            #-- perform newton-raphson iteration to solve for u2
+            #-- cos(u2) will not be close to zero since abs(phi1) <= 45
+            for i in range(0, itmax+1):
+                cosu2 = np.cos(u2)
+                fu2 = k0 * np.sin(u2) + k1 * np.tan(u2) - k2
+                fu2p = k0 * cosu2 + k1 / (cosu2 * cosu2)
+                if (np.abs(fu2p) < eps):
+                    i = np.copy(itmax)
+                else:
+                    delta = fu2 / fu2p
+                    u2 -= delta
+                    if (np.abs(delta) < eps):
+                        i = np.copy(itmax)
+            #-- convert latitude to degrees and verify values between +/- 90
+            phi2r = np.arctan(a2 / b2 * np.tan(u2))
+            phi2[N] = phi2r*180.0/np.pi
+            if (np.abs(phi2[N]) > 90.0):
+                phi2[N] = np.sign(phi2[N])*90.0
+            #-- calculate height
+            h2[N] = (hpr1cos - a2 * np.cos(u2)) / np.cos(phi2r)
+        #-- handle final case where latitudes are between 45 degrees and pole
+        else:
+            #-- convert phi1 to radians
+            phi1r = phi1[N] * np.pi/180.0
+            sinphi1 = np.sin(phi1r)
+            cosphi1 = np.cos(phi1r)
+            #-- prevent division by very small numbers
+            cosphi1 = np.copy(eps) if (cosphi1 < eps) else cosphi1
+            #-- calculate tangent
+            tanphi1 = sinphi1 / cosphi1
+            u1 = np.arctan(b1 / a1 * tanphi1)
+            hpr1sin = b1 * np.sin(u1) + h1[N] * sinphi1
+            hpr1cos = a1 * np.cos(u1) + h1[N] * cosphi1
+            #-- set initial value for u2
+            u2 = np.copy(u1)
+            #-- setup constants
+            k0 = a2 * a2 - b2 * b2
+            k1 = b2 * hpr1sin
+            k2 = a2 * hpr1cos
+            #-- perform newton-raphson iteration to solve for u2
+            #-- sin(u2) will not be close to zero since abs(phi1) > 45
+            for i in range(0, itmax+1):
+                sinu2 = np.sin(u2)
+                fu2 = k0 * np.cos(u2) + k1 / np.tan(u2) - k2
+                fu2p =  -1 * (k0 * sinu2 + k1 / (sinu2 * sinu2))
+                if (np.abs(fu2p) < eps):
+                    i = np.copy(itmax)
+                else:
+                    delta = fu2 / fu2p
+                    u2 -= delta
+                    if (np.abs(delta) < eps):
+                        i = np.copy(itmax)
+            #-- convert latitude to degrees and verify values between +/- 90
+            phi2r = np.arctan(a2 / b2 * np.tan(u2))
+            phi2[N] = phi2r*180.0/np.pi
+            if (np.abs(phi2[N]) > 90.0):
+                phi2[N] = np.sign(phi2[N])*90.0
+            #-- calculate height
+            h2[N] = (hpr1sin - b2 * np.sin(u2)) / np.sin(phi2r)
+
+    #-- return the latitude and height
+    return (phi2, h2)

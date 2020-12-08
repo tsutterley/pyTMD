@@ -9,7 +9,7 @@ compute_LPT_icebridge_data.py
 ```bash
 python compute_LPT_icebridge_data.py input_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/main/compute_LPT_icebridge_data.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_LPT_icebridge_data.py)
 
 #### Inputs
  1. `input_file`: input ATM1B, ATM icessn or LVIS file from NSIDC

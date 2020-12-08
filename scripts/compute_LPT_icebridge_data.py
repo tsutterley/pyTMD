@@ -402,7 +402,7 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
         'displacements_at_the_measurement_position_at_the_acquisition_'
         'time_due_to_polar_motion')
     attrib['tide_pole']['reference'] = ('ftp://tai.bipm.org/iers/conv2010/'
-        'chapter7/opoleloadcoefcmcor.txt.gz')
+        'chapter7/tn36_c7.pdf')
     attrib['tide_pole']['units'] = 'meters'
     #-- Modified Julian Days
     attrib['time'] = {}
@@ -626,7 +626,7 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
 def main():
     #-- Read the system arguments listed after the program
     parser = argparse.ArgumentParser(
-        description="""Calculates load pole tide displacements for
+        description="""Calculates radial load pole tide displacements for
             correcting Operation IceBridge elevation data following IERS
             Convention (2010) guidelines
             """

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (07/2020)
+load_nodal_corrections.py (12/2020)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -35,6 +35,7 @@ REFERENCES:
         time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
+    Updated 12/2020: fix k1 for FES models
     Updated 08/2020: change time variable names to not overwrite functions
         update nodal corrections for FES models
     Updated 07/2020: added function docstrings.  add shallow water constituents
@@ -357,7 +358,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         f[:,17] = 1.0 #-- S1
         temp1 = 0.8965*np.power(np.sin(2.0*II),2.0)
         temp2 = 0.6001*np.sin(2.0*II)*np.cos(nu)
-        f[:,18] = np.sqrt(temp1 + temp1 + 0.1006) #-- K1
+        f[:,18] = np.sqrt(temp1 + temp2 + 0.1006) #-- K1
         f[:,19] = 1.0 #-- psi1
         f[:,20] = 1.0 #-- phi1
         f[:,21] = f[:,14] #-- theta1

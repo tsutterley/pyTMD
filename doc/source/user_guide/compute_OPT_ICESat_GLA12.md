@@ -1,19 +1,19 @@
-compute_OPT_icebridge_data.py
-=============================
+compute_OPT_ICESat_GLA12.py
+===========================
 
- - Calculates radial ocean pole tide displacements for correcting Operation IceBridge elevation data following IERS Convention (2010) guidelines
+- Calculates radial ocean pole tide displacements for correcting ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following IERS Convention (2010) guidelines
  - http://maia.usno.navy.mil/conventions/2010officialinfo.php
  - http://maia.usno.navy.mil/conventions/chapter7.php
  - ftp://tai.bipm.org/iers/conv2010/chapter7/opoleloadcoefcmcor.txt.gz
 
 #### Calling Sequence
 ```bash
-python compute_OPT_icebridge_data.py input_file
+python compute_OPT_ICESat_GLA12.py input_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_OPT_icebridge_data.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_OPT_ICESat_GLA12.py)
 
 #### Inputs
- 1. `input_file`: input ATM1B, ATM icessn or LVIS file from NSIDC
+ 1. `input_file`: input ICESat GLA12 file
 
 #### Command Line Options
  - `-I X`, `--interpolate X`: Interpolation method

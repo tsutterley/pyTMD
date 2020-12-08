@@ -8,7 +8,7 @@ compute_LPET_elevation.py
 ```bash
 python compute_LPET_elevation.py input_file output_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/main/compute_LPET_elevation.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_LPET_elevation.py)
 
 #### Inputs
  1. `input_file`: name of input file

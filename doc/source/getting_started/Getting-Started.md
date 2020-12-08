@@ -78,7 +78,7 @@ python compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS20
     input_file.H5 output_file.H5
 ```
 
-There are specific programs for correcting NASA [Operation IceBridge](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py), [ICESat-2 ATL03 geolocated photon](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py), [ICESat-2 ATL06 land ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py), [ICESat-2 ATL07 sea ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py) and [ICESat-2 ATL12 ocean surface](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py) data.
+There are specific programs for correcting NASA [Operation IceBridge](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py), [ICESat GLA12 ice sheet](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat_GLA12.py), [ICESat-2 ATL03 geolocated photon](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py), [ICESat-2 ATL06 land ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py), [ICESat-2 ATL07 sea ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py) and [ICESat-2 ATL12 ocean surface](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py) data.
 
 #### Time
 The default time in pyTMD is days (UTC) since a given epoch.
