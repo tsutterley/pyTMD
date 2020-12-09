@@ -4,6 +4,7 @@ compute_OPT_displacements.py
  - Calculates radial ocean pole load tide displacements for an input file following IERS Convention (2010) guidelines
  - http://maia.usno.navy.mil/conventions/2010officialinfo.php
  - http://maia.usno.navy.mil/conventions/chapter7.php
+ - ftp://tai.bipm.org/iers/conv2010/chapter7/opoleloadcoefcmcor.txt.gz
 
 #### Calling Sequence
 ```bash

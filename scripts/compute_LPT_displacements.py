@@ -110,7 +110,7 @@ def compute_LPT_displacements(input_file, output_file,
     attrib['tide_pole']['description'] = ('Solid_Earth_pole_tide_radial_'
         'displacements_due_to_polar_motion')
     attrib['tide_pole']['reference'] = ('ftp://tai.bipm.org/iers/conv2010/'
-        'chapter7/opoleloadcoefcmcor.txt.gz')
+        'chapter7/tn36_c7.pdf')
     attrib['tide_pole']['units'] = 'meters'
     attrib['tide_pole']['_FillValue'] = fill_value
     #-- time

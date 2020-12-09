@@ -6,6 +6,7 @@ Download and management utilities for syncing time and auxiliary files
 
  - Can list a directory on a ftp host
  - Can download a file from a ftp or http host
+ - Can download a file from CDDIS via https when NASA Earthdata credentials are supplied
  - Checks MD5 hashes between local and remote files
 
 `Source code`__
@@ -33,6 +34,15 @@ General Methods
     Arguments:
 
         `local`: path to file
+
+
+.. method:: pyTMD.utilities.url_split(s)
+
+    Recursively split a url path into a list
+
+    Arguments:
+
+        `s`: url string
 
 
 .. method:: pyTMD.utilities.roman_to_int(local)
@@ -99,7 +109,7 @@ General Methods
         `mtimes`: list of last modification times for items in the directory
 
 
-.. method:: pyTMD.utilities.from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,verbose=False,mode=0o775)
+.. method:: pyTMD.utilities.from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
 
     Download a file from a ftp host
 
@@ -119,6 +129,8 @@ General Methods
 
         `verbose`: print file transfer information
 
+        `fid`: open file object to print if verbose
+
         `mode`: permissions mode of output local file
 
 
@@ -131,7 +143,7 @@ General Methods
         `HOST`: remote http host
 
 
-.. method:: pyTMD.utilities.from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',chunk=16384,verbose=False,mode=0o775)
+.. method:: pyTMD.utilities.from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
 
     Download a file from a http host
 
@@ -152,6 +164,8 @@ General Methods
         `chunk`: chunk size for transfer encoding
 
         `verbose`: print file transfer information
+
+        `fid`: open file object to print if verbose
 
         `mode`: permissions mode of output local file
 
@@ -217,7 +231,7 @@ General Methods
         `collastmod`: list of last modification times for items in the directory
 
 
-.. method:: pyTMD.utilities.from_cddis(HOST,username=None,password=None,build=True,timeout=None,local=None,hash='',chunk=16384,verbose=False,mode=0o775)
+.. method:: pyTMD.utilities.from_cddis(HOST,username=None,password=None,build=True,timeout=None,local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
 
     Download a file from a NASA GSFC CDDIS https server
 
@@ -242,5 +256,7 @@ General Methods
         `chunk`: chunk size for transfer encoding
 
         `verbose`: print file transfer information
+
+        `fid`: open file object to print if verbose
 
         `mode`: permissions mode of output local file

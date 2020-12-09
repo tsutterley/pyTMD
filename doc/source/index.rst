@@ -27,16 +27,20 @@ conventions for calculating radial pole tide displacements.
     user_guide/compute_equilibrium_tide.md
     user_guide/compute_LPET_elevations.md
     user_guide/compute_LPET_icebridge_data.md
+    user_guide/compute_LPET_ICESat_GLA12.md
     user_guide/compute_LPET_ICESat2_ATL03.md
     user_guide/compute_LPET_ICESat2_ATL06.md
     user_guide/compute_LPT_displacements.md
     user_guide/compute_LPT_icebridge_data.md
+    user_guide/compute_LPT_ICESat_GLA12.md
     user_guide/compute_OPT_displacements.md
     user_guide/compute_OPT_icebridge_data.md
+    user_guide/compute_OPT_ICESat_GLA12.md
     user_guide/compute_tidal_currents.md
     user_guide/compute_tidal_elevations.md
     user_guide/compute_tide_corrections.md
     user_guide/compute_tides_icebridge_data.md
+    user_guide/compute_tides_ICESat_GLA12.md
     user_guide/compute_tides_ICESat2_ATL03.md
     user_guide/compute_tides_ICESat2_ATL06.md
     user_guide/compute_tides_ICESat2_ATL07.md

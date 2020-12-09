@@ -182,3 +182,34 @@ def test_geotiff(username, password):
     #-- remove the test files
     os.remove(input_file)
     os.remove(output_file)
+
+#-- PURPOSE: test ellipsoid conversion
+def test_convert_ellipsoid():
+    #-- semimajor axis (a) and flattening (f) for TP and WGS84 ellipsoids
+    atop,ftop = (6378136.3,1.0/298.257)
+    awgs,fwgs = (6378137.0,1.0/298.257223563)
+    #-- create latitude and height array in WGS84
+    lat_WGS84 = 90.0 - np.arange(181,dtype=np.float)
+    elev_WGS84 = 3000.0 + np.zeros((181),dtype=np.float)
+    #-- convert from WGS84 to Topex/Poseidon Ellipsoids
+    lat_TPX,elev_TPX = pyTMD.spatial.convert_ellipsoid(lat_WGS84, elev_WGS84,
+        awgs, fwgs, atop, ftop, eps=1e-12, itmax=10)
+    #-- check minimum and maximum are expected from NSIDC IDL program
+    #-- ftp://ftp.nsidc.org/DATASETS/icesat/tools/idl/ellipsoid/test_ce.pro
+    minlat = np.min(lat_TPX-lat_WGS84)
+    maxlat = np.max(lat_TPX-lat_WGS84)
+    minelev = 100.0*np.min(elev_TPX-elev_WGS84)
+    maxelev = 100.0*np.max(elev_TPX-elev_WGS84)
+    assert np.isclose([minlat,maxlat],[-1.2305653e-7,1.2305653e-7]).all()
+    assert np.isclose([minelev,maxelev],[70.000000,71.368200]).all()
+    #-- convert back from Topex/Poseidon to WGS84 Ellipsoids
+    phi_WGS84,h_WGS84 = pyTMD.spatial.convert_ellipsoid(lat_TPX, elev_TPX,
+        atop, ftop, awgs, fwgs, eps=1e-12, itmax=10)
+    #-- check minimum and maximum are expected from NSIDC IDL program
+    #-- ftp://ftp.nsidc.org/DATASETS/icesat/tools/idl/ellipsoid/test_ce.pro
+    minlatdel = np.min(phi_WGS84-lat_WGS84)
+    maxlatdel = np.max(phi_WGS84-lat_WGS84)
+    minelevdel = 100.0*np.min(h_WGS84-elev_WGS84)
+    maxelevdel = 100.0*np.max(h_WGS84-elev_WGS84)
+    assert np.isclose([minlatdel,maxlatdel],[-2.1316282e-14,2.1316282e-14]).all()
+    assert np.isclose([minelevdel,maxelevdel],[-1.3287718e-7,1.6830199e-7]).all()

@@ -231,8 +231,6 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['tide_equilibrium']['reference'] = \
             "https://doi.org/10.1111/j.1365-246X.1973.tb03420.x"
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['tide_equilibrium']['coordinates'] = \
-            "segment_id delta_time reference_photon_lat reference_photon_lon"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['tide_equilibrium']['coordinates'] = \
             ("../geolocation/segment_id ../geolocation/delta_time "
             "../geolocation/reference_photon_lat ../geolocation/reference_photon_lon")
 

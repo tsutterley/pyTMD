@@ -509,8 +509,8 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     iur,iun,iue,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
 
     #-- pole tide files (mean and daily)
-    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
+    mean_pole_file = get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = get_data_path(['data','finals.all'])
 
     #-- read IERS daily polar motion values
     EOP = read_iers_EOP(pole_tide_file)
