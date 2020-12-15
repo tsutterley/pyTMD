@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat2_ATL06.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates long-period equilibrium tidal elevations for correcting ICESat-2
     land ice elevation data
 Will calculate the long-period tides for all ATL06 segments and not just ocean
@@ -31,6 +31,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 12/2020: H5py deprecation warning change to use make_scale
     Written 11/2020
 """
 from __future__ import print_function
@@ -60,7 +61,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     DIRECTORY = os.path.dirname(FILE)
     #-- extract parameters from ICESat-2 ATLAS HDF5 file name
     rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
-        '(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
+        r'(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
     SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX = rx.findall(FILE).pop()
 
     #-- number of GPS seconds between the GPS epoch
@@ -70,6 +71,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     #-- copy variables for outputting to HDF5 file
     IS2_atl06_tide = {}
     IS2_atl06_fill = {}
+    IS2_atl06_dims = {}
     IS2_atl06_tide_attrs = {}
     #-- number of GPS seconds between the GPS epoch (1980-01-06T00:00:00Z UTC)
     #-- and ATLAS Standard Data Product (SDP) epoch (2018-01-01T00:00:00Z UTC)
@@ -89,6 +91,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- output data dictionaries for beam
         IS2_atl06_tide[gtx] = dict(land_ice_segments={})
         IS2_atl06_fill[gtx] = dict(land_ice_segments={})
+        IS2_atl06_dims[gtx] = dict(land_ice_segments={})
         IS2_atl06_tide_attrs[gtx] = dict(land_ice_segments={})
 
         #-- number of segments
@@ -135,6 +138,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
             mask=(val['delta_time']==fv))
         IS2_atl06_tide[gtx]['land_ice_segments']['delta_time'] = delta_time
         IS2_atl06_fill[gtx]['land_ice_segments']['delta_time'] = delta_time.fill_value
+        IS2_atl06_dims[gtx]['land_ice_segments']['delta_time'] = None
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['delta_time'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['delta_time']['units'] = "seconds since 2018-01-01"
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['delta_time']['long_name'] = "Elapsed GPS seconds"
@@ -153,6 +157,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
             mask=(val['latitude']==fv))
         IS2_atl06_tide[gtx]['land_ice_segments']['latitude'] = latitude
         IS2_atl06_fill[gtx]['land_ice_segments']['latitude'] = latitude.fill_value
+        IS2_atl06_dims[gtx]['land_ice_segments']['latitude'] = ['delta_time']
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['latitude'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['latitude']['units'] = "degrees_north"
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['latitude']['contentType'] = "physicalMeasurement"
@@ -169,6 +174,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
             mask=(val['longitude']==fv))
         IS2_atl06_tide[gtx]['land_ice_segments']['longitude'] = longitude
         IS2_atl06_fill[gtx]['land_ice_segments']['longitude'] = longitude.fill_value
+        IS2_atl06_dims[gtx]['land_ice_segments']['longitude'] = ['delta_time']
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['longitude'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['longitude']['units'] = "degrees_east"
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['longitude']['contentType'] = "physicalMeasurement"
@@ -183,6 +189,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- segment ID
         IS2_atl06_tide[gtx]['land_ice_segments']['segment_id'] = val['segment_id']
         IS2_atl06_fill[gtx]['land_ice_segments']['segment_id'] = None
+        IS2_atl06_dims[gtx]['land_ice_segments']['segment_id'] = ['delta_time']
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['segment_id'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['segment_id']['units'] = "1"
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['segment_id']['contentType'] = "referenceInformation"
@@ -197,6 +204,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- geophysical variables
         IS2_atl06_tide[gtx]['land_ice_segments']['geophysical'] = {}
         IS2_atl06_fill[gtx]['land_ice_segments']['geophysical'] = {}
+        IS2_atl06_dims[gtx]['land_ice_segments']['geophysical'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['geophysical'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['geophysical']['Description'] = ("The geophysical group "
             "contains parameters used to correct segment heights for geophysical effects, parameters "
@@ -206,6 +214,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- computed long-period equilibrium tide
         IS2_atl06_tide[gtx]['land_ice_segments']['geophysical']['tide_equilibrium'] = tide_lpe
         IS2_atl06_fill[gtx]['land_ice_segments']['geophysical']['tide_equilibrium'] = tide_lpe.fill_value
+        IS2_atl06_dims[gtx]['land_ice_segments']['geophysical']['tide_equilibrium'] = ['delta_time']
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['geophysical']['tide_equilibrium'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['geophysical']['tide_equilibrium']['units'] = "meters"
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['geophysical']['tide_equilibrium']['contentType'] = "referenceInformation"
@@ -223,15 +232,16 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     file_format = '{0}_LPET_{1}{2}{3}{4}{5}{6}_{7}{8}{9}_{10}_{11}{12}.h5'
     #-- print file information
     print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-    HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_tide_attrs, CLOBBER=True,
-        INPUT=os.path.basename(FILE), FILL_VALUE=IS2_atl06_fill,
+    HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_tide_attrs,
+        CLOBBER=True, INPUT=os.path.basename(FILE),
+        FILL_VALUE=IS2_atl06_fill, DIMENSIONS=IS2_atl06_dims,
         FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
     #-- change the permissions mode
     os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
 def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
-    FILENAME='', FILL_VALUE=None, CLOBBER=False):
+    FILENAME='', FILL_VALUE=None, DIMENSIONS=None, CLOBBER=False):
     #-- setting HDF5 clobber attribute
     if CLOBBER:
         clobber = 'w'
@@ -272,34 +282,30 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
             att_val = IS2_atl06_attrs[gtx]['land_ice_segments'][att_name]
             fileID[gtx]['land_ice_segments'].attrs[att_name] = att_val
 
-        #-- delta_time
-        v = IS2_atl06_tide[gtx]['land_ice_segments']['delta_time']
-        attrs = IS2_atl06_attrs[gtx]['land_ice_segments']['delta_time']
-        #-- Defining the HDF5 dataset variables
-        val = '{0}/{1}/{2}'.format(gtx,'land_ice_segments','delta_time')
-        h5[gtx]['land_ice_segments']['delta_time'] = fileID.create_dataset(val,
-            np.shape(v), data=v, dtype=v.dtype, compression='gzip')
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs.items():
-            h5[gtx]['land_ice_segments']['delta_time'].attrs[att_name] = att_val
-
-        #-- geolocation and segment_id variables
-        for k in ['latitude','longitude','segment_id']:
+        #-- delta_time, geolocation and segment_id variables
+        for k in ['delta_time','latitude','longitude','segment_id']:
             #-- values and attributes
             v = IS2_atl06_tide[gtx]['land_ice_segments'][k]
             attrs = IS2_atl06_attrs[gtx]['land_ice_segments'][k]
             fillvalue = FILL_VALUE[gtx]['land_ice_segments'][k]
             #-- Defining the HDF5 dataset variables
             val = '{0}/{1}/{2}'.format(gtx,'land_ice_segments',k)
-            h5[gtx]['land_ice_segments'][k] = fileID.create_dataset(val,
-                np.shape(v), data=v, dtype=v.dtype, fillvalue=fillvalue,
-                compression='gzip')
-            #-- attach dimensions
-            for dim in ['delta_time']:
-                h5[gtx]['land_ice_segments'][k].dims.create_scale(
-                    h5[gtx]['land_ice_segments'][dim], dim)
-                h5[gtx]['land_ice_segments'][k].dims[0].attach_scale(
-                    h5[gtx]['land_ice_segments'][dim])
+            if fillvalue:
+                h5[gtx]['land_ice_segments'][k] = fileID.create_dataset(val,
+                    np.shape(v), data=v, dtype=v.dtype, fillvalue=fillvalue,
+                    compression='gzip')
+            else:
+                h5[gtx]['land_ice_segments'][k] = fileID.create_dataset(val,
+                    np.shape(v), data=v, dtype=v.dtype, compression='gzip')
+            #-- create or attach dimensions for HDF5 variable
+            if DIMENSIONS[gtx]['land_ice_segments'][k]:
+                #-- attach dimensions
+                for i,dim in enumerate(DIMENSIONS[gtx]['land_ice_segments'][k]):
+                    h5[gtx]['land_ice_segments'][k].dims[i].attach_scale(
+                        h5[gtx]['land_ice_segments'][dim])
+            else:
+                #-- make dimension
+                h5[gtx]['land_ice_segments'][k].make_scale(k)
             #-- add HDF5 variable attributes
             for att_name,att_val in attrs.items():
                 h5[gtx]['land_ice_segments'][k].attrs[att_name] = att_val
@@ -326,10 +332,8 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
                     fileID.create_dataset(val, np.shape(v), data=v,
                     dtype=v.dtype, compression='gzip')
             #-- attach dimensions
-            for dim in ['delta_time']:
-                h5[gtx]['land_ice_segments'][key][k].dims.create_scale(
-                    h5[gtx]['land_ice_segments'][dim], dim)
-                h5[gtx]['land_ice_segments'][key][k].dims[0].attach_scale(
+            for i,dim in enumerate(DIMENSIONS[gtx]['land_ice_segments'][key][k]):
+                h5[gtx]['land_ice_segments'][key][k].dims[i].attach_scale(
                     h5[gtx]['land_ice_segments'][dim])
             #-- add HDF5 variable attributes
             for att_name,att_val in attrs.items():
@@ -353,7 +357,7 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
     instrument = 'ATLAS > Advanced Topographic Laser Altimeter System'
     fileID.attrs['instrument'] = instrument
     fileID.attrs['source'] = 'Spacecraft'
-    fileID.attrs['references'] = 'http://nsidc.org/data/icesat2/data.html'
+    fileID.attrs['references'] = 'https://nsidc.org/data/icesat-2'
     fileID.attrs['processing_level'] = '4'
     #-- add attributes for input ATL06 files
     fileID.attrs['input_files'] = os.path.basename(INPUT)

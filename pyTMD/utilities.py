@@ -88,7 +88,9 @@ def url_split(s):
     s: url string
     """
     head, tail = posixpath.split(s)
-    if head in ('', posixpath.sep):
+    if head in ('http:','https:'):
+        return s,
+    elif head in ('', posixpath.sep):
         return tail,
     return url_split(head) + (tail,)
 

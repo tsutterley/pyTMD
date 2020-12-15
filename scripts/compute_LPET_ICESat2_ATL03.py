@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat2_ATL03.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates long-period equilibrium tidal elevations for correcting ICESat-2
     geolocated photon height data
 Will calculate the long-period tides for all ATL03 segments and not just ocean
@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 12/2020: H5py deprecation warning change to use make_scale
     Written 11/2020
 """
 from __future__ import print_function
@@ -63,7 +64,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     DIRECTORY = os.path.dirname(FILE)
     #-- extract parameters from ICESat-2 ATLAS HDF5 file name
     rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
-        '(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
+        r'(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
     SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX = rx.findall(FILE).pop()
 
     #-- number of GPS seconds between the GPS epoch
@@ -73,6 +74,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     #-- copy variables for outputting to HDF5 file
     IS2_atl03_tide = {}
     IS2_atl03_fill = {}
+    IS2_atl03_dims = {}
     IS2_atl03_tide_attrs = {}
     #-- number of GPS seconds between the GPS epoch (1980-01-06T00:00:00Z UTC)
     #-- and ATLAS Standard Data Product (SDP) epoch (2018-01-01T00:00:00Z UTC)
@@ -92,6 +94,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- output data dictionaries for beam
         IS2_atl03_tide[gtx] = dict(geolocation={}, geophys_corr={})
         IS2_atl03_fill[gtx] = dict(geolocation={}, geophys_corr={})
+        IS2_atl03_dims[gtx] = dict(geolocation={}, geophys_corr={})
         IS2_atl03_tide_attrs[gtx] = dict(geolocation={}, geophys_corr={})
 
         #-- read data and attributes for beam
@@ -145,6 +148,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- delta time in geolocation group
         IS2_atl03_tide[gtx]['geolocation']['delta_time'] = delta_time
         IS2_atl03_fill[gtx]['geolocation']['delta_time'] = None
+        IS2_atl03_dims[gtx]['geolocation']['delta_time'] = None
         IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time'] = {}
         IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['units'] = "seconds since 2018-01-01"
         IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['long_name'] = "Elapsed GPS seconds"
@@ -162,6 +166,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- delta time in geophys_corr group
         IS2_atl03_tide[gtx]['geophys_corr']['delta_time'] = delta_time
         IS2_atl03_fill[gtx]['geophys_corr']['delta_time'] = None
+        IS2_atl03_dims[gtx]['geophys_corr']['delta_time'] = None
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time'] = {}
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['units'] = "seconds since 2018-01-01"
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['long_name'] = "Elapsed GPS seconds"
@@ -180,6 +185,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- latitude
         IS2_atl03_tide[gtx]['geolocation']['reference_photon_lat'] = lat
         IS2_atl03_fill[gtx]['geolocation']['reference_photon_lat'] = None
+        IS2_atl03_dims[gtx]['geolocation']['reference_photon_lat'] = ['delta_time']
         IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat'] = {}
         IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['units'] = "degrees_north"
         IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['contentType'] = "physicalMeasurement"
@@ -194,6 +200,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- longitude
         IS2_atl03_tide[gtx]['geolocation']['reference_photon_lon'] = lon
         IS2_atl03_fill[gtx]['geolocation']['reference_photon_lon'] = None
+        IS2_atl03_dims[gtx]['geolocation']['reference_photon_lon'] = ['delta_time']
         IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon'] = {}
         IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['units'] = "degrees_east"
         IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['contentType'] = "physicalMeasurement"
@@ -208,6 +215,7 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
         #-- segment ID
         IS2_atl03_tide[gtx]['geolocation']['segment_id'] = segment_id
         IS2_atl03_fill[gtx]['geolocation']['segment_id'] = None
+        IS2_atl03_dims[gtx]['geolocation']['segment_id'] = ['delta_time']
         IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id'] = {}
         IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['units'] = "1"
         IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['contentType'] = "referenceInformation"
@@ -218,9 +226,11 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
             "the second of the two 20m ATL03 segments included in the 40m ATL03 segment")
         IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['coordinates'] = \
             "delta_time reference_photon_lat reference_photon_lon"
+
         #-- computed long-period equilibrium tide
         IS2_atl03_tide[gtx]['geophys_corr']['tide_equilibrium'] = tide_lpe
         IS2_atl03_fill[gtx]['geophys_corr']['tide_equilibrium'] = None
+        IS2_atl03_dims[gtx]['geophys_corr']['tide_equilibrium'] = ['delta_time']
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['tide_equilibrium'] = {}
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['tide_equilibrium']['units'] = "meters"
         IS2_atl03_tide_attrs[gtx]['geophys_corr']['tide_equilibrium']['contentType'] = "referenceInformation"
@@ -239,15 +249,16 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     file_format = '{0}_LPET_{1}{2}{3}{4}{5}{6}_{7}{8}{9}_{10}_{11}{12}.h5'
     #-- print file information
     print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-    HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_tide_attrs, CLOBBER=True,
-        INPUT=os.path.basename(FILE), FILL_VALUE=IS2_atl03_fill,
+    HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_tide_attrs,
+        CLOBBER=True, INPUT=os.path.basename(FILE),
+        FILL_VALUE=IS2_atl03_fill, DIMENSIONS=IS2_atl03_dims,
         FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
     #-- change the permissions mode
     os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
 def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
-    FILENAME='', FILL_VALUE=None, CLOBBER=False):
+    FILENAME='', FILL_VALUE=None, DIMENSIONS=None, CLOBBER=False):
     #-- setting HDF5 clobber attribute
     if CLOBBER:
         clobber = 'w'
@@ -290,33 +301,30 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
                 att_val = IS2_atl03_attrs[gtx][key][att_name]
                 fileID[gtx][key].attrs[att_name] = att_val
 
-            #-- delta_time in group
-            v = IS2_atl03_tide[gtx][key]['delta_time']
-            attrs = IS2_atl03_attrs[gtx][key]['delta_time']
-            fillvalue = FILL_VALUE[gtx][key]['delta_time']
-            #-- Defining the HDF5 dataset variables
-            val = '{0}/{1}/{2}'.format(gtx,key,'delta_time')
-            h5[gtx][key]['delta_time'] = fileID.create_dataset(val,np.shape(v),
-                data=v, dtype=v.dtype, fillvalue=fillvalue, compression='gzip')
-            #-- add HDF5 variable attributes
-            for att_name,att_val in attrs.items():
-                h5[gtx][key]['delta_time'].attrs[att_name] = att_val
-
-            #-- add other variables for group
+            #-- all variables for group
             groupkeys = set(IS2_atl03_tide[gtx][key].keys())-set(['delta_time'])
-            for k in sorted(groupkeys):
+            for k in ['delta_time',*sorted(groupkeys)]:
                 #-- values and attributes
                 v = IS2_atl03_tide[gtx][key][k]
                 attrs = IS2_atl03_attrs[gtx][key][k]
                 fillvalue = FILL_VALUE[gtx][key][k]
                 #-- Defining the HDF5 dataset variables
                 val = '{0}/{1}/{2}'.format(gtx,key,k)
-                h5[gtx][key][k] = fileID.create_dataset(val,np.shape(v),data=v,
-                    dtype=v.dtype, fillvalue=fillvalue, compression='gzip')
-                #-- attach dimensions
-                for dim in ['delta_time']:
-                    h5[gtx][key][k].dims.create_scale(h5[gtx][key][dim], dim)
-                    h5[gtx][key][k].dims[0].attach_scale(h5[gtx][key][dim])
+                if fillvalue:
+                    h5[gtx][key][k] = fileID.create_dataset(val, np.shape(v),
+                        data=v, dtype=v.dtype, fillvalue=fillvalue,
+                        compression='gzip')
+                else:
+                    h5[gtx][key][k] = fileID.create_dataset(val, np.shape(v),
+                        data=v, dtype=v.dtype, compression='gzip')
+                #-- create or attach dimensions for HDF5 variable
+                if DIMENSIONS[gtx][key][k]:
+                    #-- attach dimensions
+                    for i,dim in enumerate(DIMENSIONS[gtx][key][k]):
+                        h5[gtx][key][k].dims[i].attach_scale(h5[gtx][key][dim])
+                else:
+                    #-- make dimension
+                    h5[gtx][key][k].make_scale(k)
                 #-- add HDF5 variable attributes
                 for att_name,att_val in attrs.items():
                     h5[gtx][key][k].attrs[att_name] = att_val
@@ -340,7 +348,7 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     instrument = 'ATLAS > Advanced Topographic Laser Altimeter System'
     fileID.attrs['instrument'] = instrument
     fileID.attrs['source'] = 'Spacecraft'
-    fileID.attrs['references'] = 'http://nsidc.org/data/icesat2/data.html'
+    fileID.attrs['references'] = 'https://nsidc.org/data/icesat-2'
     fileID.attrs['processing_level'] = '4'
     #-- add attributes for input ATL03 files
     fileID.attrs['input_files'] = os.path.basename(INPUT)

@@ -161,7 +161,7 @@ def count_leap_seconds(GPS_Time):
     for i,leap in enumerate(leaps):
         count = np.count_nonzero(GPS_Time >= leap)
         if (count > 0):
-            indices, = np.nonzero(GPS_Time >= leap)
+            indices = np.nonzero(GPS_Time >= leap)
             n_leaps[indices] += 1.0
     #-- return the number of leap seconds for converting to UTC
     return n_leaps

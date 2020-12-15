@@ -73,6 +73,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2020: updated for public release
+        H5py deprecation warning change to use make_scale and not create_scale
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 08/2020: using builtin time operations.  python3 regular expressions
@@ -382,7 +383,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
             'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
             'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        reference = ('https://www.aviso.altimetry.fr/data/products/'
+        reference = ('https://www.aviso.altimetry.fr/en/data/products'
             'auxiliary-products/global-tide-fes.html')
         variable = 'd_ocElv'
         long_name = "Ocean Tide Elevation"
@@ -404,7 +405,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
             'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
             'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        reference = ('https://www.aviso.altimetry.fr/data/products/'
+        reference = ('https://www.aviso.altimetry.fr/en/data/products'
             'auxiliary-products/global-tide-fes.html')
         variable = 'd_ldElv'
         long_name = "Load Tide Elevation"
@@ -418,8 +419,8 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     DIRECTORY = os.path.dirname(FILE)
 
     #-- compile regular expression operator for extracting information from file
-    rx = re.compile(('GLAH(\d{2})_(\d{3})_(\d{1})(\d{1})(\d{2})_(\d{3})_'
-        '(\d{4})_(\d{1})_(\d{2})_(\d{4})\.H5'), re.VERBOSE)
+    rx = re.compile((r'GLAH(\d{2})_(\d{3})_(\d{1})(\d{1})(\d{2})_(\d{3})_'
+        r'(\d{4})_(\d{1})_(\d{2})_(\d{4})\.H5'), re.VERBOSE)
     #-- extract parameters from ICESat/GLAS HDF5 file name
     #-- PRD:  Product number (01, 05, 06, 12, 13, 14, or 15)
     #-- RL:  Release number for process that created the product = 634
@@ -439,15 +440,15 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     fileID = h5py.File(FILE,'r')
     n_40HZ, = fileID['Data_40HZ']['Time']['i_rec_ndx'].shape
     #-- get variables and attributes
-    rec_ndx_40HZ = fileID['Data_40HZ']['Time']['i_rec_ndx'][:]
+    rec_ndx_40HZ = fileID['Data_40HZ']['Time']['i_rec_ndx'][:].copy()
     #-- seconds since 2000-01-01 12:00:00 UTC (J2000)
-    DS_UTCTime_40HZ = fileID['Data_40HZ']['DS_UTCTime_40'][:]
+    DS_UTCTime_40HZ = fileID['Data_40HZ']['DS_UTCTime_40'][:].copy()
     #-- Latitude (degrees North)
-    lat_TPX = fileID['Data_40HZ']['Geolocation']['d_lat'][:]
+    lat_TPX = fileID['Data_40HZ']['Geolocation']['d_lat'][:].copy()
     #-- Longitude (degrees East)
-    lon_40HZ = fileID['Data_40HZ']['Geolocation']['d_lon'][:]
+    lon_40HZ = fileID['Data_40HZ']['Geolocation']['d_lon'][:].copy()
     #-- Elevation (height above TOPEX/Poseidon ellipsoid in meters)
-    elev_TPX = fileID['Data_40HZ']['Elevation_Surfaces']['d_elev'][:]
+    elev_TPX = fileID['Data_40HZ']['Elevation_Surfaces']['d_elev'][:].copy()
     fv = fileID['Data_40HZ']['Elevation_Surfaces']['d_elev'].attrs['_FillValue']
 
     #-- semimajor axis (a) and flattening (f) for TP and WGS84 ellipsoids
@@ -543,40 +544,50 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     IS_gla12_tide_attrs['geospatial_ellipsoid'] = "WGS84"
 
     #-- copy 40Hz group attributes
-    for att_key,att_val in fileID['Data_40HZ'].attrs.items():
-        IS_gla12_tide_attrs['Data_40HZ'][att_key] = att_val
+    for att_name,att_val in fileID['Data_40HZ'].attrs.items():
+        IS_gla12_tide_attrs['Data_40HZ'][att_name] = att_val
     #-- copy attributes for time, geolocation and geophysical groups
     for var in ['Time','Geolocation','Geophysical']:
         IS_gla12_tide['Data_40HZ'][var] = {}
         IS_gla12_fill['Data_40HZ'][var] = {}
         IS_gla12_tide_attrs['Data_40HZ'][var] = {}
-        for att_key,att_val in fileID['Data_40HZ'][var].attrs.items():
-            IS_gla12_tide_attrs['Data_40HZ'][var][att_key] = att_val
+        for att_name,att_val in fileID['Data_40HZ'][var].attrs.items():
+            IS_gla12_tide_attrs['Data_40HZ'][var][att_name] = att_val
 
     #-- J2000 time
     IS_gla12_tide['Data_40HZ']['DS_UTCTime_40'] = DS_UTCTime_40HZ
     IS_gla12_fill['Data_40HZ']['DS_UTCTime_40'] = None
     IS_gla12_tide_attrs['Data_40HZ']['DS_UTCTime_40'] = {}
-    for att_key,att_val in fileID['Data_40HZ']['DS_UTCTime_40'].attrs.items():
-        IS_gla12_tide_attrs['Data_40HZ']['DS_UTCTime_40'][att_key] = att_val
+    for att_name,att_val in fileID['Data_40HZ']['DS_UTCTime_40'].attrs.items():
+        if att_name not in ('DIMENSION_LIST','CLASS','NAME'):
+            IS_gla12_tide_attrs['Data_40HZ']['DS_UTCTime_40'][att_name] = att_val
     #-- record
     IS_gla12_tide['Data_40HZ']['Time']['i_rec_ndx'] = rec_ndx_40HZ
     IS_gla12_fill['Data_40HZ']['Time']['i_rec_ndx'] = None
     IS_gla12_tide_attrs['Data_40HZ']['Time']['i_rec_ndx'] = {}
-    for att_key,att_val in fileID['Data_40HZ']['Time']['i_rec_ndx'].attrs.items():
-        IS_gla12_tide_attrs['Data_40HZ']['Time']['i_rec_ndx'][att_key] = att_val
+    IS_gla12_tide_attrs['Data_40HZ']['Time']['i_rec_ndx']['coordinates'] = \
+        "../DS_UTCTime_40"
+    for att_name,att_val in fileID['Data_40HZ']['Time']['i_rec_ndx'].attrs.items():
+        if att_name not in ('DIMENSION_LIST','CLASS','NAME'):
+            IS_gla12_tide_attrs['Data_40HZ']['Time']['i_rec_ndx'][att_name] = att_val
     #-- latitude
     IS_gla12_tide['Data_40HZ']['Geolocation']['d_lat'] = lat_40HZ
     IS_gla12_fill['Data_40HZ']['Geolocation']['d_lat'] = None
     IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lat'] = {}
-    for att_key,att_val in fileID['Data_40HZ']['Geolocation']['d_lat'].attrs.items():
-        IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lat'][att_key] = att_val
+    IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lat']['coordinates'] = \
+        "../DS_UTCTime_40"
+    for att_name,att_val in fileID['Data_40HZ']['Geolocation']['d_lat'].attrs.items():
+        if att_name not in ('DIMENSION_LIST','CLASS','NAME'):
+            IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lat'][att_name] = att_val
     #-- longitude
     IS_gla12_tide['Data_40HZ']['Geolocation']['d_lon'] = lon_40HZ
     IS_gla12_fill['Data_40HZ']['Geolocation']['d_lon'] = None
     IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lon'] = {}
-    for att_key,att_val in fileID['Data_40HZ']['Geolocation']['d_lon'].attrs.items():
-        IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lon'][att_key] = att_val
+    IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lon']['coordinates'] = \
+        "../DS_UTCTime_40"
+    for att_name,att_val in fileID['Data_40HZ']['Geolocation']['d_lon'].attrs.items():
+        if att_name not in ('DIMENSION_LIST','CLASS','NAME'):
+            IS_gla12_tide_attrs['Data_40HZ']['Geolocation']['d_lon'][att_name] = att_val
 
     #-- geophysical variables
     #-- computed tide
@@ -638,10 +649,11 @@ def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,
     var = '{0}/{1}'.format('Data_40HZ','DS_UTCTime_40')
     h5['Data_40HZ']['DS_UTCTime_40'] = fileID.create_dataset(var,
         np.shape(val), data=val, dtype=val.dtype, compression='gzip')
+    #-- make dimension
+    h5['Data_40HZ']['DS_UTCTime_40'].make_scale('DS_UTCTime_40')
     #-- add HDF5 variable attributes
     for att_name,att_val in attrs.items():
-        if att_name not in ('DIMENSION_LIST',):
-            h5['Data_40HZ']['DS_UTCTime_40'].attrs[att_name] = att_val
+        h5['Data_40HZ']['DS_UTCTime_40'].attrs[att_name] = att_val
 
     #-- for each variable group
     for group in ['Time','Geolocation','Geophysical']:
@@ -655,23 +667,26 @@ def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,
                 fileID['Data_40HZ'][group].attrs[att_name] = att_val   
         #-- for each variable in the group
         for key,val in IS_gla12_tide['Data_40HZ'][group].items():
-            fv = FILL_VALUE['Data_40HZ'][group][key]
+            fillvalue = FILL_VALUE['Data_40HZ'][group][key]
             attrs = IS_gla12_attrs['Data_40HZ'][group][key]
             #-- Defining the HDF5 dataset variables
             var = '{0}/{1}/{2}'.format('Data_40HZ',group,key)
             #-- use variable compression if containing fill values
-            if fv:
+            if fillvalue:
                 h5['Data_40HZ'][group][key] = fileID.create_dataset(var,
                     np.shape(val), data=val, dtype=val.dtype,
-                    fillvalue=fv, compression='gzip')
+                    fillvalue=fillvalue, compression='gzip')
             else:
                 h5['Data_40HZ'][group][key] = fileID.create_dataset(var,
                     np.shape(val), data=val, dtype=val.dtype,
                     compression='gzip')
+            #-- attach dimensions
+            for i,dim in enumerate(['DS_UTCTime_40']):
+                h5['Data_40HZ'][group][key].dims[i].attach_scale(
+                    h5['Data_40HZ'][dim])
             #-- add HDF5 variable attributes
             for att_name,att_val in attrs.items():
-                if att_name not in ('DIMENSION_LIST',):
-                    h5['Data_40HZ'][group][key].attrs[att_name] = att_val
+                h5['Data_40HZ'][group][key].attrs[att_name] = att_val
 
     #-- Closing the HDF5 file
     fileID.close()

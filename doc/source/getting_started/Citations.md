@@ -47,4 +47,6 @@ The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) softw
 
 #### Disclaimer  
 This package includes software developed at NASA Goddard Space Flight Center (GSFC) and the University of Washington Applied Physics Laboratory (UW-APL).
-It is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.  
+It is not sponsored or maintained by the Universities Space Research Association (USRA), AVISO or NASA.
+Outputs from this software should be used for scientific or technical purposes only.
+This software should not be used for coastal navigation or any application that may risk life or property.

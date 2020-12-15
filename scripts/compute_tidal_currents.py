@@ -246,7 +246,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
             'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
             'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        reference = ('https://www.aviso.altimetry.fr/data/products/'
+        reference = ('https://www.aviso.altimetry.fr/en/data/products'
             'auxiliary-products/global-tide-fes.html')
         model_format = 'FES'
         TYPES = ['u','v']

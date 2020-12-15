@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 u"""
-compute_tides_ICESat2_ATL03.py
+compute_tides_ICESat2_ATL11.py
 Written by Tyler Sutterley (12/2020)
-Calculates tidal elevations for correcting ICESat-2 photon height data
-Calculated at ATL03 segment level using reference photon geolocation and time
-Segment level corrections can be applied to the individual photon events (PEs)
+Calculates tidal elevations for correcting ICESat-2 annual land ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
@@ -57,7 +55,6 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    read_ICESat2_ATL03.py: reads ICESat-2 global geolocated photon data files
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
     convert_julian.py: returns the calendar date and time given a Julian date
@@ -74,22 +71,7 @@ PROGRAM DEPENDENCIES:
     read_FES_model.py: extract tidal harmonic constants from FES tide models
 
 UPDATE HISTORY:
-    Updated 12/2020: H5py deprecation warning change to use make_scale
-    Updated 11/2020: added model constituents from TPXO9-atlas-v3
-    Updated 10/2020: using argparse to set command line parameters
-    Updated 08/2020: using builtin time operations.  python3 regular expressions
-    Updated 07/2020: added FES2014 and FES2014_load.  use merged delta times
-    Updated 06/2020: added version 2 of TPXO9-atlas (TPXO9-atlas-v2)
-    Updated 03/2020: use read_ICESat2_ATL03.py from read-ICESat-2 repository
-    Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
-        Program Data Center http://www.usap-dc.org/view/dataset/601235
-    Updated 11/2019: calculate minor constituents as separate variable
-        added AOTIM-5-2018 tide model (2018 update to 2004 model)
-    Updated 10/2019: external read functions.  adjust regex for processed files
-        changing Y/N flags to True/False
-    Updated 09/2019: using date functions paralleling public repository
-        add option for TPXO9-atlas.  add OTIS netcdf tide option
-    Written 04/2019
+    Written 12/2020
 """
 from __future__ import print_function
 
@@ -110,10 +92,8 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
-from icesat2_toolkit.read_ICESat2_ATL03 import read_HDF5_ATL03_main, \
-    read_HDF5_ATL03_beam
 
-#-- PURPOSE: read ICESat-2 geolocated photon data (ATL03) from NSIDC
+#-- PURPOSE: read ICESat-2 annual land ice height data (ATL11) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     VERBOSE=False, MODE=0o775):
@@ -418,57 +398,65 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         TYPE = 'z'
         SCALE = 1.0/100.0
 
-    #-- read data from FILE
+    #-- get directory from FILE
     print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
-    IS2_atl03_mds,IS2_atl03_attrs,IS2_atl03_beams = read_HDF5_ATL03_main(FILE,
-        ATTRIBUTES=True)
     DIRECTORY = os.path.dirname(FILE)
+
     #-- extract parameters from ICESat-2 ATLAS HDF5 file name
-    rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
-        r'(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
-    SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX = rx.findall(FILE).pop()
+    rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})_(\d{2})(\d{2})_'
+        r'(\d{3})_(\d{2})(.*?).h5$')
+    SUB,PRD,TRK,GRAN,SCYC,ECYC,RL,VERS,AUX = rx.findall(FILE).pop()
+
+    #-- read data from FILE
+    fileID = h5py.File(FILE,'r')
+
+    #-- read each input beam pair within the file
+    IS2_atl11_pairs = []
+    for ptx in [k for k in fileID.keys() if bool(re.match(r'pt\d',k))]:
+        #-- check if subsetted beam contains reference points
+        try:
+            fileID[ptx]['ref_pt']
+        except KeyError:
+            pass
+        else:
+            IS2_atl11_pairs.append(ptx)
 
     #-- number of GPS seconds between the GPS epoch
     #-- and ATLAS Standard Data Product (SDP) epoch
-    atlas_sdp_gps_epoch = IS2_atl03_mds['ancillary_data']['atlas_sdp_gps_epoch']
+    atlas_sdp_gps_epoch = fileID['ancillary_data']['atlas_sdp_gps_epoch'][:]
 
     #-- copy variables for outputting to HDF5 file
-    IS2_atl03_tide = {}
-    IS2_atl03_fill = {}
-    IS2_atl03_dims = {}
-    IS2_atl03_tide_attrs = {}
+    IS2_atl11_tide = {}
+    IS2_atl11_fill = {}
+    IS2_atl11_dims = {}
+    IS2_atl11_tide_attrs = {}
     #-- number of GPS seconds between the GPS epoch (1980-01-06T00:00:00Z UTC)
     #-- and ATLAS Standard Data Product (SDP) epoch (2018-01-01T00:00:00Z UTC)
     #-- Add this value to delta time parameters to compute full gps_seconds
-    IS2_atl03_tide['ancillary_data'] = {}
-    IS2_atl03_tide_attrs['ancillary_data'] = {}
+    IS2_atl11_tide['ancillary_data'] = {}
+    IS2_atl11_tide_attrs['ancillary_data'] = {}
     for key in ['atlas_sdp_gps_epoch']:
         #-- get each HDF5 variable
-        IS2_atl03_tide['ancillary_data'][key] = IS2_atl03_mds['ancillary_data'][key]
+        IS2_atl11_tide['ancillary_data'][key] = fileID['ancillary_data'][key][:]
         #-- Getting attributes of group and included variables
-        IS2_atl03_tide_attrs['ancillary_data'][key] = {}
-        for att_name,att_val in IS2_atl03_attrs['ancillary_data'][key].items():
-            IS2_atl03_tide_attrs['ancillary_data'][key][att_name] = att_val
+        IS2_atl11_tide_attrs['ancillary_data'][key] = {}
+        for att_name,att_val in fileID['ancillary_data'][key].attrs.items():
+            IS2_atl11_tide_attrs['ancillary_data'][key][att_name] = att_val
 
-    #-- for each input beam within the file
-    for gtx in sorted(IS2_atl03_beams):
+    #-- for each input beam pair within the file
+    for ptx in sorted(IS2_atl11_pairs):
         #-- output data dictionaries for beam
-        IS2_atl03_tide[gtx] = dict(geolocation={}, geophys_corr={})
-        IS2_atl03_fill[gtx] = dict(geolocation={}, geophys_corr={})
-        IS2_atl03_dims[gtx] = dict(geolocation={}, geophys_corr={})
-        IS2_atl03_tide_attrs[gtx] = dict(geolocation={}, geophys_corr={})
+        IS2_atl11_tide[ptx] = {}
+        IS2_atl11_fill[ptx] = {}
+        IS2_atl11_dims[ptx] = {}
+        IS2_atl11_tide_attrs[ptx] = {}
 
-        #-- read data and attributes for beam
-        val,attrs = read_HDF5_ATL03_beam(FILE,gtx,ATTRIBUTES=True)
-        #-- number of segments
-        n_seg = len(val['geolocation']['segment_id'])
-        #-- extract variables for computing tides
-        segment_id = val['geolocation']['segment_id'].copy()
-        delta_time = val['geolocation']['delta_time'].copy()
-        lon = val['geolocation']['reference_photon_lon'].copy()
-        lat = val['geolocation']['reference_photon_lat'].copy()
-        #-- invalid value
-        fv = attrs['geolocation']['sigma_h']['_FillValue']
+        #-- number of average segments and number of included cycles
+        delta_time = fileID[ptx]['delta_time'][:].copy()
+        invalid_time = fileID[ptx]['delta_time'].attrs['_FillValue']
+        n_points,n_cycles = np.shape(delta_time)
+        #-- find valid average segments for beam pair
+        fv = fileID[ptx]['h_corr'].attrs['_FillValue']
 
         #-- convert time from ATLAS SDP to days relative to Jan 1, 1992
         gps_seconds = atlas_sdp_gps_epoch + delta_time
@@ -477,21 +465,25 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
-            amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file,
-                model_file, EPSG, TYPE=TYPE, METHOD=METHOD, GRID=model_format)
+            amp,ph,D,c = extract_tidal_constants(fileID[ptx]['longitude'][:],
+                fileID[ptx]['latitude'][:], grid_file, model_file, EPSG,
+                TYPE=TYPE, METHOD=METHOD, GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
-            amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-                grid_file, model_files, TYPE=TYPE, METHOD=METHOD, SCALE=SCALE)
+            amp,ph,D,c = extract_netcdf_constants(fileID[ptx]['longitude'][:],
+                fileID[ptx]['latitude'][:], model_directory, grid_file,
+                model_files, TYPE=TYPE, METHOD=METHOD, SCALE=SCALE)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'GOT'):
-            amp,ph = extract_GOT_constants(lon, lat, model_directory,
-                model_files, METHOD=METHOD, SCALE=SCALE)
+            amp,ph = extract_GOT_constants(fileID[ptx]['longitude'][:],
+                fileID[ptx]['latitude'][:], model_directory, model_files,
+                METHOD=METHOD, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model_format == 'FES'):
-            amp,ph = extract_FES_constants(lon,lat,model_directory,model_files,
+            amp,ph = extract_FES_constants(fileID[ptx]['longitude'][:],
+                fileID[ptx]['latitude'][:], model_directory, model_files,
                 TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
@@ -502,154 +494,156 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         #-- calculate constituent oscillation
         hc = amp*np.exp(cph)
 
-        #-- predict tidal elevations at time and infer minor corrections
-        tide = np.ma.empty((n_seg),fill_value=fv)
-        tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = predict_tide_drift(tide_time, hc, c,
-            DELTAT=deltat, CORRECTIONS=model_format)
-        minor = infer_minor_corrections(tide_time, hc, c,
-            DELTAT=deltat, CORRECTIONS=model_format)
-        tide.data[:] += minor.data[:]
+        #-- allocate for each cycle
+        tide = np.ma.empty((n_points,n_cycles),fill_value=fv)
+        tide.mask = np.ma.ones((n_points,n_cycles),dtype=np.bool)
+        for cycle in range(n_cycles):
+            #-- find valid time and spatial points for cycle
+            tide.mask[:,cycle] = np.any(hc.mask,axis=1) | \
+                (delta_time[:,cycle] == invalid_time)
+            valid, = np.nonzero(~tide.mask[:,cycle])
+            #-- predict tidal elevations and infer minor corrections
+            tide.data[valid,cycle] = predict_tide_drift(tide_time[valid,cycle],
+                hc[valid,:], c, DELTAT=deltat[valid,cycle],
+                CORRECTIONS=model_format)
+            minor = infer_minor_corrections(tide_time[valid,cycle], hc[valid,:],
+                c, DELTAT=deltat[valid,cycle], CORRECTIONS=model_format)
+            tide.data[valid,cycle] += minor.data[:]
         #-- replace masked and nan values with fill value
-        invalid, = np.nonzero(np.isnan(tide.data) | tide.mask)
+        invalid = np.nonzero(np.isnan(tide.data) | tide.mask)
         tide.data[invalid] = tide.fill_value
         tide.mask[invalid] = True
 
         #-- group attributes for beam
-        IS2_atl03_tide_attrs[gtx]['Description'] = attrs['Description']
-        IS2_atl03_tide_attrs[gtx]['atlas_pce'] = attrs['atlas_pce']
-        IS2_atl03_tide_attrs[gtx]['atlas_beam_type'] = attrs['atlas_beam_type']
-        IS2_atl03_tide_attrs[gtx]['groundtrack_id'] = attrs['groundtrack_id']
-        IS2_atl03_tide_attrs[gtx]['atmosphere_profile'] = attrs['atmosphere_profile']
-        IS2_atl03_tide_attrs[gtx]['atlas_spot_number'] = attrs['atlas_spot_number']
-        IS2_atl03_tide_attrs[gtx]['sc_orientation'] = attrs['sc_orientation']
+        IS2_atl11_tide_attrs[ptx]['description'] = ('Contains the primary science parameters for this '
+            'data set')
+        IS2_atl11_tide_attrs[ptx]['beam_pair'] = fileID[ptx].attrs['beam_pair']
+        IS2_atl11_tide_attrs[ptx]['ReferenceGroundTrack'] = fileID[ptx].attrs['ReferenceGroundTrack']
+        IS2_atl11_tide_attrs[ptx]['first_cycle'] = fileID[ptx].attrs['first_cycle']
+        IS2_atl11_tide_attrs[ptx]['last_cycle'] = fileID[ptx].attrs['last_cycle']
+        IS2_atl11_tide_attrs[ptx]['equatorial_radius'] = fileID[ptx].attrs['equatorial_radius']
+        IS2_atl11_tide_attrs[ptx]['polar_radius'] = fileID[ptx].attrs['polar_radius']
 
-        #-- group attributes for geolocation
-        IS2_atl03_tide_attrs[gtx]['geolocation']['Description'] = ("Contains parameters related to "
-            "geolocation.  The rate of all of these parameters is at the rate corresponding to the "
-            "ICESat-2 Geolocation Along Track Segment interval (nominally 20 m along-track).")
-        IS2_atl03_tide_attrs[gtx]['geolocation']['data_rate'] = ("Data within this group are "
-            "stored at the ICESat-2 20m segment rate.")
-        #-- group attributes for geophys_corr
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['Description'] = ("Contains parameters used to "
-            "correct photon heights for geophysical effects, such as tides.  These parameters are "
-            "posted at the same interval as the ICESat-2 Geolocation Along-Track Segment interval "
-            "(nominally 20m along-track).")
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['data_rate'] = ("These parameters are stored at "
-            "the ICESat-2 Geolocation Along Track Segment rate (nominally every 20 m along-track).")
-
-        #-- geolocation, time and segment ID
-        #-- delta time in geolocation group
-        IS2_atl03_tide[gtx]['geolocation']['delta_time'] = delta_time
-        IS2_atl03_fill[gtx]['geolocation']['delta_time'] = None
-        IS2_atl03_dims[gtx]['geolocation']['delta_time'] = None
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time'] = {}
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['units'] = "seconds since 2018-01-01"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['long_name'] = "Elapsed GPS seconds"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['standard_name'] = "time"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['calendar'] = "standard"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['description'] = ("Elapsed seconds "
-            "from the ATLAS SDP GPS Epoch, corresponding to the transmit time of the reference "
-            "photon. The ATLAS Standard Data Products (SDP) epoch offset is defined within "
-            "/ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds between the GPS epoch "
-            "(1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By adding the offset "
-            "contained within atlas_sdp_gps_epoch to delta time parameters, the time in gps_seconds "
-            "relative to the GPS epoch can be computed.")
-        IS2_atl03_tide_attrs[gtx]['geolocation']['delta_time']['coordinates'] = \
-            "segment_id reference_photon_lat reference_photon_lon"
-        #-- delta time in geophys_corr group
-        IS2_atl03_tide[gtx]['geophys_corr']['delta_time'] = delta_time
-        IS2_atl03_fill[gtx]['geophys_corr']['delta_time'] = None
-        IS2_atl03_dims[gtx]['geophys_corr']['delta_time'] = None
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time'] = {}
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['units'] = "seconds since 2018-01-01"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['long_name'] = "Elapsed GPS seconds"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['standard_name'] = "time"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['calendar'] = "standard"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['description'] = ("Elapsed seconds "
-            "from the ATLAS SDP GPS Epoch, corresponding to the transmit time of the reference "
-            "photon. The ATLAS Standard Data Products (SDP) epoch offset is defined within "
-            "/ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds between the GPS epoch "
-            "(1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By adding the offset "
-            "contained within atlas_sdp_gps_epoch to delta time parameters, the time in gps_seconds "
-            "relative to the GPS epoch can be computed.")
-        IS2_atl03_tide_attrs[gtx]['geophys_corr']['delta_time']['coordinates'] = ("../geolocation/segment_id "
-            "../geolocation/reference_photon_lat ../geolocation/reference_photon_lon")
-
+        #-- geolocation, time and reference point
+        #-- cycle_number
+        IS2_atl11_tide[ptx]['cycle_number'] = fileID[ptx]['cycle_number'][:].copy()
+        IS2_atl11_fill[ptx]['cycle_number'] = None
+        IS2_atl11_dims[ptx]['cycle_number'] = None
+        IS2_atl11_tide_attrs[ptx]['cycle_number'] = {}
+        IS2_atl11_tide_attrs[ptx]['cycle_number']['units'] = "1"
+        IS2_atl11_tide_attrs[ptx]['cycle_number']['long_name'] = "Orbital cycle number"
+        IS2_atl11_tide_attrs[ptx]['cycle_number']['source'] = "ATL06"
+        IS2_atl11_tide_attrs[ptx]['cycle_number']['description'] = ("Number of 91-day periods "
+            "that have elapsed since ICESat-2 entered the science orbit. Each of the 1,387 "
+            "reference ground track (RGTs) is targeted in the polar regions once "
+            "every 91 days.")
+        #-- delta time
+        IS2_atl11_tide[ptx]['delta_time'] = fileID[ptx]['delta_time'][:].copy()
+        IS2_atl11_fill[ptx]['delta_time'] = fileID[ptx]['delta_time'].attrs['_FillValue']
+        IS2_atl11_dims[ptx]['delta_time'] = ['ref_pt','cycle_number']
+        IS2_atl11_tide_attrs[ptx]['delta_time'] = {}
+        IS2_atl11_tide_attrs[ptx]['delta_time']['units'] = "seconds since 2018-01-01"
+        IS2_atl11_tide_attrs[ptx]['delta_time']['long_name'] = "Elapsed GPS seconds"
+        IS2_atl11_tide_attrs[ptx]['delta_time']['standard_name'] = "time"
+        IS2_atl11_tide_attrs[ptx]['delta_time']['calendar'] = "standard"
+        IS2_atl11_tide_attrs[ptx]['delta_time']['source'] = "ATL06"
+        IS2_atl11_tide_attrs[ptx]['delta_time']['description'] = ("Number of GPS "
+            "seconds since the ATLAS SDP epoch. The ATLAS Standard Data Products (SDP) epoch offset "
+            "is defined within /ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds "
+            "between the GPS epoch (1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By "
+            "adding the offset contained within atlas_sdp_gps_epoch to delta time parameters, the "
+            "time in gps_seconds relative to the GPS epoch can be computed.")
+        IS2_atl11_tide_attrs[ptx]['delta_time']['coordinates'] = \
+            "ref_pt cycle_number latitude longitude"
         #-- latitude
-        IS2_atl03_tide[gtx]['geolocation']['reference_photon_lat'] = lat
-        IS2_atl03_fill[gtx]['geolocation']['reference_photon_lat'] = None
-        IS2_atl03_dims[gtx]['geolocation']['reference_photon_lat'] = ['delta_time']
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat'] = {}
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['units'] = "degrees_north"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['contentType'] = "physicalMeasurement"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['long_name'] = "Latitude"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['standard_name'] = "latitude"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['description'] = ("Latitude of each "
-            "reference photon. Computed from the ECF Cartesian coordinates of the bounce point.")
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['valid_min'] = -90.0
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['valid_max'] = 90.0
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lat']['coordinates'] = \
-            "segment_id delta_time reference_photon_lon"
+        IS2_atl11_tide[ptx]['latitude'] = fileID[ptx]['latitude'][:].copy()
+        IS2_atl11_fill[ptx]['latitude'] = fileID[ptx]['latitude'].attrs['_FillValue']
+        IS2_atl11_dims[ptx]['latitude'] = ['ref_pt']
+        IS2_atl11_tide_attrs[ptx]['latitude'] = {}
+        IS2_atl11_tide_attrs[ptx]['latitude']['units'] = "degrees_north"
+        IS2_atl11_tide_attrs[ptx]['latitude']['contentType'] = "physicalMeasurement"
+        IS2_atl11_tide_attrs[ptx]['latitude']['long_name'] = "Latitude"
+        IS2_atl11_tide_attrs[ptx]['latitude']['standard_name'] = "latitude"
+        IS2_atl11_tide_attrs[ptx]['latitude']['source'] = "ATL06"
+        IS2_atl11_tide_attrs[ptx]['latitude']['description'] = ("Center latitude of "
+            "selected segments")
+        IS2_atl11_tide_attrs[ptx]['latitude']['valid_min'] = -90.0
+        IS2_atl11_tide_attrs[ptx]['latitude']['valid_max'] = 90.0
+        IS2_atl11_tide_attrs[ptx]['latitude']['coordinates'] = \
+            "ref_pt delta_time longitude"
         #-- longitude
-        IS2_atl03_tide[gtx]['geolocation']['reference_photon_lon'] = lon
-        IS2_atl03_fill[gtx]['geolocation']['reference_photon_lon'] = None
-        IS2_atl03_dims[gtx]['geolocation']['reference_photon_lon'] = ['delta_time']
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon'] = {}
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['units'] = "degrees_east"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['contentType'] = "physicalMeasurement"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['long_name'] = "Longitude"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['standard_name'] = "longitude"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['description'] = ("Longitude of each "
-            "reference photon. Computed from the ECF Cartesian coordinates of the bounce point.")
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['valid_min'] = -180.0
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['valid_max'] = 180.0
-        IS2_atl03_tide_attrs[gtx]['geolocation']['reference_photon_lon']['coordinates'] = \
-            "segment_id delta_time reference_photon_lat"
-        #-- segment ID
-        IS2_atl03_tide[gtx]['geolocation']['segment_id'] = segment_id
-        IS2_atl03_fill[gtx]['geolocation']['segment_id'] = None
-        IS2_atl03_dims[gtx]['geolocation']['segment_id'] = ['delta_time']
-        IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id'] = {}
-        IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['units'] = "1"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['contentType'] = "referenceInformation"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['long_name'] = "Along-track segment ID number"
-        IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['description'] = ("A 7 digit number "
-            "identifying the along-track geolocation segment number.  These are sequential, starting with "
-            "1 for the first segment after an ascending equatorial crossing node. Equal to the segment_id for "
-            "the second of the two 20m ATL03 segments included in the 40m ATL03 segment")
-        IS2_atl03_tide_attrs[gtx]['geolocation']['segment_id']['coordinates'] = \
-            "delta_time reference_photon_lat reference_photon_lon"
+        IS2_atl11_tide[ptx]['longitude'] = fileID[ptx]['longitude'][:].copy()
+        IS2_atl11_fill[ptx]['longitude'] = fileID[ptx]['longitude'].attrs['_FillValue']
+        IS2_atl11_dims[ptx]['longitude'] = ['ref_pt']
+        IS2_atl11_tide_attrs[ptx]['longitude'] = {}
+        IS2_atl11_tide_attrs[ptx]['longitude']['units'] = "degrees_east"
+        IS2_atl11_tide_attrs[ptx]['longitude']['contentType'] = "physicalMeasurement"
+        IS2_atl11_tide_attrs[ptx]['longitude']['long_name'] = "Longitude"
+        IS2_atl11_tide_attrs[ptx]['longitude']['standard_name'] = "longitude"
+        IS2_atl11_tide_attrs[ptx]['longitude']['source'] = "ATL06"
+        IS2_atl11_tide_attrs[ptx]['longitude']['description'] = ("Center longitude of "
+            "selected segments")
+        IS2_atl11_tide_attrs[ptx]['longitude']['valid_min'] = -180.0
+        IS2_atl11_tide_attrs[ptx]['longitude']['valid_max'] = 180.0
+        IS2_atl11_tide_attrs[ptx]['longitude']['coordinates'] = \
+            "ref_pt delta_time latitude"
+        #-- reference point
+        IS2_atl11_tide[ptx]['ref_pt'] = fileID[ptx]['ref_pt'][:].copy()
+        IS2_atl11_fill[ptx]['ref_pt'] = None
+        IS2_atl11_dims[ptx]['ref_pt'] = None
+        IS2_atl11_tide_attrs[ptx]['ref_pt'] = {}
+        IS2_atl11_tide_attrs[ptx]['ref_pt']['units'] = "1"
+        IS2_atl11_tide_attrs[ptx]['ref_pt']['contentType'] = "referenceInformation"
+        IS2_atl11_tide_attrs[ptx]['ref_pt']['long_name'] = "Reference point number"
+        IS2_atl11_tide_attrs[ptx]['ref_pt']['source'] = "ATL06"
+        IS2_atl11_tide_attrs[ptx]['ref_pt']['description'] = ("The reference point is the 7 digit segment_id "
+            "number corresponding to the center of the ATL06 data used for each ATL11 point.  These are "
+            "sequential, starting with 1 for the first segment after an ascending equatorial crossing node.")
+        IS2_atl11_tide_attrs[ptx]['ref_pt']['coordinates'] = \
+            "delta_time latitude longitude"
 
+        #-- cycle statistics variables
+        IS2_atl11_tide[ptx]['cycle_stats'] = {}
+        IS2_atl11_fill[ptx]['cycle_stats'] = {}
+        IS2_atl11_dims[ptx]['cycle_stats'] = {}
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'] = {}
+        IS2_atl11_tide_attrs[ptx]['cycle_stats']['Description'] = ("The cycle_stats subgroup "
+            "contains summary information about segments for each reference point, including "
+            "the uncorrected mean heights for reference surfaces, blowing snow and cloud "
+            "indicators, and geolocation and height misfit statistics.")
+        IS2_atl11_tide_attrs[ptx]['cycle_stats']['data_rate'] = ("Data within this group "
+            "are stored at the average segment rate.")
         #-- computed tide
-        IS2_atl03_tide[gtx]['geophys_corr'][variable] = tide
-        IS2_atl03_fill[gtx]['geophys_corr'][variable] = tide.fill_value
-        IS2_atl03_dims[gtx]['geophys_corr'][variable] = ['delta_time']
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable] = {}
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['units'] = "meters"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['contentType'] = "referenceInformation"
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['long_name'] = long_name
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['description'] = description
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['source'] = TIDE_MODEL
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['reference'] = reference
-        IS2_atl03_tide_attrs[gtx]['geophys_corr'][variable]['coordinates'] = \
-            ("../geolocation/segment_id ../geolocation/delta_time "
-            "../geolocation/reference_photon_lat ../geolocation/reference_photon_lon")
+        IS2_atl11_tide[ptx]['cycle_stats'][variable] = tide
+        IS2_atl11_fill[ptx]['cycle_stats'][variable] = tide.fill_value
+        IS2_atl11_dims[ptx]['cycle_stats'][variable] = ['ref_pt','cycle_number']
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable] = {}
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['units'] = "meters"
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['contentType'] = "referenceInformation"
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['long_name'] = long_name
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['description'] = description
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['source'] = TIDE_MODEL
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['reference'] = reference
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['coordinates'] = \
+            "../ref_pt ../cycle_number ../delta_time ../latitude ../longitude"
+
+    #-- close the input HDF5 file
+    fileID.close()
 
     #-- output tidal HDF5 file
-    args = (PRD,TIDE_MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
-    file_format = '{0}_{1}_TIDES_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
+    args = (PRD,TIDE_MODEL,TRK,GRAN,SCYC,ECYC,RL,VERS,AUX)
+    file_format = '{0}_{1}_TIDES_{2}{3}_{4}{5}_{6}_{7}{8}.h5'
     #-- print file information
     print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-    HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_tide_attrs,
+    HDF5_ATL11_tide_write(IS2_atl11_tide, IS2_atl11_tide_attrs,
         CLOBBER=True, INPUT=os.path.basename(FILE),
-        FILL_VALUE=IS2_atl03_fill, DIMENSIONS=IS2_atl03_dims,
+        FILL_VALUE=IS2_atl11_fill, DIMENSIONS=IS2_atl11_dims,
         FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
     #-- change the permissions mode
     os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
-def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
+def HDF5_ATL11_tide_write(IS2_atl11_tide, IS2_atl11_attrs, INPUT=None,
     FILENAME='', FILL_VALUE=None, DIMENSIONS=None, CLOBBER=False):
     #-- setting HDF5 clobber attribute
     if CLOBBER:
@@ -666,70 +660,87 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     #-- number of GPS seconds between the GPS epoch (1980-01-06T00:00:00Z UTC)
     #-- and ATLAS Standard Data Product (SDP) epoch (2018-01-01T00:00:00Z UTC)
     h5['ancillary_data'] = {}
-    for k,v in IS2_atl03_tide['ancillary_data'].items():
+    for k,v in IS2_atl11_tide['ancillary_data'].items():
         #-- Defining the HDF5 dataset variables
         val = 'ancillary_data/{0}'.format(k)
         h5['ancillary_data'][k] = fileID.create_dataset(val, np.shape(v), data=v,
             dtype=v.dtype, compression='gzip')
         #-- add HDF5 variable attributes
-        for att_name,att_val in IS2_atl03_attrs['ancillary_data'][k].items():
+        for att_name,att_val in IS2_atl11_attrs['ancillary_data'][k].items():
             h5['ancillary_data'][k].attrs[att_name] = att_val
 
-    #-- write each output beam
-    beams = [k for k in IS2_atl03_tide.keys() if bool(re.match(r'gt\d[lr]',k))]
-    for gtx in beams:
-        fileID.create_group(gtx)
-        h5[gtx] = {}
+    #-- write each output beam pair
+    pairs = [k for k in IS2_atl11_tide.keys() if bool(re.match(r'pt\d',k))]
+    for ptx in pairs:
+        fileID.create_group(ptx)
+        h5[ptx] = {}
         #-- add HDF5 group attributes for beam
-        for att_name in ['Description','atlas_pce','atlas_beam_type',
-            'groundtrack_id','atmosphere_profile','atlas_spot_number',
-            'sc_orientation']:
-            fileID[gtx].attrs[att_name] = IS2_atl03_attrs[gtx][att_name]
-        #-- create geolocation and geophys_corr groups
-        for key in ['geolocation','geophys_corr']:
-            fileID[gtx].create_group(key)
-            h5[gtx][key] = {}
-            for att_name in ['Description','data_rate']:
-                att_val = IS2_atl03_attrs[gtx][key][att_name]
-                fileID[gtx][key].attrs[att_name] = att_val
+        for att_name in ['description','beam_pair','ReferenceGroundTrack',
+            'first_cycle','last_cycle','equatorial_radius','polar_radius']:
+            fileID[ptx].attrs[att_name] = IS2_atl11_attrs[ptx][att_name]
 
-            #-- all variables for group
-            groupkeys = set(IS2_atl03_tide[gtx][key].keys())-set(['delta_time'])
-            for k in ['delta_time',*sorted(groupkeys)]:
-                #-- values and attributes
-                v = IS2_atl03_tide[gtx][key][k]
-                attrs = IS2_atl03_attrs[gtx][key][k]
-                fillvalue = FILL_VALUE[gtx][key][k]
-                #-- Defining the HDF5 dataset variables
-                val = '{0}/{1}/{2}'.format(gtx,key,k)
-                if fillvalue:
-                    h5[gtx][key][k] = fileID.create_dataset(val, np.shape(v),
-                        data=v, dtype=v.dtype, fillvalue=fillvalue,
-                        compression='gzip')
-                else:
-                    h5[gtx][key][k] = fileID.create_dataset(val, np.shape(v),
-                        data=v, dtype=v.dtype, compression='gzip')
-                #-- create or attach dimensions for HDF5 variable
-                if DIMENSIONS[gtx][key][k]:
-                    #-- attach dimensions
-                    for i,dim in enumerate(DIMENSIONS[gtx][key][k]):
-                        h5[gtx][key][k].dims[i].attach_scale(h5[gtx][key][dim])
-                else:
-                    #-- make dimension
-                    h5[gtx][key][k].make_scale(k)
-                #-- add HDF5 variable attributes
-                for att_name,att_val in attrs.items():
-                    h5[gtx][key][k].attrs[att_name] = att_val
+        #-- ref_pt, cycle number, geolocation and delta_time variables
+        for k in ['ref_pt','cycle_number','delta_time','latitude','longitude']:
+            #-- values and attributes
+            v = IS2_atl11_tide[ptx][k]
+            attrs = IS2_atl11_attrs[ptx][k]
+            fillvalue = FILL_VALUE[ptx][k]
+            #-- Defining the HDF5 dataset variables
+            val = '{0}/{1}'.format(ptx,k)
+            if fillvalue:
+                h5[ptx][k] = fileID.create_dataset(val, np.shape(v), data=v,
+                    dtype=v.dtype, fillvalue=fillvalue, compression='gzip')
+            else:
+                h5[ptx][k] = fileID.create_dataset(val, np.shape(v), data=v,
+                    dtype=v.dtype, compression='gzip')
+            #-- create or attach dimensions for HDF5 variable
+            if DIMENSIONS[ptx][k]:
+                #-- attach dimensions
+                for i,dim in enumerate(DIMENSIONS[ptx][k]):
+                    h5[ptx][k].dims[i].attach_scale(h5[ptx][dim])
+            else:
+                #-- make dimension
+                h5[ptx][k].make_scale(k)      
+            #-- add HDF5 variable attributes
+            for att_name,att_val in attrs.items():
+                h5[ptx][k].attrs[att_name] = att_val
+
+        #-- add to cycle_stats variables
+        key = 'cycle_stats'
+        fileID[ptx].create_group(key)
+        h5[ptx][key] = {}
+        for att_name in ['Description','data_rate']:
+            att_val=IS2_atl11_attrs[ptx][key][att_name]
+            fileID[ptx][key].attrs[att_name] = att_val
+        for k,v in IS2_atl11_tide[ptx][key].items():
+            #-- attributes
+            attrs = IS2_atl11_attrs[ptx][key][k]
+            fillvalue = FILL_VALUE[ptx][key][k]
+            #-- Defining the HDF5 dataset variables
+            val = '{0}/{1}/{2}'.format(ptx,key,k)
+            if fillvalue:
+                h5[ptx][key][k] = fileID.create_dataset(val, np.shape(v), data=v,
+                    dtype=v.dtype, fillvalue=fillvalue, compression='gzip')
+            else:
+                h5[ptx][key][k] = fileID.create_dataset(val, np.shape(v), data=v,
+                    dtype=v.dtype, compression='gzip')
+            #-- attach dimensions
+            for i,dim in enumerate(DIMENSIONS[ptx][key][k]):
+                h5[ptx][key][k].dims[i].attach_scale(h5[ptx][dim])
+            #-- add HDF5 variable attributes
+            for att_name,att_val in attrs.items():
+                h5[ptx][key][k].attrs[att_name] = att_val
 
     #-- HDF5 file title
     fileID.attrs['featureType'] = 'trajectory'
-    fileID.attrs['title'] = 'ATLAS/ICESat-2 L2A Global Geolocated Photon Data'
-    fileID.attrs['summary'] = ('The purpose of ATL03 is to provide along-track '
-        'photon data for all 6 ATLAS beams and associated statistics')
-    fileID.attrs['description'] = ('Photon heights determined by ATBD '
-        'Algorithm using POD and PPD. All photon events per transmit pulse '
-        'per beam. Includes POD and PPD vectors. Classification of each '
-        'photon by several ATBD Algorithms.')
+    fileID.attrs['title'] = 'ATLAS/ICESat-2 Annual Land Ice Height'
+    fileID.attrs['summary'] = ('The purpose of ATL11 is to provide an ICESat-2 '
+        'satellite cycle summary of heights and height changes of land-based '
+        'ice and will be provided as input to ATL15 and ATL16, gridded '
+        'estimates of heights and height-changes.')
+    fileID.attrs['description'] = ('Land ice parameters for each beam pair. '
+        'All parameters are calculated for the same along-track increments '
+        'for each beam pair and repeat.')
     date_created = datetime.datetime.today()
     fileID.attrs['date_created'] = date_created.isoformat()
     project = 'ICESat-2 > Ice, Cloud, and land Elevation Satellite-2'
@@ -742,21 +753,22 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     fileID.attrs['source'] = 'Spacecraft'
     fileID.attrs['references'] = 'https://nsidc.org/data/icesat-2'
     fileID.attrs['processing_level'] = '4'
-    #-- add attributes for input ATL03 files
+    #-- add attributes for input ATL11 files
     fileID.attrs['input_files'] = os.path.basename(INPUT)
     #-- find geospatial and temporal ranges
     lnmn,lnmx,ltmn,ltmx,tmn,tmx = (np.inf,-np.inf,np.inf,-np.inf,np.inf,-np.inf)
-    for gtx in beams:
-        lon = IS2_atl03_tide[gtx]['geolocation']['reference_photon_lon']
-        lat = IS2_atl03_tide[gtx]['geolocation']['reference_photon_lat']
-        delta_time = IS2_atl03_tide[gtx]['geolocation']['delta_time']
+    for ptx in pairs:
+        lon = IS2_atl11_tide[ptx]['longitude']
+        lat = IS2_atl11_tide[ptx]['latitude']
+        delta_time = IS2_atl11_tide[ptx]['delta_time']
+        valid = np.nonzero(delta_time != FILL_VALUE[ptx]['delta_time'])
         #-- setting the geospatial and temporal ranges
         lnmn = lon.min() if (lon.min() < lnmn) else lnmn
         lnmx = lon.max() if (lon.max() > lnmx) else lnmx
         ltmn = lat.min() if (lat.min() < ltmn) else ltmn
         ltmx = lat.max() if (lat.max() > ltmx) else ltmx
-        tmn = delta_time.min() if (delta_time.min() < tmn) else tmn
-        tmx = delta_time.max() if (delta_time.max() > tmx) else tmx
+        tmn = delta_time[valid].min() if (delta_time[valid].min() < tmn) else tmn
+        tmx = delta_time[valid].max() if (delta_time[valid].max() > tmx) else tmx
     #-- add geospatial and temporal attributes
     fileID.attrs['geospatial_lat_min'] = ltmn
     fileID.attrs['geospatial_lat_max'] = ltmx
@@ -768,7 +780,7 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     fileID.attrs['date_type'] = 'UTC'
     fileID.attrs['time_type'] = 'CCSDS UTC-A'
     #-- convert start and end time from ATLAS SDP seconds into GPS seconds
-    atlas_sdp_gps_epoch=IS2_atl03_tide['ancillary_data']['atlas_sdp_gps_epoch']
+    atlas_sdp_gps_epoch=IS2_atl11_tide['ancillary_data']['atlas_sdp_gps_epoch']
     gps_seconds = atlas_sdp_gps_epoch + np.array([tmn,tmx])
     #-- calculate leap seconds
     leaps = pyTMD.time.count_leap_seconds(gps_seconds)
@@ -792,14 +804,14 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
 def main():
     #-- Read the system arguments listed after the program
     parser = argparse.ArgumentParser(
-        description="""Calculates tidal elevations for correcting ICESat-2 ATL03
-            geolocated photon height data
+        description="""Calculates tidal elevations for correcting ICESat-2 ATL11
+            annual land ice height data
             """
     )
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
-        help='ICESat-2 ATL03 file to run')
+        help='ICESat-2 ATL11 file to run')
     #-- directory with tide data
     parser.add_argument('--directory','-D',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
@@ -832,7 +844,7 @@ def main():
         help='Permission mode of directories and files created')
     args = parser.parse_args()
 
-    #-- run for each input ATL03 file
+    #-- run for each input ATL11 file
     for FILE in args.infile:
         compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
             METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)

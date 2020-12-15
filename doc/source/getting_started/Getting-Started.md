@@ -2,6 +2,7 @@ Getting Started
 ===============
 
 This documentation is intended to explain how to compute ocean, load and pole tide variations using the set of pyTMD programs.
+The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface. 
 Ocean tides are typically observed using float gauges, GPS stations, pressure recorders, and satellite altimetry.
 Ocean and load tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation.
 The tidal oscillations can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
@@ -54,8 +55,8 @@ This structure was chosen based on the different formats of each tide model.
     * GOT4.10_load: `<path_to_tide_models>/GOT4.10c/grids_loadtide/`
 
 - Finite Element Solution tide models
-    * [FES2014](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html): `<path_to_tide_models>/fes2014/ocean_tide/`
-    * [FES2014_load](https://www.aviso.altimetry.fr/data/products/auxiliary-products/global-tide-fes.html): `<path_to_tide_models>/fes2014/load_tide/`
+    * [FES2014](https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html): `<path_to_tide_models>/fes2014/ocean_tide/`
+    * [FES2014_load](https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html): `<path_to_tide_models>/fes2014/load_tide/`
 
 #### Programs
 For users wanting to compute tide corrections for use with numpy arrays or pandas dataframes [`compute_tide_corrections.py`](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py) is the place to start.  It is a function that takes x, y, and time coordinates and computes the corresponding tidal elevation.
@@ -78,7 +79,14 @@ python compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS20
     input_file.H5 output_file.H5
 ```
 
-There are specific programs for correcting NASA [Operation IceBridge](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py), [ICESat GLA12 ice sheet](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat_GLA12.py), [ICESat-2 ATL03 geolocated photon](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py), [ICESat-2 ATL06 land ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py), [ICESat-2 ATL07 sea ice](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py) and [ICESat-2 ATL12 ocean surface](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py) data.
+There are specific programs for correcting some publicly available elevation datasets:
+- [NASA Operation IceBridge data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py)
+- [ICESat GLA12 ice sheet altimetry data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat_GLA12.py) 
+- [ICESat-2 ATL03 geolocated photon data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py)
+- [ICESat-2 ATL06 land ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py) 
+- [ICESat-2 ATL07 sea ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py)
+- [ICESat-2 ATL11 annual land ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py) 
+- [ICESat-2 ATL12 ocean surface height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py)
 
 #### Time
 The default time in pyTMD is days (UTC) since a given epoch.
