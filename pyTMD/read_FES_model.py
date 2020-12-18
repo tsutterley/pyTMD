@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (09/2020)
+read_FES_model.py (12/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -30,6 +30,7 @@ OPTIONS:
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate model using nearest-neighbors
     GZIP: input ascii or netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -47,9 +48,11 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
-    bilinear_interp.py: bilinear interpolation of data to specified coordinates
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2020: added nearest-neighbor data extrapolation
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
@@ -61,10 +64,12 @@ import netCDF4
 import numpy as np
 import scipy.interpolate
 from pyTMD.bilinear_interp import bilinear_interp
+from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_FES_constants(ilon, ilat, directory, model_files,
-    TYPE='z', VERSION=None, METHOD='spline', GZIP=True, SCALE=1):
+    TYPE='z', VERSION=None, METHOD='spline', EXTRAPOLATE=False,
+    GZIP=True, SCALE=1):
     """
     Reads files for an ascii or netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -93,6 +98,7 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate model using nearest-neighbors
     GZIP: input files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -165,6 +171,16 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
             #-- replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
+            hci.data[hci.mask] = hci.fill_value
+        #-- extrapolate data using nearest-neighbors
+        if EXTRAPOLATE:
+            #-- find invalid data points
+            inv, = np.nonzero(hci.mask)
+            #-- extrapolate points within 10km of valid model points
+            hci.data[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
+                dtype=hc.dtype,cutoff=10.0)
+            #-- replace nan values with fill_value
+            hci.mask[inv] = np.isnan(hci.data[inv])
             hci.data[hci.mask] = hci.fill_value
         #-- convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci)*SCALE

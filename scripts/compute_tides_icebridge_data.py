@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -43,6 +43,7 @@ COMMAND LINE OPTIONS:
         linear
         nearest
         bilinear
+    -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -69,14 +70,17 @@ PROGRAM DEPENDENCIES:
     infer_minor_corrections.py: return corrections for minor constituents
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
-    predict_tide_drift.py: predict tidal elevations using harmonic constants
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
     read_FES_model.py: extract tidal harmonic constants from FES tide models
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    predict_tide_drift.py: predict tidal elevations using harmonic constants
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output ocean and load tide as tide_ocean and tide_load
@@ -411,7 +415,7 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
-    METHOD='spline', VERBOSE=False, MODE=0o775):
+    METHOD='spline', EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
 
     #-- extract file name and subsetter indices lists
     match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
@@ -759,23 +763,24 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
             grid_file, model_file, EPSG, TYPE=TYPE, METHOD=METHOD,
-            GRID=model_format)
+            EXTRAPOLATE=EXTRAPOLATE, GRID=model_format)
         deltat = np.zeros_like(t)
     elif model_format in ('netcdf'):
         amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
             model_directory, grid_file, model_files, TYPE=TYPE, METHOD=METHOD,
-            SCALE=SCALE)
+            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(dinput['lon'], dinput['lat'],
-            model_directory, model_files, METHOD=METHOD, SCALE=SCALE)
+            model_directory, model_files, METHOD=METHOD,
+            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
             model_directory, model_files, TYPE=TYPE, VERSION=TIDE_MODEL,
-            METHOD=METHOD, SCALE=SCALE)
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, t)
@@ -923,6 +928,10 @@ def main():
         metavar='METHOD', type=str, default='spline',
         choices=('spline','linear','nearest','bilinear'),
         help='Spatial interpolation method')
+    #-- extrapolate with nearest-neighbors
+    parser.add_argument('--extrapolate','-E',
+        default=False, action='store_true',
+        help='Extrapolate with nearest-neighbors')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -937,7 +946,8 @@ def main():
     #-- run for each input Operation IceBridge file
     for arg in args.infile:
         compute_tides_icebridge_data(args.directory, arg, TIDE_MODEL=args.tide,
-            METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
+            METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
+            VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

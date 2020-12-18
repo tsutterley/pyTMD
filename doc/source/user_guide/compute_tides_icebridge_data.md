@@ -44,5 +44,6 @@ python compute_tides_icebridge_data.py --directory <path_to_directory> --tide <m
      * `'linear'`
      * `'nearest'`
      * `'bilinear'`
+ - `-E X`, `--extrapolate X`: Extrapolate with nearest-neighbors
  - `-M X`, `--mode X`: Permission mode of output file
  - `-V`, `--verbose`: Output information about each created file

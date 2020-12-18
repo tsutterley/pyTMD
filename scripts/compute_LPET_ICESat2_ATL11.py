@@ -100,10 +100,10 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
     #-- for each input beam pair within the file
     for ptx in sorted(IS2_atl11_pairs):
         #-- output data dictionaries for beam
-        IS2_atl11_tide[ptx] = {}
-        IS2_atl11_fill[ptx] = {}
-        IS2_atl11_dims[ptx] = {}
-        IS2_atl11_tide_attrs[ptx] = {}
+        IS2_atl11_tide[ptx] = dict(cycle_stats={})
+        IS2_atl11_fill[ptx] = dict(cycle_stats={})
+        IS2_atl11_dims[ptx] = dict(cycle_stats={})
+        IS2_atl11_tide_attrs[ptx] = dict(cycle_stats={})
 
         #-- number of average segments and number of included cycles
         delta_time = fileID[ptx]['delta_time'][:].copy()
@@ -227,10 +227,6 @@ def compute_LPET_ICESat2(FILE, VERBOSE=False, MODE=0o775):
             "delta_time latitude longitude"
 
         #-- cycle statistics variables
-        IS2_atl11_tide[ptx]['cycle_stats'] = {}
-        IS2_atl11_fill[ptx]['cycle_stats'] = {}
-        IS2_atl11_dims[ptx]['cycle_stats'] = {}
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'] = {}
         IS2_atl11_tide_attrs[ptx]['cycle_stats']['Description'] = ("The cycle_stats subgroup "
             "contains summary information about segments for each reference point, including "
             "the uncorrected mean heights for reference surfaces, blowing snow and cloud "

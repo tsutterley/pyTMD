@@ -83,6 +83,11 @@ def test_decimal_dates(YEAR,MONTH):
     assert (np.floor(minute_temp) == MINUTE)
     assert (np.abs(second - SECOND) < eps)
 
+#-- PURPOSE: test UNIX time
+def test_unix_time():
+    UNIX = pyTMD.utilities.get_unix_time('2018-01-01 00:00:00')
+    assert (UNIX == 1514764800)
+
 #-- PURPOSE: test parsing time strings
 def test_parse_date_string():
     #-- time string for Modified Julian Days

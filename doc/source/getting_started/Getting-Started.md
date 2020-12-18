@@ -101,3 +101,9 @@ The default coordinate system in pyTMD is WGS84 geodetic coordinates in latitude
 pyTMD uses [pyproj](https://pypi.org/project/pyproj/) to convert from different coordinate systems and datums.
 Some regional tide models are projected in a different coordinate system.
 For these cases, pyTMD will [convert from latitude and longitude to the model coordinate system](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py).
+
+#### Interpolation
+For converting from model coordinates, pyTMD uses spatial interpolation routines from [scipy](https://docs.scipy.org/doc/scipy/reference/interpolate.html) along with a built-in [`'bilinear'`](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/bilinear_interp.py) interpolation routine.
+The default interpolator uses a [biharmonic `'spline'`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RectBivariateSpline.html) function to interpolate from the model coordinate system to the output coordinates.
+There are options to use `'nearest'` and `'linear'` interpolators with the [regular grid](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RegularGridInterpolator.html) function.
+For coastal or near-grounded points, the model can be extrapolated using a [nearest-neighbor](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/nearest_extrap.py) routine.

@@ -133,12 +133,13 @@ def test_verify_GOT47(METHOD):
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest','bilinear'])
+@pytest.mark.parametrize("EXTRAPOLATE", [True])
 #-- PURPOSE: test the tide correction wrapper function
-def test_Ross_Ice_Shelf(METHOD):
+def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
     #-- create an image around the Ross Ice Shelf
     xlimits = np.array([-740000,520000])
     ylimits = np.array([-1430000,-300000])
-    spacing = np.array([5e3,-5e3])
+    spacing = np.array([10e3,-10e3])
     #-- x and y coordinates
     x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
     y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])
@@ -151,5 +152,6 @@ def test_Ross_Ice_Shelf(METHOD):
     #-- calculate tide map
     tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL='GOT4.7', EPOCH=(2018,1,1,0,0,0),
-        TYPE='grid', TIME='GPS', EPSG=3031, METHOD=METHOD)
+        TYPE='grid', TIME='GPS', EPSG=3031, METHOD=METHOD,
+        EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)

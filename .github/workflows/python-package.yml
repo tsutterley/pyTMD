@@ -73,7 +73,7 @@ jobs:
         ref: inferminor
     - name: Test with pytest
       run: |
-        pytest --cov=./ --cov-report=xml \
+        pytest --verbose --cov=./ --cov-report=xml \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \
             --aws-access=${{ secrets.AWS_ACCESS_KEY_ID }} \
