@@ -29,11 +29,11 @@ General Methods
 
 .. method:: pyTMD.utilities.get_hash(local)
 
-    Get the MD5 hash value from a local file
+    Get the MD5 hash value from a local file or BytesIO object
 
     Arguments:
 
-        `local`: path to file
+        `local`: BytesIO object or path to file
 
 
 .. method:: pyTMD.utilities.url_split(s)

@@ -40,17 +40,22 @@ def parse_date_string(date_string):
     Arguments
     ---------
     date_string: time-units since yyyy-mm-dd hh:mm:ss
+
+    Returns
+    -------
+    epoch of delta time
+    multiplication factor to convert to seconds
     """
     units,epoch = split_date_string(date_string)
-    conversion_factors = {'microseconds': 1e6,'microsecond': 1e6,
-        'microsec': 1e6,'microsecs': 1e6,
-        'milliseconds': 1e3,'millisecond': 1e3,'millisec': 1e3,
-        'millisecs': 1e3,'msec': 1e3,'msecs': 1e3,'ms': 1e3,
+    conversion_factors = {'microseconds': 1e-6,'microsecond': 1e-6,
+        'microsec': 1e-6,'microsecs': 1e-6,
+        'milliseconds': 1e-3,'millisecond': 1e-3,'millisec': 1e-3,
+        'millisecs': 1e-3,'msec': 1e-3,'msecs': 1e-3,'ms': 1e-3,
         'seconds': 1.0,'second': 1.0,'sec': 1.0,'secs': 1.0,'s': 1.0,
-        'minutes': 1.0/60.0,'minute': 1.0/60.0,'min': 1.0/60.0,'mins': 1.0/60.0,
-        'hours': 1.0/3600.0,'hour': 1.0/3600.0,'hr': 1.0/3600.0,
-        'hrs': 1.0/3600.0,'h': 1.0/3600.0,
-        'day': 1.0/86400.0,'days': 1.0/86400.0,'d': 1.0/86400.0}
+        'minutes': 60.0,'minute': 60.0,'min': 60.0,'mins': 60.0,
+        'hours': 3600.0,'hour': 3600.0,'hr': 3600.0,
+        'hrs': 3600.0,'h': 3600.0,
+        'day': 86400.0,'days': 86400.0,'d': 86400.0}
     if units not in conversion_factors.keys():
         raise ValueError('Invalid units: {0}'.format(units))
     #-- return the epoch (as list) and the time unit conversion factors
@@ -66,7 +71,7 @@ def split_date_string(date_string):
     date_string: time-units since yyyy-mm-dd hh:mm:ss
     """
     try:
-        units,since,epoch = date_string.split(None,2)
+        units,_,epoch = date_string.split(None,2)
     except ValueError:
         raise ValueError('Invalid format: {0}'.format(date_string))
     else:

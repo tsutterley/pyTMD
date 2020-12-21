@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (09/2020)
+read_tide_model.py (12/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -28,6 +28,7 @@ OPTIONS:
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate model using nearest-neighbors
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
         OTIS: combined global solution
@@ -47,9 +48,11 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates
-    bilinear_interp.py: bilinear interpolation of data to specified coordinates
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
         use masked arrays with atlas models and grids. make 2' grid with nearest
@@ -73,10 +76,11 @@ import numpy as np
 import scipy.interpolate
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.bilinear_interp import bilinear_interp
+from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
-    METHOD='spline', GRID='OTIS'):
+    METHOD='spline', EXTRAPOLATE=False, GRID='OTIS'):
     """
     Reads files for an OTIS-formatted tidal model
     Makes initial calculations to run the tide program
@@ -100,6 +104,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate model using nearest-neighbors
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
         OTIS: combined global solution
@@ -257,6 +262,16 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- replace invalid values with fill_value
                 z1.mask = (z1.data == z1.fill_value) | (~mz1.astype(np.bool))
                 z1.data[z1.mask] = z1.fill_value
+            #-- extrapolate data using nearest-neighbors
+            if EXTRAPOLATE:
+                #-- find invalid data points
+                inv, = np.nonzero(z1.mask)
+                #-- extrapolate points within 10km of valid model points
+                z1.data[inv] = nearest_extrap(xi,yi,z,x[inv],y[inv],
+                    dtype=np.complex128,cutoff=10.0,EPSG=EPSG)
+                #-- replace nan values with fill_value
+                z1.mask[inv] = np.isnan(z1.data[inv])
+                z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
             amplitude.mask[:,i] = np.copy(z1.mask)
@@ -301,6 +316,16 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
                 u1.mask = (u1.data == u1.fill_value) | (~mu1.astype(np.bool))
+                u1.data[u1.mask] = u1.fill_value
+            #-- extrapolate data using nearest-neighbors
+            if EXTRAPOLATE:
+                #-- find invalid data points
+                inv, = np.nonzero(u1.mask)
+                #-- extrapolate points within 10km of valid model points
+                u1.data[inv] = nearest_extrap(xu,yi,u,x[inv],y[inv],
+                    dtype=np.complex128,cutoff=10.0,EPSG=EPSG)
+                #-- replace nan values with fill_value
+                u1.mask[inv] = np.isnan(u1.data[inv])
                 u1.data[u1.mask] = u1.fill_value
             #-- convert units
             u1 = u1/unit_conv
@@ -348,6 +373,16 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
                 v1.mask = (v1.data == v1.fill_value) | (~mv1.astype(np.bool))
+                v1.data[v1.mask] = v1.fill_value
+            #-- extrapolate data using nearest-neighbors
+            if EXTRAPOLATE:
+                #-- find invalid data points
+                inv, = np.nonzero(v1.mask)
+                #-- extrapolate points within 10km of valid model points
+                v1.data[inv] = nearest_extrap(x,yv,v,x[inv],y[inv],
+                    dtype=np.complex128,cutoff=10.0,EPSG=EPSG)
+                #-- replace nan values with fill_value
+                v1.mask[inv] = np.isnan(v1.data[inv])
                 v1.data[v1.mask] = v1.fill_value
             #-- convert units
             v1 = v1/unit_conv

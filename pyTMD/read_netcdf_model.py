@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (11/2020)
+read_netcdf_model.py (12/2020)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -29,6 +29,7 @@ OPTIONS:
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate model using nearest-neighbors
     GZIP: input netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -48,9 +49,12 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
-    bilinear_interp.py: bilinear interpolation of data to specified coordinates
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2020: added valid data extrapolation with nearest_extrap
+        replace tostring with tobytes to fix DeprecationWarning
     Updated 11/2020: create function to read bathymetry and spatial coordinates
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
@@ -67,10 +71,11 @@ import netCDF4
 import numpy as np
 import scipy.interpolate
 from pyTMD.bilinear_interp import bilinear_interp
+from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
-    TYPE='z', METHOD='spline', GZIP=True, SCALE=1):
+    TYPE='z', METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1):
     """
     Reads files for a netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -96,6 +101,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate model using nearest-neighbors
     GZIP: input netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -118,8 +124,6 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     bathymetry = extend_matrix(bathymetry)
     #-- create masks
     bathymetry.mask = (bathymetry.data == 0)
-    #-- create meshes from latitude and longitude
-    gridlon,gridlat = np.meshgrid(lon,lat)
 
     #-- adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(ilon)
@@ -211,6 +215,16 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 #-- mask invalid values
                 z1.mask[:] |= np.copy(D.mask)
                 z1.data[z1.mask] = z1.fill_value
+            #-- extrapolate data using nearest-neighbors
+            if EXTRAPOLATE:
+                #-- find invalid data points
+                inv, = np.nonzero(z1.mask)
+                #-- extrapolate points within 10km of valid model points
+                z1.data[inv] = nearest_extrap(lon,lat,z,ilon[inv],ilat[inv],
+                    dtype=z.dtype,cutoff=10.0)
+                #-- replace nan values with fill_value
+                z1.mask[inv] = np.isnan(z1.data[inv])
+                z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             ampl[:,i] = np.abs(z1)
             phase[:,i] = np.arctan2(-np.imag(z1),np.real(z1))
@@ -247,6 +261,16 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 tr1.data[:] = r1.__call__(np.c_[ilat,ilon])
                 #-- mask invalid values
                 tr1.mask[:] |= np.copy(D.mask)
+                tr1.data[tr1.mask] = tr1.fill_value
+            #-- extrapolate data using nearest-neighbors
+            if EXTRAPOLATE:
+                #-- find invalid data points
+                inv, = np.nonzero(tr1.mask)
+                #-- extrapolate points within 10km of valid model points
+                tr1.data[inv] = nearest_extrap(lon,lat,tr,ilon[inv],ilat[inv],
+                    dtype=tr.dtype,cutoff=10.0)
+                #-- replace nan values with fill_value
+                tr1.mask[inv] = np.isnan(tr1.data[inv])
                 tr1.data[tr1.mask] = tr1.fill_value
             #-- convert units
             tr1 = tr1/unit_conv
@@ -386,7 +410,7 @@ def read_elevation_file(input_file,GZIP):
     else:
         fileID = netCDF4.Dataset(input_file,'r')
     #-- constituent name
-    con = fileID.variables['con'][:].tostring().decode('utf-8')
+    con = fileID.variables['con'][:].tobytes().decode('utf-8')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
@@ -433,7 +457,7 @@ def read_transport_file(input_file,TYPE,GZIP):
     else:
         fileID = netCDF4.Dataset(input_file,'r')
     #-- constituent name
-    con = fileID.variables['con'][:].tostring().decode('utf-8')
+    con = fileID.variables['con'][:].tobytes().decode('utf-8')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size

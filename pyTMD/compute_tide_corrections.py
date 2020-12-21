@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -62,8 +62,11 @@ PROGRAM DEPENDENCIES:
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
     read_FES_model.py: extract tidal harmonic constants from FES tide models
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 08/2020: using builtin time operations.
         calculate difference in leap seconds from start of epoch
@@ -92,7 +95,7 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC',
-    METHOD='spline', FILL_VALUE=np.nan):
+    METHOD='spline', EXTRAPOLATE=False, FILL_VALUE=np.nan):
     """
     Compute tides at points and times using tidal harmonics
 
@@ -340,21 +343,24 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
-            model_EPSG, TYPE=model_type, METHOD=METHOD, GRID=model_format)
+            model_EPSG, TYPE=model_type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+            GRID=model_format)
         deltat = np.zeros_like(t)
     elif (model_format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-            grid_file, model_files, TYPE=model_type, METHOD=METHOD, SCALE=SCALE)
+            grid_file, model_files, TYPE=model_type, METHOD=METHOD, 
+            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(lon, lat, model_directory, model_files,
-            METHOD=METHOD, SCALE=SCALE)
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         #-- interpolate delta times from calendar dates to tide time
         delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model_directory, model_files,
-            TYPE=model_type, VERSION=MODEL, METHOD=METHOD, SCALE=SCALE)
+            TYPE=model_type, VERSION=MODEL, METHOD=METHOD,
+            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         #-- interpolate delta times from calendar dates to tide time
         delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, t)

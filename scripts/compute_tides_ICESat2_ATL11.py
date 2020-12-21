@@ -40,6 +40,7 @@ COMMAND LINE OPTIONS:
         linear
         nearest
         bilinear
+    -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -64,11 +65,13 @@ PROGRAM DEPENDENCIES:
     infer_minor_corrections.py: return corrections for minor constituents
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
-    predict_tide_drift.py: predict tidal elevations using harmonic constants
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
     read_FES_model.py: extract tidal harmonic constants from FES tide models
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
     Written 12/2020
@@ -96,7 +99,7 @@ from pyTMD.predict_tide_drift import predict_tide_drift
 #-- PURPOSE: read ICESat-2 annual land ice height data (ATL11) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
-    VERBOSE=False, MODE=0o775):
+    EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
         grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
@@ -446,10 +449,10 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     #-- for each input beam pair within the file
     for ptx in sorted(IS2_atl11_pairs):
         #-- output data dictionaries for beam
-        IS2_atl11_tide[ptx] = {}
-        IS2_atl11_fill[ptx] = {}
-        IS2_atl11_dims[ptx] = {}
-        IS2_atl11_tide_attrs[ptx] = {}
+        IS2_atl11_tide[ptx] = dict(cycle_stats={})
+        IS2_atl11_fill[ptx] = dict(cycle_stats={})
+        IS2_atl11_dims[ptx] = dict(cycle_stats={})
+        IS2_atl11_tide_attrs[ptx] = dict(cycle_stats={})
 
         #-- number of average segments and number of included cycles
         delta_time = fileID[ptx]['delta_time'][:].copy()
@@ -467,24 +470,27 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(fileID[ptx]['longitude'][:],
                 fileID[ptx]['latitude'][:], grid_file, model_file, EPSG,
-                TYPE=TYPE, METHOD=METHOD, GRID=model_format)
+                TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(fileID[ptx]['longitude'][:],
                 fileID[ptx]['latitude'][:], model_directory, grid_file,
-                model_files, TYPE=TYPE, METHOD=METHOD, SCALE=SCALE)
+                model_files, TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                SCALE=SCALE)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'GOT'):
             amp,ph = extract_GOT_constants(fileID[ptx]['longitude'][:],
                 fileID[ptx]['latitude'][:], model_directory, model_files,
-                METHOD=METHOD, SCALE=SCALE)
+                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(fileID[ptx]['longitude'][:],
                 fileID[ptx]['latitude'][:], model_directory, model_files,
-                TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD, SCALE=SCALE)
+                TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
@@ -603,10 +609,6 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "delta_time latitude longitude"
 
         #-- cycle statistics variables
-        IS2_atl11_tide[ptx]['cycle_stats'] = {}
-        IS2_atl11_fill[ptx]['cycle_stats'] = {}
-        IS2_atl11_dims[ptx]['cycle_stats'] = {}
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'] = {}
         IS2_atl11_tide_attrs[ptx]['cycle_stats']['Description'] = ("The cycle_stats subgroup "
             "contains summary information about segments for each reference point, including "
             "the uncorrected mean heights for reference surfaces, blowing snow and cloud "
@@ -700,7 +702,7 @@ def HDF5_ATL11_tide_write(IS2_atl11_tide, IS2_atl11_attrs, INPUT=None,
                     h5[ptx][k].dims[i].attach_scale(h5[ptx][dim])
             else:
                 #-- make dimension
-                h5[ptx][k].make_scale(k)      
+                h5[ptx][k].make_scale(k)
             #-- add HDF5 variable attributes
             for att_name,att_val in attrs.items():
                 h5[ptx][k].attrs[att_name] = att_val
@@ -833,6 +835,10 @@ def main():
         metavar='METHOD', type=str, default='spline',
         choices=('spline','linear','nearest','bilinear'),
         help='Spatial interpolation method')
+    #-- extrapolate with nearest-neighbors
+    parser.add_argument('--extrapolate','-E',
+        default=False, action='store_true',
+        help='Extrapolate with nearest-neighbors')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -847,7 +853,8 @@ def main():
     #-- run for each input ATL11 file
     for FILE in args.infile:
         compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
-            METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
+            METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
+            VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':
