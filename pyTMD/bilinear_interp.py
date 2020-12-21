@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-bilinear_interp.py (08/2020)
+bilinear_interp.py (12/2020)
 Bilinear interpolation of input data to output coordinates
 
 CALLING SEQUENCE:
@@ -16,7 +16,6 @@ INPUTS:
 OPTIONS:
     fill_value: invalid value
     dtype: output data type
-    extrapolate: extrapolate points
 
 OUTPUT:
     data: interpolated data
@@ -27,6 +26,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 12/2020: using numpy isclose to check corner points
     Updated 08/2020: check that output coordinates are within bounds
         allow small extrapolations if individual grid cells are invalid
     Updated 07/2020: split into separate function
@@ -37,7 +37,7 @@ import numpy as np
 
 #-- PURPOSE: bilinear interpolation of input data to output data
 def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
-    dtype=np.float,extrapolate=False):
+    dtype=np.float):
     """
     Bilinear interpolation of input data to output coordinates
 
@@ -53,15 +53,11 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     -----------------
     fill_value: invalid value
     dtype: output data type
-    extrapolate: extrapolate points
 
     Returns
     -------
     data: interpolated data
     """
-    #-- grid step size of tide model
-    dlon = np.abs(ilon[1] - ilon[0])
-    dlat = np.abs(ilat[1] - ilat[0])
     #-- find valid points (within bounds)
     valid, = np.nonzero((lon >= ilon.min()) & (lon <= ilon.max()) &
         (lat > ilat.min()) & (lat < ilat.max()))
@@ -88,19 +84,19 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
             IM.mask[j], = idata.mask[YI,XI]
             WM[j], = np.abs(lon[i]-ilon[XI])*np.abs(lat[i]-ilat[YI])
         #-- if on corner value: use exact
-        if ((lat[i] == ilat[iy]) & (lon[i] == ilon[ix])):
+        if (np.isclose(lat[i],ilat[iy]) & np.isclose(lon[i],ilon[ix])):
             data.data[i] = idata.data[iy,ix]
             data.mask[i] = idata.mask[iy,ix]
-        elif ((lat[i] == ilat[iy+1]) & (lon[i] == ilon[ix])):
+        elif (np.isclose(lat[i],ilat[iy+1]) & np.isclose(lon[i],ilon[ix])):
             data.data[i] = idata.data[iy+1,ix]
             data.mask[i] = idata.mask[iy+1,ix]
-        elif ((lat[i] == ilat[iy]) & (lon[i] == ilon[ix+1])):
+        elif (np.isclose(lat[i],ilat[iy]) & np.isclose(lon[i],ilon[ix+1])):
             data.data[i] = idata.data[iy,ix+1]
             data.mask[i] = idata.mask[iy,ix+1]
-        elif ((lat[i] == ilat[iy+1]) & (lon[i] == ilon[ix+1])):
+        elif (np.isclose(lat[i],ilat[iy+1]) & np.isclose(lon[i],ilon[ix+1])):
             data.data[i] = idata.data[iy+1,ix+1]
             data.mask[i] = idata.mask[iy+1,ix+1]
-        elif np.all(np.isfinite(IM) & (~IM.mask)) or extrapolate:
+        elif np.any(np.isfinite(IM) & (~IM.mask)):
             #-- find valid indices for data summation and weight matrix
             ii, = np.nonzero(np.isfinite(IM) & (~IM.mask))
             #-- calculate interpolated value for i

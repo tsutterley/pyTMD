@@ -42,6 +42,7 @@ COMMAND LINE OPTIONS:
         linear
         nearest
         bilinear
+    -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -67,14 +68,17 @@ PROGRAM DEPENDENCIES:
     infer_minor_corrections.py: return corrections for minor constituents
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
-    predict_tide_drift.py: predict tidal elevations using harmonic constants
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
     read_FES_model.py: extract tidal harmonic constants from FES tide models
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
     Updated 12/2020: H5py deprecation warning change to use make_scale
+        added valid data extrapolation with nearest_extrap
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 08/2020: using builtin time operations.  python3 regular expressions
@@ -116,7 +120,7 @@ from icesat2_toolkit.read_ICESat2_ATL03 import read_HDF5_ATL03_main, \
 #-- PURPOSE: read ICESat-2 geolocated photon data (ATL03) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
-    VERBOSE=False, MODE=0o775):
+    EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
         grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
@@ -478,21 +482,24 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file,
-                model_file, EPSG, TYPE=TYPE, METHOD=METHOD, GRID=model_format)
+                model_file, EPSG, TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-                grid_file, model_files, TYPE=TYPE, METHOD=METHOD, SCALE=SCALE)
+                grid_file, model_files, TYPE=TYPE, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'GOT'):
             amp,ph = extract_GOT_constants(lon, lat, model_directory,
-                model_files, METHOD=METHOD, SCALE=SCALE)
+                model_files, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(lon,lat,model_directory,model_files,
-                TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD, SCALE=SCALE)
+                TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
@@ -821,6 +828,10 @@ def main():
         metavar='METHOD', type=str, default='spline',
         choices=('spline','linear','nearest','bilinear'),
         help='Spatial interpolation method')
+    #-- extrapolate with nearest-neighbors
+    parser.add_argument('--extrapolate','-E',
+        default=False, action='store_true',
+        help='Extrapolate with nearest-neighbors')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -835,7 +846,8 @@ def main():
     #-- run for each input ATL03 file
     for FILE in args.infile:
         compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
-            METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
+            METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
+            VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

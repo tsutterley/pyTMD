@@ -63,14 +63,16 @@ def get_data_path(relpath):
 #-- PURPOSE: get the MD5 hash value of a file
 def get_hash(local):
     """
-    Get the MD5 hash value from a local file
+    Get the MD5 hash value from a local file or BytesIO object
 
     Arguments
     ---------
-    local: path to file
+    local: BytesIO object or path to file
     """
-    #-- check if local file exists
-    if os.access(os.path.expanduser(local),os.F_OK):
+    #-- check if open file object or if local file exists
+    if isinstance(local, io.IOBase):
+        return hashlib.md5(local.getvalue()).hexdigest()
+    elif os.access(os.path.expanduser(local),os.F_OK):
         #-- generate checksum hash for local file
         #-- open the local_file in binary read mode
         with open(os.path.expanduser(local), 'rb') as local_buffer:
@@ -105,10 +107,12 @@ def roman_to_int(roman):
     """
     #-- mapping between Roman and Arabic numerals
     roman_map = {'i':1, 'v':5, 'x':10, 'l':50, 'c':100, 'd':500, 'm':1000}
+    #-- verify case
+    roman = roman.lower()
     output = 0
     #-- iterate through roman numerals in string and calculate total
     for i,s in enumerate(roman):
-        if i > 0 and roman_map[s] > roman_map[roman[i-1]]:
+        if (i > 0) and (roman_map[s] > roman_map[roman[i-1]]):
             output += roman_map[s] - 2*roman_map[roman[i-1]]
         else:
             output += roman_map[s]

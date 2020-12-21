@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -64,6 +64,7 @@ COMMAND LINE OPTIONS:
         linear
         nearest
         bilinear
+    -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -V, --verbose: Verbose output of processing run
     -M X, --mode X: Permission mode of output file
 
@@ -98,9 +99,12 @@ PROGRAM DEPENDENCIES:
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
     read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
     read_FES_model.py: extract tidal harmonic constants from FES tide models
+    bilinear_interp.py: bilinear interpolation of data to coordinates
+    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
         added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
@@ -139,7 +143,8 @@ from pyTMD.read_FES_model import extract_FES_constants
 def compute_tidal_elevations(tide_dir, input_file, output_file,
     TIDE_MODEL=None, FORMAT='csv', VARIABLES=['time','lat','lon','data'],
     HEADER=0, TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
-    TIME=None, PROJECTION='4326', METHOD='spline', VERBOSE=False, MODE=0o775):
+    TIME=None, PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
+    VERBOSE=False, MODE=0o775):
 
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -470,16 +475,18 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
-            grid_file, model_file, EPSG, TYPE=model_type, METHOD=METHOD)
+            grid_file, model_file, EPSG, TYPE=model_type, METHOD=METHOD,
+            EXTRAPOLATE=EXTRAPOLATE)
         deltat = np.zeros((nt))
     elif (model_format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
             model_directory, grid_file, model_files, TYPE=model_type,
-            METHOD=METHOD, SCALE=model_scale)
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale)
         deltat = np.zeros((nt))
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(lon.flatten(), lat.flatten(),
-            model_directory, model_files, METHOD=METHOD, SCALE=model_scale)
+            model_directory, model_files, METHOD=METHOD,
+            EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale)
         #-- convert times from modified julian days to days since 1992-01-01
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
@@ -487,7 +494,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
             model_directory, model_files, TYPE=model_type, VERSION=TIDE_MODEL,
-            METHOD=METHOD, SCALE=model_scale)
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale)
         #-- convert times from modified julian days to days since 1992-01-01
         #-- interpolate delta times from calendar dates to tide time
         delta_file = get_data_path(['data','merged_deltat.data'])
@@ -604,6 +611,10 @@ def main():
         metavar='METHOD', type=str, default='spline',
         choices=('spline','linear','nearest','bilinear'),
         help='Spatial interpolation method')
+    #-- extrapolate with nearest-neighbors
+    parser.add_argument('--extrapolate','-E',
+        default=False, action='store_true',
+        help='Extrapolate with nearest-neighbors')
     #-- verbose output of processing run
     #-- print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -626,7 +637,8 @@ def main():
         FORMAT=args.format, TIDE_MODEL=args.tide, VARIABLES=args.variables,
         HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
         TIME=args.deltatime, PROJECTION=args.projection,
-        METHOD=args.interpolate, VERBOSE=args.verbose, MODE=args.mode)
+        METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
+        VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

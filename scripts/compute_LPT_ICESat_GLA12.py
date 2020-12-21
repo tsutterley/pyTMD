@@ -70,7 +70,7 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
     #--           new reference orbit ground track file is obtained.)
     #-- INST:  Instance number (increments every time the satellite enters a
     #--           different reference orbit)
-    #-- CYCL:   Cycle of reference orbit for this phase 
+    #-- CYCL:   Cycle of reference orbit for this phase
     #-- TRK: Track within reference orbit
     #-- SEG:   Segment of orbit
     #-- GRAN:  Granule version number
@@ -341,7 +341,7 @@ def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,
         #-- add HDF5 group attributes
         for att_name,att_val in IS_gla12_attrs['Data_40HZ'][group].items():
             if not isinstance(att_val,dict):
-                fileID['Data_40HZ'][group].attrs[att_name] = att_val   
+                fileID['Data_40HZ'][group].attrs[att_name] = att_val
         #-- for each variable in the group
         for key,val in IS_gla12_tide['Data_40HZ'][group].items():
             fillvalue = FILL_VALUE['Data_40HZ'][group][key]
