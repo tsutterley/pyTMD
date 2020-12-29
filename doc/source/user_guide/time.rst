@@ -45,6 +45,52 @@ General Methods
 ===============
 
 
+.. method:: pyTMD.time.parse_date_string(date_string)
+
+    Parse a date string of the form time-units since yyyy-mm-dd hh:mm:ss
+
+    Arguments:
+
+        `date_string`: time-units since yyyy-mm-dd hh:mm:ss
+
+    Returns:
+
+        `epoch`: epoch of delta time
+
+        `scale`: multiplication factor to convert to seconds
+
+
+.. method:: pyTMD.time.split_date_string(date_string)
+
+    Split a date string into units and epoch
+
+    Arguments:
+
+        `date_string`: time-units since yyyy-mm-dd hh:mm:ss
+
+
+.. method:: pyTMD.time.datetime_to_list(date)
+
+    Convert a datetime object into a list
+
+    Arguments:
+
+        `date`: datetime object
+
+
+.. method:: pyTMD.time.calendar_days(year)
+
+    Calculates the number of days per month for a given year
+
+    Arguments:
+
+        `year`: calendar year
+
+    Returns:
+
+        `dpm`: number of days for each month
+
+
 .. method:: pyTMD.time.convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0)
 
     Convert delta time from seconds since epoch1 to time since epoch2
@@ -85,6 +131,68 @@ General Methods
         `epoch`: epoch for output delta_time
 
         `scale`: scaling factor for converting time to output units
+
+
+.. method:: pyTMD.time.convert_calendar_decimal(year, month, day=None, hour=None, minute=None, second=None, DofY=None)
+
+    Converts from calendar date into decimal years taking into account leap years
+
+    Arguments:
+
+        `year`: calendar year
+
+        `month`: calendar month
+
+    Keyword arguments:
+
+        `day`: Number of day of the month
+
+        `hour`: hour of the day
+
+        `minute`: minute of the hour
+
+        `second`: second (and fractions of a second) of the minute
+
+        `DofY`: day of the year
+
+    Returns:
+
+        `t_date` date in decimal-year format
+
+
+.. method:: pyTMD.time.convert_julian(JD, ASTYPE=None, FORMAT=None)
+
+    Converts from Julian day to calendar date and time
+
+    Arguments:
+
+        `JD`: Julian Day (days since 01-01-4713 BCE at 12:00:00)
+
+    Keyword arguments:
+
+        `ASTYPE`: convert output to variable type
+
+        `FORMAT`: format of output variables
+
+            'dict': dictionary with variable keys
+
+            'tuple': tuple with variable order year,month,day,hour,minute,second
+
+            'zip': aggregated variable sets
+
+    Returns:
+
+        `year`: Calendar year
+
+        `month`: Calendar month
+
+        `day`: Calendar day of the month
+
+        `hour`: hour of the day
+
+        `minute`: minute of the hour
+
+        `second`: second (and fractions of a second) of the minute
 
 
 .. method:: pyTMD.time.count_leap_seconds(GPS_Time)

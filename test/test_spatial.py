@@ -95,7 +95,7 @@ def test_netCDF4():
     #-- create test netCDF4 file
     output_file = os.path.join(filepath,'test.nc')
     pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=True)
-    #-- read test netCDF4 file
+    #-- read test netCDF4 file (change case to find test function)
     input_file = os.path.join(filepath,'TEST.nc')
     test = pyTMD.spatial.from_netCDF4(input_file, timename='time',
         xname='x', yname='y', varname='data', verbose=True)
@@ -139,7 +139,7 @@ def test_HDF5():
     #-- create test HDF5 file
     output_file = os.path.join(filepath,'test.H5')
     pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=True)
-    #-- read test HDF5 file
+    #-- read test HDF5 file (change case to find test function)
     input_file = os.path.join(filepath,'TEST.H5')
     test = pyTMD.spatial.from_HDF5(input_file, timename='time',
         xname='x', yname='y', varname='data', verbose=True)

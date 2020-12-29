@@ -28,12 +28,12 @@ PROGRAM DEPENDENCIES:
     read_ICESat2_ATL03.py: reads ICESat-2 global geolocated photon data files
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
     calc_delta_time.py: calculates difference between universal and dynamic time
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
     Updated 12/2020: H5py deprecation warning change to use make_scale
+        merged time conversion routines into module
     Written 11/2020
 """
 from __future__ import print_function
@@ -47,7 +47,6 @@ import datetime
 import numpy as np
 import pyTMD.time
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 from icesat2_toolkit.read_ICESat2_ATL03 import read_HDF5_ATL03_main, \
@@ -383,8 +382,8 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     #-- convert from seconds since 1980-01-06T00:00:00 to Julian days
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(gps_seconds - leaps,
         epoch1=(1980,1,6,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
-    #-- convert to calendar date with convert_julian.py
-    YY,MM,DD,HH,MN,SS = convert_julian(time_julian,FORMAT='tuple')
+    #-- convert to calendar date
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,FORMAT='tuple')
     #-- add attributes with measurement date start, end and duration
     tcs = datetime.datetime(np.int(YY[0]), np.int(MM[0]), np.int(DD[0]),
         np.int(HH[0]), np.int(MN[0]), np.int(SS[0]), np.int(1e6*(SS[0] % 1)))

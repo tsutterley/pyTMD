@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -30,14 +30,13 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
-    convert_calendar_decimal.py: converts from calendar dates into decimal years
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
     read_ocean_pole_tide.py: read ocean pole load tide map from IERS
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output modified julian days as time variable
@@ -62,8 +61,6 @@ import numpy as np
 import scipy.interpolate
 import pyTMD.time
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
@@ -462,9 +459,10 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     #-- J2000: seconds since 2000-01-01 12:00:00 UTC
     t = dinput['time'][:]/86400.0 + 51544.5
     #-- convert from MJD to calendar dates
-    YY,MM,DD,HH,MN,SS = convert_julian(t + 2400000.5,FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(t + 2400000.5,FORMAT='tuple')
     #-- convert calendar dates into year decimal
-    tdec = convert_calendar_decimal(YY,MM,DAY=DD,HOUR=HH,MINUTE=MN,SECOND=SS)
+    tdec = pyTMD.time.convert_calendar_decimal(YY,MM,day=DD,
+        hour=HH,minute=MN,second=SS)
     #-- elevation
     h1 = dinput['data'][:]
 
@@ -623,8 +621,8 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     #-- convert start/end time from MJD into Julian days
     JD_start = np.min(t) + 2400000.5
     JD_end = np.max(t) + 2400000.5
-    #-- convert to calendar date with convert_julian.py
-    cal = convert_julian(np.array([JD_start,JD_end]),ASTYPE=np.int)
+    #-- convert to calendar date
+    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),ASTYPE=np.int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

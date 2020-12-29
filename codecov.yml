@@ -1,8 +1,13 @@
 codecov:
-    notify:
-        after_n_builds: 6
+  require_ci_to_pass: yes
+  notify:
+    after_n_builds: 6
+    wait_for_ci: yes
 
 coverage:
+  precision: 2
+  round: down
+  range: "70...90"
   status:
     project:
       default: false

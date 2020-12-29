@@ -9,8 +9,7 @@ import warnings
 import numpy as np
 import scipy.interpolate
 import pyTMD.eop
-from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
+import pyTMD.time
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 
@@ -41,9 +40,10 @@ def test_read_EOP(EPOCH):
     MJD = pyTMD.time.convert_delta_time(delta_time, epoch1=(2000,1,1,0,0,0),
         epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = convert_julian(2400000.5 + MJD, FORMAT='tuple')
+    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, FORMAT='tuple')
     #-- calculate time in year-decimal format
-    time_decimal = convert_calendar_decimal(Y,M,DAY=D,HOUR=h,MINUTE=m,SECOND=s)
+    time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
+        hour=h,minute=m,second=s)
     #-- mean and daily EOP files
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])

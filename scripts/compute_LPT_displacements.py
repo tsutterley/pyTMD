@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -56,12 +56,11 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
-    convert_calendar_decimal.py: converts from calendar dates into decimal years
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
         added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
@@ -79,8 +78,6 @@ import numpy as np
 import pyTMD.time
 import pyTMD.spatial
 import scipy.interpolate
-from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 
@@ -168,9 +165,10 @@ def compute_LPT_displacements(input_file, output_file,
     MJD = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
         epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = convert_julian(2400000.5 + MJD, FORMAT='tuple')
+    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, FORMAT='tuple')
     #-- calculate time in year-decimal format
-    time_decimal = convert_calendar_decimal(Y,M,DAY=D,HOUR=h,MINUTE=m,SECOND=s)
+    time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
+        hour=h,minute=m,second=s)
     #-- number of time points
     nt = len(time_decimal)
 

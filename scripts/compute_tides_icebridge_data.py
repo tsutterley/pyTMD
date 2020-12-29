@@ -63,7 +63,6 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -81,6 +80,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2020: added valid data extrapolation with nearest_extrap
+         merged time conversion routines into module
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output ocean and load tide as tide_ocean and tide_load
@@ -109,7 +109,6 @@ import argparse
 import numpy as np
 import pyTMD.time
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
 from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
@@ -877,8 +876,8 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     time_range = np.array([np.min(t),np.max(t)])
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(time_range,
         epoch1=(1992,1,1,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0)
-    #-- convert to calendar date with convert_julian.py
-    cal = convert_julian(time_julian,ASTYPE=np.int)
+    #-- convert to calendar date
+    cal = pyTMD.time.convert_julian(time_julian,ASTYPE=np.int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

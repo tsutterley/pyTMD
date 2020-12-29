@@ -25,13 +25,12 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading, writing and operating on spatial data
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
-    convert_calendar_decimal.py: converts from calendar dates into decimal years
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
     Updated 12/2020: H5py deprecation warning change to use make_scale
+        merged time conversion routines into module
     Written 12/2020
 """
 from __future__ import print_function
@@ -46,8 +45,6 @@ import scipy.interpolate
 import pyTMD.time
 import pyTMD.spatial
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 
@@ -96,9 +93,10 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
     #-- J2000: seconds since 2000-01-01 12:00:00 UTC
     t = DS_UTCTime_40HZ[:]/86400.0 + 51544.5
     #-- convert from MJD to calendar dates
-    YY,MM,DD,HH,MN,SS = convert_julian(t + 2400000.5,FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(t + 2400000.5,FORMAT='tuple')
     #-- convert calendar dates into year decimal
-    tdec = convert_calendar_decimal(YY,MM,DAY=DD,HOUR=HH,MINUTE=MN,SECOND=SS)
+    tdec = pyTMD.time.convert_calendar_decimal(YY,MM,day=DD,
+        hour=HH,minute=MN,second=SS)
 
     #-- semimajor axis (a) and flattening (f) for TP and WGS84 ellipsoids
     atop,ftop = (6378136.3,1.0/298.257)
