@@ -2,7 +2,7 @@ Getting Started
 ===============
 
 This documentation is intended to explain how to compute ocean, load and pole tide variations using the set of pyTMD programs.
-The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface. 
+The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface.
 Ocean tides are typically observed using float gauges, GPS stations, pressure recorders, and satellite altimetry.
 Ocean and load tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation.
 The tidal oscillations can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
@@ -81,18 +81,18 @@ python compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS20
 
 There are specific programs for correcting some publicly available elevation datasets:
 - [NASA Operation IceBridge data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py)
-- [ICESat GLA12 ice sheet altimetry data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat_GLA12.py) 
+- [ICESat GLA12 ice sheet altimetry data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat_GLA12.py)
 - [ICESat-2 ATL03 geolocated photon data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py)
-- [ICESat-2 ATL06 land ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py) 
+- [ICESat-2 ATL06 land ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py)
 - [ICESat-2 ATL07 sea ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py)
-- [ICESat-2 ATL11 annual land ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py) 
+- [ICESat-2 ATL11 annual land ice height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py)
 - [ICESat-2 ATL12 ocean surface height data](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py)
 
 #### Time
 The default time in pyTMD is days (UTC) since a given epoch.
 For ocean, load and equilibrium tide programs, the epoch is 1992-01-01T00:00:00.
 For pole tide programs, the epoch is 1858-11-17T00:00:00 (Modified Julian Days).
-pyTMD can convert different time formats to the necessary time format of a given program.
+[pyTMD](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py) can convert different time formats to the necessary time format of a given program.
 pyTMD keeps updated [tables of leap seconds](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list) for converting from GPS and TAI times.
 pyTMD keeps updated [tables of delta times](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data) for converting between dynamic (TT) and universal (UT1) times.
 

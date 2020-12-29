@@ -10,8 +10,6 @@ import pytest
 import numpy as np
 import scipy.interpolate
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide

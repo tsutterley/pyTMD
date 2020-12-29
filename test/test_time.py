@@ -8,8 +8,7 @@ import pytest
 import warnings
 import numpy as np
 import pyTMD.time
-from pyTMD.convert_julian import convert_julian
-from pyTMD.convert_calendar_decimal import convert_calendar_decimal
+import pyTMD.utilities
 
 #-- parameterize calendar dates
 @pytest.mark.parametrize("YEAR", np.random.randint(1992,2020,size=2))
@@ -30,7 +29,8 @@ def test_julian(YEAR,MONTH):
         hour=HOUR, minute=MINUTE, second=SECOND,
         epoch=(1858,11,17,0,0,0))
     #-- convert MJD to calendar date
-    YY,MM,DD,HH,MN,SS = convert_julian(np.squeeze(MJD) + 2400000.5,
+    JD = np.squeeze(MJD) + 2400000.5
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(JD,
         FORMAT='tuple', ASTYPE=np.float)
     #-- assert dates
     eps = np.finfo(np.float16).eps
@@ -51,14 +51,15 @@ def test_decimal_dates(YEAR,MONTH):
     dpm_leap = np.array([31,29,31,30,31,30,31,31,30,31,30,31])
     dpm_stnd = np.array([31,28,31,30,31,30,31,31,30,31,30,31])
     DPM = dpm_stnd if np.mod(YEAR,4) else dpm_leap
+    assert (np.sum(DPM) == pyTMD.time.calendar_days(YEAR).sum())
     #-- calculate Modified Julian Day (MJD) from calendar date
     DAY = np.random.randint(1,DPM[MONTH-1]+1)
     HOUR = np.random.randint(0,23+1)
     MINUTE = np.random.randint(0,59+1)
     SECOND = 60.0*np.random.random_sample(1)
     #-- calculate year-decimal time
-    tdec = convert_calendar_decimal(YEAR, MONTH, DAY=DAY,
-        HOUR=HOUR, MINUTE=MINUTE, SECOND=SECOND)
+    tdec = pyTMD.time.convert_calendar_decimal(YEAR, MONTH, day=DAY,
+        hour=HOUR, minute=MINUTE, second=SECOND)
     #-- day of the year 1 = Jan 1, 365 = Dec 31 (std)
     day_temp = np.mod(tdec, 1)*np.sum(DPM)
     DofY = np.floor(day_temp) + 1
@@ -85,6 +86,7 @@ def test_decimal_dates(YEAR,MONTH):
 
 #-- PURPOSE: test UNIX time
 def test_unix_time():
+    #-- ATLAS Standard Data Epoch
     UNIX = pyTMD.utilities.get_unix_time('2018-01-01 00:00:00')
     assert (UNIX == 1514764800)
 
@@ -96,6 +98,12 @@ def test_parse_date_string():
     #-- check the epoch and the time unit conversion factors
     assert np.all(epoch == [1858,11,17,0,0,0])
     assert (to_secs == 86400.0)
+    #-- time string for ATLAS Standard Data Epoch
+    time_string = 'seconds since 2018-01-01T00:00:00'
+    epoch,to_secs = pyTMD.time.parse_date_string(time_string)
+    #-- check the epoch and the time unit conversion factors
+    assert np.all(epoch == [2018,1,1,0,0,0])
+    assert (to_secs == 1.0)
 
 #-- PURPOSE: verify forward and backwards delta time conversions
 @pytest.mark.parametrize("delta_time", np.random.randint(1,31536000,size=4))

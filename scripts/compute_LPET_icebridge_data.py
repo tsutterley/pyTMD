@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_icebridge_data.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (12/2020)
 Calculates long-period equilibrium tidal elevations for correcting Operation
     IceBridge elevation data
 
@@ -28,12 +28,12 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
     calc_delta_time.py: calculates difference between universal and dynamic time
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 12/2020: merged time conversion routines into module
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: output days since 1992-01-01 as time variable
     Written 08/2020
@@ -49,7 +49,6 @@ import argparse
 import numpy as np
 import pyTMD.time
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
@@ -516,8 +515,8 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     time_range = np.array([np.min(tide_time),np.max(tide_time)])
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(time_range,
         epoch1=(1992,1,1,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0)
-    #-- convert to calendar date with convert_julian.py
-    cal = convert_julian(time_julian,ASTYPE=np.int)
+    #-- convert to calendar date
+    cal = pyTMD.time.convert_julian(time_julian,ASTYPE=np.int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

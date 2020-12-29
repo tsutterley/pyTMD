@@ -53,7 +53,6 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
     calc_delta_time.py: calculates difference between universal and dynamic time
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
@@ -72,7 +71,6 @@ import numpy as np
 import pyTMD.time
 import pyTMD.spatial
 from pyTMD.utilities import get_data_path
-from pyTMD.convert_julian import convert_julian
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 

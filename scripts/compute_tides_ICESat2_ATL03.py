@@ -61,7 +61,6 @@ PROGRAM DEPENDENCIES:
     read_ICESat2_ATL03.py: reads ICESat-2 global geolocated photon data files
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
-    convert_julian.py: returns the calendar date and time given a Julian date
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -79,6 +78,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 12/2020: H5py deprecation warning change to use make_scale
         added valid data extrapolation with nearest_extrap
+        merged time conversion routines into module
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 10/2020: using argparse to set command line parameters
     Updated 08/2020: using builtin time operations.  python3 regular expressions
@@ -106,7 +106,6 @@ import datetime
 import numpy as np
 import pyTMD.time
 import pyTMD.utilities
-from pyTMD.convert_julian import convert_julian
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
@@ -782,8 +781,8 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     #-- convert from seconds since 1980-01-06T00:00:00 to Julian days
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(gps_seconds - leaps,
         epoch1=(1980,1,6,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
-    #-- convert to calendar date with convert_julian.py
-    YY,MM,DD,HH,MN,SS = convert_julian(time_julian,FORMAT='tuple')
+    #-- convert to calendar date
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,FORMAT='tuple')
     #-- add attributes with measurement date start, end and duration
     tcs = datetime.datetime(np.int(YY[0]), np.int(MM[0]), np.int(DD[0]),
         np.int(HH[0]), np.int(MN[0]), np.int(SS[0]), np.int(1e6*(SS[0] % 1)))

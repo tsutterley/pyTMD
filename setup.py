@@ -39,7 +39,7 @@ if gdal_output[3]:
 
 setup(
     name='pyTMD',
-    version='1.0.2.16',
+    version='1.0.2.17',
     description='Tide Model Driver to read OTIS, GOT and FES formatted tidal solutions and make tidal predictions',
     long_description=long_description,
     long_description_content_type="text/markdown",
