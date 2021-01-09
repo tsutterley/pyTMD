@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (08/2020)
+test_download_and_read.py (01/2021)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://oct2py.readthedocs.io/en/latest/
 
 UPDATE HISTORY:
+    Updated 01/2021: download CATS2008 and AOTIM-5-2018 to subdirectories
     Updated 08/2020: Download Antarctic tide gauge database and compare with RMS
         directly call Matlab program (octave+oct2py) and compare outputs
         compare outputs for both Antarctic (CATS2008) and Arctic (AOTIM-5-2018)
@@ -56,14 +57,22 @@ def test_download_CATS2008():
     m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
     #-- verify that model files are within downloaded zip file
     assert all(m)
+    #-- output tide directory for model
+    modelpath = os.path.join(filepath,'CATS2008')
     #-- extract each member (model and configuration files)
     for member in m:
         #-- strip directories from member filename
         member.filename = posixpath.basename(member.filename)
-        print('\t{0}\n'.format(os.path.join(filepath,member.filename)))
-        zfile.extract(member, path=filepath)
+        print('\t{0}\n'.format(os.path.join(modelpath,member.filename)))
+        zfile.extract(member, path=modelpath)
     #-- close the zipfile object
     zfile.close()
+    #-- output control file for tide model
+    fid = open(os.path.join(filepath,'Model_CATS2008'),'w')
+    for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
+        print(os.path.join(modelpath,model_file),file=fid)
+    print('xy_ll_CATS2008',file=fid)
+    fid.close()
 
 #-- PURPOSE: Download AOTIM-5-2018 from NSF ArcticData server
 def test_download_AOTIM5_2018():
@@ -81,15 +90,23 @@ def test_download_AOTIM5_2018():
     m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
     #-- verify that model files are within downloaded zip file
     assert all(m)
+    #-- output tide directory for model
+    modelpath = os.path.join(filepath,'Arc5km2018')
     #-- extract each member (model and configuration files)
     for member in m:
         #-- strip directories from member filename
         member.filename = posixpath.basename(member.filename)
-        print('\t{0}\n'.format(os.path.join(filepath,member.filename)))
+        print('\t{0}\n'.format(os.path.join(modelpath,member.filename)))
         #-- extract file
-        zfile.extract(member, path=filepath)
+        zfile.extract(member, path=modelpath)
     #-- close the zipfile object
     zfile.close()
+    #-- output control file for tide model
+    fid = open(os.path.join(filepath,'Model_Arc5km2018'),'w')
+    for model_file in ['h_Arc5km2018','UV_Arc5km2018','grid_Arc5km2018']:
+        print(os.path.join(modelpath,model_file),file=fid)
+    print('xy_ll_Arc5km2018',file=fid)
+    fid.close()
 
 #-- PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
 def test_download_AntTG():
@@ -111,9 +128,10 @@ def test_download_Arctic_Tide_Atlas():
 #-- PURPOSE: Test read program that grids and constituents are as expected
 def test_read_CATS2008(ny=2026,nx=1663):
     #-- model parameters for CATS2008
-    grid_file = os.path.join(filepath,'grid_CATS2008')
-    elevation_file = os.path.join(filepath,'hf.CATS2008.out')
-    transport_file = os.path.join(filepath,'uv.CATS2008.out')
+    modelpath = os.path.join(filepath,'CATS2008')
+    grid_file = os.path.join(modelpath,'grid_CATS2008')
+    elevation_file = os.path.join(modelpath,'hf.CATS2008.out')
+    transport_file = os.path.join(modelpath,'uv.CATS2008.out')
     #-- read CATS2008 grid file
     xi,yi,hz,mz,iob,dt = pyTMD.read_tide_model.read_tide_grid(grid_file)
     #-- check dimensions of input grids
@@ -134,8 +152,9 @@ def test_read_CATS2008(ny=2026,nx=1663):
 #-- PURPOSE: Tests that interpolated results are comparable to AntTG database
 def test_compare_CATS2008():
     #-- model parameters for CATS2008
-    grid_file = os.path.join(filepath,'grid_CATS2008')
-    model_file = os.path.join(filepath,'hf.CATS2008.out')
+    modelpath = os.path.join(filepath,'CATS2008')
+    grid_file = os.path.join(modelpath,'grid_CATS2008')
+    model_file = os.path.join(modelpath,'hf.CATS2008.out')
     GRID = 'OTIS'
     EPSG = 'CATS2008'
     TYPE = 'z'
@@ -238,8 +257,9 @@ parameters.append(dict(type='V',model='uv.CATS2008.out',grid='grid_CATS2008'))
 #-- PURPOSE: Tests that interpolated results are comparable to Matlab program
 def test_verify_CATS2008(parameters):
     #-- model parameters for CATS2008
-    grid_file = os.path.join(filepath,parameters['grid'])
-    model_file = os.path.join(filepath,parameters['model'])
+    modelpath = os.path.join(filepath,'CATS2008')
+    grid_file = os.path.join(modelpath,parameters['grid'])
+    model_file = os.path.join(modelpath,parameters['model'])
     TYPE = parameters['type']
     GRID = 'OTIS'
     EPSG = 'CATS2008'
@@ -323,8 +343,11 @@ def test_verify_CATS2008(parameters):
         TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
         octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
         octave.addpath(filepath)
+        octave.addpath(modelpath)
         octave.warning('off', 'all')
+        #-- input control file for model
         CFname = os.path.join(filepath,'Model_CATS2008')
+        #-- run Matlab TMD program with octave
         validation,cons = octave.tmd_tide_pred(CFname,SDtime,
             station_lat[i],station_lon[i],TYPE,nout=2)
 
@@ -345,8 +368,9 @@ parameters.append(dict(type='v',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
 #-- PURPOSE: Tests that interpolated results are comparable to Matlab program
 def test_verify_AOTIM5_2018(parameters):
     #-- model parameters for AOTIM-5-2018
-    grid_file = os.path.join(filepath,parameters['grid'])
-    model_file = os.path.join(filepath,parameters['model'])
+    modelpath = os.path.join(filepath,'Arc5km2018')
+    grid_file = os.path.join(modelpath,parameters['grid'])
+    model_file = os.path.join(modelpath,parameters['model'])
     TYPE = parameters['type']
     GRID = 'OTIS'
     EPSG = 'PSNorth'
@@ -413,8 +437,11 @@ def test_verify_AOTIM5_2018(parameters):
         TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
         octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
         octave.addpath(filepath)
+        octave.addpath(modelpath)
         octave.warning('off', 'all')
+        #-- input control file for model
         CFname = os.path.join(filepath,'Model_Arc5km2018')
+        #-- run Matlab TMD program with octave
         validation,cons = octave.tmd_tide_pred(CFname,SDtime,
             station_lat[i],station_lon[i],TYPE,nout=2)
 
@@ -429,8 +456,9 @@ def test_verify_AOTIM5_2018(parameters):
 #-- PURPOSE: Tests that tidal ellipse results are comparable to Matlab program
 def test_tidal_ellipse():
     #-- model parameters for CATS2008
-    grid_file = os.path.join(filepath,'grid_CATS2008')
-    model_file = os.path.join(filepath,'uv.CATS2008.out')
+    modelpath = os.path.join(filepath,'CATS2008')
+    grid_file = os.path.join(modelpath,'grid_CATS2008')
+    model_file = os.path.join(modelpath,'uv.CATS2008.out')
     TYPES = ['u','v']
     GRID = 'OTIS'
     EPSG = 'CATS2008'
@@ -496,7 +524,9 @@ def test_tidal_ellipse():
         TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
         octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
         octave.addpath(filepath)
+        octave.addpath(modelpath)
         octave.warning('off', 'all')
+        #-- input control file for model
         CFname = os.path.join(filepath,'Model_CATS2008')
         #-- extract tidal harmonic constants out of a tidal model
         amp,ph,D,cons = octave.tmd_extract_HC(CFname,station_lat[i],
@@ -523,3 +553,49 @@ def test_tidal_ellipse():
         difference.data[difference.mask] = 0.0
         if not np.all(difference.mask):
             assert np.all(np.abs(difference) < eps)
+
+#-- parameterize interpolation method
+#-- only use fast interpolation routines
+@pytest.mark.parametrize("METHOD", ['spline','nearest'])
+@pytest.mark.parametrize("EXTRAPOLATE", [True])
+#-- PURPOSE: test the tide correction wrapper function
+def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
+    #-- create an image around the Ross Ice Shelf
+    xlimits = np.array([-740000,520000])
+    ylimits = np.array([-1430000,-300000])
+    #-- x and y coordinates
+    x = np.linspace(xlimits[0],xlimits[1],24)
+    y = np.linspace(ylimits[0],ylimits[1],24)
+    #-- time dimension
+    delta_time = np.zeros((24))*3600
+    #-- calculate tide drift corrections
+    tide = pyTMD.compute_tide_corrections(x, y, delta_time,
+        DIRECTORY=filepath, MODEL='CATS2008', EPOCH=(2000,1,1,12,0,0),
+        TYPE='drift', TIME='UTC', EPSG=3031, METHOD=METHOD,
+        EXTRAPOLATE=EXTRAPOLATE)
+    assert np.any(tide)
+
+#-- parameterize interpolation method
+#-- only use fast interpolation routines
+@pytest.mark.parametrize("METHOD", ['spline','nearest'])
+@pytest.mark.parametrize("EXTRAPOLATE", [True])
+#-- PURPOSE: test the tide correction wrapper function
+def test_Arctic_Ocean(METHOD, EXTRAPOLATE):
+    #-- create an image around the Arctic Ocean
+    #-- use NSIDC Polar Stereographic definitions
+    #-- https://nsidc.org/data/polar-stereo/ps_grids.html
+    xlimits = [-3850000,3750000]
+    ylimits = [-5350000,5850000]
+    spacing = [50e3,-50e3]
+    #-- x and y coordinates
+    x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
+    y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])
+    xgrid,ygrid = np.meshgrid(x,y)
+    #-- time dimension
+    delta_time = 0.0
+    #-- calculate tide map
+    tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
+        DIRECTORY=filepath, MODEL='AOTIM-5-2018', EPOCH=(2000,1,1,12,0,0),
+        TYPE='grid', TIME='UTC', EPSG=3413, METHOD=METHOD,
+        EXTRAPOLATE=EXTRAPOLATE)
+    assert np.any(tide)

@@ -108,9 +108,6 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
     y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])
     xgrid,ygrid = np.meshgrid(x,y)
-    #-- x and y dimensions
-    nx = np.int((xlimits[1]-xlimits[0])/spacing[0])+1
-    ny = np.int((ylimits[0]-ylimits[1])/spacing[1])+1
     #-- time dimension
     delta_time = 0.0
     #-- calculate tide map

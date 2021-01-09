@@ -44,7 +44,7 @@ General Methods
     Inputs: full path of input ascii file
 
     Options:
-        `compression` ascii file is compressed using gzip
+        `compression` ascii file is compressed or streamed from memory
 
         `verbose` print ascii filename
 
@@ -60,7 +60,7 @@ General Methods
     Inputs: full path of input netCDF4 file
 
     Options:
-        `compression` netCDF4 file is compressed using gzip
+        `compression` netCDF4 file is compressed or streamed from memory
 
         `verbose` print netCDF4 file information
 
@@ -80,7 +80,7 @@ General Methods
     Inputs: full path of input HDF5 file
 
     Options:
-        `compression` HDF5 file is compressed using gzip
+        `compression` HDF5 file is compressed or streamed from memory
 
         `verbose` print HDF5 file information
 

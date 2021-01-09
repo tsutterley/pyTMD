@@ -67,6 +67,15 @@ General Methods
         `format`: format for input time string
 
 
+.. method:: gravity_toolkit.utilities.even(value)
+
+    Rounds a number to an even number less than or equal to original
+
+    Arguments:
+
+        `value`: number to be rounded
+
+
 .. method:: pyTMD.utilities.copy(source, destination, verbose=False, move=False)
 
     Copy or move a file with all system information
@@ -84,7 +93,22 @@ General Methods
         `move`: remove the source file
 
 
-.. method:: pyTMD.utilities.ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False)
+.. method:: pyTMD.utilities.check_ftp_connection(HOST,username=None,password=None)
+
+    Check internet connection with ftp host
+
+    Arguments{
+
+        `HOST`: remote ftp host
+
+    Keyword arguments:
+
+        `username`: ftp username
+
+        `password`: ftp password
+
+
+.. method:: pyTMD.utilities.ftp_list(HOST,username=None,password=None,timeout=None,basename=False,pattern=None,sort=False)
 
     List a directory on a ftp host
 
@@ -93,6 +117,10 @@ General Methods
         `HOST`: remote ftp host path split as list
 
     Keyword arguments:
+
+        `username`: ftp username
+
+        `password`: ftp password
 
         `timeout`: timeout in seconds for blocking operations
 
@@ -109,7 +137,7 @@ General Methods
         `mtimes`: list of last modification times for items in the directory
 
 
-.. method:: pyTMD.utilities.from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
+.. method:: pyTMD.utilities.from_ftp(HOST,username=None,password=None,timeout=None,local=None,hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775)
 
     Download a file from a ftp host
 
@@ -118,6 +146,10 @@ General Methods
         `HOST`: remote ftp host path split as list
 
     Keyword arguments:
+
+        `username`: ftp username
+
+        `password`: ftp password
 
         `timeout`: timeout in seconds for blocking operations
 

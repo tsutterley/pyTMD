@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (01/2021)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 01/2020: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
     Updated 12/2020: added module for converting ellipsoids
     Updated 11/2020: output data as masked arrays if containing fill values
         add functions to read from and write to geotiff image formats
@@ -57,7 +58,7 @@ def from_ascii(filename, compression=None, verbose=False,
     Read data from an ascii file
     Inputs: full path of input ascii file
     Options:
-        ascii file is compressed using gzip
+        ascii file is compressed or streamed from memory
         verbose output of file information
         column names of ascii file
         header lines to skip from start of file
@@ -69,6 +70,9 @@ def from_ascii(filename, compression=None, verbose=False,
         #-- read input ascii data from gzip compressed file and split lines
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             file_contents = f.read().decode('ISO-8859-1').splitlines()
+    elif (compression == 'bytes'):
+        #-- read input file object and split lines
+        file_contents = filename.read().splitlines()
     else:
         #-- read input ascii file (.txt, .asc) and split lines
         with open(case_insensitive_filename(filename),'r') as f:
@@ -132,7 +136,7 @@ def from_netCDF4(filename, compression=None, verbose=False,
     Read data from a netCDF4 file
     Inputs: full path of input netCDF4 file
     Options:
-        netCDF4 file is compressed using gzip
+        netCDF4 file is compressed or streamed from memory
         verbose output of file information
         netCDF4 variable names of time, longitude, latitude, and data
     """
@@ -142,6 +146,9 @@ def from_netCDF4(filename, compression=None, verbose=False,
         #-- read as in-memory (diskless) netCDF4 dataset
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             fileID = netCDF4.Dataset(uuid.uuid4().hex,memory=f.read())
+    elif (compression == 'bytes'):
+        #-- read as in-memory (diskless) netCDF4 dataset
+        fileID = netCDF4.Dataset(uuid.uuid4().hex,memory=filename.read())
     else:
         #-- read netCDF4 dataset
         fileID = netCDF4.Dataset(case_insensitive_filename(filename), 'r')
@@ -195,7 +202,7 @@ def from_HDF5(filename, compression=None, verbose=False,
     Read data from a HDF5 file
     Inputs: full path of input HDF5 file
     Options:
-        HDF5 file is compressed using gzip
+        HDF5 file is compressed or streamed from memory
         verbose output of file information
         HDF5 variable names of time, longitude, latitude, and data
     """
@@ -211,6 +218,9 @@ def from_HDF5(filename, compression=None, verbose=False,
         fid.seek(0)
         #-- read as in-memory (diskless) HDF5 dataset from BytesIO object
         fileID = h5py.File(fid, 'r')
+    elif (compression == 'bytes'):
+        #-- read as in-memory (diskless) HDF5 dataset
+        fileID = h5py.File(filename, 'r')
     else:
         #-- read HDF5 dataset
         fileID = h5py.File(case_insensitive_filename(filename), 'r')
@@ -260,7 +270,7 @@ def from_geotiff(filename, compression=None, verbose=False):
     Read data from a geotiff file
     Inputs: full path of input geotiff file
     Options:
-        geotiff file is compressed using gzip
+        geotiff file is compressed or streamed from memory
         verbose output of file information
     """
     #-- Open the geotiff file for reading
@@ -270,6 +280,11 @@ def from_geotiff(filename, compression=None, verbose=False):
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             osgeo.gdal.FileFromMemBuffer(mmap_name, f.read())
         #-- read as GDAL memory-mapped (diskless) geotiff dataset
+        ds = osgeo.gdal.Open(mmap_name)
+    elif (compression == 'bytes'):
+        #-- read as GDAL memory-mapped (diskless) geotiff dataset
+        mmap_name = "/vsimem/{0}".format(uuid.uuid4().hex)
+        osgeo.gdal.FileFromMemBuffer(mmap_name, filename.read())
         ds = osgeo.gdal.Open(mmap_name)
     else:
         #-- read geotiff dataset

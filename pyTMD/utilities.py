@@ -7,6 +7,8 @@ PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 01/2021: added username and password to ftp functions
+        added ftp connection check
     Updated 12/2020: added file object keyword for downloads if verbose
         add url split function for creating url location lists
     Updated 11/2020: normalize source and destination paths in copy
@@ -17,7 +19,7 @@ UPDATE HISTORY:
     Updated 08/2020: add GSFC CDDIS opener, login and download functions
     Written 08/2020
 """
-from __future__ import print_function
+from __future__ import print_function, division
 
 import sys
 import os
@@ -139,6 +141,17 @@ def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
     else:
         return calendar.timegm(parsed_time)
 
+#-- PURPOSE: rounds a number to an even number less than or equal to original
+def even(value):
+    """
+    Rounds a number to an even number less than or equal to original
+
+    Arguments
+    ---------
+    value: number to be rounded
+    """
+    return 2*int(value//2)
+
 #-- PURPOSE: make a copy of a file with all system information
 def copy(source, destination, verbose=False, move=False):
     """
@@ -162,8 +175,35 @@ def copy(source, destination, verbose=False, move=False):
     if move:
         os.remove(source)
 
+#-- PURPOSE: check ftp connection
+def check_ftp_connection(HOST,username=None,password=None):
+    """
+    Check internet connection with ftp host
+
+    Arguments
+    ---------
+    HOST: remote ftp host
+
+    Keyword arguments
+    -----------------
+    username: ftp username
+    password: ftp password
+    """
+    #-- attempt to connect to ftp host
+    try:
+        f = ftplib.FTP(HOST)
+        f.login(username, password)
+        f.voidcmd("NOOP")
+    except IOError:
+        raise RuntimeError('Check internet connection')
+    except ftplib.error_perm:
+        raise RuntimeError('Check login credentials')
+    else:
+        return True
+
 #-- PURPOSE: list a directory on a ftp host
-def ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False):
+def ftp_list(HOST,username=None,password=None,timeout=None,
+    basename=False,pattern=None,sort=False):
     """
     List a directory on a ftp host
 
@@ -173,6 +213,8 @@ def ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False):
 
     Keyword arguments
     -----------------
+    username: ftp username
+    password: ftp password
     timeout: timeout in seconds for blocking operations
     basename: return the file or directory basename instead of the full path
     pattern: regular expression pattern for reducing list
@@ -189,7 +231,7 @@ def ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False):
     except (socket.gaierror,IOError):
         raise RuntimeError('Unable to connect to {0}'.format(HOST[0]))
     else:
-        ftp.login()
+        ftp.login(username,password)
         #-- list remote path
         output = ftp.nlst(posixpath.join(*HOST[1:]))
         #-- get last modified date of ftp files and convert into unix time
@@ -226,8 +268,8 @@ def ftp_list(HOST,timeout=None,basename=False,pattern=None,sort=False):
         return (output,mtimes)
 
 #-- PURPOSE: download a file from a ftp host
-def from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,
-    verbose=False,fid=sys.stdout,mode=0o775):
+def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
+    hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775):
     """
     Download a file from a ftp host
 
@@ -237,6 +279,8 @@ def from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,
 
     Keyword arguments
     -----------------
+    username: ftp username
+    password: ftp password
     timeout: timeout in seconds for blocking operations
     local: path to local file
     hash: MD5 hash of local file
@@ -256,19 +300,26 @@ def from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,
     except (socket.gaierror,IOError):
         raise RuntimeError('Unable to connect to {0}'.format(HOST[0]))
     else:
-        ftp.login()
+        ftp.login(username,password)
         #-- remote path
         ftp_remote_path = posixpath.join(*HOST[1:])
         #-- copy remote file contents to bytesIO object
         remote_buffer = io.BytesIO()
-        ftp.retrbinary('RETR {0}'.format(ftp_remote_path), remote_buffer.write)
+        ftp.retrbinary('RETR {0}'.format(ftp_remote_path),
+            remote_buffer.write, blocksize=chunk)
         remote_buffer.seek(0)
         #-- save file basename with bytesIO object
         remote_buffer.filename = HOST[-1]
         #-- generate checksum hash for remote file
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
+        #-- get last modified date of remote file and convert into unix time
+        mdtm = ftp.sendcmd('MDTM {0}'.format(ftp_remote_path))
+        remote_mtime = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- create directory if non-existent
+            if not os.access(os.path.dirname(local), os.F_OK):
+                os.makedirs(os.path.dirname(local), mode)
             #-- print file information
             if verbose:
                 args = (posixpath.join(*HOST),local)
@@ -279,6 +330,8 @@ def from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,
                 shutil.copyfileobj(remote_buffer, f, chunk)
             #-- change the permissions mode
             os.chmod(local,mode)
+            #-- keep remote modification time of file and local access time
+            os.utime(local, (os.stat(local).st_atime, remote_mtime))
         #-- close the ftp connection
         ftp.close()
         #-- return the bytesIO object
@@ -288,13 +341,13 @@ def from_ftp(HOST,timeout=None,local=None,hash='',chunk=16384,
 #-- PURPOSE: check internet connection
 def check_connection(HOST):
     """
-    Check internet connection
+    Check internet connection with http host
 
     Arguments
     ---------
     HOST: remote http host
     """
-    #-- attempt to connect to https host
+    #-- attempt to connect to http host
     try:
         urllib2.urlopen(HOST,timeout=20,context=ssl.SSLContext())
     except urllib2.URLError:
@@ -345,6 +398,9 @@ def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- create directory if non-existent
+            if not os.access(os.path.dirname(local), os.F_OK):
+                os.makedirs(os.path.dirname(local), mode)
             #-- print file information
             if verbose:
                 args = (posixpath.join(*HOST),local)
@@ -559,6 +615,9 @@ def from_cddis(HOST,username=None,password=None,build=True,timeout=None,
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- create directory if non-existent
+            if not os.access(os.path.dirname(local), os.F_OK):
+                os.makedirs(os.path.dirname(local), mode)
             #-- print file information
             if verbose:
                 args = (posixpath.join(*HOST),local)

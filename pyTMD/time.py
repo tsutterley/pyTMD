@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 01/2021: added ftp connection checks
     Updated 12/2020: merged with convert_julian and convert_calendar_decimal
         added calendar_days routine to get number of days per month
     Updated 09/2020: added wrapper function for merging Bulletin-A files
@@ -488,6 +489,7 @@ def update_leap_seconds(verbose=False, mode=0o775):
     #-- try downloading from NIST ftp servers
     HOST = ['ftp.nist.gov','pub','time','iers',FILE]
     try:
+        pyTMD.utilities.check_ftp_connection(HOST[0])
         pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
     except:
@@ -638,14 +640,16 @@ def iers_delta_time(daily_file, verbose=False, mode=0o775):
     """
     #-- connect to ftp host for IERS bulletins
     HOST = ['ftp.iers.org','products','eop','rapid','bulletina']
+    pyTMD.utilities.check_ftp_connection(HOST[0])
     #-- regular expression pattern for finding files
     rx = re.compile(r'bulletina-(.*?)-(\d+).txt$',re.VERBOSE)
     #-- open output daily delta time file
     fid = open(daily_file,'w')
     #-- output file format
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
-    #-- for each subdirectory
+    #-- find subdirectories
     subdirectory,mtimes = pyTMD.utilities.ftp_list(HOST,basename=True,sort=True)
+    #-- for each subdirectory
     for SUB in subdirectory:
         #-- find Bulletin-A files in ftp subdirectory
         HOST.append(SUB)
@@ -871,6 +875,7 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     server.append(['cddis.gsfc.nasa.gov','products','iers',FILE])
     for HOST in server:
         try:
+            pyTMD.utilities.check_ftp_connection(HOST[0])
             pyTMD.utilities.from_ftp(HOST,timeout=20,local=LOCAL,hash=HASH,
                 verbose=verbose,mode=mode)
         except:

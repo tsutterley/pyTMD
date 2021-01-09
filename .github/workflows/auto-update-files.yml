@@ -31,7 +31,7 @@ jobs:
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Test with pytest
       run: |
-        pytest test/test_leap_seconds.py test/test_time.py test/test_eop.py
+        pytest test/test_leap_seconds.py test/test_time.py test/test_eop.py \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }}
     - name: Check for changes
