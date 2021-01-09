@@ -31,3 +31,8 @@ def test_roman():
     for s,i in zip(['MMXVIII','MCMXVI','DXCIV'],[2018,1916,594]):
         TEST = pyTMD.utilities.roman_to_int(s)
         assert (TEST == i)
+
+def test_even():
+    for s,i in zip([2015,1916,591,99,10,3],[2014,1916,590,98,10,2]):
+        TEST = pyTMD.utilities.even(s)
+        assert (TEST == i)

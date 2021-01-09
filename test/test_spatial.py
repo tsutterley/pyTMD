@@ -51,10 +51,17 @@ def test_ascii():
     output_file = os.path.join(filepath,'test.csv')
     pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
         columns=['time','y','x','data'], header=True, verbose=True)
-    #-- read test ascii file
+    #-- read test ascii file (change case to test find function)
     input_file = os.path.join(filepath,'TEST.csv')
     test = pyTMD.spatial.from_ascii(input_file, header='YAML',
         columns=['time','y','x','data'], verbose=True)
+    #-- check that data is valid
+    eps = np.finfo(np.float32).eps
+    assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
+    #-- read test ascii file as bytes
+    fid = open(output_file,'r')
+    test = pyTMD.spatial.from_ascii(fid, compression='bytes', header='YAML',
+        columns=['time','y','x','data'])
     #-- check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
@@ -102,6 +109,13 @@ def test_netCDF4():
     #-- check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
+    #-- read test netCDF4 file as bytes
+    fid = open(output_file, 'rb')
+    test = pyTMD.spatial.from_netCDF4(fid, compression='bytes',
+        timename='time', xname='x', yname='y', varname='data')
+    #-- check that data is valid
+    eps = np.finfo(np.float32).eps
+    assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     #-- remove the test file
     os.remove(output_file)
 
@@ -139,10 +153,17 @@ def test_HDF5():
     #-- create test HDF5 file
     output_file = os.path.join(filepath,'test.H5')
     pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=True)
-    #-- read test HDF5 file (change case to find test function)
+    #-- read test HDF5 file (change case to test find function)
     input_file = os.path.join(filepath,'TEST.H5')
     test = pyTMD.spatial.from_HDF5(input_file, timename='time',
         xname='x', yname='y', varname='data', verbose=True)
+    #-- check that data is valid
+    eps = np.finfo(np.float32).eps
+    assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
+    #-- read test HDF5 file as bytes
+    fid = open(output_file, 'rb')
+    test = pyTMD.spatial.from_HDF5(fid, compression='bytes',
+        timename='time', xname='x', yname='y', varname='data')
     #-- check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
@@ -151,7 +172,7 @@ def test_HDF5():
 
 #-- PURPOSE: test the read and write of geotiff files
 def test_geotiff(username, password):
-    #-- build urllib2 opener with credentials
+    #-- build urllib2 opener for NSIDC with NASA Earthdata credentials
     pyTMD.utilities.build_opener(username, password, context=ssl.SSLContext(),
         password_manager=True, get_ca_certs=False, redirect=False,
         authorization_header=True, urs='https://urs.earthdata.nasa.gov')
@@ -159,8 +180,8 @@ def test_geotiff(username, password):
     HOST = ['https://n5eil01u.ecs.nsidc.org','ICEBRIDGE','IODEM3.001',
         '2009.10.25','IODEM3_20091025_212618_02720_DEM.tif']
     input_file = os.path.join(filepath,HOST[-1])
-    pyTMD.utilities.from_http(HOST, local=input_file, context=None,
-        verbose=True, mode=0o775)
+    remote_buffer = pyTMD.utilities.from_http(HOST, local=input_file,
+        context=None, verbose=True, mode=0o775)
     dinput = pyTMD.spatial.from_geotiff(input_file, verbose=True)
     #-- copy global geotiff attributes for projection and grid parameters
     attrib = {a:dinput['attributes'][a] for a in ['wkt','spacing','extent']}
@@ -177,6 +198,10 @@ def test_geotiff(username, password):
     pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=True)
     #-- check that data is valid
     test = pyTMD.spatial.from_geotiff(output_file, verbose=True)
+    eps = np.finfo(np.float32).eps
+    assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
+    #-- check that data is valid from in-memory object
+    test = pyTMD.spatial.from_geotiff(remote_buffer, compression='bytes')
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
     #-- remove the test files
