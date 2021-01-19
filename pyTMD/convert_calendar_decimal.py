@@ -51,4 +51,5 @@ def convert_calendar_decimal(*args,**kwargs):
     warnings.filterwarnings("always")
     warnings.warn("Deprecated. Please use pyTMD.time instead",DeprecationWarning)
     # call renamed version to not break workflows
-    return pyTMD.time.convert_calendar_decimal(*args,**kwargs)
+    kwds={key.lower():val for key,val in kwargs.items()}
+    return pyTMD.time.convert_calendar_decimal(*args,**kwds)

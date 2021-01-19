@@ -317,6 +317,8 @@ def from_ftp(HOST,username=None,password=None,timeout=None,local=None,
         remote_mtime = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- convert to absolute path
+            local = os.path.abspath(local)
             #-- create directory if non-existent
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
@@ -398,6 +400,8 @@ def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- convert to absolute path
+            local = os.path.abspath(local)
             #-- create directory if non-existent
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
@@ -615,6 +619,8 @@ def from_cddis(HOST,username=None,password=None,build=True,timeout=None,
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         #-- compare checksums
         if local and (hash != remote_hash):
+            #-- convert to absolute path
+            local = os.path.abspath(local)
             #-- create directory if non-existent
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL11.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (01/2021)
 Calculates tidal elevations for correcting ICESat-2 annual land ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -56,6 +56,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    read_ICESat2_ATL11.py: reads ICESat-2 annual land ice height data files
     time.py: utilities for calculating time operations
     utilities: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
@@ -73,6 +74,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 01/2021: using standalone ATL11 reader
     Updated 12/2020: merged time conversion routines into module
     Written 12/2020
 """
@@ -94,6 +96,7 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
+from icesat2_toolkit.read_ICESat2_ATL11 import read_HDF5_ATL11
 
 #-- PURPOSE: read ICESat-2 annual land ice height data (ATL11) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
@@ -400,32 +403,19 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         TYPE = 'z'
         SCALE = 1.0/100.0
 
-    #-- get directory from FILE
+    #-- read data from FILE
     print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
+    IS2_atl11_mds,IS2_atl11_attrs,IS2_atl11_pairs = read_HDF5_ATL11(FILE,
+        ATTRIBUTES=True)
     DIRECTORY = os.path.dirname(FILE)
-
     #-- extract parameters from ICESat-2 ATLAS HDF5 file name
     rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})_(\d{2})(\d{2})_'
         r'(\d{3})_(\d{2})(.*?).h5$')
     SUB,PRD,TRK,GRAN,SCYC,ECYC,RL,VERS,AUX = rx.findall(FILE).pop()
 
-    #-- read data from FILE
-    fileID = h5py.File(FILE,'r')
-
-    #-- read each input beam pair within the file
-    IS2_atl11_pairs = []
-    for ptx in [k for k in fileID.keys() if bool(re.match(r'pt\d',k))]:
-        #-- check if subsetted beam contains reference points
-        try:
-            fileID[ptx]['ref_pt']
-        except KeyError:
-            pass
-        else:
-            IS2_atl11_pairs.append(ptx)
-
     #-- number of GPS seconds between the GPS epoch
     #-- and ATLAS Standard Data Product (SDP) epoch
-    atlas_sdp_gps_epoch = fileID['ancillary_data']['atlas_sdp_gps_epoch'][:]
+    atlas_sdp_gps_epoch = IS2_atl11_mds['ancillary_data']['atlas_sdp_gps_epoch']
 
     #-- copy variables for outputting to HDF5 file
     IS2_atl11_tide = {}
@@ -439,10 +429,10 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     IS2_atl11_tide_attrs['ancillary_data'] = {}
     for key in ['atlas_sdp_gps_epoch']:
         #-- get each HDF5 variable
-        IS2_atl11_tide['ancillary_data'][key] = fileID['ancillary_data'][key][:]
+        IS2_atl11_tide['ancillary_data'][key] = IS2_atl11_mds['ancillary_data'][key]
         #-- Getting attributes of group and included variables
         IS2_atl11_tide_attrs['ancillary_data'][key] = {}
-        for att_name,att_val in fileID['ancillary_data'][key].attrs.items():
+        for att_name,att_val in IS2_atl11_attrs['ancillary_data'][key].items():
             IS2_atl11_tide_attrs['ancillary_data'][key][att_name] = att_val
 
     #-- for each input beam pair within the file
@@ -454,40 +444,39 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl11_tide_attrs[ptx] = dict(cycle_stats={})
 
         #-- number of average segments and number of included cycles
-        delta_time = fileID[ptx]['delta_time'][:].copy()
-        invalid_time = fileID[ptx]['delta_time'].attrs['_FillValue']
-        n_points,n_cycles = np.shape(delta_time)
+        invalid_time = IS2_atl11_attrs[ptx]['delta_time']['_FillValue']
+        n_points,n_cycles = IS2_atl11_mds[ptx]['delta_time'].shape
         #-- find valid average segments for beam pair
-        fv = fileID[ptx]['h_corr'].attrs['_FillValue']
+        fv = IS2_atl11_attrs[ptx]['h_corr']['_FillValue']
 
         #-- convert time from ATLAS SDP to days relative to Jan 1, 1992
-        gps_seconds = atlas_sdp_gps_epoch + delta_time
+        gps_seconds = atlas_sdp_gps_epoch + IS2_atl11_mds[ptx]['delta_time']
         leap_seconds = pyTMD.time.count_leap_seconds(gps_seconds)
         tide_time = pyTMD.time.convert_delta_time(gps_seconds-leap_seconds,
             epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
         #-- read tidal constants and interpolate to grid points
         if model_format in ('OTIS','ATLAS'):
-            amp,ph,D,c = extract_tidal_constants(fileID[ptx]['longitude'][:],
-                fileID[ptx]['latitude'][:], grid_file, model_file, EPSG,
+            amp,ph,D,c = extract_tidal_constants(IS2_atl11_mds[ptx]['longitude'],
+                IS2_atl11_mds[ptx]['latitude'], grid_file, model_file, EPSG,
                 TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
                 GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
-            amp,ph,D,c = extract_netcdf_constants(fileID[ptx]['longitude'][:],
-                fileID[ptx]['latitude'][:], model_directory, grid_file,
+            amp,ph,D,c = extract_netcdf_constants(IS2_atl11_mds[ptx]['longitude'],
+                IS2_atl11_mds[ptx]['latitude'], model_directory, grid_file,
                 model_files, TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
                 SCALE=SCALE)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'GOT'):
-            amp,ph = extract_GOT_constants(fileID[ptx]['longitude'][:],
-                fileID[ptx]['latitude'][:], model_directory, model_files,
+            amp,ph = extract_GOT_constants(IS2_atl11_mds[ptx]['longitude'],
+                IS2_atl11_mds[ptx]['latitude'], model_directory, model_files,
                 METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
             delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model_format == 'FES'):
-            amp,ph = extract_FES_constants(fileID[ptx]['longitude'][:],
-                fileID[ptx]['latitude'][:], model_directory, model_files,
+            amp,ph = extract_FES_constants(IS2_atl11_mds[ptx]['longitude'],
+                IS2_atl11_mds[ptx]['latitude'], model_directory, model_files,
                 TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
                 EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
             #-- interpolate delta times from calendar dates to tide time
@@ -501,11 +490,10 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
 
         #-- allocate for each cycle
         tide = np.ma.empty((n_points,n_cycles),fill_value=fv)
-        tide.mask = np.ma.ones((n_points,n_cycles),dtype=np.bool)
+        tide.mask = (IS2_atl11_mds[ptx]['delta_time'] == invalid_time)
         for cycle in range(n_cycles):
             #-- find valid time and spatial points for cycle
-            tide.mask[:,cycle] = np.any(hc.mask,axis=1) | \
-                (delta_time[:,cycle] == invalid_time)
+            tide.mask[:,cycle] |= np.any(hc.mask,axis=1)
             valid, = np.nonzero(~tide.mask[:,cycle])
             #-- predict tidal elevations and infer minor corrections
             tide.data[valid,cycle] = predict_tide_drift(tide_time[valid,cycle],
@@ -522,16 +510,16 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         #-- group attributes for beam
         IS2_atl11_tide_attrs[ptx]['description'] = ('Contains the primary science parameters for this '
             'data set')
-        IS2_atl11_tide_attrs[ptx]['beam_pair'] = fileID[ptx].attrs['beam_pair']
-        IS2_atl11_tide_attrs[ptx]['ReferenceGroundTrack'] = fileID[ptx].attrs['ReferenceGroundTrack']
-        IS2_atl11_tide_attrs[ptx]['first_cycle'] = fileID[ptx].attrs['first_cycle']
-        IS2_atl11_tide_attrs[ptx]['last_cycle'] = fileID[ptx].attrs['last_cycle']
-        IS2_atl11_tide_attrs[ptx]['equatorial_radius'] = fileID[ptx].attrs['equatorial_radius']
-        IS2_atl11_tide_attrs[ptx]['polar_radius'] = fileID[ptx].attrs['polar_radius']
+        IS2_atl11_tide_attrs[ptx]['beam_pair'] = IS2_atl11_attrs[ptx]['beam_pair']
+        IS2_atl11_tide_attrs[ptx]['ReferenceGroundTrack'] = IS2_atl11_attrs[ptx]['ReferenceGroundTrack']
+        IS2_atl11_tide_attrs[ptx]['first_cycle'] = IS2_atl11_attrs[ptx]['first_cycle']
+        IS2_atl11_tide_attrs[ptx]['last_cycle'] = IS2_atl11_attrs[ptx]['last_cycle']
+        IS2_atl11_tide_attrs[ptx]['equatorial_radius'] = IS2_atl11_attrs[ptx]['equatorial_radius']
+        IS2_atl11_tide_attrs[ptx]['polar_radius'] = IS2_atl11_attrs[ptx]['polar_radius']
 
         #-- geolocation, time and reference point
         #-- cycle_number
-        IS2_atl11_tide[ptx]['cycle_number'] = fileID[ptx]['cycle_number'][:].copy()
+        IS2_atl11_tide[ptx]['cycle_number'] = IS2_atl11_mds[ptx]['cycle_number'].copy()
         IS2_atl11_fill[ptx]['cycle_number'] = None
         IS2_atl11_dims[ptx]['cycle_number'] = None
         IS2_atl11_tide_attrs[ptx]['cycle_number'] = {}
@@ -543,8 +531,8 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "reference ground track (RGTs) is targeted in the polar regions once "
             "every 91 days.")
         #-- delta time
-        IS2_atl11_tide[ptx]['delta_time'] = fileID[ptx]['delta_time'][:].copy()
-        IS2_atl11_fill[ptx]['delta_time'] = fileID[ptx]['delta_time'].attrs['_FillValue']
+        IS2_atl11_tide[ptx]['delta_time'] = IS2_atl11_mds[ptx]['delta_time'].copy()
+        IS2_atl11_fill[ptx]['delta_time'] = IS2_atl11_attrs[ptx]['delta_time']['_FillValue']
         IS2_atl11_dims[ptx]['delta_time'] = ['ref_pt','cycle_number']
         IS2_atl11_tide_attrs[ptx]['delta_time'] = {}
         IS2_atl11_tide_attrs[ptx]['delta_time']['units'] = "seconds since 2018-01-01"
@@ -561,8 +549,8 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl11_tide_attrs[ptx]['delta_time']['coordinates'] = \
             "ref_pt cycle_number latitude longitude"
         #-- latitude
-        IS2_atl11_tide[ptx]['latitude'] = fileID[ptx]['latitude'][:].copy()
-        IS2_atl11_fill[ptx]['latitude'] = fileID[ptx]['latitude'].attrs['_FillValue']
+        IS2_atl11_tide[ptx]['latitude'] = IS2_atl11_mds[ptx]['latitude'].copy()
+        IS2_atl11_fill[ptx]['latitude'] = IS2_atl11_attrs[ptx]['latitude']['_FillValue']
         IS2_atl11_dims[ptx]['latitude'] = ['ref_pt']
         IS2_atl11_tide_attrs[ptx]['latitude'] = {}
         IS2_atl11_tide_attrs[ptx]['latitude']['units'] = "degrees_north"
@@ -577,8 +565,8 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl11_tide_attrs[ptx]['latitude']['coordinates'] = \
             "ref_pt delta_time longitude"
         #-- longitude
-        IS2_atl11_tide[ptx]['longitude'] = fileID[ptx]['longitude'][:].copy()
-        IS2_atl11_fill[ptx]['longitude'] = fileID[ptx]['longitude'].attrs['_FillValue']
+        IS2_atl11_tide[ptx]['longitude'] = IS2_atl11_mds[ptx]['longitude'].copy()
+        IS2_atl11_fill[ptx]['longitude'] = IS2_atl11_attrs[ptx]['longitude']['_FillValue']
         IS2_atl11_dims[ptx]['longitude'] = ['ref_pt']
         IS2_atl11_tide_attrs[ptx]['longitude'] = {}
         IS2_atl11_tide_attrs[ptx]['longitude']['units'] = "degrees_east"
@@ -593,7 +581,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl11_tide_attrs[ptx]['longitude']['coordinates'] = \
             "ref_pt delta_time latitude"
         #-- reference point
-        IS2_atl11_tide[ptx]['ref_pt'] = fileID[ptx]['ref_pt'][:].copy()
+        IS2_atl11_tide[ptx]['ref_pt'] = IS2_atl11_mds[ptx]['ref_pt'].copy()
         IS2_atl11_fill[ptx]['ref_pt'] = None
         IS2_atl11_dims[ptx]['ref_pt'] = None
         IS2_atl11_tide_attrs[ptx]['ref_pt'] = {}
@@ -627,9 +615,6 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['reference'] = reference
         IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['coordinates'] = \
             "../ref_pt ../cycle_number ../delta_time ../latitude ../longitude"
-
-    #-- close the input HDF5 file
-    fileID.close()
 
     #-- output tidal HDF5 file
     args = (PRD,TIDE_MODEL,TRK,GRAN,SCYC,ECYC,RL,VERS,AUX)
