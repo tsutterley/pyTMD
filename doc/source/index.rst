@@ -7,17 +7,19 @@ conventions for calculating radial pole tide displacements.
 
 .. toctree::
     :maxdepth: 2
-    :caption: Getting Started:
+    :caption: Getting Started
 
     getting_started/Overview.rst
-    getting_started/Install.md
-    getting_started/Getting-Started.md
-    getting_started/Resources.md
-    getting_started/Citations.md
+    getting_started/Install.rst
+    getting_started/Getting-Started.rst
+    getting_started/Examples.rst
+    getting_started/Resources.rst
+    getting_started/Citations.rst
 
 .. toctree::
     :maxdepth: 1
-    :caption: User Guide:
+    :hidden:
+    :caption: User Guide
 
     user_guide/arcticdata_tides.md
     user_guide/aviso_fes_tides.md

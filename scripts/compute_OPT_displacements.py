@@ -26,7 +26,7 @@ COMMAND LINE OPTIONS:
     -t X, --type X: input data type
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time for all data points)
-    -E X, --epoch X: Reference epoch of input time (default Modified Julian Day)
+    -e X, --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
     -d X, --deltatime X: Input delta time for files without date information
         can be set to 0 to use exact calendar date from epoch
@@ -321,7 +321,7 @@ def main():
         help='Input data type')
     #-- time epoch (default Modified Julian Days)
     #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
-    parser.add_argument('--epoch','-E',
+    parser.add_argument('--epoch','-e',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
     #-- spatial projection (EPSG code or PROJ4 string)

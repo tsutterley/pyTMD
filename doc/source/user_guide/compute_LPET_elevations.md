@@ -27,7 +27,7 @@ python compute_LPET_elevation.py input_file output_file
 - `-t X`, `--type X`: input data type
     * `'drift'`: drift buoys or satellite/airborne altimetry (time per data point)
     * `'grid'`: spatial grids or images (single time for all data points)
-- `--epoch X`: reference epoch of input time
+- `-e X`, `--epoch X`: reference epoch of input time
     * `'days since 1858-11-17T00:00:00'` (default Modified Julian Days)
 - `-d X`, `--deltatime X`: input delta time for files without date information
     * can be set to 0 to use exact calendar date from epoch

@@ -15,6 +15,10 @@ with open("README.md", "r") as fh:
 with open('requirements.txt') as fh:
     install_requires = fh.read().splitlines()
 
+# get version
+with open('version.txt') as fh:
+    version = fh.read()
+
 # list of all scripts to be included with package
 scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
 
@@ -39,7 +43,7 @@ if gdal_output[3]:
 
 setup(
     name='pyTMD',
-    version='1.0.2.17',
+    version=version,
     description='Tide Model Driver to read OTIS, GOT and FES formatted tidal solutions and make tidal predictions',
     long_description=long_description,
     long_description_content_type="text/markdown",

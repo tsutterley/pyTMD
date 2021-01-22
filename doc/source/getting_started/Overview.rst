@@ -9,11 +9,9 @@ airborne and satellite altimetry.
 pyTMD provides data access utilities for ascii, netCDF4, HDF5, and geotiff
 formats.
 pyTMD also provides some very high-level plotting programs through the
-use of `Jupyter Notebooks`__.
+use of `Jupyter Notebooks <./Examples.html>`_.
 The program provides the interface between spatial and temporal coordinates and
 the output ocean, load and pole tide variables as shown in the flowcharts below:
-
-.. __: https://github.com/tsutterley/pyTMD/tree/main/notebooks
 
 .. graphviz::
     :caption: pyTMD Ocean and Load Tide Framework
