@@ -47,11 +47,12 @@ General Methods
 
 .. method:: pyTMD.time.parse_date_string(date_string)
 
-    Parse a date string of the form time-units since yyyy-mm-dd hh:mm:ss
+    Parse a date string of the form ``time-units since yyyy-mm-dd hh:mm:ss``
+    or ``yyyy-mm-dd hh:mm:ss`` for the case of exact calendar dates
 
     Arguments:
 
-        `date_string`: time-units since yyyy-mm-dd hh:mm:ss
+        `date_string`: string denoting the time units and epoch
 
     Returns:
 
@@ -66,7 +67,7 @@ General Methods
 
     Arguments:
 
-        `date_string`: time-units since yyyy-mm-dd hh:mm:ss
+        `date_string`: string denoting the time units and epoch
 
 
 .. method:: pyTMD.time.datetime_to_list(date)

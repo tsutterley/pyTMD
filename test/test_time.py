@@ -104,6 +104,12 @@ def test_parse_date_string():
     #-- check the epoch and the time unit conversion factors
     assert np.all(epoch == [2018,1,1,0,0,0])
     assert (to_secs == 1.0)
+    #-- time string for unitless case
+    time_string = '2000-01-01T12:00:00'
+    epoch,to_secs = pyTMD.time.parse_date_string(time_string)
+    #-- check the epoch and the time unit conversion factors
+    assert np.all(epoch == [2000,1,1,12,0,0])
+    assert (to_secs == 0.0)
 
 #-- PURPOSE: verify forward and backwards delta time conversions
 @pytest.mark.parametrize("delta_time", np.random.randint(1,31536000,size=4))

@@ -1,7 +1,8 @@
 compute_tidal_elevations.py
 ===========================
 
-- Calculates tidal elevations for an input file
+- Calculates tidal elevations for an input file (ascii, netCDF4, HDF5, geotiff)
+- For netCDF4 and HDF5 files, can extract the time units from attributes
 - Can use OTIS format tidal solutions provided by Ohio State University and ESR
 - Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
 - Can use Finite Element Solution (FES) models provided by AVISO
@@ -52,7 +53,7 @@ python compute_tidal_elevations.py --directory <path_to_directory> --tide <model
  - `-t X`, `--type X`: input data type
      * `'drift'`: drift buoys or satellite/airborne altimetry (time per data point)
      * `'grid'`: spatial grids or images (single time for all data points)
- - `-e X`, `--epoch X`: reference epoch of input time
+ - `-e X`, `--epoch X`: reference epoch of input time or calendar date of measurement
      * `'days since 1858-11-17T00:00:00'` (default Modified Julian Days)
  - `-d X`, `--deltatime X`: input delta time for files without date information
      * can be set to 0 to use exact calendar date from epoch

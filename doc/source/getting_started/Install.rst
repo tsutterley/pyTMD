@@ -40,7 +40,7 @@ or `pip`
 
     python3 -m pip install --user .
 
-Alternatively can install the `gravity_toolkit` utilities directly from GitHub with `pip`:
+Alternatively can install the pyTMD utilities directly from GitHub with `pip`:
 
 .. code-block:: bash
 
