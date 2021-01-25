@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2020: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
+        set default time for geotiff files to 0
     Updated 12/2020: added module for converting ellipsoids
     Updated 11/2020: output data as masked arrays if containing fill values
         add functions to read from and write to geotiff image formats
@@ -301,6 +302,7 @@ def from_geotiff(filename, compression=None, verbose=False):
     #-- get dimensions
     xsize = ds.RasterXSize
     ysize = ds.RasterYSize
+    bsize = ds.RasterCount
     #-- get geotiff info
     info_geotiff = ds.GetGeoTransform()
     dinput['attributes']['spacing'] = (info_geotiff[1],info_geotiff[5])
@@ -315,6 +317,8 @@ def from_geotiff(filename, compression=None, verbose=False):
     dinput['y'] = ymax + info_geotiff[5]/2.0 + np.arange(ysize)*info_geotiff[5]
     #-- read full image with GDAL
     dinput['data'] = ds.ReadAsArray()
+    #-- set default time to zero for each band
+    dinput.setdefault('time', np.zeros((bsize)))
     #-- check if image has fill values
     if ds.GetRasterBand(1).GetNoDataValue():
         #-- convert to masked array if fill values

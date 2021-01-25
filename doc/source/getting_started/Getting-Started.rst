@@ -94,6 +94,10 @@ elevations or currents (zonal and meridional) for each point.
         --epoch 'seconds since 1970-01-01T00:00:00' --verbose --mode 0o775 \
         input_file.H5 output_file.H5
 
+    python compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
+        --format geotiff --projection 3031 --type grid --epoch '2000-01-01T12:00:00' \
+        --verbose --mode 0o775 input_file.tif output_file.tif
+
     python compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS2008 \
         --format HDF5 --variables t_sec lat lon h_cor --projection 4326 \
         --epoch 'seconds since 1970-01-01T00:00:00' --verbose --mode 0o775 \
@@ -117,6 +121,7 @@ The default time in pyTMD is days (UTC) since a given epoch.
 For ocean, load and equilibrium tide programs, the epoch is 1992-01-01T00:00:00.
 For pole tide programs, the epoch is 1858-11-17T00:00:00 (Modified Julian Days).
 `pyTMD <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_ can convert different time formats to the necessary time format of a given program.
+`pyTMD <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_ can parse date strings describing the units and epoch of relative times, or the calendar date of measurement for geotiff formats.
 pyTMD keeps updated `tables of leap seconds <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list>`_ for converting from GPS and TAI times.
 pyTMD keeps updated `tables of delta times <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data>`_ for converting between dynamic (TT) and universal (UT1) times.
 
