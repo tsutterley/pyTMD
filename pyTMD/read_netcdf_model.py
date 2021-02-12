@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (12/2020)
+read_netcdf_model.py (02/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 02/2021: set invalid values to nan in extrapolation
     Updated 12/2020: added valid data extrapolation with nearest_extrap
         replace tostring with tobytes to fix DeprecationWarning
     Updated 11/2020: create function to read bathymetry and spatial coordinates
@@ -192,6 +193,8 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             z1 = np.ma.zeros((npts),dtype=z.dtype)
             z1.mask = np.zeros((npts),dtype=np.bool)
             if (METHOD == 'bilinear'):
+                #-- replace invalid values with nan
+                z[z.mask] = np.nan
                 z1.data[:] = bilinear_interp(lon,lat,z,ilon,ilat,dtype=z.dtype)
                 #-- mask invalid values
                 z1.mask[:] |= np.copy(D.mask)
@@ -219,6 +222,8 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             if EXTRAPOLATE:
                 #-- find invalid data points
                 inv, = np.nonzero(z1.mask)
+                #-- replace invalid values with nan
+                z[z.mask] = np.nan
                 #-- extrapolate points within 10km of valid model points
                 z1.data[inv] = nearest_extrap(lon,lat,z,ilon[inv],ilat[inv],
                     dtype=z.dtype,cutoff=10.0)
@@ -266,6 +271,8 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             if EXTRAPOLATE:
                 #-- find invalid data points
                 inv, = np.nonzero(tr1.mask)
+                #-- replace invalid values with nan
+                tr[tr.mask] = np.nan
                 #-- extrapolate points within 10km of valid model points
                 tr1.data[inv] = nearest_extrap(lon,lat,tr,ilon[inv],ilat[inv],
                     dtype=tr.dtype,cutoff=10.0)

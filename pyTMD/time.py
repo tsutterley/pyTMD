@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (01/2021)
+Written by Tyler Sutterley (02/2021)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 02/2021: NASA CDDIS anonymous ftp access discontinued
     Updated 01/2021: added ftp connection checks
         add date parser for cases when only a calendar date with no units
     Updated 12/2020: merged with convert_julian and convert_calendar_decimal
@@ -477,7 +478,7 @@ def get_leap_seconds():
     return leap_GPS[leap_GPS >= 0].astype(np.float)
 
 #-- PURPOSE: connects to servers and downloads leap second files
-def update_leap_seconds(verbose=False, mode=0o775):
+def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
     """
     Connects to servers to download leap-seconds.list files from NIST servers
     https://www.nist.gov/pml/time-and-frequency-division/leap-seconds-faqs
@@ -489,6 +490,7 @@ def update_leap_seconds(verbose=False, mode=0o775):
 
     Keyword arguments
     -----------------
+    timeout: timeout in seconds for blocking operations
     verbose: print file information about output file
     mode: permissions mode of output file
     """
@@ -501,7 +503,7 @@ def update_leap_seconds(verbose=False, mode=0o775):
     HOST = ['ftp.nist.gov','pub','time','iers',FILE]
     try:
         pyTMD.utilities.check_ftp_connection(HOST[0])
-        pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
+        pyTMD.utilities.from_ftp(HOST, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
     except:
         pass
@@ -511,7 +513,7 @@ def update_leap_seconds(verbose=False, mode=0o775):
     #-- try downloading from Internet Engineering Task Force (IETF) mirror
     REMOTE = ['https://www.ietf.org','timezones','data',FILE]
     try:
-        pyTMD.utilities.from_http(REMOTE, timeout=5, local=LOCAL,
+        pyTMD.utilities.from_http(REMOTE, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
     except:
         pass
@@ -629,7 +631,7 @@ def merge_bulletin_a_files(username=None,password=None,
         return
 
 #-- PURPOSE: connects to IERS servers and finds Bulletin-A files
-def iers_delta_time(daily_file, verbose=False, mode=0o775):
+def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     """
     Connects to the IERS server to download Bulletin-A files
         https://datacenter.iers.org/productMetadata.php?id=6
@@ -646,6 +648,7 @@ def iers_delta_time(daily_file, verbose=False, mode=0o775):
 
     Keyword arguments
     -----------------
+    timeout: timeout in seconds for blocking operations
     verbose: print file information about output file
     mode: permissions mode of output file
     """
@@ -659,19 +662,21 @@ def iers_delta_time(daily_file, verbose=False, mode=0o775):
     #-- output file format
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     #-- find subdirectories
-    subdirectory,mtimes = pyTMD.utilities.ftp_list(HOST,basename=True,sort=True)
+    subdirectory,_ = pyTMD.utilities.ftp_list(HOST,timeout=timeout,
+        basename=True,sort=True)
     #-- for each subdirectory
     for SUB in subdirectory:
         #-- find Bulletin-A files in ftp subdirectory
         HOST.append(SUB)
-        bulletin_files,mtimes = pyTMD.utilities.ftp_list(HOST,basename=True,
-            sort=True,pattern=rx)
+        print(SUB) if verbose else None
+        bulletin_files,_ = pyTMD.utilities.ftp_list(HOST,
+            timeout=timeout,basename=True,sort=True,pattern=rx)
         #-- for each Bulletin-A file
         for f in sorted(bulletin_files):
             print(f) if verbose else None
             #-- copy remote file contents to BytesIO object
             HOST.append(f)
-            remote_buffer = pyTMD.utilities.from_ftp(HOST,timeout=20)
+            remote_buffer = pyTMD.utilities.from_ftp(HOST,timeout=timeout)
             #-- read Bulletin-A file from BytesIO object
             YY,MM,DD,DELTAT = read_iers_bulletin_a(remote_buffer)
             #-- print delta time for week to output file
@@ -879,11 +884,11 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
         return
 
     #-- try downloading from NASA Crustal Dynamics Data Information System
-    #-- note: anonymous ftp access will be discontinued on 2020-10-31
-    #-- will require using the following https Earthdata server after that date
+    #-- NOTE: anonymous ftp access was discontinued on 2020-10-31
+    #-- requires using the following https Earthdata server
     server = []
-    server.append(['cddis.nasa.gov','pub','products','iers',FILE])
-    server.append(['cddis.gsfc.nasa.gov','products','iers',FILE])
+    # server.append(['cddis.nasa.gov','pub','products','iers',FILE])
+    # server.append(['cddis.gsfc.nasa.gov','products','iers',FILE])
     for HOST in server:
         try:
             pyTMD.utilities.check_ftp_connection(HOST[0])

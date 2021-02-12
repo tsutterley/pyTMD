@@ -83,7 +83,6 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     #-- flattened valid data array
     iflat = idata.data[indy,indx]
 
-
     #-- calculate coordinates for nearest-neighbors
     if (EPSG == '4326'):
         #-- valid grid latitude and longitude in radians
