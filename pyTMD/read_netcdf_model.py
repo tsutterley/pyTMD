@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 02/2021: set invalid values to nan in extrapolation
+        replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
         replace tostring with tobytes to fix DeprecationWarning
     Updated 11/2020: create function to read bathymetry and spatial coordinates
@@ -138,7 +139,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
 
     #-- interpolate bathymetry and mask to output points
     D = np.ma.zeros((npts))
-    D.mask = np.zeros((npts),dtype=np.bool)
+    D.mask = np.zeros((npts),dtype=bool)
     if (METHOD == 'bilinear'):
         #-- replace invalid values with nan
         bathymetry[bathymetry.mask] = np.nan
@@ -154,7 +155,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         f2 = scipy.interpolate.RectBivariateSpline(lon,lat,
             bathymetry.mask.T,kx=1,ky=1)
         D.data[:] = f1.ev(ilon,ilat)
-        D.mask[:] = np.ceil(f2.ev(ilon,ilat).astype(np.bool))
+        D.mask[:] = np.ceil(f2.ev(ilon,ilat).astype(bool))
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
@@ -162,7 +163,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
         r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
             bathymetry.mask, method=METHOD, bounds_error=False, fill_value=1)
         D.data[:] = r1.__call__(np.c_[ilat,ilon])
-        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
@@ -177,9 +178,9 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     constituents = []
     #-- amplitude and phase
     ampl = np.ma.zeros((npts,nc))
-    ampl.mask = np.zeros((npts,nc),dtype=np.bool)
+    ampl.mask = np.zeros((npts,nc),dtype=bool)
     phase = np.ma.zeros((npts,nc))
-    phase.mask = np.zeros((npts,nc),dtype=np.bool)
+    phase.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,fi in enumerate(model_files):
         if (TYPE == 'z'):
@@ -191,7 +192,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             z = extend_matrix(z)
             #-- interpolate amplitude and phase of the constituent
             z1 = np.ma.zeros((npts),dtype=z.dtype)
-            z1.mask = np.zeros((npts),dtype=np.bool)
+            z1.mask = np.zeros((npts),dtype=bool)
             if (METHOD == 'bilinear'):
                 #-- replace invalid values with nan
                 z[z.mask] = np.nan
@@ -242,7 +243,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             tr = extend_matrix(tr)
             #-- interpolate amplitude and phase of the constituent
             tr1 = np.ma.zeros((npts),dtype=tr.dtype)
-            tr1.mask = np.zeros((npts),dtype=np.bool)
+            tr1.mask = np.zeros((npts),dtype=bool)
             if (METHOD == 'bilinear'):
                 tr1.data[:]=bilinear_interp(lon,lat,tr,ilon,ilat,dtype=tr.dtype)
                 #-- mask invalid values
@@ -423,7 +424,7 @@ def read_elevation_file(input_file,GZIP):
     ny = fileID.dimensions['ny'].size
     #-- real and imaginary components of elevation
     h = np.ma.zeros((ny,nx),dtype=np.complex64)
-    h.mask = np.zeros((ny,nx),dtype=np.bool)
+    h.mask = np.zeros((ny,nx),dtype=bool)
     h.data.real[:,:] = fileID.variables['hRe'][:,:].T
     h.data.imag[:,:] = fileID.variables['hIm'][:,:].T
     #-- close the file
@@ -470,7 +471,7 @@ def read_transport_file(input_file,TYPE,GZIP):
     ny = fileID.dimensions['ny'].size
     #-- real and imaginary components of transport
     tr = np.ma.zeros((ny,nx),dtype=np.complex64)
-    tr.mask = np.zeros((ny,nx),dtype=np.bool)
+    tr.mask = np.zeros((ny,nx),dtype=bool)
     if TYPE in ('U','u'):
         tr.data.real[:,:] = fileID.variables['uRe'][:,:].T
         tr.data.imag[:,:] = fileID.variables['uIm'][:,:].T

@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 02/2021: set invalid values to nan in extrapolation
+        replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
@@ -219,9 +220,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     constituents,nc = read_constituents(model_file)
     npts = len(D)
     amplitude = np.ma.zeros((npts,nc))
-    amplitude.mask = np.zeros((npts,nc),dtype=np.bool)
+    amplitude.mask = np.zeros((npts,nc),dtype=bool)
     ph = np.ma.zeros((npts,nc))
-    ph.mask = np.zeros((npts,nc),dtype=np.bool)
+    ph.mask = np.zeros((npts,nc),dtype=bool)
     for i,c in enumerate(constituents):
         if (TYPE == 'z'):
             #-- read constituent from elevation file
@@ -241,7 +242,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- use quick bilinear to interpolate values
                 z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
-                z1.mask = (np.isnan(z1.data) | (~mz1.astype(np.bool)))
+                z1.mask = (np.isnan(z1.data) | (~mz1.astype(bool)))
                 z1.data[z1.mask] = z1.fill_value
             elif (METHOD == 'spline'):
                 #-- use scipy bivariate splines to interpolate values
@@ -252,7 +253,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z1.data.real = f1.ev(x,y)
                 z1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
-                z1.mask = (~mz1.astype(np.bool))
+                z1.mask = (~mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
@@ -261,7 +262,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
-                z1.mask = (z1.data == z1.fill_value) | (~mz1.astype(np.bool))
+                z1.mask = (z1.data == z1.fill_value) | (~mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             #-- extrapolate data using nearest-neighbors
             if EXTRAPOLATE:
@@ -300,7 +301,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- use quick bilinear to interpolate values
                 u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
-                u1.mask = (np.isnan(u1.data) | (~mu1.astype(np.bool)))
+                u1.mask = (np.isnan(u1.data) | (~mu1.astype(bool)))
                 u1.data[u1.mask] = u1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(xu,yi,
@@ -310,7 +311,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.data.real = f1.ev(x,y)
                 u1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
-                u1.mask = (~mu1.astype(np.bool))
+                u1.mask = (~mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
@@ -318,7 +319,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                     method=METHOD,bounds_error=False,fill_value=u1.fill_value)
                 u1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
-                u1.mask = (u1.data == u1.fill_value) | (~mu1.astype(np.bool))
+                u1.mask = (u1.data == u1.fill_value) | (~mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             #-- extrapolate data using nearest-neighbors
             if EXTRAPOLATE:
@@ -359,7 +360,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- use quick bilinear to interpolate values
                 v1.data = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
-                v1.mask = (np.isnan(v1.data) | (~mv1.astype(np.bool)))
+                v1.mask = (np.isnan(v1.data) | (~mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(xi,yv,
@@ -369,7 +370,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.data.real = f1.ev(x,y)
                 v1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
-                v1.mask = (~mv1.astype(np.bool))
+                v1.mask = (~mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
@@ -377,7 +378,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                     method=METHOD,bounds_error=False,fill_value=v1.fill_value)
                 v1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
-                v1.mask = (v1.data == v1.fill_value) | (~mv1.astype(np.bool))
+                v1.mask = (v1.data == v1.fill_value) | (~mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             #-- extrapolate data using nearest-neighbors
             if EXTRAPOLATE:
@@ -589,7 +590,7 @@ def read_atlas_grid(input_file):
         jz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nd)
         fid.seek(8,1)
         depth = np.ma.zeros((ny1,nx1))
-        depth.mask = np.ones((ny1,nx1),dtype=np.bool)
+        depth.mask = np.ones((ny1,nx1),dtype=bool)
         depth.data[jz-1,iz-1] = np.fromfile(fid,dtype=np.dtype('>f4'),count=nd)
         depth.mask[jz-1,iz-1] = False
         fid.seek(4,1)
@@ -650,7 +651,7 @@ def read_elevation_file(input_file,ic):
     fid.seek(nskip,1)
     #-- real and imaginary components of elevation
     h = np.ma.zeros((ny,nx),dtype=np.complex64)
-    h.mask = np.zeros((ny,nx),dtype=np.bool)
+    h.mask = np.zeros((ny,nx),dtype=bool)
     for i in range(ny):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
@@ -693,7 +694,7 @@ def read_atlas_elevation(input_file,ic,constituent):
     fid.seek(nskip,1)
     #-- real and imaginary components of elevation
     h = np.ma.zeros((ny,nx),dtype=np.complex64)
-    h.mask = np.zeros((ny,nx),dtype=np.bool)
+    h.mask = np.zeros((ny,nx),dtype=bool)
     for i in range(ny):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
@@ -732,7 +733,7 @@ def read_atlas_elevation(input_file,ic,constituent):
             fid.seek(nskip,1)
             #-- real and imaginary components of elevation
             h1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
-            h1.mask = np.ones((ny1,nx1),dtype=np.bool)
+            h1.mask = np.ones((ny1,nx1),dtype=bool)
             temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nz)
             h1.data.real[jz-1,iz-1] = temp[0:2*nz-1:2]
             h1.data.imag[jz-1,iz-1] = temp[1:2*nz:2]
@@ -779,9 +780,9 @@ def read_transport_file(input_file,ic):
     fid.seek(nskip,1)
     #-- real and imaginary components of transport
     u = np.ma.zeros((ny,nx),dtype=np.complex64)
-    u.mask = np.zeros((ny,nx),dtype=np.bool)
+    u.mask = np.zeros((ny,nx),dtype=bool)
     v = np.ma.zeros((ny,nx),dtype=np.complex64)
-    v.mask = np.zeros((ny,nx),dtype=np.bool)
+    v.mask = np.zeros((ny,nx),dtype=bool)
     for i in range(ny):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=4*nx)
         u.data.real[i,:] = temp[0:4*nx-3:4]
@@ -828,9 +829,9 @@ def read_atlas_transport(input_file,ic,constituent):
     fid.seek(nskip,1)
     #-- real and imaginary components of transport
     u = np.ma.zeros((ny,nx),dtype=np.complex64)
-    u.mask = np.zeros((ny,nx),dtype=np.bool)
+    u.mask = np.zeros((ny,nx),dtype=bool)
     v = np.ma.zeros((ny,nx),dtype=np.complex64)
-    v.mask = np.zeros((ny,nx),dtype=np.bool)
+    v.mask = np.zeros((ny,nx),dtype=bool)
     for i in range(ny):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=4*nx)
         u.data.real[i,:] = temp[0:4*nx-3:4]
@@ -875,7 +876,7 @@ def read_atlas_transport(input_file,ic,constituent):
             fid.seek(nskip,1)
             #-- real and imaginary components of u transport
             u1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
-            u1.mask = np.ones((ny1,nx1),dtype=np.bool)
+            u1.mask = np.ones((ny1,nx1),dtype=bool)
             tmpu = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nu)
             u1.data.real[ju-1,iu-1] = tmpu[0:2*nu-1:2]
             u1.data.imag[ju-1,iu-1] = tmpu[1:2*nu:2]
@@ -883,7 +884,7 @@ def read_atlas_transport(input_file,ic,constituent):
             fid.seek(8,1)
             #-- real and imaginary components of v transport
             v1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
-            v1.mask = np.ones((ny1,nx1),dtype=np.bool)
+            v1.mask = np.ones((ny1,nx1),dtype=bool)
             tmpv = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nv)
             v1.data.real[jv-1,iv-1] = tmpv[0:2*nv-1:2]
             v1.data.imag[jv-1,iv-1] = tmpv[1:2*nv:2]
@@ -989,7 +990,7 @@ def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
     y30 = np.arange(-90.0+d30/2.0, 90.0+d30/2.0, d30)
     #-- interpolate global solution to 2 arc-minute solution
     z30 = np.ma.zeros((len(y30),len(x30)),dtype=zi.dtype)
-    z30.mask = np.zeros((len(y30),len(x30)),dtype=np.bool)
+    z30.mask = np.zeros((len(y30),len(x30)),dtype=bool)
     #-- test if combining elevation/transport variables with complex components
     if np.iscomplexobj(z30):
         f1 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.real.T, kx=1,ky=1)

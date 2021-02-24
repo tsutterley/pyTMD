@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (02/2020)
+read_FES_model.py (02/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 02/2021: set invalid values to nan in extrapolation
+        replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added nearest-neighbor data extrapolation
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
@@ -124,9 +125,9 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
     nc = len(model_files)
     #-- amplitude and phase
     amplitude = np.ma.zeros((npts,nc))
-    amplitude.mask = np.zeros((npts,nc),dtype=np.bool)
+    amplitude.mask = np.zeros((npts,nc),dtype=bool)
     phase = np.ma.zeros((npts,nc))
-    phase.mask = np.zeros((npts,nc),dtype=np.bool)
+    phase.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,fi in enumerate(model_files):
         #-- read constituent from elevation file
@@ -138,7 +139,7 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
                 GZIP=GZIP,TYPE=TYPE,VERSION=VERSION)
         #-- interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts),dtype=hc.dtype,fill_value=hc.fill_value)
-        hci.mask = np.zeros((npts),dtype=np.bool)
+        hci.mask = np.zeros((npts),dtype=bool)
         #-- interpolate amplitude and phase of the constituent
         if (METHOD == 'bilinear'):
             #-- replace invalid values with nan
@@ -158,7 +159,7 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
                 hc.mask.T,kx=1,ky=1)
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
-            hci.mask[:] = f3.ev(ilon,ilat).astype(np.bool)
+            hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
             #-- replace invalid values with fill_value
             hci.data[hci.mask] = hci.fill_value
         else:
@@ -169,7 +170,7 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
             r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                 hc.mask, method=METHOD, bounds_error=False, fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
-            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
             #-- replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
@@ -244,8 +245,8 @@ def read_ascii_file(input_file,GZIP=False,TYPE=None,VERSION=None):
     amp = np.ma.zeros((nlat,nlon),fill_value=fill_value,dtype=np.float32)
     ph = np.ma.zeros((nlat,nlon),fill_value=fill_value,dtype=np.float32)
     #-- create masks for output variables (0=valid)
-    amp.mask = np.zeros((nlat,nlon),dtype=np.bool)
-    ph.mask = np.zeros((nlat,nlon),dtype=np.bool)
+    amp.mask = np.zeros((nlat,nlon),dtype=bool)
+    ph.mask = np.zeros((nlat,nlon),dtype=bool)
     #-- starting line to fill amplitude and phase variables
     i1 = 5
     #-- for each latitude

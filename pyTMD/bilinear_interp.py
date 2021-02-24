@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-bilinear_interp.py (12/2020)
+bilinear_interp.py (02/2021)
 Bilinear interpolation of input data to output coordinates
 
 CALLING SEQUENCE:
@@ -26,6 +26,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: using numpy isclose to check corner points
     Updated 08/2020: check that output coordinates are within bounds
         allow small extrapolations if individual grid cells are invalid
@@ -65,7 +66,7 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     npts = len(lon)
     #-- allocate to output interpolated data array
     data = np.ma.zeros((npts),dtype=dtype,fill_value=fill_value)
-    data.mask = np.ones((npts),dtype=np.bool)
+    data.mask = np.ones((npts),dtype=bool)
     #-- initially set all data to fill value
     data.data[:] = data.fill_value
     #-- for each valid point
@@ -75,7 +76,7 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
         iy, = np.nonzero((ilat[0:-1] <= lat[i]) & (ilat[1:] > lat[i]))
         #-- corner data values for adjacent grid cells
         IM = np.ma.zeros((4),fill_value=fill_value,dtype=dtype)
-        IM.mask = np.ones((4),dtype=np.bool)
+        IM.mask = np.ones((4),dtype=bool)
         #-- corner weight values for adjacent grid cells
         WM = np.zeros((4))
         #-- build data and weight arrays
