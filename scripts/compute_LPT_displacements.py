@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (02/2021)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
         added options to read from and write to geotiff image files
@@ -250,7 +251,7 @@ def compute_LPT_displacements(input_file, output_file,
     #-- calculate radial displacement at time
     if (TYPE == 'grid'):
         Srad = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
-        Srad.mask = np.zeros((ny,nx,nt),dtype=np.bool)
+        Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             SRAD=dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
             #-- reform grid

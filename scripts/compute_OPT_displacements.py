@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (02/2021)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -65,6 +65,7 @@ PROGRAM DEPENDENCIES:
     read_ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
         added options to read from and write to geotiff image files
@@ -254,7 +255,7 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     #-- calculate radial displacement at time
     if (TYPE == 'grid'):
         Urad = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
-        Urad.mask = np.zeros((ny,nx,nt),dtype=np.bool)
+        Urad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             URAD = K*atr*np.real((mx[i]*gamma.real + my[i]*gamma.imag)*UR.real +
                 (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag)

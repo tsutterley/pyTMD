@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (08/2020)
+test_fes_predict.py (02/2021)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
 """
 import os
@@ -112,7 +113,7 @@ def test_verify_FES2014():
 
     #-- allocate for out tides at point
     tide = np.ma.zeros((npts))
-    tide.mask = np.zeros((npts),dtype=np.bool)
+    tide.mask = np.zeros((npts),dtype=bool)
     #-- predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,

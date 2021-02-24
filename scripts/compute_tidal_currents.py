@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (02/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -93,6 +93,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 11/2020: added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
@@ -373,7 +374,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         #-- predict tidal currents at time and infer minor corrections
         if (TYPE == 'grid'):
             output[t] = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
-            output[t].mask = np.zeros((ny,nx,nt),dtype=np.bool)
+            output[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
                 TIDE = predict_tide(tide_time[i], hc, c,
                     DELTAT=deltat[i], CORRECTIONS=model_format)

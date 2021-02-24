@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (02/2021)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -66,6 +66,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 11/2020: added model constituents from TPXO9-atlas-v3
     Updated 08/2020: using builtin time operations.
@@ -348,7 +349,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         deltat = np.zeros_like(t)
     elif (model_format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, model_directory,
-            grid_file, model_files, TYPE=model_type, METHOD=METHOD, 
+            grid_file, model_files, TYPE=model_type, METHOD=METHOD,
             EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
@@ -374,7 +375,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     if (TYPE.lower() == 'grid'):
         ny,nx = np.shape(x); nt = len(t)
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
-        tide.mask = np.zeros((ny,nx,nt),dtype=np.bool)
+        tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             TIDE = predict_tide(t[i], hc, c,
                 DELTAT=deltat[i], CORRECTIONS=model_format)

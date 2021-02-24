@@ -2,7 +2,8 @@ compute_LPET_ICESat2_ATL11.py
 ==============================
 
 - Calculates long-period equilibrium tidal elevations for correcting ICESat-2 annual land ice height data
-- Will calculate the long-period tides for all ATL11 segments and not just ocean segments defined by the ocean tide mask
+- Calculates long-period equilibrium tidal elevations for both along-track and across-track locations
+- Will calculate the long-period tides for all ATL11 segments and crossovers and not just ocean segments defined by the ocean tide mask
 
 #### Calling Sequence
 ```bash

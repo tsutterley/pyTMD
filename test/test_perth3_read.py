@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (08/2020)
+test_perth3_read.py (02/2021)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
 """
 import os
@@ -87,7 +88,7 @@ def test_verify_GOT47(METHOD):
     longitude = np.zeros((npts))
     MJD = np.zeros((npts))
     validation = np.ma.zeros((npts))
-    validation.mask = np.ones((npts),dtype=np.bool)
+    validation.mask = np.ones((npts),dtype=bool)
     for i in range(npts):
         line_contents = file_contents[i+2].split()
         latitude[i] = np.float(line_contents[0])
@@ -113,7 +114,7 @@ def test_verify_GOT47(METHOD):
 
     #-- allocate for out tides at point
     tide = np.ma.zeros((npts))
-    tide.mask = np.zeros((npts),dtype=np.bool)
+    tide.mask = np.zeros((npts),dtype=bool)
     #-- predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,

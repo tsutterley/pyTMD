@@ -38,6 +38,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 02/2021: set invalid values to nan in extrapolation
+        replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
@@ -107,9 +108,9 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     #-- amplitude and phase
     nc = len(model_files)
     amplitude = np.ma.zeros((npts,nc))
-    amplitude.mask = np.zeros((npts,nc),dtype=np.bool)
+    amplitude.mask = np.zeros((npts,nc),dtype=bool)
     phase = np.ma.zeros((npts,nc))
-    phase.mask = np.zeros((npts,nc),dtype=np.bool)
+    phase.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,model_file in enumerate(model_files):
         #-- read constituent from elevation file
@@ -123,7 +124,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
         hc = extend_matrix(hc)
         #-- interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts),dtype=hc.dtype,fill_value=hc.fill_value)
-        hci.mask = np.zeros((npts),dtype=np.bool)
+        hci.mask = np.zeros((npts),dtype=bool)
         #-- interpolate amplitude and phase of the constituent
         if (METHOD == 'bilinear'):
             #-- replace invalid values with nan
@@ -143,7 +144,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
                 hc.mask.T,kx=1,ky=1)
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
-            hci.mask[:] = f3.ev(ilon,ilat).astype(np.bool)
+            hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
             #-- replace invalid values with fill_value
             hci.data[hci.mask] = hci.fill_value
         else:
@@ -154,7 +155,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
             r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                 hc.mask, method=METHOD, bounds_error=False, fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
-            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(np.bool)
+            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
             #-- replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
@@ -264,8 +265,8 @@ def read_GOT_grid(input_file, GZIP=False):
     amp = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float32)
     ph = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float32)
     #-- create masks for output variables (0=valid)
-    amp.mask = np.zeros((nlat,nlon),dtype=np.bool)
-    ph.mask = np.zeros((nlat,nlon),dtype=np.bool)
+    amp.mask = np.zeros((nlat,nlon),dtype=bool)
+    ph.mask = np.zeros((nlat,nlon),dtype=bool)
     #-- starting lines to fill amplitude and phase variables
     l1 = 7
     l2 = 14 + np.int(nlon//11)*nlat + nlat

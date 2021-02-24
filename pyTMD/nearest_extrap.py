@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-nearest_extrap.py (12/2020)
+nearest_extrap.py (02/2021)
 Uses kd-trees for nearest-neighbor extrapolation of valid model data
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 12/2020
 """
 import numpy as np
@@ -67,7 +68,7 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     npts = len(lon)
     #-- allocate to output extrapolate data array
     data = np.ma.zeros((npts),dtype=dtype,fill_value=fill_value)
-    data.mask = np.ones((npts),dtype=np.bool)
+    data.mask = np.ones((npts),dtype=bool)
     #-- initially set all data to fill value
     data.data[:] = data.fill_value
     #-- range of output points

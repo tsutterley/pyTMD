@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (01/2021)
+test_download_and_read.py (02/2021)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://oct2py.readthedocs.io/en/latest/
 
 UPDATE HISTORY:
+    Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 01/2021: download CATS2008 and AOTIM-5-2018 to subdirectories
     Updated 08/2020: Download Antarctic tide gauge database and compare with RMS
         directly call Matlab program (octave+oct2py) and compare outputs
@@ -329,7 +330,7 @@ def test_verify_CATS2008(parameters):
         hc = amp[i,None,:]*np.exp(cph[i,None,:])
         #-- allocate for out tides at point
         tide = np.ma.zeros((ndays))
-        tide.mask = np.zeros((ndays),dtype=np.bool)
+        tide.mask = np.zeros((ndays),dtype=bool)
         #-- predict tidal elevations at time and infer minor corrections
         tide.mask[:] = np.any(hc.mask)
         tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
@@ -423,7 +424,7 @@ def test_verify_AOTIM5_2018(parameters):
         hc = amp[i,None,:]*np.exp(cph[i,None,:])
         #-- allocate for out tides at point
         tide = np.ma.zeros((ndays))
-        tide.mask = np.zeros((ndays),dtype=np.bool)
+        tide.mask = np.zeros((ndays),dtype=bool)
         #-- predict tidal elevations at time and infer minor corrections
         tide.mask[:] = np.any(hc.mask)
         tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
