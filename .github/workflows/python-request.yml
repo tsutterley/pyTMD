@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
+        os: [macos-latest]
         python-version: [3.6, 3.7, 3.8]
     env:
       OS: ${{ matrix.os }}
