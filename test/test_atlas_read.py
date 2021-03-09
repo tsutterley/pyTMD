@@ -97,7 +97,7 @@ def test_download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_na
 @pytest.mark.parametrize("MODEL", ['TPXO8-atlas','TPXO9-atlas-v2'])
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest','bilinear'])
-@pytest.mark.parametrize("EXTRAPOLATE", [True])
+@pytest.mark.parametrize("EXTRAPOLATE", [False])
 #-- PURPOSE: test the tide correction wrapper function
 def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     #-- create an image around the Ross Ice Shelf
