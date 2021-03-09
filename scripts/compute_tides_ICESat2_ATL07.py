@@ -92,7 +92,7 @@ UPDATE HISTORY:
     Updated 09/2019: using date functions paralleling public repository
         add option for TPXO9-atlas.  add OTIS netcdf tide option
     Updated 05/2019: check if beam exists in a try except else clause
-    Updated 04/2019: check if subsetted beam contains land ice data
+    Updated 04/2019: check if subsetted beam contains sea ice data
     Written 04/2019
 """
 from __future__ import print_function
@@ -547,9 +547,8 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "parameters, the time in gps_seconds relative to the GPS epoch can be computed.")
         IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['delta_time']['coordinates'] = \
             "height_segment_id latitude longitude"
-
         #-- latitude
-        IS2_atl07_tide[gtx]['sea_ice_segments']['latitude'] = val['latitude']
+        IS2_atl07_tide[gtx]['sea_ice_segments']['latitude'] = val['latitude'].copy()
         IS2_atl07_fill[gtx]['sea_ice_segments']['latitude'] = None
         IS2_atl07_dims[gtx]['sea_ice_segments']['latitude'] = ['delta_time']
         IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['latitude'] = {}
@@ -657,7 +656,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     ff = '{0}-{1}_{2}_TIDES_{3}{4}{5}{6}{7}{8}_{9}{10}{11}_{12}_{13}{14}.h5'
     #-- print file information
     print('\t{0}'.format(ff.format(*args))) if VERBOSE else None
-    HDF5_atl07_tide_write(IS2_atl07_tide, IS2_atl07_tide_attrs,
+    HDF5_ATL07_tide_write(IS2_atl07_tide, IS2_atl07_tide_attrs,
         CLOBBER=True, INPUT=os.path.basename(FILE),
         FILL_VALUE=IS2_atl07_fill, DIMENSIONS=IS2_atl07_dims,
         FILENAME=os.path.join(DIRECTORY,ff.format(*args)))
@@ -665,7 +664,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     os.chmod(os.path.join(DIRECTORY,ff.format(*args)), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
-def HDF5_atl07_tide_write(IS2_atl07_tide, IS2_atl07_attrs, INPUT=None,
+def HDF5_ATL07_tide_write(IS2_atl07_tide, IS2_atl07_attrs, INPUT=None,
     FILENAME='', FILL_VALUE=None, DIMENSIONS=None, CLOBBER=False):
     #-- setting HDF5 clobber attribute
     if CLOBBER:

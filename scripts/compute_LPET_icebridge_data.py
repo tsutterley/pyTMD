@@ -500,7 +500,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     fid.attrs['project'] = 'NASA_Operation_IceBridge'
     fid.attrs['processing_level'] = '4'
     fid.attrs['date_created'] = time.strftime('%Y-%m-%d',time.localtime())
-    #-- add attributes for input files
+    #-- add attributes for input file
     fid.attrs['elevation_file'] = os.path.basename(input_file)
     #-- add geospatial and temporal attributes
     fid.attrs['geospatial_lat_min'] = dinput['lat'].min()

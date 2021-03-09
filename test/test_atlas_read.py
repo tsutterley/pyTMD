@@ -101,9 +101,9 @@ def test_download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_na
 #-- PURPOSE: test the tide correction wrapper function
 def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     #-- create an image around the Ross Ice Shelf
-    xlimits = np.array([-740000,520000])
-    ylimits = np.array([-1430000,-300000])
-    spacing = np.array([10e3,-10e3])
+    xlimits = np.array([-750000,550000])
+    ylimits = np.array([-1450000,-300000])
+    spacing = np.array([50e3,-50e3])
     #-- x and y coordinates
     x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
     y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])

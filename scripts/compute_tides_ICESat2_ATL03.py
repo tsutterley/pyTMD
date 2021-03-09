@@ -748,7 +748,7 @@ def HDF5_ATL03_tide_write(IS2_atl03_tide, IS2_atl03_attrs, INPUT=None,
     fileID.attrs['source'] = 'Spacecraft'
     fileID.attrs['references'] = 'https://nsidc.org/data/icesat-2'
     fileID.attrs['processing_level'] = '4'
-    #-- add attributes for input ATL03 files
+    #-- add attributes for input ATL03 file
     fileID.attrs['input_files'] = os.path.basename(INPUT)
     #-- find geospatial and temporal ranges
     lnmn,lnmx,ltmn,ltmx,tmn,tmx = (np.inf,-np.inf,np.inf,-np.inf,np.inf,-np.inf)
