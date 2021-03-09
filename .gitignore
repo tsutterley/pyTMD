@@ -28,6 +28,7 @@
 *.gmtdefaults4
 .RData
 .Rhistory
+octave-workspace
 __pycache__
 build/
 dist/

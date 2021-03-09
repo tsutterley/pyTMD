@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (02/2021)
+test_fes_predict.py (03/2021)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,11 +17,11 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 03/2021: use pytest fixture to setup and teardown model data
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
 """
 import os
-import gzip
 import boto3
 import shutil
 import pytest
@@ -41,7 +41,8 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
 #-- PURPOSE: Download FES2014 constituents from AWS S3 bucket
-def test_download_FES2014(aws_access_key_id,aws_secret_access_key,aws_region_name):
+@pytest.fixture(scope="module", autouse=True)
+def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -52,7 +53,8 @@ def test_download_FES2014(aws_access_key_id,aws_secret_access_key,aws_region_nam
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for FES2014
-    model_directory = os.path.join(filepath,'fes2014','ocean_tide')
+    modelpath = os.path.join(filepath,'fes2014')
+    model_directory = os.path.join(modelpath,'ocean_tide')
     model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
         'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
         'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
@@ -67,6 +69,10 @@ def test_download_FES2014(aws_access_key_id,aws_secret_access_key,aws_region_nam
         with open(os.path.join(model_directory,f), 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
+    #-- run tests
+    yield
+    #-- clean up model
+    shutil.rmtree(modelpath)
 
 #-- PURPOSE: Tests that interpolated results are comparable to FES program
 def test_verify_FES2014():

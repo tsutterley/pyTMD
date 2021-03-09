@@ -56,7 +56,6 @@ def test_ATL03_equilibrium_tides(username,password):
         difference = np.ma.zeros((nref))
         difference.data[:] = lpet - tide_equilibrium
         difference.mask = (tide_equilibrium == fv)
-        print(np.max(np.abs(difference)))
         #-- will verify differences between outputs are within tolerance
         eps = np.finfo(np.float16).eps
         if not np.all(difference.mask):

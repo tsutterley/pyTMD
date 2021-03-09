@@ -31,7 +31,7 @@ Providing information and examples will help us resolve issues faster.
 
 Contributing Code or Examples
 -----------------------------
-We follow a Standard Fork & Pull Request Workflow for code changes and additions.
+We follow a standard Forking Workflow for code changes and additions.
 Submitted code goes through the pull request process for `continuous integration (CI) testing <https://github.com/tsutterley/pyTMD/actions>`_ and comments.
 
 General Guidelines
@@ -46,12 +46,13 @@ General Guidelines
 Steps to Contribute
 ^^^^^^^^^^^^^^^^^^^
 
-1) Fork the repository to your personal GitHub account by clicking the "Fork" button on the project `main page <https://github.com/tsutterley/pyTMD>`_
-2) Add your fork as the ``origin`` remote and the original project repository as the ``upstream`` remote (this step isn't a necessary, but allows you to keep your fork up to date)
-3) Create a new branch to do your work
-4) Make your changes and add yourself to the list of `project contributors <./Citations.html#contributors>`_
-5) Push your work to GitHub under your fork of the project
-6) Submit a `Pull Request <https://github.com/tsutterley/pyTMD/pulls>`_
+1) Fork the repository to your personal GitHub account by clicking the "Fork" button on the project `main page <https://github.com/tsutterley/pyTMD>`_.  This creates your own server-side copy of the repository.
+2) Either by cloning to your local system or working in `GitHub Codespaces <https://github.com/features/codespaces>`_, create a work environment to make your changes.
+3) Add your fork as the ``origin`` remote and the original project repository as the ``upstream`` remote.  While this step isn't a necessary, it allows you to keep your fork up to date in the future.
+4) Create a new branch to do your work.
+5) Make your changes on the new branch and add yourself to the list of `project contributors <./Citations.html#contributors>`_.
+6) Push your work to GitHub under your fork of the project.
+7) Submit a `Pull Request <https://github.com/tsutterley/pyTMD/pulls>`_ from your forked branch to the project repository.
 
 Adding Examples
 ^^^^^^^^^^^^^^^

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (08/2020)
+test_atlas_read.py (03/2021)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,9 +16,11 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 03/2021: use pytest fixture to setup and teardown model data
     Written 09/2020
 """
 import os
+import re
 import gzip
 import boto3
 import shutil
@@ -37,7 +39,8 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
 #-- PURPOSE: Download TPXO8 ATLAS compact constituents from AWS S3 bucket
-def test_download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
+# @pytest.fixture(scope="module", autouse=True)
+def download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -60,9 +63,14 @@ def test_download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name)
         with open(os.path.join(model_directory,f), 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
+    #-- run tests
+    yield
+    #-- clean up model
+    shutil.rmtree(model_directory)
 
 #-- PURPOSE: Download TPXO9 ATLAS V2 netCDF constituents from AWS S3 bucket
-def test_download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
+@pytest.fixture(scope="module", autouse=True)
+def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -92,6 +100,124 @@ def test_download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_na
         with open(os.path.join(model_directory,f), 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
+    #-- run tests
+    yield
+    #-- clean up model
+    shutil.rmtree(model_directory)
+
+#-- parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline','nearest'])
+@pytest.mark.parametrize("EXTRAPOLATE", [False])
+#-- PURPOSE: Tests that interpolated results are comparable to OTPSnc program
+def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
+    #-- model parameters for TPXO9-atlas-v2
+    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
+    #-- model grid file
+    grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
+    #-- constituent files included in test
+    model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
+        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    constituents = ['m2','s2','k1','o1']
+    TYPE = 'z'
+    SCALE = 1.0/1000.0
+
+    #-- read validation dataset (m2, s2, k1, o1)
+    names = ('Lat', 'Lon', 'm2_amp', 'm2_ph', 's2_amp', 's2_ph',
+        'k1_amp', 'k1_ph', 'o1_amp', 'o1_ph')
+    formats = ('f','f','f','f','f','f','f','f','f','f')
+    val = np.loadtxt(os.path.join(filepath,'extract_HC_sample_out.gz'),
+        skiprows=3,dtype=dict(names=names,formats=formats))
+
+    #-- extract amplitude and phase from tide model
+    amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
+        val['Lon'], val['Lat'], model_directory, grid_file,
+        model_files, TYPE=TYPE, METHOD=METHOD,
+        EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+    #-- convert phase from 0:360 to -180:180
+    ph[ph > 180] -= 360.0
+
+    #-- will verify differences between model outputs are within tolerance
+    amp_eps = 0.05
+    ph_eps = 10.0
+    #-- calculate differences between OTPSnc and python version
+    for i,cons in enumerate(c):
+        #-- verify constituents
+        assert (cons == constituents[i])
+        #-- calculate difference in amplitude and phase
+        amp_diff = amp[:,i] - val['{0}_amp'.format(cons)]
+        ph_diff = ph[:,i] - val['{0}_ph'.format(cons)]
+        assert np.all(np.abs(amp_diff) <= amp_eps)
+        assert np.all(np.abs(ph_diff) <= ph_eps)
+
+#-- parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline','nearest'])
+@pytest.mark.parametrize("EXTRAPOLATE", [False])
+#-- PURPOSE: Tests that interpolated results are comparable to OTPSnc program
+def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
+    #-- model parameters for TPXO9-atlas-v2
+    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
+    #-- model grid file
+    grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
+    #-- constituent files included in test
+    model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
+        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    constituents = ['m2','s2','k1','o1']
+    model_format = 'netcdf'
+    TYPE = 'z'
+    SCALE = 1.0/1000.0
+
+    #-- compile numerical expression operator
+    rx = re.compile(r'[-+]?(?:(?:\d+\.\d+\.\d+)|(?:\d+\:\d+\:\d+)'
+        r'|(?:\d*\.\d+)|(?:\d+\.?))')
+    #-- read validation dataset (m2, s2, k1, o1)
+    #-- Lat  Lon  mm.dd.yyyy hh:mm:ss  z(m)  Depth(m)
+    with gzip.open(os.path.join(filepath,'predict_tide_sample_out.gz'),'r') as f:
+        file_contents = f.read().decode('ISO-8859-1').splitlines()
+    #-- number of validation data points
+    nval = len(file_contents) - 6
+    #-- allocate for validation dataset
+    val = dict(latitude=np.zeros((nval)),longitude=np.zeros((nval)),
+        time=np.zeros((nval)),height=np.zeros((nval)))
+    for i,line in enumerate(file_contents[6:]):
+        line_contents = rx.findall(line)
+        val['latitude'][i] = np.float(line_contents[0])
+        val['longitude'][i] = np.float(line_contents[1])
+        val['height'][i] = np.float(line_contents[4])
+        #-- extract dates
+        MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
+        hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
+        #-- convert from calendar dates into days since 1992-01-01T00:00:00
+        val['time'][i] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
+            hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
+
+    #-- extract amplitude and phase from tide model
+    amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
+        val['longitude'], val['latitude'], model_directory, grid_file,
+        model_files, TYPE=TYPE, METHOD=METHOD,
+        EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+    deltat = np.zeros_like(val['time'])
+    #-- verify constituents
+    assert (c == constituents)
+    #-- calculate complex phase in radians for Euler's
+    #-- calculate constituent oscillations
+    hc = amp*np.exp(-1j*ph*np.pi/180.0)
+
+    #-- allocate for out tides at point
+    tide = np.ma.zeros((nval))
+    tide.mask = np.zeros((nval),dtype=bool)
+    #-- predict tidal elevations at time
+    tide.mask[:] = np.any(hc.mask, axis=1)
+    tide.data[:] = pyTMD.predict_tide_drift(val['time'], hc, c,
+        DELTAT=deltat, CORRECTIONS=model_format)
+
+    #-- will verify differences between model outputs are within tolerance
+    eps = 0.05
+    #-- calculate differences between OTPSnc and python version
+    difference = np.ma.zeros((nval))
+    difference.data[:] = tide.data - val['height']
+    difference.mask = np.copy(tide.mask)
+    if not np.all(difference.mask):
+        assert np.all(np.abs(difference) <= eps)
 
 #-- parameterize ATLAS tide model
 @pytest.mark.parametrize("MODEL", ['TPXO8-atlas','TPXO9-atlas-v2'])
@@ -99,6 +225,7 @@ def test_download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_na
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
 #-- PURPOSE: test the tide correction wrapper function
+@pytest.mark.skip(reason='does not presently validate the ATLAS outputs')
 def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     #-- create an image around the Ross Ice Shelf
     xlimits = np.array([-750000,550000])
