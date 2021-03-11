@@ -1,5 +1,5 @@
 compute_LPET_ICESat2_ATL11.py
-==============================
+=============================
 
 - Calculates long-period equilibrium tidal elevations for correcting ICESat-2 annual land ice height data
 - Calculates long-period equilibrium tidal elevations for both along-track and across-track locations

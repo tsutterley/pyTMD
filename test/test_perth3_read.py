@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (02/2021)
+test_perth3_read.py (03/2021)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 03/2021: use pytest fixture to setup and teardown model data
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
 """
@@ -40,7 +41,8 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
 #-- PURPOSE: Download GOT4.7 constituents from AWS S3 bucket
-def test_download_GOT47(aws_access_key_id,aws_secret_access_key,aws_region_name):
+@pytest.fixture(scope="module", autouse=True)
+def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -51,7 +53,8 @@ def test_download_GOT47(aws_access_key_id,aws_secret_access_key,aws_region_name)
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for GOT4.7
-    model_directory = os.path.join(filepath,'GOT4.7','grids_oceantide')
+    modelpath = os.path.join(filepath,'GOT4.7')
+    model_directory = os.path.join(modelpath,'grids_oceantide')
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
     #-- recursively create model directory
@@ -65,6 +68,10 @@ def test_download_GOT47(aws_access_key_id,aws_secret_access_key,aws_region_name)
         with open(os.path.join(model_directory,f), 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(os.path.join(model_directory,f), os.F_OK)
+    #-- run tests
+    yield
+    #-- clean up model
+    shutil.rmtree(modelpath)
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
@@ -138,9 +145,9 @@ def test_verify_GOT47(METHOD):
 #-- PURPOSE: test the tide correction wrapper function
 def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
     #-- create an image around the Ross Ice Shelf
-    xlimits = np.array([-740000,520000])
-    ylimits = np.array([-1430000,-300000])
-    spacing = np.array([10e3,-10e3])
+    xlimits = np.array([-750000,550000])
+    ylimits = np.array([-1450000,-300000])
+    spacing = np.array([50e3,-50e3])
     #-- x and y coordinates
     x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
     y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])

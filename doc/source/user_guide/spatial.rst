@@ -224,3 +224,22 @@ General Methods
         `phi2`: latitude of output ellipsoid in degrees
 
         `h2`: height above output ellipsoid in meters
+
+
+.. method:: pyTMD.spatial.scale_areas(lat, flat=1.0/298.257223563, ref=70.0)
+
+    Calculates area scaling factors for a polar stereographic projection
+
+    Inputs:
+
+        `lat`: latitude
+
+    Options:
+
+        `flat`: ellipsoidal flattening
+
+        `ref`: reference latitude (true scale latitude)
+
+    Returns:
+
+        `scale`: area scaling factors at input latitudes

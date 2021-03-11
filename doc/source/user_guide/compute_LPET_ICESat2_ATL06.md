@@ -1,5 +1,5 @@
 compute_LPET_ICESat2_ATL06.py
-==============================
+=============================
 
 - Calculates long-period equilibrium tidal elevations for correcting ICESat-2 land ice elevation data
 - Will calculate the long-period tides for all ATL06 segments and not just ocean segments defined by the ocean tide mask

@@ -860,7 +860,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     fid.attrs['project'] = 'NASA_Operation_IceBridge'
     fid.attrs['processing_level'] = '4'
     fid.attrs['date_created'] = time.strftime('%Y-%m-%d',time.localtime())
-    #-- add attributes for input files
+    #-- add attributes for input file
     fid.attrs['elevation_file'] = os.path.basename(input_file)
     fid.attrs['tide_model'] = TIDE_MODEL
     #-- add geospatial and temporal attributes

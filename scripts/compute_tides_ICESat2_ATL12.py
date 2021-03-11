@@ -93,7 +93,7 @@ UPDATE HISTORY:
     Updated 09/2019: using date functions paralleling public repository
         add option for TPXO9-atlas.  add OTIS netcdf tide option
     Updated 05/2019: check if beam exists in a try except else clause
-    Updated 04/2019: check if subsetted beam contains land ice data
+    Updated 04/2019: check if subsetted beam contains ocean surface data
     Written 04/2019
 """
 from __future__ import print_function
@@ -529,7 +529,6 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl12_tide_attrs[gtx]['ssh_segments']['data_rate'] = ("Data within "
             "this group are stored at the variable ocean processing segment rate.")
 
-
         #-- geolocation, time and segment ID
         #-- delta time
         IS2_atl12_tide[gtx]['ssh_segments']['delta_time'] = val['delta_time'].copy()
@@ -549,9 +548,8 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "parameters, the time in gps_seconds relative to the GPS epoch can be computed.")
         IS2_atl12_tide_attrs[gtx]['ssh_segments']['delta_time']['coordinates'] = \
             "latitude longitude"
-
         #-- latitude
-        IS2_atl12_tide[gtx]['ssh_segments']['latitude'] = val['latitude']
+        IS2_atl12_tide[gtx]['ssh_segments']['latitude'] = val['latitude'].copy()
         IS2_atl12_fill[gtx]['ssh_segments']['latitude'] = None
         IS2_atl12_dims[gtx]['ssh_segments']['latitude'] = ['delta_time']
         IS2_atl12_tide_attrs[gtx]['ssh_segments']['latitude'] = {}
@@ -617,14 +615,14 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl12_tide_attrs[gtx]['ssh_segments']['stats'][variable]['source'] = TIDE_MODEL
         IS2_atl12_tide_attrs[gtx]['ssh_segments']['stats'][variable]['reference'] = reference
         IS2_atl12_tide_attrs[gtx]['ssh_segments']['stats'][variable]['coordinates'] = \
-            "../../delta_time ../latitude ../longitude"
+            "../delta_time ../latitude ../longitude"
 
     #-- output tidal HDF5 file
     args = (PRD,TIDE_MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
     file_format = '{0}_{1}_TIDES_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
     #-- print file information
     print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
-    HDF5_atl12_tide_write(IS2_atl12_tide, IS2_atl12_tide_attrs,
+    HDF5_ATL12_tide_write(IS2_atl12_tide, IS2_atl12_tide_attrs,
         CLOBBER=True, INPUT=os.path.basename(FILE),
         FILL_VALUE=IS2_atl12_fill, DIMENSIONS=IS2_atl12_dims,
         FILENAME=os.path.join(DIRECTORY,file_format.format(*args)))
@@ -632,7 +630,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
-def HDF5_atl12_tide_write(IS2_atl12_tide, IS2_atl12_attrs, INPUT=None,
+def HDF5_ATL12_tide_write(IS2_atl12_tide, IS2_atl12_attrs, INPUT=None,
     FILENAME='', FILL_VALUE=None, DIMENSIONS=None, CLOBBER=False):
     #-- setting HDF5 clobber attribute
     if CLOBBER:

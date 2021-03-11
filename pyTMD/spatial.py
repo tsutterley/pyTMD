@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (01/2021)
+Written by Tyler Sutterley (03/2021)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,7 +19,8 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
-    Updated 01/2020: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
+    Updated 03/2021: added polar stereographic area scale calculation
+    Updated 01/2021: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
         set default time for geotiff files to 0
     Updated 12/2020: added module for converting ellipsoids
     Updated 11/2020: output data as masked arrays if containing fill values
@@ -653,3 +654,46 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
 
     #-- return the latitude and height
     return (phi2, h2)
+
+def scale_areas(lat, flat=1.0/298.257223563, ref=70.0):
+    """
+    Calculates area scaling factors for a polar stereographic projection
+
+    Inputs:
+        lat: latitude (degrees north)
+
+    Options:
+        flat: ellipsoidal flattening (default: WGS84)
+        ref: reference latitude (true scale latitude)
+
+    Returns:
+        scale: area scaling factors at input latitudes
+
+    References:
+        Snyder, J P (1982) Map Projections used by the U.S. Geological Survey
+            Forward formulas for the ellipsoid.  Geological Survey Bulletin
+            1532, U.S. Government Printing Office.
+        JPL Technical Memorandum 3349-85-101
+    """
+    #-- convert latitude from degrees to positive radians
+    theta = np.abs(lat)*np.pi/180.0
+    #-- convert reference latitude from degrees to positive radians
+    theta_ref = np.abs(ref)*np.pi/180.0
+    #-- square of the eccentricity of the ellipsoid
+    #-- ecc2 = (1-b**2/a**2) = 2.0*flat - flat^2
+    ecc2 = 2.0*flat - flat**2
+    #-- eccentricity of the ellipsoid
+    ecc = np.sqrt(ecc2)
+    #-- calculate ratio at input latitudes
+    m = np.cos(theta)/np.sqrt(1.0 - ecc2*np.sin(theta)**2)
+    t = np.tan(np.pi/4.0 - theta/2.0)/((1.0 - ecc*np.sin(theta)) / \
+        (1.0 + ecc*np.sin(theta)))**(ecc/2.0)
+    #-- calculate ratio at reference latitude
+    mref = np.cos(theta_ref)/np.sqrt(1.0 - ecc2*np.sin(theta_ref)**2)
+    tref = np.tan(np.pi/4.0 - theta_ref/2.0)/((1.0 - ecc*np.sin(theta_ref)) / \
+        (1.0 + ecc*np.sin(theta_ref)))**(ecc/2.0)
+    #-- area scaling
+    k = (mref/m)*(t/tref)
+    #-- return the area scaling factors
+    scale = 1.0/(k**2)
+    return scale

@@ -1,5 +1,5 @@
 compute_LPET_ICESat2_ATL03.py
-==============================
+=============================
 
 - Calculates long-period equilibrium tidal elevations for correcting ICESat-2 geolocated photon height data
 - Calculated at ATL03 segment level using reference photon geolocation and time
