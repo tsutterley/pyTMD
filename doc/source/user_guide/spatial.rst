@@ -226,6 +226,70 @@ General Methods
         `h2`: height above output ellipsoid in meters
 
 
+.. method:: pyTMD.spatial.to_cartesian(lon,lat,a_axis=6378137.0,flat=1.0/298.257223563)
+
+    Converts geodetic coordinates to Cartesian coordinates
+
+    Inputs:
+
+        `lon`: longitude
+
+        `lat`: latitude
+
+
+    Options:
+
+        `h`: height
+
+        `a_axis`: semimajor axis of the ellipsoid
+
+        `flat`: ellipsoidal flattening
+
+    Returns:
+
+        `x`, `y`, `z` in Cartesian coordinates
+
+
+.. method:: pyTMD.spatial.to_sphere(x,y,z)
+
+    Convert from Cartesian coordinates to spherical coordinates
+
+    Inputs:
+
+        `x`, `y`, `z` in Cartesian coordinates
+
+    Returns:
+
+        `lon`: longitude
+
+        `lat`: latitude
+
+        `rad`: radius
+
+
+.. method:: pyTMD.spatial.to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563)
+
+    Convert from Cartesian coordinates to geodetic coordinates using `a closed form solution <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
+
+    Inputs:
+
+        `x`, `y`, `z` in Cartesian coordinates
+
+    Options:
+
+        `a_axis`: semimajor axis of the ellipsoid
+
+        `flat`: ellipsoidal flattening
+
+    Returns:
+
+        `lon`: longitude
+
+        `lat`: latitude
+
+        `h`: height
+
+
 .. method:: pyTMD.spatial.scale_areas(lat, flat=1.0/298.257223563, ref=70.0)
 
     Calculates area scaling factors for a polar stereographic projection

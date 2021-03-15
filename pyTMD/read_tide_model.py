@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (02/2021)
+read_tide_model.py (03/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 03/2021: add extrapolation check where there are no invalid points
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -265,7 +266,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z1.mask = (z1.data == z1.fill_value) | (~mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE:
+            if EXTRAPOLATE and np.any(z1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(z1.mask)
                 #-- replace zero values with nan
@@ -322,7 +323,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.mask = (u1.data == u1.fill_value) | (~mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE:
+            if EXTRAPOLATE and np.any(u1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(u1.mask)
                 #-- replace zero values with nan
@@ -381,7 +382,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.mask = (v1.data == v1.fill_value) | (~mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE:
+            if EXTRAPOLATE and np.any(v1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(v1.mask)
                 #-- replace zero values with nan

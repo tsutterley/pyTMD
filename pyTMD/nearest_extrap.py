@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-nearest_extrap.py (02/2021)
+nearest_extrap.py (03/2021)
 Uses kd-trees for nearest-neighbor extrapolation of valid model data
 
 CALLING SEQUENCE:
@@ -30,6 +30,9 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 03/2021: add checks to prevent runtime exception
+        where there are no valid points within the input bounds
+        or no points to be extrapolated
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 12/2020
 """
@@ -64,8 +67,14 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     #-- grid step size of tide model
     dlon = np.abs(ilon[1] - ilon[0])
     dlat = np.abs(ilat[1] - ilat[0])
+    #-- verify dimensions
+    lon = np.atleast_1d(lon)
+    lat = np.atleast_1d(lat)
     #-- extrapolate valid data values to data
     npts = len(lon)
+    #-- return none if no invalid points
+    if (npts == 0):
+        return
     #-- allocate to output extrapolate data array
     data = np.ma.zeros((npts),dtype=dtype,fill_value=fill_value)
     data.mask = np.ones((npts),dtype=bool)
@@ -77,10 +86,19 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
 
     #-- calculate meshgrid of model coordinates
     gridlon,gridlat = np.meshgrid(ilon,ilat)
+    #-- create combined valid mask
+    valid_bounds = (~idata.mask) & np.isfinite(idata.data)
+    #-- reduce to model points within bounds of input points
+    valid_bounds &= (gridlon >= (xmin-2.0*dlon))
+    valid_bounds &= (gridlon <= (xmax+2.0*dlon))
+    valid_bounds &= (gridlat >= (ymin-2.0*dlat))
+    valid_bounds &= (gridlat <= (ymax+2.0*dlat))
+    #-- check if there are any valid points within the input bounds
+    if not np.any(valid_bounds):
+        #-- return filled masked array
+        return data
     #-- find where input grid is valid and close to output points
-    indy,indx = np.nonzero((~idata.mask) & np.isfinite(idata.data) &
-        (gridlon >= (xmin-2.0*dlon)) & (gridlon <= (xmax+2.0*dlon)) &
-        (gridlat >= (ymin-2.0*dlat)) & (gridlat <= (ymax+2.0*dlat)))
+    indy,indx = np.nonzero(valid_bounds)
     #-- flattened valid data array
     iflat = idata.data[indy,indx]
 

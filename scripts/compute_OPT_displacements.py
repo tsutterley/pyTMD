@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (02/2021)
+Written by Tyler Sutterley (03/2021)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -65,6 +65,7 @@ PROGRAM DEPENDENCIES:
     read_ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 UPDATE HISTORY:
+    Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
@@ -158,9 +159,9 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     if (TYPE == 'grid'):
         ny,nx = (len(dinput['y']),len(dinput['x']))
         gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        longitude,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+        lon,lat = transformer.transform(gridx.flatten(),gridy.flatten())
     elif (TYPE == 'drift'):
-        longitude,lat = transformer.transform(dinput['x'].flatten(),
+        lon,lat = transformer.transform(dinput['x'].flatten(),
             dinput['y'].flatten())
 
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
@@ -201,14 +202,8 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     #-- flatten heights
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     #-- convert from geodetic latitude to geocentric latitude
-    #-- geodetic latitude in radians
-    latitude_geodetic_rad = lat*dtr
-    #-- prime vertical radius of curvature
-    N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     #-- calculate X, Y and Z from geodetic latitude and longitude
-    X = (N+h)*np.cos(latitude_geodetic_rad)*np.cos(longitude*dtr)
-    Y = (N+h)*np.cos(latitude_geodetic_rad)*np.sin(longitude*dtr)
-    Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon,lat,h=h,a_axis=a_axis,flat=flat)
     #-- calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
 
@@ -244,13 +239,13 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
         UR = np.zeros((len(latitude_geocentric)),dtype=np.complex128)
-        UR.real = f1.ev(longitude,latitude_geocentric)
-        UR.imag = f2.ev(longitude,latitude_geocentric)
+        UR.real = f1.ev(lon,latitude_geocentric)
+        UR.imag = f2.ev(lon,latitude_geocentric)
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
             iur[:,::-1], method=METHOD)
-        UR = r1.__call__(np.c_[longitude,latitude_geocentric])
+        UR = r1.__call__(np.c_[lon,latitude_geocentric])
 
     #-- calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -271,7 +266,7 @@ def compute_OPT_displacements(tide_dir, input_file, output_file,
     Urad.data[Urad.mask] = Urad.fill_value
 
     #-- output to file
-    output = dict(time=MJD,lon=longitude,lat=lat,tide_oc_pole=Urad)
+    output = dict(time=MJD,lon=lon,lat=lat,tide_oc_pole=Urad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
             columns=['time','lat','lon','tide_oc_pole'], verbose=VERBOSE)

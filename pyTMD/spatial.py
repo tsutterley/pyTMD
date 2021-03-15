@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: added polar stereographic area scale calculation
+        add routines for converting to and from cartesian coordinates
     Updated 01/2021: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
         set default time for geotiff files to 0
     Updated 12/2020: added module for converting ellipsoids
@@ -95,7 +96,7 @@ def from_ascii(filename, compression=None, verbose=False,
             #-- file line at count
             line = file_contents[count]
             #-- if End of YAML Header is found: set YAML flag
-            YAML = bool(re.search("\# End of YAML header",line))
+            YAML = bool(re.search(r"\# End of YAML header",line))
             #-- add 1 to counter
             count += 1
         #-- parse the YAML header (specifying yaml loader)
@@ -654,6 +655,127 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
 
     #-- return the latitude and height
     return (phi2, h2)
+
+def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
+    """
+    Converts geodetic coordinates to Cartesian coordinates
+
+    Inputs:
+        lon: longitude (degrees east)
+        lat: latitude (degrees north)
+
+    Options:
+        h: height above ellipsoid (or sphere)
+        a_axis: semimajor axis of the ellipsoid (default: WGS84)
+            * for spherical coordinates set to radius of the Earth
+        flat: ellipsoidal flattening (default: WGS84)
+            * for spherical coordinates set to 0
+    """
+    #-- verify axes
+    lon = np.atleast_1d(lon)
+    lat = np.atleast_1d(lat)
+    #-- fix coordinates to be 0:360
+    count = np.count_nonzero(lon < 0)
+    if (count != 0):
+        lt0, = np.nonzero(lon < 0)
+        lon[lt0] = lon[lt0] + 360.0
+    #-- Linear eccentricity and first numerical eccentricity
+    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
+    ecc1 = lin_ecc/a_axis
+    #-- convert from geodetic latitude to geocentric latitude
+    dtr = np.pi/180.0
+    #-- geodetic latitude in radians
+    latitude_geodetic_rad = lat*dtr
+    #-- prime vertical radius of curvature
+    N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
+    #-- calculate X, Y and Z from geodetic latitude and longitude
+    X = (N + h) * np.cos(latitude_geodetic_rad) * np.cos(lon*dtr)
+    Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(lon*dtr)
+    Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
+    #-- return the cartesian coordinates
+    return (X,Y,Z)
+
+def to_sphere(x,y,z):
+    """
+    Convert from cartesian coordinates to spherical coordinates
+
+    Inputs:
+        x,y,z in cartesian coordinates
+    """
+    #-- calculate radius
+    rad = np.sqrt(x**2.0 + y**2.0 + z**2.0)
+    #-- calculate angular coordinates
+    #-- phi: azimuthal angle
+    phi = np.arctan2(y,x)
+    #-- th: polar angle
+    th = np.arccos(z/rad)
+    #-- convert to degrees and fix to 0:360
+    lon = 180.0*phi/np.pi
+    count = np.count_nonzero(lon < 0)
+    if (count != 0):
+        lt0 = np.nonzero(lon < 0)
+        lon[lt0] = lon[lt0]+360.0
+    #-- convert to degrees and fix to -90:90
+    lat = 90.0 - (180.0*th/np.pi)
+    #-- return latitude, longitude and radius
+    return (lon,lat,rad)
+
+def to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563):
+    """
+    Convert from cartesian coordinates to geodetic coordinates
+    using a closed form solution
+
+    Inputs:
+        x,y,z in cartesian coordinates
+
+    Options:
+        a_axis: semimajor axis of the ellipsoid (default: WGS84)
+        flat: ellipsoidal flattening (default: WGS84)
+
+    References:
+        J Zhu "Exact conversion of Earth-centered, Earth-fixed
+            coordinates to geodetic coordinates"
+        Journal of Guidance, Control, and Dynamics,
+        16(2), 389--391, 1993
+        https://arc.aiaa.org/doi/abs/10.2514/3.21016
+    """
+    #-- semiminor axis of the WGS84 ellipsoid [m]
+    b_axis = (1.0 - flat)*a_axis
+    #-- Linear eccentricity and first numerical eccentricity
+    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
+    ecc1 = lin_ecc/a_axis
+    #-- square of first numerical eccentricity
+    e12 = ecc1**2
+    #-- degrees to radians
+    dtr = np.pi/180.0
+    #-- calculate distance
+    w = np.sqrt(x**2 + y**2)
+    #-- calculate longitude
+    lon = np.arctan2(y,x)/dtr
+    lat = np.zeros_like(lon)
+    h = np.zeros_like(lon)
+    if (w == 0):
+        #-- special case where w == 0 (exact polar solution)
+        h = np.sign(z)*z - b_axis
+        lat = 90.0*np.sign(z)
+    else:
+        #-- all other cases
+        l = e12/2.0
+        m = (w/a_axis)**2.0
+        n = ((1.0-e12)*z/b_axis)**2.0
+        i = -(2.0*l**2 + m + n)/2.0
+        k = (l**2.0 - m - n)*l**2.0
+        q = (1.0/216.0)*(m + n - 4.0*l**2)**3.0 + m*n*l**2.0
+        D = np.sqrt((2.0*q - m*n*l**2)*m*n*l**2)
+        B = i/3.0 - (q+D)**(1.0/3.0) - (q-D)**(1.0/3.0)
+        t = np.sqrt(np.sqrt(B**2-k) - (B+i)/2.0)-np.sign(m-n)*np.sqrt((B-i)/2.0)
+        wi = w/(t+l)
+        zi = (1.0-e12)*z/(t-l)
+        #-- calculate latitude and height
+        lat = np.arctan2(zi,((1.0-e12)*wi))/dtr
+        h = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z-zi)**2.0)
+    #-- return latitude, longitude and height
+    return (lon,lat,h)
 
 def scale_areas(lat, flat=1.0/298.257223563, ref=70.0):
     """

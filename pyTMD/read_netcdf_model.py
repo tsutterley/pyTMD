@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (02/2021)
+read_netcdf_model.py (03/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 03/2021: add extrapolation check where there are no invalid points
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -220,7 +221,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 z1.mask[:] |= np.copy(D.mask)
                 z1.data[z1.mask] = z1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE:
+            if EXTRAPOLATE and np.any(z1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(z1.mask)
                 #-- replace invalid values with nan
@@ -269,7 +270,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 tr1.mask[:] |= np.copy(D.mask)
                 tr1.data[tr1.mask] = tr1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE:
+            if EXTRAPOLATE and np.any(tr1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(tr1.mask)
                 #-- replace invalid values with nan

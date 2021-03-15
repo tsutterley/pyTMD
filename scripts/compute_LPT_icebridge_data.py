@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_icebridge_data.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (03/2021)
 Calculates load pole tide displacements for correcting Operation IceBridge
     elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -25,12 +25,14 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
+    spatial.py: utilities for reading, writing and operating on spatial data
     utilities: download and management utilities for syncing files
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
     Updated 10/2020: using argparse to set command line parameters
@@ -51,6 +53,7 @@ import h5py
 import argparse
 import numpy as np
 import pyTMD.time
+import pyTMD.spatial
 import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
@@ -478,14 +481,8 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     f_4 = -(1.0/2.0)*flat**2.0 + (5.0/2.0)*flat*m
 
     #-- convert from geodetic latitude to geocentric latitude
-    #-- geodetic latitude in radians
-    latitude_geodetic_rad = lat*dtr
-    #-- prime vertical radius of curvature
-    N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     #-- calculate X, Y and Z from geodetic latitude and longitude
-    X = (N + h1) * np.cos(latitude_geodetic_rad) * np.cos(lon*dtr)
-    Y = (N + h1) * np.cos(latitude_geodetic_rad) * np.sin(lon*dtr)
-    Z = (N * (1.0 - ecc1**2.0) + h1) * np.sin(latitude_geodetic_rad)
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon,lat,h=h1,a_axis=a_axis,flat=flat)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     #-- calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr

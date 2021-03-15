@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_ICESat_GLA12.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (03/2021)
 Calculates radial load pole tide displacements for correcting ICESat/GLAS
     L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following
     IERS Convention (2010) guidelines
@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 12/2020: H5py deprecation warning change to use make_scale
         merged time conversion routines into module
     Written 12/2020
@@ -130,14 +131,9 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
     f_4 = -(1.0/2.0)*flat**2.0 + (5.0/2.0)*flat*m
 
     #-- convert from geodetic latitude to geocentric latitude
-    #-- geodetic latitude in radians
-    latitude_geodetic_rad = lat_40HZ*dtr
-    #-- prime vertical radius of curvature
-    N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     #-- calculate X, Y and Z from geodetic latitude and longitude
-    X = (N + elev_40HZ)*np.cos(latitude_geodetic_rad)*np.cos(lon_40HZ*dtr)
-    Y = (N + elev_40HZ)*np.cos(latitude_geodetic_rad)*np.sin(lon_40HZ*dtr)
-    Z = (N * (1.0 - ecc1**2.0) + elev_40HZ) * np.sin(latitude_geodetic_rad)
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon_40HZ,lat_40HZ,h=elev_40HZ,
+        a_axis=a_axis,flat=flat)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     #-- calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
