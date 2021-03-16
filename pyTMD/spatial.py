@@ -678,7 +678,7 @@ def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
     count = np.count_nonzero(lon < 0)
     if (count != 0):
         lt0, = np.nonzero(lon < 0)
-        lon[lt0] = lon[lt0] + 360.0
+        lon[lt0] += 360.0
     #-- Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
     ecc1 = lin_ecc/a_axis

@@ -29,6 +29,9 @@ PYTHON DEPENDENCIES:
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
 
+PROGRAM DEPENDENCIES:
+    spatial.py: utilities for reading and writing spatial data
+
 UPDATE HISTORY:
     Updated 03/2021: add checks to prevent runtime exception
         where there are no valid points within the input bounds
@@ -38,6 +41,7 @@ UPDATE HISTORY:
 """
 import numpy as np
 import scipy.spatial
+import pyTMD.spatial
 
 #-- PURPOSE: Nearest-neighbor extrapolation of valid data to output data
 def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
@@ -104,24 +108,12 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
 
     #-- calculate coordinates for nearest-neighbors
     if (EPSG == '4326'):
-        #-- valid grid latitude and longitude in radians
-        iphi = np.pi*gridlon[indy,indx]/180.0
-        itheta = np.pi*gridlat[indy,indx]/180.0
-        #-- WGS84 ellipsoid parameters
-        a_axis = 6378.1366
-        f = 1.0/298.257223563
-        ecc1 = np.sqrt((2.0*f - f**2)*a_axis**2)/a_axis
         #-- calculate Cartesian coordinates of input grid
-        N = a_axis/np.sqrt(1.0-ecc1**2.0*np.sin(itheta)**2.0)
-        xflat = N*np.cos(itheta)*np.cos(iphi)
-        yflat = N*np.cos(itheta)*np.sin(iphi)
-        zflat = (N*(1.0-ecc1**2.0))*np.sin(itheta)
+        xflat,yflat,zflat = pyTMD.spatial.to_cartesian(gridlon[indy,indx],
+            gridlat[indy,indx])
         tree = scipy.spatial.cKDTree(np.c_[xflat,yflat,zflat])
         #-- calculate Cartesian coordinates of output coordinates
-        ns = a_axis/np.sqrt(1.0-ecc1**2.0*np.sin(np.pi*lat/180.0)**2.0)
-        xs = ns*np.cos(np.pi*lat/180.0)*np.cos(np.pi*lon/180.0)
-        ys = ns*np.cos(np.pi*lat/180.0)*np.sin(np.pi*lon/180.0)
-        zs = (ns*(1.0-ecc1**2.0))*np.sin(np.pi*lat/180.0)
+        xs,ys,zs = pyTMD.spatial.to_cartesian(lon,lat)
         points = np.c_[xs,ys,zs]
     else:
         #-- flattened model coordinates
