@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (02/2021)
+Written by Tyler Sutterley (03/2021)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
@@ -150,9 +151,9 @@ def compute_LPT_displacements(input_file, output_file,
     if (TYPE == 'grid'):
         ny,nx = (len(dinput['y']),len(dinput['x']))
         gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        longitude,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+        lon,lat = transformer.transform(gridx.flatten(),gridy.flatten())
     elif (TYPE == 'drift'):
-        longitude,lat = transformer.transform(dinput['x'].flatten(),
+        lon,lat = transformer.transform(dinput['x'].flatten(),
             dinput['y'].flatten())
 
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
@@ -198,20 +199,14 @@ def compute_LPT_displacements(input_file, output_file,
     #-- flatten heights
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     #-- convert from geodetic latitude to geocentric latitude
-    #-- geodetic latitude in radians
-    latitude_geodetic_rad = lat*dtr
-    #-- prime vertical radius of curvature
-    N = a_axis/np.sqrt(1.0 - ecc1**2.0*np.sin(latitude_geodetic_rad)**2.0)
     #-- calculate X, Y and Z from geodetic latitude and longitude
-    X = (N+h)*np.cos(latitude_geodetic_rad)*np.cos(longitude*dtr)
-    Y = (N+h)*np.cos(latitude_geodetic_rad)*np.sin(longitude*dtr)
-    Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon,lat,h=h,a_axis=a_axis,flat=flat)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     #-- calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
     #-- geocentric colatitude and longitude in radians
     theta = dtr*(90.0 - latitude_geocentric)
-    phi = longitude*dtr
+    phi = lon*dtr
 
     #-- compute normal gravity at spatial location and elevation of points.
     #-- normal gravity at the equator. p. 79, Eqn.(2-186)
@@ -265,7 +260,7 @@ def compute_LPT_displacements(input_file, output_file,
     Srad.data[Srad.mask] = Srad.fill_value
 
     #-- output to file
-    output = dict(time=MJD,lon=longitude,lat=lat,tide_pole=Srad)
+    output = dict(time=MJD,lon=lon,lat=lat,tide_pole=Srad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
             columns=['time','lat','lon','tide_pole'], verbose=VERBOSE)

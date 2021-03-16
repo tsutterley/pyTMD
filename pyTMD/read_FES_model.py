@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (02/2021)
+read_FES_model.py (03/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 03/2021: add extrapolation check where there are no invalid points
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added nearest-neighbor data extrapolation
@@ -175,7 +176,7 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
         #-- extrapolate data using nearest-neighbors
-        if EXTRAPOLATE:
+        if EXTRAPOLATE and np.any(hci.mask):
             #-- find invalid data points
             inv, = np.nonzero(hci.mask)
             #-- replace invalid values with nan
