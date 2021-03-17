@@ -38,6 +38,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
+        prevent ComplexWarning for fill values when calculating amplitudes
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -110,8 +111,8 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     nc = len(model_files)
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc),dtype=bool)
-    phase = np.ma.zeros((npts,nc))
-    phase.mask = np.zeros((npts,nc),dtype=bool)
+    ph = np.ma.zeros((npts,nc))
+    ph.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,model_file in enumerate(model_files):
         #-- read constituent from elevation file
@@ -173,13 +174,15 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
             hci.mask[inv] = np.isnan(hci.data[inv])
             hci.data[hci.mask] = hci.fill_value
         #-- convert amplitude from input units to meters
-        amplitude.data[:,i] = np.abs(hci)*SCALE
+        amplitude.data[:,i] = np.abs(hci.data)*SCALE
         amplitude.mask[:,i] = np.copy(hci.mask)
-        #-- convert phase to degrees
-        phase.data[:,i] = np.arctan2(-np.imag(hci),np.real(hci))*180.0/np.pi
-        phase.mask[:,i] = np.copy(hci.mask)
-        phase.data[phase.data < 0] += 360.0
+        #-- phase of the constituent in radians
+        ph.data[:,i] = np.arctan2(-np.imag(hci.data),np.real(hci.data))
+        ph.mask[:,i] = np.copy(hci.mask)
 
+    #-- convert phase to degrees
+    phase = ph*180.0/np.pi
+    phase.data[phase.data < 0] += 360.0
     #-- replace data for invalid mask values
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value

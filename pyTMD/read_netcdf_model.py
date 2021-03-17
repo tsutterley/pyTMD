@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
+        prevent ComplexWarning for fill values when calculating amplitudes
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -78,7 +79,7 @@ from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
-    TYPE='z', METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1):
+    TYPE='z', METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
     """
     Reads files for a netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -180,8 +181,8 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     #-- amplitude and phase
     ampl = np.ma.zeros((npts,nc))
     ampl.mask = np.zeros((npts,nc),dtype=bool)
-    phase = np.ma.zeros((npts,nc))
-    phase.mask = np.zeros((npts,nc),dtype=bool)
+    ph = np.ma.zeros((npts,nc))
+    ph.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,fi in enumerate(model_files):
         if (TYPE == 'z'):
@@ -233,8 +234,10 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 z1.mask[inv] = np.isnan(z1.data[inv])
                 z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
-            ampl[:,i] = np.abs(z1)
-            phase[:,i] = np.arctan2(-np.imag(z1),np.real(z1))
+            ampl.data[:,i] = np.abs(z1.data)
+            ampl.mask[:,i] = np.copy(z1.mask)
+            ph.data[:,i] = np.arctan2(-np.imag(z1.data),np.real(z1.data))
+            ph.mask[:,i] = np.copy(z1.mask)
         elif TYPE in ('U','u','V','v'):
             #-- read constituent from transport file
             tr,con = read_transport_file(os.path.join(directory,fi),TYPE,GZIP)
@@ -282,15 +285,16 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
                 tr1.mask[inv] = np.isnan(tr1.data[inv])
                 tr1.data[tr1.mask] = tr1.fill_value
             #-- convert units
-            tr1 = tr1/unit_conv
             #-- amplitude and phase of the constituent
-            ampl[:,i] = np.abs(tr1)
-            phase[:,i] = np.arctan2(-np.imag(tr1),np.real(tr1))
+            ampl.data[:,i] = np.abs(tr1.data)/unit_conv
+            ampl.mask[:,i] = np.copy(tr1.mask)
+            ph.data[:,i] = np.arctan2(-np.imag(tr1.data),np.real(tr1.data))
+            ph.mask[:,i] = np.copy(tr1.mask)
 
     #-- convert amplitude from input units to meters
     amplitude = ampl*SCALE
     #-- convert phase to degrees
-    phase = phase*180.0/np.pi
+    phase = ph*180.0/np.pi
     phase[phase < 0] += 360.0
     #-- return the interpolated values
     return (amplitude,phase,D,constituents)

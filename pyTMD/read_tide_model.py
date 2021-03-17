@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
+        prevent ComplexWarning for fill values when calculating amplitudes
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -335,9 +336,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.mask[inv] = np.isnan(u1.data[inv])
                 u1.data[u1.mask] = u1.fill_value
             #-- convert units
-            u1 = u1/unit_conv
             #-- amplitude and phase of the constituent
-            amplitude.data[:,i] = np.abs(u1)
+            amplitude.data[:,i] = np.abs(u1.data)/unit_conv
             amplitude.mask[:,i] = np.copy(u1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(u1),np.real(u1))
             ph.mask[:,i] = np.copy(u1.mask)
@@ -394,9 +394,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.mask[inv] = np.isnan(v1.data[inv])
                 v1.data[v1.mask] = v1.fill_value
             #-- convert units
-            v1 = v1/unit_conv
             #-- amplitude and phase of the constituent
-            amplitude.data[:,i] = np.abs(v1)
+            amplitude.data[:,i] = np.abs(v1.data)/unit_conv
             amplitude.mask[:,i] = np.copy(v1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(v1),np.real(v1))
             ph.mask[:,i] = np.copy(v1.mask)
