@@ -228,22 +228,13 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v4')
         grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v4')
-        model_files = {}
-        model_files['u'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
+        model_files = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
             'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
             'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
             'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
             'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
             'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4']
-        model_files['v'] = ['v_q1_tpxo9_atlas_30_v4','v_o1_tpxo9_atlas_30_v4',
-            'v_p1_tpxo9_atlas_30_v4','v_k1_tpxo9_atlas_30_v4',
-            'v_n2_tpxo9_atlas_30_v4','v_m2_tpxo9_atlas_30_v4',
-            'v_s2_tpxo9_atlas_30_v4','v_k2_tpxo9_atlas_30_v4',
-            'v_m4_tpxo9_atlas_30_v4','v_ms4_tpxo9_atlas_30_v4',
-            'v_mn4_tpxo9_atlas_30_v4','v_2n2_tpxo9_atlas_30_v4']
-        model_file = {}
-        for key,val in model_files.items():
-            model_file[key] = [os.path.join(model_directory,m) for m in val]
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         model_format = 'OTIS'
         EPSG = '4326'

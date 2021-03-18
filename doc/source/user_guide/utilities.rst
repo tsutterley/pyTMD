@@ -104,7 +104,7 @@ General Methods
 
     Check internet connection with ftp host
 
-    Arguments{
+    Arguments:
 
         ``HOST``: remote ftp host
 

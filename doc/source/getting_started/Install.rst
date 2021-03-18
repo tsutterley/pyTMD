@@ -15,6 +15,15 @@ pyTMD is dependent on open source programs that can be installed using OS-specif
 - `libxml2 <http://xmlsoft.org/>`_
 - `libxslt <http://xmlsoft.org/XSLT/>`_
 
+The version of GDAL used within pyTMD will match the version of the installed C program.
+The path to the C program that will be used with pyTMD is given by:
+
+.. code-block:: bash
+
+    gdal-config --datadir
+
+The pyTMD installation uses the ``gdal-config`` routines to set the GDAL package version.
+
 Installation
 ############
 Presently pyTMD is available for use as a `GitHub repository <https://github.com/tsutterley/pyTMD>`_ and
