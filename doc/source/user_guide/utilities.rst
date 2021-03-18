@@ -24,17 +24,24 @@ General Methods
 
     Arguments:
 
-        `relpath`: local relative path as list or string
+        ``relpath``: local relative path as list or string
 
 
-.. method:: pyTMD.utilities.get_hash(local)
+.. method:: pyTMD.utilities.get_hash(local, algorithm='MD5')
 
-    Get the MD5 hash value from a local file or BytesIO object
+    Get the hash value from a local file or BytesIO object
 
     Arguments:
 
-        `local`: BytesIO object or path to file
+        ``local``: BytesIO object or path to file
 
+    Keyword Arguments:
+
+        ``algorithm``: hashing algorithm for checksum validation
+
+            ``'MD5'``: Message Digest
+
+            ``'sha1'``: Secure Hash Algorithm
 
 .. method:: pyTMD.utilities.url_split(s)
 
@@ -42,7 +49,7 @@ General Methods
 
     Arguments:
 
-        `s`: url string
+        ``s``: url string
 
 
 .. method:: pyTMD.utilities.roman_to_int(local)
@@ -51,7 +58,7 @@ General Methods
 
     Arguments:
 
-        `roman`: Roman numeral string
+        ``roman``: Roman numeral string
 
 
 .. method:: pyTMD.utilities.get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S')
@@ -60,11 +67,11 @@ General Methods
 
     Arguments:
 
-        `time_string`: formatted time string to parse
+        ``time_string``: formatted time string to parse
 
     Keyword arguments:
 
-        `format`: format for input time string
+        ``format``: format for input time string
 
 
 .. method:: gravity_toolkit.utilities.even(value)
@@ -73,7 +80,7 @@ General Methods
 
     Arguments:
 
-        `value`: number to be rounded
+        ``value``: number to be rounded
 
 
 .. method:: pyTMD.utilities.copy(source, destination, verbose=False, move=False)
@@ -82,15 +89,15 @@ General Methods
 
     Arguments:
 
-        `source`: source file
+        ``source``: source file
 
-        `destination`: copied destination file
+        ``destination``: copied destination file
 
     Keyword arguments:
 
-        `verbose`: print file transfer information
+        ``verbose``: print file transfer information
 
-        `move`: remove the source file
+        ``move``: remove the source file
 
 
 .. method:: pyTMD.utilities.check_ftp_connection(HOST,username=None,password=None)
@@ -99,13 +106,13 @@ General Methods
 
     Arguments{
 
-        `HOST`: remote ftp host
+        ``HOST``: remote ftp host
 
     Keyword arguments:
 
-        `username`: ftp username
+        ``username``: ftp username
 
-        `password`: ftp password
+        ``password``: ftp password
 
 
 .. method:: pyTMD.utilities.ftp_list(HOST,username=None,password=None,timeout=None,basename=False,pattern=None,sort=False)
@@ -114,27 +121,27 @@ General Methods
 
     Arguments:
 
-        `HOST`: remote ftp host path split as list
+        ``HOST``: remote ftp host path split as list
 
     Keyword arguments:
 
-        `username`: ftp username
+        ``username``: ftp username
 
-        `password`: ftp password
+        ``password``: ftp password
 
-        `timeout`: timeout in seconds for blocking operations
+        ``timeout``: timeout in seconds for blocking operations
 
-        `basename`: return the file or directory basename instead of the full path
+        ``basename``: return the file or directory basename instead of the full path
 
-        `pattern`: regular expression pattern for reducing list
+        ``pattern``: regular expression pattern for reducing list
 
-        `sort`: sort output list
+        ``sort``: sort output list
 
     Returns:
 
-        `output`: list of items in a directory
+        ``output``: list of items in a directory
 
-        `mtimes`: list of last modification times for items in the directory
+        ``mtimes``: list of last modification times for items in the directory
 
 
 .. method:: pyTMD.utilities.from_ftp(HOST,username=None,password=None,timeout=None,local=None,hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775)
@@ -143,27 +150,27 @@ General Methods
 
     Arguments:
 
-        `HOST`: remote ftp host path split as list
+        ``HOST``: remote ftp host path split as list
 
     Keyword arguments:
 
-        `username`: ftp username
+        ``username``: ftp username
 
-        `password`: ftp password
+        ``password``: ftp password
 
-        `timeout`: timeout in seconds for blocking operations
+        ``timeout``: timeout in seconds for blocking operations
 
-        `local`: path to local file
+        ``local``: path to local file
 
-        `hash`: MD5 hash of local file
+        ``hash``: MD5 hash of local file
 
-        `chunk`: chunk size for transfer encoding
+        ``chunk``: chunk size for transfer encoding
 
-        `verbose`: print file transfer information
+        ``verbose``: print file transfer information
 
-        `fid`: open file object to print if verbose
+        ``fid``: open file object to print if verbose
 
-        `mode`: permissions mode of output local file
+        ``mode``: permissions mode of output local file
 
 
 .. method:: pyTMD.utilities.check_connection(HOST)
@@ -172,7 +179,7 @@ General Methods
 
     Arguments:
 
-        `HOST`: remote http host
+        ``HOST``: remote http host
 
 
 .. method:: pyTMD.utilities.from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
@@ -181,25 +188,25 @@ General Methods
 
     Arguments:
 
-        `HOST`: remote http host path split as list
+        ``HOST``: remote http host path split as list
 
     Keyword arguments:
 
-        `timeout`: timeout in seconds for blocking operations
+        ``timeout``: timeout in seconds for blocking operations
 
-        `context`: SSL context for url opener object
+        ``context``: SSL context for url opener object
 
-        `local`: path to local file
+        ``local``: path to local file
 
-        `hash`: MD5 hash of local file
+        ``hash``: MD5 hash of local file
 
-        `chunk`: chunk size for transfer encoding
+        ``chunk``: chunk size for transfer encoding
 
-        `verbose`: print file transfer information
+        ``verbose``: print file transfer information
 
-        `fid`: open file object to print if verbose
+        ``fid``: open file object to print if verbose
 
-        `mode`: permissions mode of output local file
+        ``mode``: permissions mode of output local file
 
 
 .. method:: pyTMD.utilities.build_opener(username, password, context=ssl.SSLContext(ssl.PROTOCOL_TLS), password_manager=True, get_ca_certs=True, redirect=True, authorization_header=False, urs='https://urs.earthdata.nasa.gov')
@@ -208,23 +215,23 @@ General Methods
 
     Arguments:
 
-        `username`: NASA Earthdata username
+        ``username``: NASA Earthdata username
 
-        `password`: NASA Earthdata password
+        ``password``: NASA Earthdata password
 
     Keyword arguments:
 
-        `context`: SSL context for opener object
+        ``context``: SSL context for opener object
 
-        `password_manager`: create password manager context using default realm
+        ``password_manager``: create password manager context using default realm
 
-        `get_ca_certs`: get list of loaded “certification authority” certificates
+        ``get_ca_certs``: get list of loaded “certification authority” certificates
 
-        `redirect`: create redirect handler object
+        ``redirect``: create redirect handler object
 
-        `authorization_header`: add base64 encoded authorization header to opener
+        ``authorization_header``: add base64 encoded authorization header to opener
 
-        `urs`: Earthdata login URS 3 host
+        ``urs``: Earthdata login URS 3 host
 
 
 .. method:: pyTMD.utilities.check_credentials()
@@ -238,29 +245,29 @@ General Methods
 
     Arguments:
 
-        `HOST`: remote http host path split as list
+        ``HOST``: remote http host path split as list
 
     Keyword arguments:
 
-        `username`: NASA Earthdata username
+        ``username``: NASA Earthdata username
 
-        `password`: NASA Earthdata password
+        ``password``: NASA Earthdata password
 
-        `build`: Build opener and check NASA Earthdata password
+        ``build``: Build opener and check NASA Earthdata password
 
-        `timeout`: timeout in seconds for blocking operations
+        ``timeout``: timeout in seconds for blocking operations
 
-        `parser`: HTML parser for lxml
+        ``parser``: HTML parser for lxml
 
-        `pattern`: regular expression pattern for reducing list
+        ``pattern``: regular expression pattern for reducing list
 
-        `sort`: sort output list
+        ``sort``: sort output list
 
     Returns:
 
-        `colnames`: list of column names in a directory
+        ``colnames``: list of column names in a directory
 
-        `collastmod`: list of last modification times for items in the directory
+        ``collastmod``: list of last modification times for items in the directory
 
 
 .. method:: pyTMD.utilities.from_cddis(HOST,username=None,password=None,build=True,timeout=None,local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
@@ -269,26 +276,26 @@ General Methods
 
     Arguments:
 
-        `HOST`: remote http host path split as list
+        ``HOST``: remote http host path split as list
 
     Keyword arguments:
 
-        `username`: NASA Earthdata username
+        ``username``: NASA Earthdata username
 
-        `password`: NASA Earthdata password
+        ``password``: NASA Earthdata password
 
-        `build`: Build opener and check NASA Earthdata password
+        ``build``: Build opener and check NASA Earthdata password
 
-        `timeout`: timeout in seconds for blocking operations
+        ``timeout``: timeout in seconds for blocking operations
 
-        `local`: path to local file
+        ``local``: path to local file
 
-        `hash`: MD5 hash of local file
+        ``hash``: MD5 hash of local file
 
-        `chunk`: chunk size for transfer encoding
+        ``chunk``: chunk size for transfer encoding
 
-        `verbose`: print file transfer information
+        ``verbose``: print file transfer information
 
-        `fid`: open file object to print if verbose
+        ``fid``: open file object to print if verbose
 
-        `mode`: permissions mode of output local file
+        ``mode``: permissions mode of output local file

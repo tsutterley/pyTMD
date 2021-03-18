@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: use pytest fixture to setup and teardown model data
+        simplified netcdf inputs to be similar to binary OTIS read program
     Written 09/2020
 """
 import os
@@ -113,13 +114,15 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
     #-- model parameters for TPXO9-atlas-v2
     model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
     #-- model grid file
-    grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
+    grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
     #-- constituent files included in test
     model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
         'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
     TYPE = 'z'
     SCALE = 1.0/1000.0
+    GZIP = True
 
     #-- read validation dataset (m2, s2, k1, o1)
     names = ('Lat', 'Lon', 'm2_amp', 'm2_ph', 's2_amp', 's2_ph',
@@ -130,9 +133,8 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
 
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
-        val['Lon'], val['Lat'], model_directory, grid_file,
-        model_files, TYPE=TYPE, METHOD=METHOD,
-        EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+        val['Lon'], val['Lat'], grid_file, model_file, TYPE=TYPE,
+        METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
     #-- convert phase from 0:360 to -180:180
     ph[ph > 180] -= 360.0
 
@@ -157,14 +159,16 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     #-- model parameters for TPXO9-atlas-v2
     model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
     #-- model grid file
-    grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
+    grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
     #-- constituent files included in test
     model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
         'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
     model_format = 'netcdf'
     TYPE = 'z'
     SCALE = 1.0/1000.0
+    GZIP = True
 
     #-- compile numerical expression operator
     rx = re.compile(r'[-+]?(?:(?:\d+\.\d+\.\d+)|(?:\d+\:\d+\:\d+)'
@@ -192,9 +196,9 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
 
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
-        val['longitude'], val['latitude'], model_directory, grid_file,
-        model_files, TYPE=TYPE, METHOD=METHOD,
-        EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+        val['longitude'], val['latitude'], grid_file, model_file,
+        TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+        SCALE=SCALE, GZIP=GZIP)
     deltat = np.zeros_like(val['time'])
     #-- verify constituents
     assert (c == constituents)

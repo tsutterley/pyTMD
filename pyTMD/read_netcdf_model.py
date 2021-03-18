@@ -14,7 +14,6 @@ Reads netCDF4 ATLAS tidal solutions provided by Ohio State University and ESR
 INPUTS:
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    directory: data directory for tide data files
     grid_file: grid file for model (can be gzipped)
     model_files: list of model files for each constituent (can be gzipped)
 
@@ -55,6 +54,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
+        simplified inputs to be similar to binary OTIS read program
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -71,6 +71,7 @@ UPDATE HISTORY:
 """
 import os
 import gzip
+import uuid
 import netCDF4
 import numpy as np
 import scipy.interpolate
@@ -78,8 +79,8 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
-    TYPE='z', METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
+def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
+    METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
     """
     Reads files for a netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -89,18 +90,17 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     ---------
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    directory: data directory for tide data files
     grid_file: grid file for model (can be gzipped)
     model_files: list of model files for each constituent (can be gzipped)
-    TYPE: tidal variable to run
+
+    Keyword arguments
+    -----------------
+    TYPE: tidal variable to read
         z: heights
         u: horizontal transport velocities
         U: horizontal depth-averaged transport
         v: vertical transport velocities
         V: vertical depth-averaged transport
-
-    Keyword arguments
-    -----------------
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -118,8 +118,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     """
 
     #-- read the tide grid file for bathymetry and spatial coordinates
-    lon,lat,bathymetry = read_netcdf_grid(os.path.join(directory,grid_file),
-        GZIP=GZIP, TYPE=TYPE)
+    lon,lat,bathymetry = read_netcdf_grid(grid_file, TYPE, GZIP=GZIP)
     #-- grid step size of tide model
     dlon = lon[1] - lon[0]
     dlat = lat[1] - lat[0]
@@ -184,10 +183,10 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
-    for i,fi in enumerate(model_files):
+    for i,model_file in enumerate(model_files):
         if (TYPE == 'z'):
             #-- read constituent from elevation file
-            z,con = read_elevation_file(os.path.join(directory,fi),GZIP)
+            z,con = read_elevation_file(model_file, GZIP=GZIP)
             #-- append constituent to list
             constituents.append(con)
             #-- replace original values with extend matrices
@@ -240,7 +239,7 @@ def extract_netcdf_constants(ilon, ilat, directory, grid_file, model_files,
             ph.mask[:,i] = np.copy(z1.mask)
         elif TYPE in ('U','u','V','v'):
             #-- read constituent from transport file
-            tr,con = read_transport_file(os.path.join(directory,fi),TYPE,GZIP)
+            tr,con = read_transport_file(model_file, TYPE, GZIP=GZIP)
             #-- append constituent to list
             constituents.append(con)
             #-- replace original values with extend matrices
@@ -342,13 +341,23 @@ def extend_matrix(input_matrix):
     return temp
 
 #-- PURPOSE: read grid file
-def read_netcdf_grid(input_file,GZIP=False,TYPE=None):
+def read_netcdf_grid(input_file, TYPE, GZIP=False):
     """
     Read grid file to extract model coordinates and bathymetry
 
     Arguments
     ---------
     input_file: input grid file
+    TYPE: tidal variable to run
+        z: heights
+        u: horizontal transport velocities
+        U: horizontal depth-averaged transport
+        v: vertical transport velocities
+        V: vertical depth-averaged transport
+
+    Keyword Arguments
+    -----------------
+    GZIP: input netCDF4 file is compressed
 
     Returns
     -------
@@ -359,12 +368,11 @@ def read_netcdf_grid(input_file,GZIP=False,TYPE=None):
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
     if GZIP:
-        #-- open remote file with netCDF4
         #-- read GZIP file
-        f = gzip.open(input_file,'rb')
-        fileID=netCDF4.Dataset(os.path.basename(input_file),'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file),'rb')
+        fileID=netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
     else:
-        fileID=netCDF4.Dataset(input_file,'r')
+        fileID=netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
@@ -398,7 +406,7 @@ def read_netcdf_grid(input_file,GZIP=False,TYPE=None):
 
 #-- PURPOSE: read elevation file to extract real and imaginary components for
 #-- constituent
-def read_elevation_file(input_file,GZIP):
+def read_elevation_file(input_file, GZIP=False):
     """
     Read elevation file to extract real and imaginary components for constituent
 
@@ -418,10 +426,10 @@ def read_elevation_file(input_file,GZIP):
     #-- read the netcdf format tide elevation file
     #-- reading a combined global solution with localized solutions
     if GZIP:
-        f = gzip.open(input_file,'rb')
-        fileID = netCDF4.Dataset(input_file,'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file),'rb')
+        fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
     else:
-        fileID = netCDF4.Dataset(input_file,'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- constituent name
     con = fileID.variables['con'][:].tobytes().decode('utf-8')
     #-- variable dimensions
@@ -440,21 +448,21 @@ def read_elevation_file(input_file,GZIP):
 
 #-- PURPOSE: read transport file to extract real and imaginary components for
 #-- constituent
-def read_transport_file(input_file,TYPE,GZIP):
+def read_transport_file(input_file, TYPE, GZIP=False):
     """
     Read transport file to extract real and imaginary components for constituent
 
     Arguments
     ---------
     input_file: input transport file
-
-    Keyword arguments
-    -----------------
     TYPE: tidal variable to run
         u: horizontal transport velocities
         U: horizontal depth-averaged transport
         v: vertical transport velocities
         V: vertical depth-averaged transport
+
+    Keyword arguments
+    -----------------
     GZIP: input netCDF4 files are compressed
 
     Returns
@@ -465,10 +473,10 @@ def read_transport_file(input_file,TYPE,GZIP):
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
     if GZIP:
-        f = gzip.open(input_file,'rb')
-        fileID = netCDF4.Dataset(input_file,'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file),'rb')
+        fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
     else:
-        fileID = netCDF4.Dataset(input_file,'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- constituent name
     con = fileID.variables['con'][:].tobytes().decode('utf-8')
     #-- variable dimensions

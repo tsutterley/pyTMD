@@ -25,9 +25,9 @@ General Methods
 
     Keyword arguments:
 
-        `verbose`: print file information about output file
+        ``verbose``: print file information about output file
 
-        `mode`: permissions mode of output file
+        ``mode``: permissions mode of output file
 
 
 .. method:: pyTMD.eop.calculate_mean_pole(verbose=False, mode=0o775)
@@ -40,17 +40,17 @@ General Methods
 
     Keyword arguments:
 
-        `verbose`: print file information about output file
+        ``verbose``: print file information about output file
 
-        `mode`: permissions mode of output file
+        ``mode``: permissions mode of output file
 
     Returns:
 
-        `T`: date [decimal-years]
+        ``T``: date [decimal-years]
 
-        `xm`: mean pole coordinate x [arcsec]
+        ``xm``: mean pole coordinate x [arcsec]
 
-        `ym`: mean pole coordinate y [arcsec]
+        ``ym``: mean pole coordinate y [arcsec]
 
 
 .. method:: pyTMD.eop.update_finals_file(username=None, password=None, verbose=False, mode=0o775)
@@ -61,10 +61,10 @@ General Methods
 
     Keyword arguments:
 
-        `username`: NASA Earthdata username
+        ``username``: NASA Earthdata username
 
-        `password`: NASA Earthdata password
+        ``password``: NASA Earthdata password
 
-        `verbose`: print file information about output file
+        ``verbose``: print file information about output file
 
-        `mode`: permissions mode of output file
+        ``mode``: permissions mode of output file

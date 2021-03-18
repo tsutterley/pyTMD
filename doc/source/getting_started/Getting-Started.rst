@@ -21,7 +21,8 @@ The Earth Orientation Parameters (EOPs) necessary for computing load pole and oc
 Tide Model Formats
 ##################
 
-OTIS and ATLAS formatted data use a single binary file to store all the constituents for either heights (``z``) or zonal and meridional transports (``u``, ``v``).
+OTIS and ATLAS formatted data use  binary files to store the constituent data for either heights (``z``) or zonal and meridional transports (``u``, ``v``).
+They can be either a single file containing all the constituents (compact) or multiple files each containing a single constituent.
 Arctic Ocean models can be downloaded from the NSF ArcticData server using the `arcticdata_tides.py <https://github.com/tsutterley/pyTMD/blob/main/scripts/arcticdata_tides.py>`_ program.
 CATS2008 can be downloaded from the US Antarctic Program (USAP) using the `usap_cats_tides.py <https://github.com/tsutterley/pyTMD/blob/main/scripts/usap_cats_tides.py>`_ program.
 ATLAS netCDF formatted data use netCDF4 files for each constituent and variable type (``z``, ``u``, ``v``).
@@ -49,6 +50,7 @@ This structure was chosen based on the different formats of each tide model.
     * `TPXO9-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas/``
     * `TPXO9-atlas-v2 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v2/``
     * `TPXO9-atlas-v3 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v3/``
+    * `TPXO9-atlas-v4 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v4/``
     * `TPXO9.1 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9.1/DATA/``
     * `TPXO8-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/tpxo8_atlas/``
     * TPXO7.2: ``<path_to_tide_models>/TPXO7.2_tmd/``
