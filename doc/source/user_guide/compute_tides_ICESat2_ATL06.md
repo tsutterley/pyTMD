@@ -24,6 +24,7 @@ python compute_tides_ICESat2_ATL06.py --directory <path_to_directory> --tide <mo
      * `'TPXO9-atlas'`
      * `'TPXO9-atlas-v2'`
      * `'TPXO9-atlas-v3'`
+     * `'TPXO9-atlas-v4'`
      * `'TPXO9.1'`
      * `'TPXO8-atlas'`
      * `'TPXO7.2'`

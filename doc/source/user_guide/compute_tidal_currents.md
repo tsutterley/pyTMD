@@ -22,6 +22,9 @@ python compute_tidal_currents.py --directory <path_to_directory> --tide <model> 
      * `'CATS0201'`
      * `'CATS2008'`
      * `'TPXO9-atlas'`
+     * `'TPXO9-atlas-v2'`
+     * `'TPXO9-atlas-v3'`
+     * `'TPXO9-atlas-v4'`
      * `'TPXO9.1'`
      * `'TPXO8-atlas'`
      * `'TPXO7.2'`

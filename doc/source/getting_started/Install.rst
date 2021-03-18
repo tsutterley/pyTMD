@@ -28,19 +28,19 @@ To use this repository, please fork into your own account and then clone onto yo
 
     git clone https://github.com/tsutterley/pyTMD.git
 
-Can then install using `setuptools`:
+Can then install using ``setuptools``:
 
 .. code-block:: bash
 
     python3 setup.py install
 
-or `pip`
+or ``pip``
 
 .. code-block:: bash
 
     python3 -m pip install --user .
 
-Alternatively can install the pyTMD utilities directly from GitHub with `pip`:
+Alternatively can install the pyTMD utilities directly from GitHub with ``pip``:
 
 .. code-block:: bash
 

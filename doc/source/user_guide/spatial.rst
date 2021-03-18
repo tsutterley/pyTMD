@@ -44,13 +44,14 @@ General Methods
     Inputs: full path of input ascii file
 
     Options:
-        `compression` ascii file is compressed or streamed from memory
 
-        `verbose` print ascii filename
+        ``compression`` ascii file is compressed or streamed from memory
 
-        `columns` variable names for each column
+        ``verbose`` print ascii filename
 
-        `header` lines to skip from start of file
+        ``columns`` variable names for each column
+
+        ``header`` lines to skip from start of file
 
 
 .. method:: pyTMD.spatial.from_netCDF4(filename, compression=None, verbose=False, timename='time', xname='lon', yname='lat', varname='data')
@@ -60,17 +61,18 @@ General Methods
     Inputs: full path of input netCDF4 file
 
     Options:
-        `compression` netCDF4 file is compressed or streamed from memory
 
-        `verbose` print netCDF4 file information
+        ``compression`` netCDF4 file is compressed or streamed from memory
 
-        `time` input time variable name in netCDF4 file
+        ``verbose`` print netCDF4 file information
 
-        `xname` input x variable name in netCDF4 file
+        ``time`` input time variable name in netCDF4 file
 
-        `yname` input y variable units in netCDF4 file
+        ``xname`` input x variable name in netCDF4 file
 
-        `varname` input data variable units in netCDF4 file
+        ``yname`` input y variable units in netCDF4 file
+
+        ``varname`` input data variable units in netCDF4 file
 
 
 .. method:: pyTMD.spatial.from_HDF5(filename, compression=None, verbose=False, timename='time', xname='lon', yname='lat', varname='data')
@@ -80,17 +82,18 @@ General Methods
     Inputs: full path of input HDF5 file
 
     Options:
-        `compression` HDF5 file is compressed or streamed from memory
 
-        `verbose` print HDF5 file information
+        ``compression`` HDF5 file is compressed or streamed from memory
 
-        `time` input time variable name in HDF5 file
+        ``verbose`` print HDF5 file information
 
-        `xname` input x variable name in HDF5 file
+        ``time`` input time variable name in HDF5 file
 
-        `yname` input y variable units in HDF5 file
+        ``xname`` input x variable name in HDF5 file
 
-        `varname` input data variable units in HDF5 file
+        ``yname`` input y variable units in HDF5 file
+
+        ``varname`` input data variable units in HDF5 file
 
 
 .. method:: pyTMD.spatial.from_geotiff(filename, compression=None, verbose=False)
@@ -100,9 +103,10 @@ General Methods
     Inputs: full path of input geotiff file
 
     Options:
-        `compression` geotiff file is compressed using gzip
 
-        `verbose` print geotiff filename
+        ``compression`` geotiff file is compressed using gzip
+
+        ``verbose`` print geotiff filename
 
 
 .. method:: pyTMD.spatial.to_ascii(output, attributes, filename, delimiter=',', columns=['time','lat','lon','tide'], header=False, verbose=False)
@@ -111,21 +115,21 @@ General Methods
 
     Inputs:
 
-        `output` python dictionary of output data
+        ``output`` python dictionary of output data
 
-        `attributes` python dictionary of output attributes
+        ``attributes`` python dictionary of output attributes
 
-        `filename` full path of output ascii file
+        ``filename`` full path of output ascii file
 
     Options:
 
-        `delimiter` for output spatial file
+        ``delimiter`` for output spatial file
 
-        `columns` order of columns for output spatial file
+        ``columns`` order of columns for output spatial file
 
-        `header` create a YAML header with data attributes
+        ``header`` create a YAML header with data attributes
 
-        `verbose` print ascii file name
+        ``verbose`` print ascii file name
 
 
 .. method:: pyTMD.spatial.to_netCDF4(output, attributes, filename, verbose=False)
@@ -134,15 +138,15 @@ General Methods
 
     Inputs:
 
-        `output` python dictionary of output data
+        ``output`` python dictionary of output data
 
-        `attributes` python dictionary of output attributes
+        ``attributes`` python dictionary of output attributes
 
-        `filename` full path of output netCDF4 file
+        ``filename`` full path of output netCDF4 file
 
     Options:
 
-        `verbose` print netCDF4 file information
+        ``verbose`` print netCDF4 file information
 
 
 .. method:: pyTMD.spatial.to_HDF5(output, attributes, filename, verbose=False)
@@ -151,15 +155,15 @@ General Methods
 
     Inputs:
 
-        `output` python dictionary of output data
+        ``output`` python dictionary of output data
 
-        `attributes` python dictionary of output attributes
+        ``attributes`` python dictionary of output attributes
 
-        `filename` full path of output HDF5 file
+        ``filename`` full path of output HDF5 file
 
     Options:
 
-        `verbose` print HDF5 file information
+        ``verbose`` print HDF5 file information
 
 
 .. method:: pyTMD.spatial.to_geotiff(output, attributes, filename, verbose=False, varname='data', dtype=osgeo.gdal.GDT_Float64)
@@ -168,20 +172,20 @@ General Methods
 
     Inputs:
 
-        `output` python dictionary of output data
+        ``output`` python dictionary of output data
 
-        `attributes` python dictionary of output attributes
+        ``attributes`` python dictionary of output attributes
 
-        `filename` full path of output HDF5 file
+        ``filename`` full path of output HDF5 file
 
 
     Options:
 
-        `verbose` print geotiff filename
+        ``verbose`` print geotiff filename
 
-        `varname` output variable name
+        ``varname`` output variable name
 
-        `dtype` GDAL data type
+        ``dtype`` GDAL data type
 
 
 .. method:: pyTMD.spatial.expand_dims(obj, varname='data')
@@ -190,7 +194,7 @@ General Methods
 
     Options:
 
-        variable name to modify
+        ``varname``: variable name to modify
 
 
 .. method:: pyTMD.spatial.convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10)
@@ -199,31 +203,31 @@ General Methods
 
     Inputs:
 
-        `phi1`: latitude of input ellipsoid in degrees
+        ``phi1``: latitude of input ellipsoid in degrees
 
-        `h1`: height above input ellipsoid in meters
+        ``h1``: height above input ellipsoid in meters
 
-        `a1`: semi-major axis of input ellipsoid
+        ``a1``: semi-major axis of input ellipsoid
 
-        `f1`: flattening of input ellipsoid
+        ``f1``: flattening of input ellipsoid
 
-        `a2`: semi-major axis of output ellipsoid
+        ``a2``: semi-major axis of output ellipsoid
 
-        `f2`: flattening of output ellipsoid
+        ``f2``: flattening of output ellipsoid
 
 
     Options:
 
-        `eps`: tolerance to prevent division by small numbers and to determine convergence
+        ``eps``: tolerance to prevent division by small numbers and to determine convergence
 
-        `itmax`: maximum number of iterations to use in Newton-Raphson
+        ``itmax``: maximum number of iterations to use in Newton-Raphson
 
 
     Returns:
 
-        `phi2`: latitude of output ellipsoid in degrees
+        ``phi2``: latitude of output ellipsoid in degrees
 
-        `h2`: height above output ellipsoid in meters
+        ``h2``: height above output ellipsoid in meters
 
 
 .. method:: pyTMD.spatial.to_cartesian(lon,lat,a_axis=6378137.0,flat=1.0/298.257223563)
@@ -232,22 +236,22 @@ General Methods
 
     Inputs:
 
-        `lon`: longitude
+        ``lon``: longitude
 
-        `lat`: latitude
+        ``lat``: latitude
 
 
     Options:
 
-        `h`: height
+        ``h``: height
 
-        `a_axis`: semimajor axis of the ellipsoid
+        ``a_axis``: semimajor axis of the ellipsoid
 
-        `flat`: ellipsoidal flattening
+        ``flat``: ellipsoidal flattening
 
     Returns:
 
-        `x`, `y`, `z` in Cartesian coordinates
+        ``x``, ``y``, ``z`` in Cartesian coordinates
 
 
 .. method:: pyTMD.spatial.to_sphere(x,y,z)
@@ -256,15 +260,15 @@ General Methods
 
     Inputs:
 
-        `x`, `y`, `z` in Cartesian coordinates
+        ``x``, ``y``, ``z`` in Cartesian coordinates
 
     Returns:
 
-        `lon`: longitude
+        ``lon``: longitude
 
-        `lat`: latitude
+        ``lat``: latitude
 
-        `rad`: radius
+        ``rad``: radius
 
 
 .. method:: pyTMD.spatial.to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563)
@@ -273,21 +277,21 @@ General Methods
 
     Inputs:
 
-        `x`, `y`, `z` in Cartesian coordinates
+        ``x``, ``y``, ``z`` in Cartesian coordinates
 
     Options:
 
-        `a_axis`: semimajor axis of the ellipsoid
+        ``a_axis``: semimajor axis of the ellipsoid
 
-        `flat`: ellipsoidal flattening
+        ``flat``: ellipsoidal flattening
 
     Returns:
 
-        `lon`: longitude
+        ``lon``: longitude
 
-        `lat`: latitude
+        ``lat``: latitude
 
-        `h`: height
+        ``h``: height
 
 
 .. method:: pyTMD.spatial.scale_areas(lat, flat=1.0/298.257223563, ref=70.0)
@@ -296,14 +300,14 @@ General Methods
 
     Inputs:
 
-        `lat`: latitude
+        ``lat``: latitude
 
     Options:
 
-        `flat`: ellipsoidal flattening
+        ``flat``: ellipsoidal flattening
 
-        `ref`: reference latitude (true scale latitude)
+        ``ref``: reference latitude (true scale latitude)
 
     Returns:
 
-        `scale`: area scaling factors at input latitudes
+        ``scale``: area scaling factors at input latitudes

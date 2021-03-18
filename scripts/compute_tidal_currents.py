@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (02/2021)
+Written by Tyler Sutterley (03/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -93,6 +93,8 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
+        simplified netcdf inputs to be similar to binary OTIS read program
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 11/2020: added options to read from and write to geotiff image files
@@ -153,7 +155,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         TYPES = ['u','v']
     elif (TIDE_MODEL == 'TPXO9-atlas'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas')
-        grid_file = 'grid_tpxo9_atlas.nc.gz'
+        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas.nc.gz')
         model_files = {}
         model_files['u'] = ['u_q1_tpxo9_atlas_30.nc.gz','u_o1_tpxo9_atlas_30.nc.gz',
             'u_p1_tpxo9_atlas_30.nc.gz','u_k1_tpxo9_atlas_30.nc.gz',
@@ -167,6 +169,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             'v_s2_tpxo9_atlas_30.nc.gz','v_k2_tpxo9_atlas_30.nc.gz',
             'v_m4_tpxo9_atlas_30.nc.gz','v_ms4_tpxo9_atlas_30.nc.gz',
             'v_mn4_tpxo9_atlas_30.nc.gz','v_2n2_tpxo9_atlas_30.nc.gz']
+        model_file = {}
+        for key,val in model_files.items():
+            model_file[key] = [os.path.join(model_directory,m) for m in val]
         reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
         model_format = 'netcdf'
         TYPES = ['u','v']
@@ -174,7 +179,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         GZIP = True
     elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
-        grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
+        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v2.nc.gz')
         model_files = {}
         model_files['u'] = ['u_q1_tpxo9_atlas_30_v2.nc.gz','u_o1_tpxo9_atlas_30_v2.nc.gz',
             'u_p1_tpxo9_atlas_30_v2.nc.gz','u_k1_tpxo9_atlas_30_v2.nc.gz',
@@ -188,11 +193,61 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             'v_s2_tpxo9_atlas_30_v2.nc.gz','v_k2_tpxo9_atlas_30_v2.nc.gz',
             'v_m4_tpxo9_atlas_30_v2.nc.gz','v_ms4_tpxo9_atlas_30_v2.nc.gz',
             'v_mn4_tpxo9_atlas_30_v2.nc.gz','v_2n2_tpxo9_atlas_30_v2.nc.gz']
+        model_file = {}
+        for key,val in model_files.items():
+            model_file[key] = [os.path.join(model_directory,m) for m in val]
         reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         model_format = 'netcdf'
         TYPES = ['u','v']
         model_scale = 1.0/100.0
         GZIP = True
+    elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
+        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v3.nc.gz')
+        model_files = {}
+        model_files['u'] = ['u_q1_tpxo9_atlas_30_v3.nc.gz','u_o1_tpxo9_atlas_30_v3.nc.gz',
+            'u_p1_tpxo9_atlas_30_v3.nc.gz','u_k1_tpxo9_atlas_30_v3.nc.gz',
+            'u_n2_tpxo9_atlas_30_v3.nc.gz','u_m2_tpxo9_atlas_30_v3.nc.gz',
+            'u_s2_tpxo9_atlas_30_v3.nc.gz','u_k2_tpxo9_atlas_30_v3.nc.gz',
+            'u_m4_tpxo9_atlas_30_v3.nc.gz','u_ms4_tpxo9_atlas_30_v3.nc.gz',
+            'u_mn4_tpxo9_atlas_30_v3.nc.gz','u_2n2_tpxo9_atlas_30_v3.nc.gz']
+        model_files['v'] = ['v_q1_tpxo9_atlas_30_v3.nc.gz','v_o1_tpxo9_atlas_30_v3.nc.gz',
+            'v_p1_tpxo9_atlas_30_v3.nc.gz','v_k1_tpxo9_atlas_30_v3.nc.gz',
+            'v_n2_tpxo9_atlas_30_v3.nc.gz','v_m2_tpxo9_atlas_30_v3.nc.gz',
+            'v_s2_tpxo9_atlas_30_v3.nc.gz','v_k2_tpxo9_atlas_30_v3.nc.gz',
+            'v_m4_tpxo9_atlas_30_v3.nc.gz','v_ms4_tpxo9_atlas_30_v3.nc.gz',
+            'v_mn4_tpxo9_atlas_30_v3.nc.gz','v_2n2_tpxo9_atlas_30_v3.nc.gz']
+        model_file = {}
+        for key,val in model_files.items():
+            model_file[key] = [os.path.join(model_directory,m) for m in val]
+        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        model_format = 'netcdf'
+        TYPES = ['u','v']
+        model_scale = 1.0/100.0
+        GZIP = True
+    elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v4')
+        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v4')
+        model_files = {}
+        model_files['u'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
+            'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
+            'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
+            'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
+            'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
+            'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4']
+        model_files['v'] = ['v_q1_tpxo9_atlas_30_v4','v_o1_tpxo9_atlas_30_v4',
+            'v_p1_tpxo9_atlas_30_v4','v_k1_tpxo9_atlas_30_v4',
+            'v_n2_tpxo9_atlas_30_v4','v_m2_tpxo9_atlas_30_v4',
+            'v_s2_tpxo9_atlas_30_v4','v_k2_tpxo9_atlas_30_v4',
+            'v_m4_tpxo9_atlas_30_v4','v_ms4_tpxo9_atlas_30_v4',
+            'v_mn4_tpxo9_atlas_30_v4','v_2n2_tpxo9_atlas_30_v4']
+        model_file = {}
+        for key,val in model_files.items():
+            model_file[key] = [os.path.join(model_directory,m) for m in val]
+        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        model_format = 'OTIS'
+        EPSG = '4326'
+        TYPES = ['u','v']
     elif (TIDE_MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
         model_file = os.path.join(tide_dir,'TPXO9.1','DATA','u_tpxo9.v1')
@@ -257,6 +312,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         model_format = 'FES'
         TYPES = ['u','v']
         model_scale = 1.0
+        GZIP = True
 
     #-- invalid value
     fill_value = -9999.0
@@ -341,6 +397,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
     #-- number of time points
     nt = len(tide_time)
+    #-- delta time (TT - UT1) file
+    delta_file = get_data_path(['data','merged_deltat.data'])
 
     #-- python dictionary with output data
     output = {'time':tide_time,'lon':lon,'lat':lat}
@@ -354,16 +412,15 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             deltat = np.zeros((nt))
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
-                model_directory, grid_file, model_files[t], TYPE=t,
-                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale,
-                GZIP=GZIP)
+                grid_file, model_file[t], TYPE=t, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale, GZIP=GZIP)
             deltat = np.zeros((nt))
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
                 model_directory[t], model_files, TYPE=t, VERSION=TIDE_MODEL,
-                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale)
+                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale,
+                GZIP=GZIP)
             #-- interpolate delta times from calendar dates to tide time
-            delta_file = get_data_path(['data','merged_deltat.data'])
             deltat = calc_delta_time(delta_file, tide_time)
 
         #-- calculate complex phase in radians for Euler's
@@ -435,8 +492,8 @@ def main():
         help='Working data directory')
     #-- tide model to use
     model_choices = ('CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
-        'TPXO9.1','TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018',
-        'FES2014')
+        'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9.1','TPXO8-atlas','TPXO7.2',
+        'AODTM-5','AOTIM-5','AOTIM-5-2018','FES2014')
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, default='CATS2008',
         choices=model_choices,

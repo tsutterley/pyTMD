@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat_GLA12.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (03/2021)
 Calculates tidal elevations for correcting ICESat/GLAS L2 GLA12
     Antarctic and Greenland Ice Sheet elevation data
 
@@ -21,6 +21,7 @@ COMMAND LINE OPTIONS:
         TPXO9-atlas
         TPXO9-atlas-v2
         TPXO9-atlas-v3
+        TPXO9-atlas-v4
         TPXO9.1
         TPXO8-atlas
         TPXO7.2
@@ -75,6 +76,8 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
+        simplified netcdf inputs to be similar to binary OTIS read program
     Updated 12/2020: updated for public release
         H5py deprecation warning change to use make_scale and not create_scale
         added valid data extrapolation with nearest_extrap
@@ -156,13 +159,14 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         TYPE = 'z'
     elif (TIDE_MODEL == 'TPXO9-atlas'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas')
-        grid_file = 'grid_tpxo9_atlas.nc.gz'
+        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas.nc.gz')
         model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
             'h_p1_tpxo9_atlas_30.nc.gz','h_k1_tpxo9_atlas_30.nc.gz',
             'h_n2_tpxo9_atlas_30.nc.gz','h_m2_tpxo9_atlas_30.nc.gz',
             'h_s2_tpxo9_atlas_30.nc.gz','h_k2_tpxo9_atlas_30.nc.gz',
             'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
             'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
         variable = 'd_ocElv'
         long_name = "Ocean Tide Elevation"
@@ -172,15 +176,17 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
+        GZIP = True
     elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
-        grid_file = 'grid_tpxo9_atlas_30_v2.nc.gz'
+        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
         model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
             'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
             'h_n2_tpxo9_atlas_30_v2.nc.gz','h_m2_tpxo9_atlas_30_v2.nc.gz',
             'h_s2_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
             'h_m4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
             'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         variable = 'd_ocElv'
         long_name = "Ocean Tide Elevation"
@@ -190,9 +196,10 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
+        GZIP = True
     elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
         model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
-        grid_file = 'grid_tpxo9_atlas_30_v3.nc.gz'
+        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v3.nc.gz')
         model_files = ['h_q1_tpxo9_atlas_30_v3.nc.gz','h_o1_tpxo9_atlas_30_v3.nc.gz',
             'h_p1_tpxo9_atlas_30_v3.nc.gz','h_k1_tpxo9_atlas_30_v3.nc.gz',
             'h_n2_tpxo9_atlas_30_v3.nc.gz','h_m2_tpxo9_atlas_30_v3.nc.gz',
@@ -200,6 +207,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             'h_m4_tpxo9_atlas_30_v3.nc.gz','h_ms4_tpxo9_atlas_30_v3.nc.gz',
             'h_mn4_tpxo9_atlas_30_v3.nc.gz','h_2n2_tpxo9_atlas_30_v3.nc.gz',
             'h_mf_tpxo9_atlas_30_v3.nc.gz','h_mm_tpxo9_atlas_30_v3.nc.gz']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         variable = 'd_ocElv'
         long_name = "Ocean Tide Elevation"
@@ -209,6 +217,27 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_format = 'netcdf'
         TYPE = 'z'
         SCALE = 1.0/1000.0
+        GZIP = True
+    elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
+        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v4')
+        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v4')
+        model_files = ['h_q1_tpxo9_atlas_30_v4','h_o1_tpxo9_atlas_30_v4',
+            'h_p1_tpxo9_atlas_30_v4','h_k1_tpxo9_atlas_30_v4',
+            'h_n2_tpxo9_atlas_30_v4','h_m2_tpxo9_atlas_30_v4',
+            'h_s2_tpxo9_atlas_30_v4','h_k2_tpxo9_atlas_30_v4',
+            'h_m4_tpxo9_atlas_30_v4','h_ms4_tpxo9_atlas_30_v4',
+            'h_mn4_tpxo9_atlas_30_v4','h_2n2_tpxo9_atlas_30_v4',
+            'h_mf_tpxo9_atlas_30_v4','h_mm_tpxo9_atlas_30_v4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
+        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        variable = 'd_ocElv'
+        long_name = "Ocean Tide Elevation"
+        description = ("Ocean Tides including diurnal and semi-diurnal "
+            "(harmonic analysis), and longer period tides (dynamic and "
+            "self-consistent equilibrium).")
+        model_format = 'OTIS'
+        EPSG = '4326'
+        TYPE = 'z'
     elif (TIDE_MODEL == 'TPXO9.1'):
         grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
         model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
@@ -308,6 +337,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "self-consistent equilibrium).")
         model_format = 'GOT'
         SCALE = 1.0/100.0
+        GZIP = True
     elif (TIDE_MODEL == 'GOT4.7_load'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
@@ -321,6 +351,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+        GZIP = True
     elif (TIDE_MODEL == 'GOT4.8'):
         model_directory = os.path.join(tide_dir,'got4.8','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -335,6 +366,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "self-consistent equilibrium).")
         model_format = 'GOT'
         SCALE = 1.0/100.0
+        GZIP = True
     elif (TIDE_MODEL == 'GOT4.8_load'):
         model_directory = os.path.join(tide_dir,'got4.8','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
@@ -348,6 +380,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+        GZIP = True
     elif (TIDE_MODEL == 'GOT4.10'):
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
@@ -362,6 +395,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             "self-consistent equilibrium).")
         model_format = 'GOT'
         SCALE = 1.0/100.0
+        GZIP = True
     elif (TIDE_MODEL == 'GOT4.10_load'):
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_loadtide')
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
@@ -375,6 +409,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
         model_format = 'GOT'
         SCALE = 1.0/1000.0
+        GZIP = True
     elif (TIDE_MODEL == 'FES2014'):
         model_directory = os.path.join(tide_dir,'fes2014','ocean_tide')
         model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
@@ -397,6 +432,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_format = 'FES'
         TYPE = 'z'
         SCALE = 1.0/100.0
+        GZIP = True
     elif (TIDE_MODEL == 'FES2014_load'):
         model_directory = os.path.join(tide_dir,'fes2014','load_tide')
         model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
@@ -417,6 +453,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_format = 'FES'
         TYPE = 'z'
         SCALE = 1.0/100.0
+        GZIP = True
 
     #-- get directory from FILE
     print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
@@ -466,6 +503,8 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     #-- J2000: seconds since 2000-01-01 12:00:00 UTC
     tide_time = pyTMD.time.convert_delta_time(DS_UTCTime_40HZ,
         epoch1=(2000,1,1,12,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
+    #-- delta time (TT - UT1) file
+    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(lon_40HZ, lat_40HZ, grid_file,
@@ -473,22 +512,21 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             GRID=model_format)
         deltat = np.zeros_like(tide_time)
     elif (model_format == 'netcdf'):
-        amp,ph,D,c = extract_netcdf_constants(lon_40HZ, lat_40HZ, model_directory,
-            grid_file, model_files, TYPE=TYPE, METHOD=METHOD, 
-            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+        amp,ph,D,c = extract_netcdf_constants(lon_40HZ, lat_40HZ, grid_file,
+            model_file, TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+            SCALE=SCALE, GZIP=GZIP)
         deltat = np.zeros_like(tide_time)
     elif (model_format == 'GOT'):
         amp,ph = extract_GOT_constants(lon_40HZ, lat_40HZ, model_directory,
-            model_files, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+            model_files, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+            SCALE=SCALE, GZIP=GZIP)
         #-- interpolate delta times from calendar dates to tide time
-        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, tide_time)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon_40HZ, lat_40HZ, model_directory,
             model_files, TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE)
+            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
         #-- interpolate delta times from calendar dates to tide time
-        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, tide_time)
 
     #-- calculate complex phase in radians for Euler's
@@ -717,7 +755,7 @@ def main():
         help='Working data directory')
     #-- tide model to use
     model_choices = ('CATS0201','CATS2008','CATS2008_load',
-        'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+        'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
         'TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
         'AODTM-5','AOTIM-5','AOTIM-5-2018',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',

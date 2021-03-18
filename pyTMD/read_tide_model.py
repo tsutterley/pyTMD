@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
+        can read from single constituent TPXO9 ATLAS binary files
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -81,6 +82,7 @@ import scipy.interpolate
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
+import matplotlib.pyplot as plt
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
@@ -97,13 +99,15 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     grid_file: grid file for model
     model_file: model file containing each constituent
     EPSG: projection of tide model data
-    TYPE: tidal variable to run
-        z: heights
-        u: horizontal transport velocities
-        v: vertical transport velocities
 
     Keyword arguments
     -----------------
+    TYPE: tidal variable to read
+        z: heights
+        u: horizontal transport velocities
+        U: horizontal depth-averaged transport
+        v: vertical transport velocities
+        V: vertical depth-averaged transport
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -132,7 +136,6 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     #-- adjust dimensions of input coordinates to be iterable
     #-- run wrapper function to convert coordinate systems of input lat/lon
     x,y = convert_ll_xy(np.atleast_1d(ilon),np.atleast_1d(ilat),EPSG,'F')
-    invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
     #-- grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -159,6 +162,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     if (np.max(x) > np.max(xi)) & (EPSG == '4326'):
         gt180, = np.nonzero(x > 180)
         x[gt180] -= 360.0
+    #-- determine if any input points are outside of the model bounds
+    invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
 
     #-- masks zero values
     hz = np.ma.array(hz,mask=(hz==0))
@@ -219,7 +224,12 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         unit_conv = 1.0
 
     #-- read and interpolate each constituent
-    constituents,nc = read_constituents(model_file)
+    if isinstance(model_file,list):
+        constituents = [read_constituents(m)[0].pop() for m in model_file]
+        nc = len(constituents)
+    else:
+        constituents,nc = read_constituents(model_file)
+    #-- number of output data points
     npts = len(D)
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc),dtype=bool)
@@ -231,6 +241,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             if (GRID == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file,i,c)
                 xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,VARIABLE='z')
+            elif isinstance(model_file,list):
+                z = read_elevation_file(model_file[i],0)
             else:
                 z = read_elevation_file(model_file,i)
             #-- replace original values with extend matrices
@@ -288,6 +300,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             if (GRID == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
                 xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,VARIABLE='u')
+            elif isinstance(model_file,list):
+                u,v = read_transport_file(model_file[i],0)
             else:
                 u,v = read_transport_file(model_file,i)
             #-- replace original values with extend matrices
@@ -346,6 +360,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             if (GRID == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
                 xi,yi,v = combine_atlas_model(x0,y0,v0,pmask,local,VARIABLE='v')
+            elif isinstance(model_file,list):
+                u,v = read_transport_file(model_file[i],0)
             else:
                 u,v = read_transport_file(model_file,i)
             #-- replace original values with extend matrices

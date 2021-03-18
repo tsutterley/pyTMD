@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
+        use uuid for reading from gzipped netCDF4 files
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added nearest-neighbor data extrapolation
@@ -64,6 +65,7 @@ UPDATE HISTORY:
 """
 import os
 import gzip
+import uuid
 import netCDF4
 import numpy as np
 import scipy.interpolate
@@ -89,11 +91,11 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
 
     Keyword arguments
     -----------------
-    TYPE: tidal variable to run
+    TYPE: tidal variable to read
         z: heights
         u: horizontal transport velocities
         v: vertical transport velocities
-    VERSION: model version to run
+    VERSION: model version to read
         FES1999
         FES2004
         FES2012
@@ -299,10 +301,10 @@ def read_netcdf_file(input_file,GZIP=False,TYPE=None,VERSION=None):
     """
     #-- read the netcdf format tide elevation file
     if GZIP:
-        f = gzip.open(input_file,'rb')
-        fileID = netCDF4.Dataset(input_file,'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file),'rb')
+        fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
     else:
-        fileID = netCDF4.Dataset(input_file,'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- variable dimensions for each model
     if (VERSION == 'FES2012'):
         lon = fileID.variables['longitude'][:]
