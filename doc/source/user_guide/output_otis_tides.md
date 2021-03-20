@@ -13,7 +13,7 @@ output_otis_transport(transport_file,u,v,xlim,ylim,constituents)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/output_otis_tides.py)
 
-#### Inputs
+#### Arguments
  - `output_otis_grid()`
     1. `grid_file`: output OTIS grid file name
     2. `xlim`: x-coordinate grid-cell edges of output grid

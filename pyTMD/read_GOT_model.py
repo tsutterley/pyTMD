@@ -9,7 +9,6 @@ Includes functions to extract tidal harmonic constants out of a tidal model for
 INPUTS:
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    directory: data directory for tide data files
     model_files: list of model files for each constituent
 
 OPTIONS:
@@ -24,6 +23,7 @@ OPTIONS:
 OUTPUTS:
     amplitude: amplitudes of tidal constituents
     phase: phases of tidal constituents
+    constituents: list of model constituents
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
+        simplified inputs to be similar to binary OTIS read program
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -59,6 +60,7 @@ UPDATE HISTORY:
 from __future__ import division
 
 import os
+import re
 import gzip
 import numpy as np
 import scipy.interpolate
@@ -66,8 +68,8 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
-def extract_GOT_constants(ilon, ilat, directory, model_files,
-    METHOD=None, EXTRAPOLATE=False, GZIP=True, SCALE=1):
+def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
+    EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
     """
     Reads files for Richard Ray's Global Ocean Tide (GOT) models
     Makes initial calculations to run the tide program
@@ -77,7 +79,6 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     ---------
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    directory: data directory for tide data files
     model_files: list of model files for each constituent
 
     Keyword arguments
@@ -94,6 +95,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     -------
     amplitude: amplitudes of tidal constituents
     phase: phases of tidal constituents
+    constituents: list of model constituents
     """
 
     #-- adjust dimensions of input coordinates to be iterable
@@ -108,6 +110,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     #-- number of points
     npts = len(ilon)
     #-- amplitude and phase
+    constituents = []
     nc = len(model_files)
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc),dtype=bool)
@@ -116,8 +119,10 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     #-- read and interpolate each constituent
     for i,model_file in enumerate(model_files):
         #-- read constituent from elevation file
-        hc,lon,lat = read_GOT_grid(os.path.join(directory,model_file),
+        hc,lon,lat,cons = read_GOT_grid(os.path.expanduser(model_file),
             GZIP=GZIP)
+        #-- append to the list of constituents
+        constituents.append(cons)
         #-- grid step size of tide model
         dlon = np.abs(lon[1] - lon[0])
         dlat = np.abs(lat[1] - lat[0])
@@ -187,7 +192,7 @@ def extract_GOT_constants(ilon, ilat, directory, model_files,
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value
     #-- return the interpolated values
-    return (amplitude,phase)
+    return (amplitude,phase,constituents)
 
 #-- PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
@@ -247,15 +252,19 @@ def read_GOT_grid(input_file, GZIP=False):
     hc: complex form of tidal constituent oscillation
     lon: longitude of tidal model
     lat: latitude of tidal model
+    cons: tidal constituent ID
     """
     #-- read input tide model file
     if GZIP:
         with gzip.open(os.path.expanduser(input_file),'rb') as f:
-            file_contents = f.read().splitlines()
+            file_contents = f.read().decode('utf-8').splitlines()
     else:
         with open(os.path.expanduser(input_file),'r') as f:
             file_contents = f.read().splitlines()
     #-- parse header text
+    constituent_list = ['Q1','O1','P1','K1','N2','M2','S2','K2','S1','M4']
+    regex = re.compile(r'|'.join(constituent_list), re.IGNORECASE)
+    cons = regex.findall(file_contents[0]).pop().lower()
     nlat,nlon = np.array(file_contents[2].split(), dtype=np.int)
     #-- longitude range
     ilat = np.array(file_contents[3].split(), dtype=np.float)
@@ -293,4 +302,4 @@ def read_GOT_grid(input_file, GZIP=False):
     #-- set masks
     hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
     #-- return output variables
-    return (hc,lon,lat)
+    return (hc,lon,lat,cons)

@@ -12,14 +12,14 @@ dh = infer_minor_corrections(t, zmajor, constituents,
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/infer_minor_corrections.py)
 
-#### Inputs
+#### Arguments
  1. `t`: days relative to Jan 1, 1992 (48622mjd)
  2. `zmajor`: Complex oscillations for given constituents/points
  3. `constituents`: tidal constituent IDs
 
-#### Options
+#### Keyword arguments
  - `DELTAT`: time correction for converting to Ephemeris Time (days)
  - `CORRECTIONS`: use nodal corrections from OTIS/ATLAS or GOT models
 
-#### Outputs
+#### Returns
  - `dh`: height from minor constituents

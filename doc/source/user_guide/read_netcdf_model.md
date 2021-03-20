@@ -11,13 +11,13 @@ amp,ph,D,c = read_netcdf_model(ilon,ilat,grid_file,model_files,TYPE='z',METHOD='
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_netcdf_model.py)
 
-#### Inputs
+#### Arguments
   1. `ilon`: longitude to interpolate
   2. `ilat`: latitude to interpolate
   3. `grid_file`: grid file for model
   4. `model_files`: list of model files for each constituent
 
-#### Options
+#### Keyword arguments
  - `TYPE`: tidal variable to read
     * `'z'`: heights
     * `'u'`: horizontal transport velocities
@@ -31,7 +31,7 @@ amp,ph,D,c = read_netcdf_model(ilon,ilat,grid_file,model_files,TYPE='z',METHOD='
  - `GZIP`: input netCDF4 files are compressed
  - `SCALE`: scaling factor for converting to output units
 
-#### Outputs
+#### Returns
  - `amplitude`: amplitudes of tidal constituents
  - `phase`: phases of tidal constituents
  - `D`: bathymetry of tide model

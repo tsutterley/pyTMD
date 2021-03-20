@@ -13,7 +13,6 @@ Reads ascii and netCDF4 FES tidal solutions provided by AVISO
 INPUTS:
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    directory: data directory for tide data files
     model_files: list of model files for each constituent (can be gzipped)
     TYPE: tidal variable to run
         z: heights
@@ -54,6 +53,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
+        simplified inputs to be similar to binary OTIS read program
         use uuid for reading from gzipped netCDF4 files
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
@@ -73,9 +73,8 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_FES_constants(ilon, ilat, directory, model_files,
-    TYPE='z', VERSION=None, METHOD='spline', EXTRAPOLATE=False,
-    GZIP=True, SCALE=1):
+def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
+    METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
     """
     Reads files for an ascii or netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -85,7 +84,6 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
     ---------
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    directory: data directory for tide data files
     grid_file: grid file for model (can be gzipped)
     model_files: list of model files for each constituent (can be gzipped)
 
@@ -136,11 +134,13 @@ def extract_FES_constants(ilon, ilat, directory, model_files,
     for i,fi in enumerate(model_files):
         #-- read constituent from elevation file
         if VERSION in ('FES1999','FES2004'):
-            hc,lon,lat = read_ascii_file(os.path.join(directory,fi),
-                GZIP=GZIP,TYPE=TYPE,VERSION=VERSION)
+            #-- FES ascii constituent files
+            hc,lon,lat = read_ascii_file(os.path.expanduser(fi),
+                GZIP=GZIP, TYPE=TYPE, VERSION=VERSION)
         elif VERSION in ('FES2012','FES2014'):
-            hc,lon,lat = read_netcdf_file(os.path.join(directory,fi),
-                GZIP=GZIP,TYPE=TYPE,VERSION=VERSION)
+            #-- FES netCDF4 constituent files
+            hc,lon,lat = read_netcdf_file(os.path.expanduser(fi),
+                GZIP=GZIP, TYPE=TYPE, VERSION=VERSION)
         #-- interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts),dtype=hc.dtype,fill_value=hc.fill_value)
         hci.mask = np.zeros((npts),dtype=bool)

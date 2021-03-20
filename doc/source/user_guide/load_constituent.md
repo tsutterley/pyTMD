@@ -10,10 +10,10 @@ amplitude,phase,omega,alpha,species = load_constituent(c)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/load_constituent.py)
 
-#### Inputs
+#### Arguments
  1. `c`: tidal constituent IDs
 
-#### Outputs
+#### Returns
  - `amplitude`: amplitude of equilibrium tide in m for tidal constituent
  - `phase`: phase of tidal constituent
  - `omega`: angular frequency of constituent in radians

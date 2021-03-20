@@ -15,14 +15,14 @@ amp,ph,D,c = read_tide_model(ilon, ilat, grid_file, model_file, EPSG,
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_tide_model.py)
 
-#### Inputs
+#### Arguments
  1. `ilon`: longitude to interpolate
  2. `ilat`: latitude to interpolate
  3. `grid_file`: grid file for model
  4. `model_file`: model file(s) containing constituent data
  5. `EPSG`: projection of tide model data
 
-#### Options
+#### Keyword arguments
  - `TYPE`: tidal variable to read
     * `'z'`: heights
     * `'u'`: horizontal transport velocities
@@ -37,7 +37,7 @@ amp,ph,D,c = read_tide_model(ilon, ilat, grid_file, model_file, EPSG,
     * `'ATLAS'`: reading a global solution with high-resolution local solutions
     * `'OTIS'`: combined global solution
 
-#### Outputs
+#### Returns
  - `amplitude`: amplitudes of tidal constituents
  - `phase`: phases of tidal constituents
  - `D`: bathymetry of tide model

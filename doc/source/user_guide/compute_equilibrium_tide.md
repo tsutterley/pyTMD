@@ -2,7 +2,7 @@ compute_equilibrium_tide.py
 ===========================
 
  - Calculates the long-period equilibrium ocean tides using fifteen spectral lines from Cartwright-Tayler-Edden tables
- - Can be used to calculate tidal corrections for imagery  
+ - Can be used to calculate tidal corrections for imagery
 
 #### Calling Sequence
 ```python
@@ -11,9 +11,9 @@ lpet = compute_equilibrium_tide(time,lat)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_equilibrium_tide.py)
 
-#### Inputs
+#### Arguments
  1. `t`: days relative to Jan 1, 1992 (48622mjd)
  2. `lat`: latitudes in degrees
 
-#### Outputs
+#### Returns
  - `lpet`: long-period equilibrium tide values

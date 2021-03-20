@@ -41,9 +41,9 @@ General Methods
 
     Read data from an ascii file
 
-    Inputs: full path of input ascii file
+    Arguments: full path of input ascii file
 
-    Options:
+    Keyword arguments:
 
         ``compression`` ascii file is compressed or streamed from memory
 
@@ -58,9 +58,9 @@ General Methods
 
     Read data from a netCDF4 file
 
-    Inputs: full path of input netCDF4 file
+    Arguments: full path of input netCDF4 file
 
-    Options:
+    Keyword arguments:
 
         ``compression`` netCDF4 file is compressed or streamed from memory
 
@@ -79,9 +79,9 @@ General Methods
 
     Read data from a HDF5 file
 
-    Inputs: full path of input HDF5 file
+    Arguments: full path of input HDF5 file
 
-    Options:
+    Keyword arguments:
 
         ``compression`` HDF5 file is compressed or streamed from memory
 
@@ -100,9 +100,9 @@ General Methods
 
     Read data from a geotiff file
 
-    Inputs: full path of input geotiff file
+    Arguments: full path of input geotiff file
 
-    Options:
+    Keyword arguments:
 
         ``compression`` geotiff file is compressed using gzip
 
@@ -113,7 +113,7 @@ General Methods
 
     Write data to an ascii file
 
-    Inputs:
+    Arguments:
 
         ``output`` python dictionary of output data
 
@@ -121,7 +121,7 @@ General Methods
 
         ``filename`` full path of output ascii file
 
-    Options:
+    Keyword arguments:
 
         ``delimiter`` for output spatial file
 
@@ -136,7 +136,7 @@ General Methods
 
     Write data to a netCDF4 file
 
-    Inputs:
+    Arguments:
 
         ``output`` python dictionary of output data
 
@@ -144,7 +144,7 @@ General Methods
 
         ``filename`` full path of output netCDF4 file
 
-    Options:
+    Keyword arguments:
 
         ``verbose`` print netCDF4 file information
 
@@ -153,7 +153,7 @@ General Methods
 
     Write data to a HDF5 file
 
-    Inputs:
+    Arguments:
 
         ``output`` python dictionary of output data
 
@@ -161,7 +161,7 @@ General Methods
 
         ``filename`` full path of output HDF5 file
 
-    Options:
+    Keyword arguments:
 
         ``verbose`` print HDF5 file information
 
@@ -170,7 +170,7 @@ General Methods
 
     Write data to a HDF5 file
 
-    Inputs:
+    Arguments:
 
         ``output`` python dictionary of output data
 
@@ -178,8 +178,7 @@ General Methods
 
         ``filename`` full path of output HDF5 file
 
-
-    Options:
+    Keyword arguments:
 
         ``verbose`` print geotiff filename
 
@@ -192,7 +191,7 @@ General Methods
 
     Add a singleton dimension to a spatial dictionary if non-existent
 
-    Options:
+    Keyword arguments:
 
         ``varname``: variable name to modify
 
@@ -201,7 +200,7 @@ General Methods
 
     Convert latitudes and heights to a different ellipsoid using Newton-Raphson
 
-    Inputs:
+    Arguments:
 
         ``phi1``: latitude of input ellipsoid in degrees
 
@@ -215,13 +214,11 @@ General Methods
 
         ``f2``: flattening of output ellipsoid
 
-
-    Options:
+    Keyword arguments:
 
         ``eps``: tolerance to prevent division by small numbers and to determine convergence
 
         ``itmax``: maximum number of iterations to use in Newton-Raphson
-
 
     Returns:
 
@@ -234,14 +231,13 @@ General Methods
 
     Converts geodetic coordinates to Cartesian coordinates
 
-    Inputs:
+    Arguments:
 
         ``lon``: longitude
 
         ``lat``: latitude
 
-
-    Options:
+    Keyword arguments:
 
         ``h``: height
 
@@ -258,7 +254,7 @@ General Methods
 
     Convert from Cartesian coordinates to spherical coordinates
 
-    Inputs:
+    Arguments:
 
         ``x``, ``y``, ``z`` in Cartesian coordinates
 
@@ -275,11 +271,11 @@ General Methods
 
     Convert from Cartesian coordinates to geodetic coordinates using `a closed form solution <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
 
-    Inputs:
+    Arguments:
 
         ``x``, ``y``, ``z`` in Cartesian coordinates
 
-    Options:
+    Keyword arguments:
 
         ``a_axis``: semimajor axis of the ellipsoid
 
@@ -298,11 +294,11 @@ General Methods
 
     Calculates area scaling factors for a polar stereographic projection
 
-    Inputs:
+    Arguments:
 
         ``lat``: latitude
 
-    Options:
+    Keyword arguments:
 
         ``flat``: ellipsoidal flattening
 

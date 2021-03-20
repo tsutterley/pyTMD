@@ -314,7 +314,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
             'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
             'MiscPubs/19990089548_1999150788.pdf')
         variable = 'tide_ocean'
@@ -330,7 +330,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
             'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
             's1load.d.gz','m4load.d.gz']
-        c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
             'MiscPubs/19990089548_1999150788.pdf')
         variable = 'tide_load'
@@ -343,7 +343,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_directory = os.path.join(tide_dir,'got4.8','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
             'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
             'MiscPubs/19990089548_1999150788.pdf')
         variable = 'tide_ocean'
@@ -359,7 +359,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
             'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
             's1load.d.gz','m4load.d.gz']
-        c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
             'MiscPubs/19990089548_1999150788.pdf')
         variable = 'tide_load'
@@ -372,7 +372,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_directory = os.path.join(tide_dir,'GOT4.10c','grids_oceantide')
         model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
             'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
             'MiscPubs/19990089548_1999150788.pdf')
         variable = 'tide_ocean'
@@ -388,7 +388,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
             'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
             's1load.d.gz','m4load.d.gz']
-        c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
             'MiscPubs/19990089548_1999150788.pdf')
         variable = 'tide_load'
@@ -406,6 +406,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
             'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
             'ssa.nc.gz','t2.nc.gz']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
             'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
             'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
@@ -429,6 +430,7 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
             'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
             'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
             'ssa.nc.gz','t2.nc.gz']
+        model_file = [os.path.join(model_directory,m) for m in model_files]
         c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
             'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
             'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
@@ -546,17 +548,16 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
                     GZIP=GZIP)
                 deltat = np.zeros_like(tide_time)
             elif (model_format == 'GOT'):
-                amp,ph = extract_GOT_constants(longitude[track],
-                    latitude[track], model_directory, model_files,
-                    METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE,
-                    GZIP=GZIP)
+                amp,ph,c = extract_GOT_constants(longitude[track],
+                    latitude[track], model_file, METHOD=METHOD,
+                    EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
                 #-- interpolate delta times from calendar dates to tide time
                 deltat = calc_delta_time(delta_file, tide_time)
             elif (model_format == 'FES'):
                 amp,ph = extract_FES_constants(longitude[track],
-                    latitude[track], model_directory, model_files,
-                    TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
-                    EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+                    latitude[track], model_file, TYPE=TYPE,
+                    VERSION=TIDE_MODEL, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                    SCALE=SCALE, GZIP=GZIP)
                 #-- interpolate delta times from calendar dates to tide time
                 deltat = calc_delta_time(delta_file, tide_time)
 
