@@ -82,6 +82,7 @@ def test_verify_FES2014():
     model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
         'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
         'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
     c = ['2n2','k1','k2','m2','m4','mf','mm','msqm','mtm','n2','o1',
         'p1','q1','s1','s2']
     model_format = 'FES'
@@ -108,8 +109,7 @@ def test_verify_FES2014():
 
     #-- extract amplitude and phase from tide model
     amp,ph = pyTMD.read_FES_model.extract_FES_constants(longitude, latitude,
-        model_directory, model_files, TYPE=TYPE, VERSION=VERSION,
-        METHOD='spline', SCALE=SCALE)
+        model_file, TYPE=TYPE, VERSION=VERSION, METHOD='spline', SCALE=SCALE)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)

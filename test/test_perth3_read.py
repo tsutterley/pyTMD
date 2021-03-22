@@ -82,7 +82,8 @@ def test_verify_GOT47(METHOD):
     #-- perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    c = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model_format = 'GOT'
     SCALE = 1.0
 
@@ -109,8 +110,9 @@ def test_verify_GOT47(METHOD):
     tide_time = MJD - 48622.0
 
     #-- extract amplitude and phase from tide model
-    amp,ph = pyTMD.read_GOT_model.extract_GOT_constants(longitude, latitude,
-        model_directory, model_files, METHOD=METHOD, SCALE=SCALE)
+    amp,ph,cons = pyTMD.read_GOT_model.extract_GOT_constants(longitude,
+        latitude, model_file, METHOD=METHOD, SCALE=SCALE)
+    assert all(c in constituents for c in cons)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)
@@ -124,9 +126,9 @@ def test_verify_GOT47(METHOD):
     tide.mask = np.zeros((npts),dtype=bool)
     #-- predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
-    tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,
+    tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, cons,
         DELTAT=deltat, CORRECTIONS=model_format)
-    minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
+    minor = pyTMD.infer_minor_corrections(tide_time, hc, cons,
         DELTAT=deltat, CORRECTIONS=model_format)
     tide.data[:] += minor.data[:]
 

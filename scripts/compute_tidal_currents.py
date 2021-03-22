@@ -21,8 +21,10 @@ COMMAND LINE OPTIONS:
     -T X, --tide X: Tide model to use in correction
         CATS0201
         CATS2008
-        TPXO9-atlas-v2
         TPXO9-atlas
+        TPXO9-atlas-v2
+        TPXO9-atlas-v3
+        TPXO9-atlas-v4
         TPXO9.1
         TPXO8-atlas
         TPXO7.2
@@ -295,6 +297,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
             'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
             'ssa.nc.gz','t2.nc.gz']
+        model_file = {}
+        for key,val in model_directory.items():
+            model_file[key] = [os.path.join(val,m) for m in model_files]
         c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
             'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
             'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
@@ -408,9 +413,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             deltat = np.zeros((nt))
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
-                model_directory[t], model_files, TYPE=t, VERSION=TIDE_MODEL,
-                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale,
-                GZIP=GZIP)
+                model_file[t], TYPE=t, VERSION=TIDE_MODEL, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale, GZIP=GZIP)
             #-- interpolate delta times from calendar dates to tide time
             deltat = calc_delta_time(delta_file, tide_time)
 

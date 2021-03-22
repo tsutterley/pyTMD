@@ -9,18 +9,17 @@ read_FES_model.py
 #### Calling Sequence
 ```python
 from pyTMD.read_FES_model import read_FES_model
-amp,ph = read_FES_model(ilon,ilat,directory,model_files,TYPE='z',
+amp,ph = read_FES_model(ilon, ilat, model_files, TYPE='z',
     VERSION=version,METHOD='spline',GZIP=True,SCALE=1.0/100.0)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_FES_model.py)
 
-#### Inputs
+#### Arguments
   1. `ilon`: longitude to interpolate
   2. `ilat`: latitude to interpolate
-  3. `directory`: data directory for tide data files
-  4. `model_files`: list of model files for each constituent
+  3. `model_files`: list of model files for each constituent
 
-#### Options
+#### Keyword arguments
 - `TYPE`: tidal variable to read
    * `'z'`: heights
    * `'u'`: horizontal transport velocities
@@ -37,6 +36,6 @@ amp,ph = read_FES_model(ilon,ilat,directory,model_files,TYPE='z',
  - `GZIP`: input files are compressed
  - `SCALE`: scaling factor for converting to output units
 
-#### Outputs
+#### Returns
 - `amplitude`: amplitudes of tidal constituents
 - `phase`: phases of tidal constituents

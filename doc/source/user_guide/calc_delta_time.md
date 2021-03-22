@@ -10,11 +10,11 @@ deltat = calc_delta_time(delta_file, idays)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/calc_delta_time.py)
 
-#### Inputs
- 1. `delta_file`:  
-    - http://maia.usno.navy.mil/ser7/deltat.data  
-    - ftp://cddis.nasa.gov/products/iers/deltat.data  
- 2. `idays`: times to interpolate as days since 1992-01-01T00:00:00  
+#### Arguments
+ 1. `delta_file`:
+    - http://maia.usno.navy.mil/ser7/deltat.data
+    - ftp://cddis.nasa.gov/products/iers/deltat.data
+ 2. `idays`: times to interpolate as days since 1992-01-01T00:00:00
 
-#### Outputs
+#### Returns
  - `deltat`: (TT - UT1) in days

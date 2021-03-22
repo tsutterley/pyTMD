@@ -14,12 +14,12 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py)
 
-#### Inputs
+#### Arguments
  1. `x`: x-coordinates in projection EPSG
  2. `y`: y-coordinates in projection EPSG
  3. `delta_time`: seconds since EPOCH
 
-#### Options
+#### Keyword arguments
  - `DIRECTORY`: working data directory for tide models
  - `MODEL`: Tide model to use in correction
  - `EPOCH`: time period for calculating delta times
@@ -40,5 +40,5 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
  - `EXTRAPOLATE`: Extrapolate with nearest-neighbors
  - `FILL_VALUE`: output invalid value
 
-#### Outputs
+#### Returns
  - `tide`: tide height correction reconstructed using the nodal corrections

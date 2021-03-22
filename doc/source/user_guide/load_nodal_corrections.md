@@ -11,11 +11,11 @@ pu,pf,G = load_nodal_corrections(MJD,constituents)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/load_nodal_corrections.py)
 
-#### Inputs
+#### Arguments
  1. `MJD`: Modified Julian Day of input date
  2. `zmajor`: Complex oscillations for given constituents/points
  3. `constituents`: tidal constituent IDs
 
-#### Outputs
+#### Returns
  -  `pu`,`pf`: nodal corrections for the constituents
  - `G`: phase correction in degrees

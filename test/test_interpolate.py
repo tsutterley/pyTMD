@@ -103,7 +103,7 @@ def test_interpolate(METHOD, N=324):
 	# calculate functional values at output points
 	FI = np.ma.zeros((ny,nx))
 	FI.data[:] = franke_3d(X,Y,Z)
-	FI.mask = np.zeros((ny,nx),dtype=np.bool)
+	FI.mask = np.zeros((ny,nx),dtype=bool)
 	# use interpolation routines to get values
 	if (METHOD == 'bilinear'):
 		# use quick bilinear to interpolate values
@@ -143,7 +143,7 @@ def test_extrapolate(N=324):
 	# calculate functional values at output points
 	FI = np.ma.zeros((ny,nx))
 	FI.data[:] = franke_3d(X,Y,Z)
-	FI.mask = np.zeros((ny,nx),dtype=np.bool)
+	FI.mask = np.zeros((ny,nx),dtype=bool)
 	# use nearest neighbors extrapolation to points
 	test = pyTMD.nearest_extrap(LON,LAT,FI,lon,lat,EPSG='4326')
 	# verify that coordinates are within tolerance
@@ -164,7 +164,7 @@ def test_extrapolation_checks(N=324):
 	ny,nx = (len(LAT),len(LON))
 	# calculate functional values at output points
 	FI = np.ma.zeros((ny,nx))
-	FI.mask = np.ones((ny,nx),dtype=np.bool)
+	FI.mask = np.ones((ny,nx),dtype=bool)
 	# use nearest neighbors extrapolation to points
 	# in case where there are no valid grid points
 	test = pyTMD.nearest_extrap(LON,LAT,FI,lon,lat,EPSG='4326')

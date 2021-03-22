@@ -10,11 +10,11 @@ umajor,uminor,uincl,uphase = tidal_ellipse(u,v)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/tidal_ellipse.py)
 
-#### Inputs
+#### Arguments
  1. `u`: zonal current (EW)
  2. `v`: meridional current (NS)
 
-#### Outputs
+#### Returns
  - `umajor`: amplitude of the semimajor semi-axis
  - `uminor`: amplitude of the semiminor semi-axis
  - `uincl`: angle of inclination of the northern semimajor semi-axis

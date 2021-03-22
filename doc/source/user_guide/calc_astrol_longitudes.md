@@ -12,14 +12,14 @@ s,h,p,N,PP = calc_astrol_longitudes(MJD, ASTRO5=True)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/calc_astrol_longitudes.py)
 
-#### Inputs
+#### Arguments
  1. `MJD`: Modified Julian Day of input date
 
-#### Options
+#### Keyword arguments
  - `MEEUS`: use additional coefficients from Meeus Astronomical Algorithms
  - `ASTRO5`: use Meeus Astronomical coefficients as implemented in ASTRO5
 
-#### Outputs
+#### Returns
  - `s`: mean longitude of moon (degrees)
  - `h`: mean longitude of sun (degrees)
  - `p`: mean longitude of lunar perigee (degrees)

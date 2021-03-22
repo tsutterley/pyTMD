@@ -12,15 +12,15 @@ x,y,flag = iers_mean_pole(input_file,input_epoch,version,FILL_VALUE=FILL_VALUE)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/iers_mean_pole.py)
 
-#### Inputs
+#### Arguments
  1. `input_file`: full path to mean-pole.tab file provided by IERS
- 2. `input_epoch`: dates for which the angular coordinates of the Conventional Mean Pole are desired in decimal years  
+ 2. `input_epoch`: dates for which the angular coordinates of the Conventional Mean Pole are desired in decimal years
  3. `version`: Year of the conventional model (2003, 2010, 2015)
 
-#### Options
+#### Keyword arguments
  - `FILL_VALUE`: value for invalid flags
 
-#### Outputs
+#### Returns
  - `x`: Angular coordinate x of conventional mean pole [arcsec]
  - `y`: Angular coordinate y of conventional mean pole [arcsec]
  - `flag`: epoch is valid for version and version number is valid

@@ -1,8 +1,8 @@
 read_iers_EOP.py
 ================
 
- - Provides the [daily earth orientation parameters (EOP) from IERS](http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly)  
- - Data format: http://maia.usno.navy.mil/ser7/readme.finals  
+ - Provides the [daily earth orientation parameters (EOP) from IERS](http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly)
+ - Data format: http://maia.usno.navy.mil/ser7/readme.finals
 
 #### Calling Sequence
 ```python
@@ -11,10 +11,10 @@ MJD,x,y,flag = read_iers_EOP(input_file)
 ```
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_iers_EOP.py)
 
-#### Inputs
+#### Arguments
  1. `input_file`:  full path to IERS EOP "finals" file
 
-#### Outputs
+#### Returns
  - `MJD`: modified Julian date of EOP measurements
  - `x`: Angular coordinate [arcsec]
  - `y`: Angular coordinate [arcsec]

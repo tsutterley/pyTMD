@@ -35,13 +35,14 @@ General Methods
 
         ``local``: BytesIO object or path to file
 
-    Keyword Arguments:
+    Keyword arguments:
 
         ``algorithm``: hashing algorithm for checksum validation
 
             ``'MD5'``: Message Digest
 
             ``'sha1'``: Secure Hash Algorithm
+
 
 .. method:: pyTMD.utilities.url_split(s)
 
