@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_iers_EOP.py
-Written by Tyler Sutterley (07/2020)
+Written by Tyler Sutterley (03/2021)
 Provides the daily earth orientation parameters (EOP) from IERS
     http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly
 Data format: http://maia.usno.navy.mil/ser7/readme.finals
@@ -25,6 +25,7 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 07/2020: added function docstrings
     Written 09/2017
 """
@@ -62,13 +63,13 @@ def read_iers_EOP(input_file):
     while (flag == 'I'):
         line = file_contents[counter]
         i = 2+2+2+1; j = i+8
-        dinput['MJD'][counter] = np.float(line[i:j])
+        dinput['MJD'][counter] = np.float64(line[i:j])
         i = j+1
         flag = line[i]
         i += 2; j = i+9
-        dinput['x'][counter] = np.float(line[i:j])
+        dinput['x'][counter] = np.float64(line[i:j])
         i = j+10; j = i+9
-        dinput['y'][counter] = np.float(line[i:j])
+        dinput['y'][counter] = np.float64(line[i:j])
         counter += 1
     #-- reduce to data values
     dinput['MJD'] = dinput['MJD'][:counter]

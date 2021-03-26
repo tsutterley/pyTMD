@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat2_ATL12.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (03/2021)
 Calculates long-period equilibrium tidal elevations for correcting ICESat-2
     ocean surface height data
 Will calculate the long-period tides for all ATL12 segments and not just ocean
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: H5py deprecation warning change to use make_scale
         merged time conversion routines into module
     Written 11/2020
@@ -380,11 +381,11 @@ def HDF5_ATL12_tide_write(IS2_atl12_tide, IS2_atl12_attrs, INPUT=None,
     #-- convert to calendar date
     YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,FORMAT='tuple')
     #-- add attributes with measurement date start, end and duration
-    tcs = datetime.datetime(np.int(YY[0]), np.int(MM[0]), np.int(DD[0]),
-        np.int(HH[0]), np.int(MN[0]), np.int(SS[0]), np.int(1e6*(SS[0] % 1)))
+    tcs = datetime.datetime(int(YY[0]), int(MM[0]), int(DD[0]),
+        int(HH[0]), int(MN[0]), int(SS[0]), int(1e6*(SS[0] % 1)))
     fileID.attrs['time_coverage_start'] = tcs.isoformat()
-    tce = datetime.datetime(np.int(YY[1]), np.int(MM[1]), np.int(DD[1]),
-        np.int(HH[1]), np.int(MN[1]), np.int(SS[1]), np.int(1e6*(SS[1] % 1)))
+    tce = datetime.datetime(int(YY[1]), int(MM[1]), int(DD[1]),
+        int(HH[1]), int(MN[1]), int(SS[1]), int(1e6*(SS[1] % 1)))
     fileID.attrs['time_coverage_end'] = tce.isoformat()
     fileID.attrs['time_coverage_duration'] = '{0:0.0f}'.format(tmx-tmn)
     #-- Closing the HDF5 file

@@ -21,6 +21,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: added polar stereographic area scale calculation
         add routines for converting to and from cartesian coordinates
+        eplaced numpy bool/int to prevent deprecation warnings
     Updated 01/2021: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
         set default time for geotiff files to 0
     Updated 12/2020: added module for converting ellipsoids
@@ -111,7 +112,7 @@ def from_ascii(filename, compression=None, verbose=False,
             dinput[c] = np.zeros((file_lines-count))
             dinput['attributes'][c] = YAML_HEADER['header']['variables'][c]
         #-- update number of file lines to skip for reading data
-        header = np.int(count)
+        header = int(count)
     else:
         #-- output spatial data and attributes
         dinput = {c:np.zeros((file_lines-header)) for c in columns}
@@ -124,7 +125,7 @@ def from_ascii(filename, compression=None, verbose=False,
         column = {c:r.replace('D','E') for c,r in zip(columns,rx.findall(line))}
         #-- copy variables from column dict to output dictionary
         for c in columns:
-            dinput[c][i] = np.float(column[c])
+            dinput[c][i] = np.float64(column[c])
     #-- convert to masked array if fill values
     if '_FillValue' in dinput['attributes']['data'].keys():
         dinput['data'] = np.ma.asarray(dinput['data'])

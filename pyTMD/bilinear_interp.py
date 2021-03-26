@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-bilinear_interp.py (02/2021)
+bilinear_interp.py (03/2021)
 Bilinear interpolation of input data to output coordinates
 
 CALLING SEQUENCE:
@@ -26,7 +26,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
-    Updated 02/2021: replaced numpy bool to prevent deprecation warning
+    Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: using numpy isclose to check corner points
     Updated 08/2020: check that output coordinates are within bounds
         allow small extrapolations if individual grid cells are invalid
@@ -38,7 +38,7 @@ import numpy as np
 
 #-- PURPOSE: bilinear interpolation of input data to output data
 def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
-    dtype=np.float):
+    dtype=np.float64):
     """
     Bilinear interpolation of input data to output coordinates
 

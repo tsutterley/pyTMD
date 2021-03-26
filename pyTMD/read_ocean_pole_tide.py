@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_ocean_pole_tide.py (08/2020)
+read_ocean_pole_tide.py (03/2021)
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
 http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/icc7.pdf
@@ -29,6 +29,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 08/2020: output north load and east load deformation components
     Updated 07/2020: added function docstrings
     Updated 12/2018: Compatibility updates for Python3
@@ -84,8 +85,8 @@ def read_ocean_pole_tide(input_file):
     #-- read lines of file and add to output variables
     for i,line in enumerate(file_contents[count:]):
         ln,lt,urr,uri,unr,uni,uer,uei = np.array(line.split(), dtype='f8')
-        ilon = np.int(ln/dlon)
-        ilat = np.int((90.0-lt)/dlat)
+        ilon = int(ln/dlon)
+        ilat = int((90.0-lt)/dlat)
         ur[ilon,ilat] = urr + 1j*uri
         un[ilon,ilat] = unr + 1j*uni
         ue[ilon,ilat] = uer + 1j*uei

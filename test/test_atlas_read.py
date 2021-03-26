@@ -18,6 +18,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 03/2021: use pytest fixture to setup and teardown model data
         simplified netcdf inputs to be similar to binary OTIS read program
+        replaced numpy bool/int to prevent deprecation warnings
     Written 09/2020
 """
 import os
@@ -184,9 +185,9 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         time=np.zeros((nval)),height=np.zeros((nval)))
     for i,line in enumerate(file_contents[6:]):
         line_contents = rx.findall(line)
-        val['latitude'][i] = np.float(line_contents[0])
-        val['longitude'][i] = np.float(line_contents[1])
-        val['height'][i] = np.float(line_contents[4])
+        val['latitude'][i] = np.float64(line_contents[0])
+        val['longitude'][i] = np.float64(line_contents[1])
+        val['height'][i] = np.float64(line_contents[4])
         #-- extract dates
         MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')

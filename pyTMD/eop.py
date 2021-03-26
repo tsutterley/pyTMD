@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 eop.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (03/2021)
 Utilities for maintaining Earth Orientation Parameter (EOP) files
 
 PYTHON DEPENDENCIES:
@@ -14,6 +14,7 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Written 11/2020
 """
 import os
@@ -107,7 +108,7 @@ def calculate_mean_pole(verbose=False, mode=0o775):
     for i,line in enumerate(file_contents[1:]):
         line_contents = line.split()
         for h,l in zip(header,line_contents):
-            data[h][i] = np.float(l)
+            data[h][i] = np.float64(l)
     #-- output mean pole coordinates
     xm = np.zeros((nlines))
     ym = np.zeros((nlines))

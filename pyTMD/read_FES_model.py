@@ -54,6 +54,7 @@ UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
         simplified inputs to be similar to binary OTIS read program
+        replaced numpy bool/int to prevent deprecation warnings
         use uuid for reading from gzipped netCDF4 files
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
@@ -235,16 +236,16 @@ def read_ascii_file(input_file,GZIP=False,TYPE=None,VERSION=None):
             file_contents = f.read().splitlines()
     #-- parse header text
     #-- longitude range (lonmin, lonmax)
-    lonmin,lonmax = np.array(file_contents[0].split(), dtype=np.float)
+    lonmin,lonmax = np.array(file_contents[0].split(), dtype=np.float64)
     #-- latitude range (latmin, latmax)
-    latmin,latmax = np.array(file_contents[1].split(), dtype=np.float)
+    latmin,latmax = np.array(file_contents[1].split(), dtype=np.float64)
     #-- grid step size (dlon, dlat)
-    dlon,dlat = np.array(file_contents[2].split(), dtype=np.float)
+    dlon,dlat = np.array(file_contents[2].split(), dtype=np.float64)
     #-- grid dimensions (nlon, nlat)
-    nlon,nlat = np.array(file_contents[3].split(), dtype=np.int)
+    nlon,nlat = np.array(file_contents[3].split(), dtype=int)
     #-- mask fill value
     masked_values = file_contents[4].split()
-    fill_value = np.float(masked_values[0])
+    fill_value = np.float64(masked_values[0])
     #-- create output variables
     lat = np.linspace(latmin, latmax, nlat)
     lon = np.linspace(lonmin,lonmax,nlon)
