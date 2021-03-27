@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: merged time conversion routines into module
     Updated 11/2020: use internal mean pole and finals EOP files
     Updated 10/2020: using argparse to set command line parameters
@@ -108,22 +109,22 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter)
         #-- create output variables with length equal to the number of lines
-        ATM_L1b_input['lat'] = np.zeros_like(file_contents,dtype=np.float)
-        ATM_L1b_input['lon'] = np.zeros_like(file_contents,dtype=np.float)
-        ATM_L1b_input['data'] = np.zeros_like(file_contents,dtype=np.float)
-        hour = np.zeros_like(file_contents,dtype=np.float)
-        minute = np.zeros_like(file_contents,dtype=np.float)
-        second = np.zeros_like(file_contents,dtype=np.float)
+        ATM_L1b_input['lat'] = np.zeros_like(file_contents,dtype=np.float64)
+        ATM_L1b_input['lon'] = np.zeros_like(file_contents,dtype=np.float64)
+        ATM_L1b_input['data'] = np.zeros_like(file_contents,dtype=np.float64)
+        hour = np.zeros_like(file_contents,dtype=np.float64)
+        minute = np.zeros_like(file_contents,dtype=np.float64)
+        second = np.zeros_like(file_contents,dtype=np.float64)
         #-- for each line within the file
         for i,line in enumerate(file_contents):
             #-- find numerical instances within the line
             line_contents = rx.findall(line)
-            ATM_L1b_input['lat'][i] = np.float(line_contents[1])
-            ATM_L1b_input['lon'][i] = np.float(line_contents[2])
-            ATM_L1b_input['data'][i] = np.float(line_contents[3])
-            hour[i] = np.float(line_contents[-1][:2])
-            minute[i] = np.float(line_contents[-1][2:4])
-            second[i] = np.float(line_contents[-1][4:])
+            ATM_L1b_input['lat'][i] = np.float64(line_contents[1])
+            ATM_L1b_input['lon'][i] = np.float64(line_contents[2])
+            ATM_L1b_input['data'][i] = np.float64(line_contents[3])
+            hour[i] = np.float64(line_contents[-1][:2])
+            minute[i] = np.float64(line_contents[-1][2:4])
+            second[i] = np.float64(line_contents[-1][4:])
     #-- Version 1 of ATM QFIT files (binary)
     elif (SFX == 'qi'):
         #-- read input QFIT data file and subset if specified
@@ -135,16 +136,16 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         ATM_L1b_input['data'] = fid['elevation'][:]
         time_hhmmss = fid['time_hhmmss'][:]
         #-- extract hour, minute and second from time_hhmmss
-        hour = np.zeros_like(time_hhmmss,dtype=np.float)
-        minute = np.zeros_like(time_hhmmss,dtype=np.float)
-        second = np.zeros_like(time_hhmmss,dtype=np.float)
+        hour = np.zeros_like(time_hhmmss,dtype=np.float64)
+        minute = np.zeros_like(time_hhmmss,dtype=np.float64)
+        second = np.zeros_like(time_hhmmss,dtype=np.float64)
         #-- for each line within the file
         for i,packed_time in enumerate(time_hhmmss):
             #-- convert to zero-padded string with 3 decimal points
             line_contents = '{0:010.3f}'.format(packed_time)
-            hour[i] = np.float(line_contents[:2])
-            minute[i] = np.float(line_contents[2:4])
-            second[i] = np.float(line_contents[4:])
+            hour[i] = np.float64(line_contents[:2])
+            minute[i] = np.float64(line_contents[2:4])
+            second[i] = np.float64(line_contents[4:])
     #-- Version 2 of ATM QFIT files (HDF5)
     elif (SFX == 'h5'):
         #-- Open the HDF5 file for reading
@@ -157,16 +158,16 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         ATM_L1b_input['data'] = fileID['elevation'][:]
         time_hhmmss = fileID['instrument_parameters']['time_hhmmss'][:]
         #-- extract hour, minute and second from time_hhmmss
-        hour = np.zeros_like(time_hhmmss,dtype=np.float)
-        minute = np.zeros_like(time_hhmmss,dtype=np.float)
-        second = np.zeros_like(time_hhmmss,dtype=np.float)
+        hour = np.zeros_like(time_hhmmss,dtype=np.float64)
+        minute = np.zeros_like(time_hhmmss,dtype=np.float64)
+        second = np.zeros_like(time_hhmmss,dtype=np.float64)
         #-- for each line within the file
         for i,packed_time in enumerate(time_hhmmss):
             #-- convert to zero-padded string with 3 decimal points
             line_contents = '{0:010.3f}'.format(packed_time)
-            hour[i] = np.float(line_contents[:2])
-            minute[i] = np.float(line_contents[2:4])
-            second[i] = np.float(line_contents[4:])
+            hour[i] = np.float64(line_contents[:2])
+            minute[i] = np.float64(line_contents[2:4])
+            second[i] = np.float64(line_contents[4:])
         #-- close the input HDF5 file
         fileID.close()
     #-- calculate the number of leap seconds between GPS time (seconds
@@ -221,14 +222,14 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     ATM_L2_input = {}
     #-- create output variables with length equal to the number of file lines
     for key in file_dtype.keys():
-        ATM_L2_input[key] = np.zeros_like(file_contents, dtype=np.float)
+        ATM_L2_input[key] = np.zeros_like(file_contents, dtype=np.float64)
     #-- for each line within the file
     for line_number,line_entries in enumerate(file_contents):
         #-- find numerical instances within the line
         line_contents = rx.findall(line_entries)
         #-- for each variable of interest: save to dinput as float
         for key,val in file_dtype.items():
-            ATM_L2_input[key][line_number] = np.float(line_contents[val])
+            ATM_L2_input[key][line_number] = np.float64(line_contents[val])
     #-- convert shot time (seconds of day) to J2000
     hour = np.floor(ATM_L2_input['seconds']/3600.0)
     minute = np.floor((ATM_L2_input['seconds'] % 3600)/60.0)
@@ -273,7 +274,7 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
     regex_pattern = r'{0}_(.*?)(\d+)_(\d+)_(R\d+)_(\d+).H5'.format(mission_flag)
     #-- extract mission, region and other parameters from filename
     MISSION,REGION,YY,MMDD,RLD,SS = re.findall(regex_pattern,input_file).pop()
-    LDS_VERSION = '2.0.2' if (np.int(RLD[1:3]) >= 18) else '1.04'
+    LDS_VERSION = '2.0.2' if (int(RLD[1:3]) >= 18) else '1.04'
     #-- input and output python dictionaries with variables
     file_input = {}
     LVIS_L2_input = {}
@@ -318,10 +319,10 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
     #-- close the input HDF5 file
     fileID.close()
     #-- output combined variables
-    LVIS_L2_input['data'] = np.zeros_like(file_input['elev'],dtype=np.float)
-    LVIS_L2_input['lon'] = np.zeros_like(file_input['elev'],dtype=np.float)
-    LVIS_L2_input['lat'] = np.zeros_like(file_input['elev'],dtype=np.float)
-    LVIS_L2_input['error'] = np.zeros_like(file_input['elev'],dtype=np.float)
+    LVIS_L2_input['data'] = np.zeros_like(file_input['elev'],dtype=np.float64)
+    LVIS_L2_input['lon'] = np.zeros_like(file_input['elev'],dtype=np.float64)
+    LVIS_L2_input['lat'] = np.zeros_like(file_input['elev'],dtype=np.float64)
+    LVIS_L2_input['error'] = np.zeros_like(file_input['elev'],dtype=np.float64)
     #-- find where elev high is equal to elev low
     #-- see note about using LVIS centroid elevation product
     #-- http://lvis.gsfc.nasa.gov/OIBDataStructure.html
@@ -420,10 +421,10 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
         #-- early date strings omitted century and millenia (e.g. 93 for 1993)
         if (len(YYMMDD1) == 6):
             ypre,MM1,DD1 = YYMMDD1[:2],YYMMDD1[2:4],YYMMDD1[4:]
-            if (np.float(ypre) >= 90):
-                YY1 = '{0:4.0f}'.format(np.float(ypre) + 1900.0)
+            if (np.float64(ypre) >= 90):
+                YY1 = '{0:4.0f}'.format(np.float64(ypre) + 1900.0)
             else:
-                YY1 = '{0:4.0f}'.format(np.float(ypre) + 2000.0)
+                YY1 = '{0:4.0f}'.format(np.float64(ypre) + 2000.0)
         elif (len(YYMMDD1) == 8):
             YY1,MM1,DD1 = YYMMDD1[:4],YYMMDD1[4:6],YYMMDD1[6:]
     elif OIB in ('LVIS','LVGH'):
@@ -600,7 +601,7 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     JD_start = np.min(t) + 2400000.5
     JD_end = np.max(t) + 2400000.5
     #-- convert to calendar date
-    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),ASTYPE=np.int)
+    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),ASTYPE=int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

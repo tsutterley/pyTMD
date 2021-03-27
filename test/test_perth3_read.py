@@ -16,7 +16,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2021: use pytest fixture to setup and teardown model data
-    Updated 02/2021: replaced numpy bool to prevent deprecation warning
+        replaced numpy bool/int to prevent deprecation warnings
     Written 08/2020
 """
 import os
@@ -99,11 +99,11 @@ def test_verify_GOT47(METHOD):
     validation.mask = np.ones((npts),dtype=bool)
     for i in range(npts):
         line_contents = file_contents[i+2].split()
-        latitude[i] = np.float(line_contents[0])
-        longitude[i] = np.float(line_contents[1])
-        MJD[i] = np.float(line_contents[2])
+        latitude[i] = np.float64(line_contents[0])
+        longitude[i] = np.float64(line_contents[1])
+        MJD[i] = np.float64(line_contents[2])
         if (len(line_contents) == 5):
-            validation.data[i] = np.float(line_contents[3])
+            validation.data[i] = np.float64(line_contents[3])
             validation.mask[i] = False
 
     #-- convert time from MJD to days since 1992-01-01T00:00:00

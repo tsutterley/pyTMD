@@ -55,6 +55,7 @@ UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
         can read from single constituent TPXO9 ATLAS binary files
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -964,8 +965,8 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
         for indy,indx in zip(validy,validx):
             #-- check if model is -180:180
             lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
-            ii = np.int((lon30 - x30[0])/d30)
-            jj = np.int((Y[indy,indx] - y30[0])/d30)
+            ii = int((lon30 - x30[0])/d30)
+            jj = int((Y[indy,indx] - y30[0])/d30)
             #-- fill global mask with regional solution
             m30[jj,ii] = 1
     #-- return the 2 arc-minute mask
@@ -1028,8 +1029,8 @@ def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
         for indy,indx in zip(validy,validx):
             #-- check if model is -180:180
             lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
-            ii = np.int((lon30 - x30[0])/d30)
-            jj = np.int((Y[indy,indx] - y30[0])/d30)
+            ii = int((lon30 - x30[0])/d30)
+            jj = int((Y[indy,indx] - y30[0])/d30)
             #-- fill global model with regional solution
             z30.data[jj,ii] = zlocal[indy,indx]
     #-- return 2 arc-minute solution and coordinates
@@ -1042,18 +1043,18 @@ def Muv(hz):
     Construct masks for zeta, u and v nodes on a C-grid
     """
     ny,nx = np.shape(hz)
-    mz = (hz > 0).astype(np.int)
+    mz = (hz > 0).astype(int)
     #-- x-indices
-    indx = np.zeros((nx),dtype=np.int)
+    indx = np.zeros((nx),dtype=int)
     indx[:-1] = np.arange(1,nx)
     indx[-1] = 0
     #-- y-indices
-    indy = np.zeros((ny),dtype=np.int)
+    indy = np.zeros((ny),dtype=int)
     indy[:-1] = np.arange(1,ny)
     indy[-1] = 0
     #-- calculate mu and mv
-    mu = np.zeros((ny,nx),dtype=np.int)
-    mv = np.zeros((ny,nx),dtype=np.int)
+    mu = np.zeros((ny,nx),dtype=int)
+    mv = np.zeros((ny,nx),dtype=int)
     mu[indy,:] = mz*mz[indy,:]
     mv[:,indx] = mz*mz[:,indx]
     return (mu,mv,mz)
@@ -1066,11 +1067,11 @@ def Huv(hz):
     ny,nx = np.shape(hz)
     mu,mv,mz = Muv(hz)
     #-- x-indices
-    indx = np.zeros((nx),dtype=np.int)
+    indx = np.zeros((nx),dtype=int)
     indx[0] = nx-1
     indx[1:] = np.arange(1,nx)
     #-- y-indices
-    indy = np.zeros((ny),dtype=np.int)
+    indy = np.zeros((ny),dtype=int)
     indy[0] = ny-1
     indy[1:] = np.arange(1,ny)
     #-- calculate hu and hv

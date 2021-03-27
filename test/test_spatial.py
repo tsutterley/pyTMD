@@ -189,12 +189,12 @@ def test_geotiff(username, password):
     attrib['data'] = {}
     for key,val in dinput['attributes']['data'].items():
         if isinstance(val,np.float32):
-            attrib['data'][key] = np.float(val)
+            attrib['data'][key] = np.float64(val)
         else:
             attrib['data'][key] = np.copy(val)
     #-- create test geotiff file
     output_file = os.path.join(filepath,'test.tif')
-    output = {'data':dinput['data'].astype(np.float)}
+    output = {'data':dinput['data'].astype(np.float64)}
     pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=True)
     #-- check that data is valid
     test = pyTMD.spatial.from_geotiff(output_file, verbose=True)
@@ -214,8 +214,8 @@ def test_convert_ellipsoid():
     atop,ftop = (6378136.3,1.0/298.257)
     awgs,fwgs = (6378137.0,1.0/298.257223563)
     #-- create latitude and height array in WGS84
-    lat_WGS84 = 90.0 - np.arange(181,dtype=np.float)
-    elev_WGS84 = 3000.0 + np.zeros((181),dtype=np.float)
+    lat_WGS84 = 90.0 - np.arange(181,dtype=np.float64)
+    elev_WGS84 = 3000.0 + np.zeros((181),dtype=np.float64)
     #-- convert from WGS84 to Topex/Poseidon Ellipsoids
     lat_TPX,elev_TPX = pyTMD.spatial.convert_ellipsoid(lat_WGS84, elev_WGS84,
         awgs, fwgs, atop, ftop, eps=1e-12, itmax=10)

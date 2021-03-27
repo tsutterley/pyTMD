@@ -20,7 +20,7 @@ UPDATE HISTORY:
     Updated 03/2021: use pytest fixture to setup and teardown model data
         use TMD tmd_tide_pred_plus to calculate OB time series
         refactor program into two classes for CATS2008 and AOTIM-5-2018
-    Updated 02/2021: replaced numpy bool to prevent deprecation warning
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 01/2021: download CATS2008 and AOTIM-5-2018 to subdirectories
     Updated 08/2020: Download Antarctic tide gauge database and compare with RMS
         directly call Matlab program (octave+oct2py) and compare outputs
@@ -177,12 +177,12 @@ class Test_CATS2008:
             stations[s] = file_contents[i + 1].strip()
             shortname[s] = file_contents[i + 3].strip()
             lat,lon,_,_ = file_contents[i + 4].split()
-            station_lon[s] = np.float(lon)
-            station_lat[s] = np.float(lat)
+            station_lon[s] = np.float64(lon)
+            station_lat[s] = np.float64(lat)
             amp = file_contents[i + 7].split()
             ph = file_contents[i + 8].split()
-            station_amp.data[s,:] = np.array(amp,dtype=np.float)
-            station_ph.data[s,:] = np.array(ph,dtype=np.float)
+            station_amp.data[s,:] = np.array(amp,dtype=np.float64)
+            station_ph.data[s,:] = np.array(ph,dtype=np.float64)
         #-- update masks where NaN
         station_amp.mask = np.isnan(station_amp.data) | (station_amp.data == 0.0)
         station_ph.mask = np.isnan(station_ph.data)
@@ -271,8 +271,8 @@ class Test_CATS2008:
             shortname[s] = file_contents[i + 3].strip()
             lat,lon,_,_ = file_contents[i + 4].split()
             station_type[s] = file_contents[i + 6].strip()
-            station_lon[s] = np.float(lon)
-            station_lat[s] = np.float(lat)
+            station_lon[s] = np.float64(lon)
+            station_lat[s] = np.float64(lat)
 
         #-- calculate daily results for a time period
         #-- convert time to days since 1992-01-01T00:00:00
@@ -382,8 +382,8 @@ class Test_CATS2008:
             shortname[s] = file_contents[i + 3].strip()
             lat,lon,_,_ = file_contents[i + 4].split()
             station_type[s] = file_contents[i + 6].strip()
-            station_lon[s] = np.float(lon)
-            station_lat[s] = np.float(lat)
+            station_lon[s] = np.float64(lon)
+            station_lat[s] = np.float64(lat)
 
         #-- compare daily outputs at each station point
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
@@ -559,8 +559,8 @@ class Test_AOTIM5_2018:
             line_contents = file_contents[count+s].split()
             stations[s] = line_contents[1]
             shortname[s] = line_contents[2]
-            station_lat[s] = np.float(line_contents[10])
-            station_lon[s] = np.float(line_contents[11])
+            station_lat[s] = np.float64(line_contents[10])
+            station_lon[s] = np.float64(line_contents[11])
 
         #-- calculate daily results for a time period
         #-- convert time to days since 1992-01-01T00:00:00

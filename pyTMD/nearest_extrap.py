@@ -36,6 +36,7 @@ UPDATE HISTORY:
     Updated 03/2021: add checks to prevent runtime exception
         where there are no valid points within the input bounds
         or no points to be extrapolated
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 12/2020
 """
@@ -45,7 +46,7 @@ import pyTMD.spatial
 
 #-- PURPOSE: Nearest-neighbor extrapolation of valid data to output data
 def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
-    dtype=np.float,cutoff=np.inf,EPSG='4326'):
+    dtype=np.float64,cutoff=np.inf,EPSG='4326'):
     """
     Nearest-neighbor extrapolation of valid model data
 

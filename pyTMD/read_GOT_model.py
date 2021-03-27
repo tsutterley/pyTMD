@@ -40,6 +40,7 @@ UPDATE HISTORY:
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
         simplified inputs to be similar to binary OTIS read program
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
     Updated 12/2020: added valid data extrapolation with nearest_extrap
@@ -265,13 +266,13 @@ def read_GOT_grid(input_file, GZIP=False):
     constituent_list = ['Q1','O1','P1','K1','N2','M2','S2','K2','S1','M4']
     regex = re.compile(r'|'.join(constituent_list), re.IGNORECASE)
     cons = regex.findall(file_contents[0]).pop().lower()
-    nlat,nlon = np.array(file_contents[2].split(), dtype=np.int)
+    nlat,nlon = np.array(file_contents[2].split(), dtype=int)
     #-- longitude range
-    ilat = np.array(file_contents[3].split(), dtype=np.float)
+    ilat = np.array(file_contents[3].split(), dtype=np.float64)
     #-- latitude range
-    ilon = np.array(file_contents[4].split(), dtype=np.float)
+    ilon = np.array(file_contents[4].split(), dtype=np.float64)
     #-- mask fill value
-    fill_value = np.array(file_contents[5].split(), dtype=np.float)
+    fill_value = np.array(file_contents[5].split(), dtype=np.float64)
     #-- create output variables
     lat = np.linspace(ilat[0],ilat[1],nlat)
     lon = np.linspace(ilon[0],ilon[1],nlon)
@@ -282,7 +283,7 @@ def read_GOT_grid(input_file, GZIP=False):
     ph.mask = np.zeros((nlat,nlon),dtype=bool)
     #-- starting lines to fill amplitude and phase variables
     l1 = 7
-    l2 = 14 + np.int(nlon//11)*nlat + nlat
+    l2 = 14 + int(nlon//11)*nlat + nlat
     #-- for each latitude
     for i in range(nlat):
         for j in range(nlon//11):
