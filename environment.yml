@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python>=3.6
+  - setuptools_scm
   - notebook
   - ipyleaflet
   - numpy

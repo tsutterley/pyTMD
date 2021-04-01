@@ -7,17 +7,18 @@ from setuptools import setup, find_packages
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 log = logging.getLogger()
 
-# get long_description from README.md
-with open("README.md", "r") as fh:
+# package description and keywords
+description = ('Tide Model Driver to read OTIS, GOT and FES formatted tidal '
+    'solutions and make tidal predictions')
+keywords = 'Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT, FES'
+# get long_description from README.rst
+with open("README.rst", "r") as fh:
     long_description = fh.read()
+long_description_content_type = "text/x-rst"
 
 # get install requirements
 with open('requirements.txt') as fh:
     install_requires = fh.read().splitlines()
-
-# get version
-with open('version.txt') as fh:
-    version = fh.read()
 
 # list of all scripts to be included with package
 scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
@@ -41,12 +42,22 @@ if gdal_output[3]:
     gdal_index = install_requires.index('gdal')
     install_requires[gdal_index] = 'gdal=={0}'.format(gdal_output[3])
 
+# dependency links (data readers)
+dependency_links = ['https://github.com/tsutterley/read-ICESat-2/tarball/main',
+    'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main']
+
+# semantic version configuration for setuptools-scm
+setup_requires = ["setuptools_scm"]
+use_scm_version = {
+    "relative_to": __file__,
+    "local_scheme": "node-and-date",
+}
+
 setup(
     name='pyTMD',
-    version=version,
-    description='Tide Model Driver to read OTIS, GOT and FES formatted tidal solutions and make tidal predictions',
+    description=description,
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type=long_description_content_type,
     url='https://github.com/tsutterley/pyTMD',
     author='Tyler Sutterley',
     author_email='tsutterl@uw.edu',
@@ -61,11 +72,12 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    keywords='Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT, FES',
+    keywords=keywords,
     packages=find_packages(),
     install_requires=install_requires,
-    dependency_links=['https://github.com/tsutterley/read-ICESat-2/tarball/main',
-        'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main'],
+    setup_requires=setup_requires,
+    dependency_links=dependency_links,
+    use_scm_version=use_scm_version,
     scripts=scripts,
     include_package_data=True,
 )
