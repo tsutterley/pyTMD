@@ -10,10 +10,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
+# import os
 # import sys
 import datetime
 # sys.path.insert(0, os.path.abspath('.'))
+from pkg_resources import get_distribution
 
 
 # -- Project information -----------------------------------------------------
@@ -24,8 +25,10 @@ copyright = f"2017\u2013{year}, Tyler C. Sutterley"
 author = 'Tyler C. Sutterley'
 
 # The full version, including alpha/beta/rc tags
-with open(os.path.abspath('../../version.txt')) as fh:
-    release = fh.read()
+# get semantic version from setuptools-scm
+version = get_distribution("pyTMD").version
+# append "v" before the version
+release = "v{0}".format(version)
 
 # -- General configuration ---------------------------------------------------
 
@@ -34,10 +37,10 @@ with open(os.path.abspath('../../version.txt')) as fh:
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    'sphinx.ext.graphviz',
+    "sphinx.ext.graphviz",
     "sphinx.ext.viewcode",
-    'recommonmark',
-    'sphinx_markdown_tables'
+    "recommonmark",
+    "sphinx_markdown_tables"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

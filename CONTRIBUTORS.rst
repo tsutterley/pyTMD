@@ -1,0 +1,5 @@
+- `Kelly Brunt (NASA Goddard Space Flight Center) <https://science.gsfc.nasa.gov/sed/bio/kelly.m.brunt>`_
+- `Susan Howard (Earth \& Space Research) <https://www.esr.org/staff/susan-l-howard/>`_
+- `Laurie Padman (Earth \& Space Research) <https://www.esr.org/staff/laurence-padman/>`_
+- `Matt Siegfried (Colorado School of Mines) <https://geophysics.mines.edu/project/siegfried-matthew/>`_
+- `Tyler Sutterley (University of Washington) <http://psc.apl.uw.edu/people/investigators/tyler-sutterley/>`_

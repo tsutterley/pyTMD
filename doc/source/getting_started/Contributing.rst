@@ -32,7 +32,7 @@ Providing information and examples will help us resolve issues faster.
 Contributing Code or Examples
 -----------------------------
 We follow a standard Forking Workflow for code changes and additions.
-Submitted code goes through the pull request process for `continuous integration (CI) testing <https://github.com/tsutterley/pyTMD/actions>`_ and comments.
+Submitted code goes through the pull request process for `continuous integration (CI) testing <./Contributing.html#continuous-integration>`_ and comments.
 
 General Guidelines
 ^^^^^^^^^^^^^^^^^^
@@ -50,7 +50,7 @@ Steps to Contribute
 2) Either by cloning to your local system or working in `GitHub Codespaces <https://github.com/features/codespaces>`_, create a work environment to make your changes.
 3) Add your fork as the ``origin`` remote and the original project repository as the ``upstream`` remote.  While this step isn't a necessary, it allows you to keep your fork up to date in the future.
 4) Create a new branch to do your work.
-5) Make your changes on the new branch and add yourself to the list of `project contributors <./Citations.html#contributors>`_.
+5) Make your changes on the new branch and add yourself to the list of project `contributors <https://github.com/tsutterley/pyTMD/blob/main/CONTRIBUTORS.rst>`_.
 6) Push your work to GitHub under your fork of the project.
 7) Submit a `Pull Request <https://github.com/tsutterley/pyTMD/pulls>`_ from your forked branch to the project repository.
 
@@ -58,3 +58,17 @@ Adding Examples
 ^^^^^^^^^^^^^^^
 Examples may be in the form of executable scripts or interactive `Jupyter Notebooks <./Examples.html>`_.
 Fully working (but unrendered) examples should be submitted with the same steps as above.
+
+Continuous Integration
+^^^^^^^^^^^^^^^^^^^^^^
+We use `GitHub Actions <https://github.com/tsutterley/pyTMD/actions>`_ continuous integration (CI) services to build and test the project on Linux (Ubuntu) and Mac Operating Systems.
+The configuration files for this service are in `.github/workflows <https://github.com/tsutterley/pyTMD/blob/main/.github/workflows>`_.
+The workflows rely on the `requirements.txt <https://github.com/tsutterley/pyTMD/blob/main/requirements.txt>`_ and `requirements-dev.txt <https://github.com/tsutterley/pyTMD/blob/main/requirements-dev.txt>`_ files to install the required dependencies.
+
+The GitHub Actions jobs include:
+
+* Updating `leap second <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list>`_ and `delta time  <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.list>`_ files
+* Running `flake8 <https://flake8.pycqa.org/en/latest/>`_ to check the code for style and compilation errors
+* Running the test suite on multiple combinations of OS and Python version
+* Uploading test coverage statistics to `Codecov <https://app.codecov.io/gh/tsutterley/pyTMD>`_
+* Uploading source and wheel distributions to `PyPI <https://pypi.org/project/pyTMD/>`_ (on releases)
