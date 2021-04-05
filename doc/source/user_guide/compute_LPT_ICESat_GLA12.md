@@ -2,8 +2,8 @@ compute_LPT_ICESat_GLA12.py
 ===========================
 
 - Calculates radial load pole tide displacements for correcting ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following IERS Convention (2010) guidelines
- - http://maia.usno.navy.mil/conventions/2010officialinfo.php
- - http://maia.usno.navy.mil/conventions/chapter7.php
+ - [http://maia.usno.navy.mil/conventions/2010officialinfo.php](http://maia.usno.navy.mil/conventions/2010officialinfo.php)
+ - [http://maia.usno.navy.mil/conventions/chapter7.php](http://maia.usno.navy.mil/conventions/chapter7.php)
 
 #### Calling Sequence
 ```bash

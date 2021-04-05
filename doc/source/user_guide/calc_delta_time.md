@@ -12,9 +12,9 @@ deltat = calc_delta_time(delta_file, idays)
 
 #### Arguments
  1. `delta_file`:
-    - http://maia.usno.navy.mil/ser7/deltat.data
-    - ftp://cddis.nasa.gov/products/iers/deltat.data
- 2. `idays`: times to interpolate as days since 1992-01-01T00:00:00
+    - [http://maia.usno.navy.mil/ser7/deltat.data](http://maia.usno.navy.mil/ser7/deltat.data)
+    - [ftp://cddis.nasa.gov/products/iers/deltat.data](ftp://cddis.nasa.gov/products/iers/deltat.data)
+ 2. `idays`: days relative to January 1, 1992 (MJD: 48622)
 
 #### Returns
  - `deltat`: (TT - UT1) in days

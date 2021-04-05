@@ -13,7 +13,7 @@ dh = infer_minor_corrections(t, zmajor, constituents,
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/infer_minor_corrections.py)
 
 #### Arguments
- 1. `t`: days relative to Jan 1, 1992 (48622mjd)
+ 1. `t`: days relative to January 1, 1992 (MJD: 48622)
  2. `zmajor`: Complex oscillations for given constituents/points
  3. `constituents`: tidal constituent IDs
 

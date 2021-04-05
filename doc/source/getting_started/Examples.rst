@@ -4,7 +4,7 @@
 Examples
 ========
 
-Jupyter Notebooks providing demonstrations of pyTMD functionality:
+Jupyter Notebooks providing demonstrations of ``pyTMD`` functionality:
 
 - Check Tide Map |github check| |nbviewer check|
     Check if a given point is within a tide model domain

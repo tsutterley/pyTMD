@@ -1,7 +1,7 @@
 pyTMD
 =====
 
-pyTMD is a Python-based tidal prediction software that reads OTIS, GOT and FES
+``pyTMD`` is a Python-based tidal prediction software that reads OTIS, GOT and FES
 formatted tidal solutions for predicting ocean and load tides and can use IERS
 conventions for calculating radial pole tide displacements.
 

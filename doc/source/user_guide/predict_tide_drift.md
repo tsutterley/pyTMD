@@ -12,7 +12,7 @@ ht = predict_tide_drift(time,hc,con)
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/predict_tide_drift.py)
 
 #### Arguments
- 1. `time`: days relative to Jan 1, 1992 (48622mjd)
+ 1. `time`: days relative to January 1, 1992 (MJD: 48622)
  2. `hc`: harmonic constant vector (complex)
  3. `constituents`: tidal constituent IDs
 

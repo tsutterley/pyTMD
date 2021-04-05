@@ -3,8 +3,8 @@ compute_LPT_displacements.py
 
  - Calculates radial pole load tide displacements for an input file following IERS Convention (2010) guidelines
  - Can read and write ascii, netCDF4, HDF5 and geotiff formats
- - http://maia.usno.navy.mil/conventions/2010officialinfo.php
- - http://maia.usno.navy.mil/conventions/chapter7.php
+ - [http://maia.usno.navy.mil/conventions/2010officialinfo.php](http://maia.usno.navy.mil/conventions/2010officialinfo.php)
+ - [http://maia.usno.navy.mil/conventions/chapter7.php](http://maia.usno.navy.mil/conventions/chapter7.php)
 
 #### Calling Sequence
 ```bash

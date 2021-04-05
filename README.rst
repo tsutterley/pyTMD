@@ -33,7 +33,6 @@ pyTMD
 
 
 Python-based tidal prediction software that reads OTIS, GOT and FES formatted tidal solutions for calculating ocean and load tides
-##################################################################################################################################
 
 - `OSU Tidal Prediction Software (OTPS) <https://www.tpxo.net/otps>`_
 - `ESR Tide Model Driver (TMD) Matlab Toolbox <https://www.esr.org/research/polar-tide-models/tmd-software/>`_
@@ -45,7 +44,6 @@ Python-based tidal prediction software that reads OTIS, GOT and FES formatted ti
 - `Delta times from NASA Crustal Dynamics Data Information System (CDDIS) <ftp://cddis.nasa.gov/products/iers/deltat.data>`_
 
 Pole tide prediction software for calculating radial pole tide displacements
-############################################################################
 
 - `IERS Conventions (2010) <http://iers-conventions.obspm.fr/>`_
 - `IERS Mean Pole Location <https://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab>`_
@@ -72,8 +70,8 @@ Dependencies
  - `read-ICESat-2: Python tools to read data from the NASA ICESat-2 mission <https://github.com/tsutterley/read-ICESat-2/>`_
  - `read-ATM1b-QFIT-binary: Python reader for Airborne Topographic Mapper (ATM) QFIT data products <https://github.com/tsutterley/read-ATM1b-QFIT-binary>`_
 
-Reference
-#########
+References
+##########
 
     T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
     "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
@@ -98,7 +96,7 @@ Software
 | https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
 | Fortran OSU Tidal Prediction Software OTPS is available at:
 | https://www.tpxo.net/otps
-| pyTMD was incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:
+| Incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:
 | https://github.com/fspaolo/captoolkit
 
 Disclaimer
@@ -119,4 +117,5 @@ The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) softw
 
 License
 #######
+
 The content of this project is licensed under the `Creative Commons Attribution 4.0 Attribution license <https://creativecommons.org/licenses/by/4.0/>`_ and the source code is licensed under the `MIT license <LICENSE>`_.

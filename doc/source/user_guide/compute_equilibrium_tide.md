@@ -12,7 +12,7 @@ lpet = compute_equilibrium_tide(time,lat)
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_equilibrium_tide.py)
 
 #### Arguments
- 1. `t`: days relative to Jan 1, 1992 (48622mjd)
+ 1. `t`: days relative to January 1, 1992 (MJD: 48622)
  2. `lat`: latitudes in degrees
 
 #### Returns

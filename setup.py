@@ -51,8 +51,6 @@ if gdal_output[3]:
     gdal_index = install_requires.index('gdal')
     install_requires[gdal_index] = 'gdal=={0}'.format(gdal_output[3])
 
-
-
 # semantic version configuration for setuptools-scm
 setup_requires = ["setuptools_scm"]
 use_scm_version = {

@@ -32,11 +32,9 @@ General Methods
 
 .. method:: pyTMD.eop.calculate_mean_pole(verbose=False, mode=0o775)
 
-    Calculates the mean pole coordinates x and y are obtained by a Gaussian-weighted average of the `IERS pole coordinates`__
-
-    Follows ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.readme
-
-.. __: ftp://ftp.iers.org/products/eop/long-term/c01/eopc01.1900-now.dat
+    Calculates the mean pole coordinates x and y are obtained by a Gaussian-weighted average of
+    the `IERS pole coordinates <ftp://ftp.iers.org/products/eop/long-term/c01/eopc01.1900-now.dat>`_
+    calculated following `IERS mean pole guidelines <ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.readme>`_
 
     Keyword arguments:
 

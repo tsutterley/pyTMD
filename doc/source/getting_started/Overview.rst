@@ -2,20 +2,21 @@
 pyTMD Overview
 ==============
 
-pyTMD is a Python-based tidal prediction software that reads OTIS, GOT and FES
+``pyTMD`` is a Python-based tidal prediction software that reads OTIS, GOT and FES
 formatted tidal solutions for predicting ocean and load tides and can use IERS
 conventions for calculating radial pole tide displacements.
 It was developed with the goal of supporting science applications for
 airborne and satellite altimetry.
-pyTMD provides data access utilities for ascii, netCDF4, HDF5, and geotiff
+``pyTMD`` provides data access utilities for ascii, netCDF4, HDF5, and geotiff
 formats.
-pyTMD also provides some very high-level plotting programs through the
+``pyTMD`` also provides some very high-level plotting programs through the
 use of `Jupyter Notebooks <./Examples.html>`_.
+
 The program provides the interface between spatial and temporal coordinates and
 the output ocean, load and pole tide variables as shown in the flowcharts below:
 
 .. graphviz::
-    :caption: pyTMD Ocean and Load Tide Framework
+    :caption: Ocean and Load Tide Framework
     :align: center
 
     digraph {
@@ -35,7 +36,7 @@ the output ocean, load and pole tide variables as shown in the flowcharts below:
     }
 
 .. graphviz::
-    :caption: pyTMD Pole Tide Framework
+    :caption: Pole Tide Framework
     :align: center
 
     digraph {

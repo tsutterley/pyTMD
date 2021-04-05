@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (04/2021)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2021: updated NIST ftp server url for leap-seconds.list
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 02/2021: NASA CDDIS anonymous ftp access discontinued
     Updated 01/2021: added ftp connection checks
@@ -501,7 +502,7 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
     HASH = pyTMD.utilities.get_hash(LOCAL)
 
     #-- try downloading from NIST ftp servers
-    HOST = ['ftp.nist.gov','pub','time','iers',FILE]
+    HOST = ['ftp.nist.gov','pub','time',FILE]
     try:
         pyTMD.utilities.check_ftp_connection(HOST[0])
         pyTMD.utilities.from_ftp(HOST, timeout=timeout, local=LOCAL,

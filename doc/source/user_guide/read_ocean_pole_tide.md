@@ -15,7 +15,7 @@ ur,un,ue,glon,glat = read_ocean_pole_tide(ocean_pole_tide_file)
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/pyTMD/read_ocean_pole_tide.py)
 
 #### Arguments
-  1. `input_file`: [IERS 0.5x0.5 map of ocean pole tide coefficients](ftp://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)
+  1. `input_file`: [IERS map of ocean pole tide coefficients](ftp://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz)
 
 #### Returns
  - `ur`: radial ocean pole tide coefficients
