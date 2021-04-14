@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (04/2021)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -65,6 +65,8 @@ PROGRAM DEPENDENCIES:
     read_ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 UPDATE HISTORY:
+    Updated 04/2021: fix arguments to program (using internal EOP files)
+        Thanks to Karen Alley for pointing this out!
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
@@ -93,8 +95,8 @@ from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 
 #-- PURPOSE: compute the ocean pole load tide radial displacements following
 #-- IERS conventions (2010) and using data from Desai (2002)
-def compute_OPT_displacements(tide_dir, input_file, output_file,
-    FORMAT='csv', VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
+def compute_OPT_displacements(input_file, output_file, FORMAT='csv',
+    VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
     TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
     METHOD='spline', VERBOSE=False, MODE=0o775):
 

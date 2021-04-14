@@ -156,11 +156,11 @@ References
 
 .. [Padman2004] L. Padman and S. Y. Erofeeva, "A barotropic inverse tidal model for the Arctic Ocean", *Geophysical Research Letters*, 31(2), L02303. (2004). `doi: 10.1029/2003GL019003 <https://doi.org/10.1029/2003GL019003>`_
 
-.. [Padman2008] L. Padman, S. Y. Erofeeva, and H. A. Fricker, "Improving Antarctic tide models by assimilation of ICESat laser altimetry over ice shelves", *Geophysical Research Letters*, 35, L22504, (2008). `doi:10.1029/2008GL035592 <https://doi.org/10.1029/2008GL035592>`_
+.. [Padman2008] L. Padman, S. Y. Erofeeva, and H. A. Fricker, "Improving Antarctic tide models by assimilation of ICESat laser altimetry over ice shelves", *Geophysical Research Letters*, 35, L22504, (2008). `doi: 10.1029/2008GL035592 <https://doi.org/10.1029/2008GL035592>`_
 
 .. [Ray1999] R. D. Ray, "A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2", *NASA Technical Memorandum*, `NASA/TM--1999-209478 <https://ntrs.nasa.gov/search.jsp?R=19990089548>`_.
 
-.. [Stammer2014] D. Stammer et al., "Accuracy assessment of global barotropic ocean tide models", *Reviews of Geophysics*, 52, 243--282, (2014). `doi:10.1002/2014RG000450 <https://doi.org/10.1002/2014RG000450>`_
+.. [Stammer2014] D. Stammer et al., "Accuracy assessment of global barotropic ocean tide models", *Reviews of Geophysics*, 52, 243--282, (2014). `doi: 10.1002/2014RG000450 <https://doi.org/10.1002/2014RG000450>`_
 
 .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
 

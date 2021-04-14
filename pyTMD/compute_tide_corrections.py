@@ -34,6 +34,7 @@ OPTIONS:
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate with nearest-neighbors
     FILL_VALUE: output invalid value (default NaN)
 
 PYTHON DEPENDENCIES:
@@ -128,6 +129,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
+    EXTRAPOLATE: extrapolate with nearest-neighbors
     FILL_VALUE: output invalid value (default NaN)
 
     Returns

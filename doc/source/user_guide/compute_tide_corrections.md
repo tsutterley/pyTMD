@@ -28,15 +28,15 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
      * 'drift': drift buoys or satellite/airborne altimetry (time per data point)
      * 'grid': spatial grids or images (single time per image)
  - `TIME`: time type if need to compute leap seconds to convert to UTC
-     * 'GPS': leap seconds needed
-     * 'TAI': leap seconds needed (TAI = GPS + 19 seconds)
-     * 'UTC': no leap seconds needed
+     * `'GPS'`: leap seconds needed
+     * `'TAI'`: leap seconds needed (TAI = GPS + 19 seconds)
+     * `'UTC'`: no leap seconds needed
  - `EPSG`: input coordinate system
-     * default: 3031 Polar Stereographic South, WGS84
+     * default: `3031` Polar Stereographic South, WGS84
  - `METHOD`: interpolation method
-     * `bilinear`: quick bilinear interpolation
-     * `spline`: scipy bivariate spline interpolation (default)
-     * `linear`, `nearest`: scipy regular grid interpolations
+     * `'bilinear'`: quick bilinear interpolation
+     * `'spline'`: scipy bivariate spline interpolation (default)
+     * `'linear'`, `'nearest'`: scipy regular grid interpolations
  - `EXTRAPOLATE`: Extrapolate with nearest-neighbors
  - `FILL_VALUE`: output invalid value
 

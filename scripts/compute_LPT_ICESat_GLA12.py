@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_ICESat_GLA12.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (04/2021)
 Calculates radial load pole tide displacements for correcting ICESat/GLAS
     L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following
     IERS Convention (2010) guidelines
@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 04/2021: can use a generically named GLA12 file as input
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 12/2020: H5py deprecation warning change to use make_scale
         merged time conversion routines into module
@@ -73,7 +74,17 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
     #-- SEG:   Segment of orbit
     #-- GRAN:  Granule version number
     #-- TYPE:  File type
-    PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE = rx.findall(FILE).pop()
+    try:
+        PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE = rx.findall(FILE).pop()
+    except:
+        #-- output load pole tide HDF5 file (generic)
+        fileBasename,fileExtension = os.path.splitext(FILE)
+        OUTPUT_FILE = '{0}_{1}{2}'.format(fileBasename,'LPT',fileExtension)
+    else:
+        #-- output load pole tide HDF5 file for NSIDC granules
+        args = (PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
+        file_format = 'GLAH{0}_{1}_LPT_{2}{3}{4}_{5}_{6}_{7}_{8}_{9}.h5'
+        OUTPUT_FILE = file_format.format(*args)
 
     #-- read GLAH12 HDF5 file
     fileID = h5py.File(FILE,'r')
@@ -276,16 +287,13 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
     #-- close the input HDF5 file
     fileID.close()
 
-    #-- output tidal HDF5 file
-    args = (PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
-    file_format = 'GLAH{0}_{1}_LPT_{2}{3}{4}_{5}_{6}_{7}_{8}_{9}.h5'
     #-- print file information
-    print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
+    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
     HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_tide_attrs,
-        FILENAME=os.path.join(DIRECTORY,file_format.format(*args)),
+        FILENAME=os.path.join(DIRECTORY,OUTPUT_FILE),
         FILL_VALUE=IS_gla12_fill, CLOBBER=True)
     #-- change the permissions mode
-    os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
+    os.chmod(os.path.join(DIRECTORY,OUTPUT_FILE), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat data to HDF5
 def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,

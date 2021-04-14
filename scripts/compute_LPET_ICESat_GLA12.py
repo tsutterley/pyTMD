@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat_GLA12.py
-Written by Tyler Sutterley (12/2020)
+Written by Tyler Sutterley (04/2021)
 Calculates long-period equilibrium tidal elevations for correcting
     ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet elevation data
 Will calculate the long-period tides for all GLAS elevations and not just
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 04/2021: can use a generically named GLA12 file as input
     Updated 12/2020: H5py deprecation warning change to use make_scale
     Written 12/2020
 """
@@ -49,11 +50,11 @@ from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 
 #-- PURPOSE: read ICESat ice sheet HDF5 elevation data (GLAH12) from NSIDC
 #-- compute long-period equilibrium tides at points and times
-def compute_LPET_ICESat(FILE, VERBOSE=False, MODE=0o775):
+def compute_LPET_ICESat(INPUT_FILE, VERBOSE=False, MODE=0o775):
 
-    #-- get directory from FILE
-    print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
-    DIRECTORY = os.path.dirname(FILE)
+    #-- get directory from INPUT_FILE
+    print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
+    DIRECTORY = os.path.dirname(INPUT_FILE)
 
     #-- compile regular expression operator for extracting information from file
     rx = re.compile((r'GLAH(\d{2})_(\d{3})_(\d{1})(\d{1})(\d{2})_(\d{3})_'
@@ -71,10 +72,20 @@ def compute_LPET_ICESat(FILE, VERBOSE=False, MODE=0o775):
     #-- SEG:   Segment of orbit
     #-- GRAN:  Granule version number
     #-- TYPE:  File type
-    PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE = rx.findall(FILE).pop()
+    try:
+        PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE = rx.findall(INPUT_FILE).pop()
+    except:
+        #-- output long-period equilibrium tide HDF5 file (generic)
+        fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
+        OUTPUT_FILE = '{0}_{1}{2}'.format(fileBasename,'LPET',fileExtension)
+    else:
+        #-- output long-period equilibrium tide HDF5 file for NSIDC granules
+        args = (PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
+        file_format = 'GLAH{0}_{1}_LPET_{2}{3}{4}_{5}_{6}_{7}_{8}_{9}.h5'
+        OUTPUT_FILE = file_format.format(*args)
 
     #-- read GLAH12 HDF5 file
-    fileID = h5py.File(FILE,'r')
+    fileID = h5py.File(INPUT_FILE,'r')
     n_40HZ, = fileID['Data_40HZ']['Time']['i_rec_ndx'].shape
     #-- get variables and attributes
     rec_ndx_40HZ = fileID['Data_40HZ']['Time']['i_rec_ndx'][:].copy()
@@ -137,7 +148,7 @@ def compute_LPET_ICESat(FILE, VERBOSE=False, MODE=0o775):
         IS_gla12_tide_attrs[att] = fileID.attrs[att]
 
     #-- add attributes for input GLA12 file
-    IS_gla12_tide_attrs['input_files'] = os.path.basename(FILE)
+    IS_gla12_tide_attrs['input_files'] = os.path.basename(INPUT_FILE)
     #-- update geospatial ranges for ellipsoid
     IS_gla12_tide_attrs['geospatial_lat_min'] = np.min(lat_40HZ)
     IS_gla12_tide_attrs['geospatial_lat_max'] = np.max(lat_40HZ)
@@ -205,16 +216,13 @@ def compute_LPET_ICESat(FILE, VERBOSE=False, MODE=0o775):
     #-- close the input HDF5 file
     fileID.close()
 
-    #-- output tidal HDF5 file
-    args = (PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
-    file_format = 'GLAH{0}_{1}_LPET_{2}{3}{4}_{5}_{6}_{7}_{8}_{9}.h5'
     #-- print file information
-    print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
+    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
     HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_tide_attrs,
-        FILENAME=os.path.join(DIRECTORY,file_format.format(*args)),
+        FILENAME=os.path.join(DIRECTORY,OUTPUT_FILE),
         FILL_VALUE=IS_gla12_fill, CLOBBER=True)
     #-- change the permissions mode
-    os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
+    os.chmod(os.path.join(DIRECTORY,OUTPUT_FILE), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat data to HDF5
 def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,

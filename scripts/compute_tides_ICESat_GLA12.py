@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat_GLA12.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (04/2021)
 Calculates tidal elevations for correcting ICESat/GLAS L2 GLA12
     Antarctic and Greenland Ice Sheet elevation data
 
@@ -76,6 +76,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 04/2021: can use a generically named GLA12 file as input
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
     Updated 12/2020: updated for public release
@@ -118,7 +119,7 @@ from pyTMD.predict_tide_drift import predict_tide_drift
 
 #-- PURPOSE: read ICESat ice sheet HDF5 elevation data (GLAH12) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
+def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline',
      EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -463,9 +464,9 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         SCALE = 1.0/100.0
         GZIP = True
 
-    #-- get directory from FILE
-    print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
-    DIRECTORY = os.path.dirname(FILE)
+    #-- get directory from INPUT_FILE
+    print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
+    DIRECTORY = os.path.dirname(INPUT_FILE)
 
     #-- compile regular expression operator for extracting information from file
     rx = re.compile((r'GLAH(\d{2})_(\d{3})_(\d{1})(\d{1})(\d{2})_(\d{3})_'
@@ -483,10 +484,21 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     #-- SEG:   Segment of orbit
     #-- GRAN:  Granule version number
     #-- TYPE:  File type
-    PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE = rx.findall(FILE).pop()
+    try:
+        PRD,RL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE = rx.findall(INPUT_FILE).pop()
+    except:
+        #-- output tide HDF5 file (generic)
+        fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
+        args = (fileBasename,TIDE_MODEL,fileExtension)
+        OUTPUT_FILE = '{0}_{1}_TIDES{2}'.format(*args)
+    else:
+        #-- output tide HDF5 file for NSIDC granules
+        args = (PRD,RL,TIDE_MODEL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
+        file_format = 'GLAH{0}_{1}_{2}_TIDES_{3}{4}{5}_{6}_{7}_{8}_{9}_{10}.h5'
+        OUTPUT_FILE = file_format.format(*args)
 
     #-- read GLAH12 HDF5 file
-    fileID = h5py.File(FILE,'r')
+    fileID = h5py.File(INPUT_FILE,'r')
     n_40HZ, = fileID['Data_40HZ']['Time']['i_rec_ndx'].shape
     #-- get variables and attributes
     rec_ndx_40HZ = fileID['Data_40HZ']['Time']['i_rec_ndx'][:].copy()
@@ -585,7 +597,7 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS_gla12_tide_attrs[att] = fileID.attrs[att]
 
     #-- add attributes for input GLA12 file
-    IS_gla12_tide_attrs['input_files'] = os.path.basename(FILE)
+    IS_gla12_tide_attrs['input_files'] = os.path.basename(INPUT_FILE)
     #-- update geospatial ranges for ellipsoid
     IS_gla12_tide_attrs['geospatial_lat_min'] = np.min(lat_40HZ)
     IS_gla12_tide_attrs['geospatial_lat_max'] = np.max(lat_40HZ)
@@ -657,16 +669,13 @@ def compute_tides_ICESat(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
     #-- close the input HDF5 file
     fileID.close()
 
-    #-- output tidal HDF5 file
-    args = (PRD,RL,TIDE_MODEL,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
-    file_format = 'GLAH{0}_{1}_{2}_TIDES_{3}{4}{5}_{6}_{7}_{8}_{9}_{10}.h5'
     #-- print file information
-    print('\t{0}'.format(file_format.format(*args))) if VERBOSE else None
+    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
     HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_tide_attrs,
-        FILENAME=os.path.join(DIRECTORY,file_format.format(*args)),
+        FILENAME=os.path.join(DIRECTORY,OUTPUT_FILE),
         FILL_VALUE=IS_gla12_fill, CLOBBER=True)
     #-- change the permissions mode
-    os.chmod(os.path.join(DIRECTORY,file_format.format(*args)), MODE)
+    os.chmod(os.path.join(DIRECTORY,OUTPUT_FILE), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat data to HDF5
 def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,

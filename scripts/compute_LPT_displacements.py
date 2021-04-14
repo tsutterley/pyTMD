@@ -85,8 +85,8 @@ from pyTMD.read_iers_EOP import read_iers_EOP
 
 #-- PURPOSE: compute the pole load tide radial displacements following
 #-- IERS conventions (2010)
-def compute_LPT_displacements(input_file, output_file,
-    FORMAT='csv', VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
+def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
+    VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
     TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
     VERBOSE=False, MODE=0o775):
 

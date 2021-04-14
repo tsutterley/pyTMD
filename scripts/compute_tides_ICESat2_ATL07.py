@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL07.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (04/2021)
 Calculates tidal elevations for correcting ICESat-2 sea ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -75,6 +75,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 04/2021: can use a generically named ATL07 file as input
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
         replaced numpy bool/int to prevent deprecation warnings
@@ -121,7 +122,7 @@ from icesat2_toolkit.read_ICESat2_ATL07 import read_HDF5_ATL07
 
 #-- PURPOSE: read ICESat-2 sea ice height (ATL07) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
+def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline',
     EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -460,15 +461,26 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         SCALE = 1.0/100.0
         GZIP = True
 
-    #-- read data from FILE
-    print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
-    IS2_atl07_mds,IS2_atl07_attrs,IS2_atl07_beams = read_HDF5_ATL07(FILE,
+    #-- read data from input file
+    print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
+    IS2_atl07_mds,IS2_atl07_attrs,IS2_atl07_beams = read_HDF5_ATL07(INPUT_FILE,
         ATTRIBUTES=True)
-    DIRECTORY = os.path.dirname(FILE)
+    DIRECTORY = os.path.dirname(INPUT_FILE)
     #-- extract parameters from ICESat-2 ATLAS HDF5 sea ice file name
     rx = re.compile(r'(processed_)?(ATL\d{2})-(\d{2})_(\d{4})(\d{2})(\d{2})'
         r'(\d{2})(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
-    SUB,PRD,HEM,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX=rx.findall(FILE).pop()
+    try:
+        SUB,PRD,HEM,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX=rx.findall(INPUT_FILE).pop()
+    except:
+        #-- output tide HDF5 file (generic)
+        fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
+        args = (fileBasename,TIDE_MODEL,fileExtension)
+        OUTPUT_FILE = '{0}_{1}_TIDES{2}'.format(*args)
+    else:
+        #-- output tide HDF5 file for ASAS/NSIDC granules
+        args = (PRD,HEM,TIDE_MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX)
+        ff = '{0}-{1}_{2}_TIDES_{3}{4}{5}{6}{7}{8}_{9}{10}{11}_{12}_{13}{14}.h5'
+        OUTPUT_FILE = ff.format(*args)
 
     #-- number of GPS seconds between the GPS epoch
     #-- and ATLAS Standard Data Product (SDP) epoch
@@ -690,17 +702,14 @@ def compute_tides_ICESat2(tide_dir, FILE, TIDE_MODEL=None, METHOD='spline',
         IS2_atl07_tide_attrs[gtx]['sea_ice_segments']['geophysical'][variable]['coordinates'] = \
             "../height_segment_id ../delta_time ../latitude ../longitude"
 
-    #-- output tidal HDF5 file
-    args = (PRD,HEM,TIDE_MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX)
-    ff = '{0}-{1}_{2}_TIDES_{3}{4}{5}{6}{7}{8}_{9}{10}{11}_{12}_{13}{14}.h5'
     #-- print file information
-    print('\t{0}'.format(ff.format(*args))) if VERBOSE else None
+    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
     HDF5_ATL07_tide_write(IS2_atl07_tide, IS2_atl07_tide_attrs,
-        CLOBBER=True, INPUT=os.path.basename(FILE),
+        CLOBBER=True, INPUT=os.path.basename(INPUT_FILE),
         FILL_VALUE=IS2_atl07_fill, DIMENSIONS=IS2_atl07_dims,
-        FILENAME=os.path.join(DIRECTORY,ff.format(*args)))
+        FILENAME=os.path.join(DIRECTORY,OUTPUT_FILE))
     #-- change the permissions mode
-    os.chmod(os.path.join(DIRECTORY,ff.format(*args)), MODE)
+    os.chmod(os.path.join(DIRECTORY,OUTPUT_FILE), MODE)
 
 #-- PURPOSE: outputting the tide values for ICESat-2 data to HDF5
 def HDF5_ATL07_tide_write(IS2_atl07_tide, IS2_atl07_attrs, INPUT=None,
