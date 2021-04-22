@@ -38,6 +38,7 @@ General Guidelines
 ^^^^^^^^^^^^^^^^^^
 
 - Make each pull request as small and simple as possible
+- `Commit messages should be clear and describe the changes <./Contributing.html#semantic-commit-messages>`_
 - Larger changes should be broken down into their basic components and integrated separately
 - Bug fixes should be their own pull requests with an associated `GitHub issue <https://github.com/tsutterley/pyTMD/issues>`_
 - Write a descriptive pull request message with a clear title
@@ -72,3 +73,24 @@ The GitHub Actions jobs include:
 * Running the test suite on multiple combinations of OS and Python version
 * Uploading test coverage statistics to `Codecov <https://app.codecov.io/gh/tsutterley/pyTMD>`_
 * Uploading source and wheel distributions to `PyPI <https://pypi.org/project/pyTMD/>`_ (on releases)
+
+Semantic Commit Messages
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Commit messages should follow the `Conventional Commits <https://www.conventionalcommits.org/>`_ specification:
+
+.. code-block:: bash
+
+    <type>: <subject>
+
+    [optional message body]
+
+where ``<type>`` is one of the following:
+
+- ``feat``: adding new features or programs
+- ``fix``: fixing bugs or problems
+- ``docs``: changing the documentation
+- ``style``: changing the line order or adding comments
+- ``refactor``: changing the names of variables or programs
+- ``ci``: changing the `continuous integration <./Contributing.html#continuous-integration>`_ configuration files or scripts
+- ``test``: adding or updating `continuous integration tests <./Contributing.html#continuous-integration>`_
