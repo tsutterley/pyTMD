@@ -66,7 +66,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2021: fix arguments to program (using internal EOP files)
-        Thanks to Karen Alley for pointing this out!
+        Add missing delta time argument for files without time variables
+        Thanks to Karen Alley for pointing these out!
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
@@ -322,6 +323,10 @@ def main():
     parser.add_argument('--epoch','-e',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
+    #-- input delta time for files without date information
+    parser.add_argument('--deltatime','-d',
+        type=float, nargs='+',
+        help='Input delta time for files without date variables')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
