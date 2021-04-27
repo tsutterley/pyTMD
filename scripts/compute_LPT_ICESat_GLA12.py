@@ -28,6 +28,13 @@ PROGRAM DEPENDENCIES:
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
+REFERENCES:
+    S Desai, "Observing the pole tide with satellite altimetry", Journal of
+        Geophysical Research: Oceans, 107(C11), 2002. doi: 10.1029/2001JC001224
+    S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from
+        satellite altimetry", Journal of Geodesy, 89(12), p1233-1243, 2015.
+        doi: 10.1007/s00190-015-0848-7
+
 UPDATE HISTORY:
     Updated 04/2021: can use a generically named GLA12 file as input
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
