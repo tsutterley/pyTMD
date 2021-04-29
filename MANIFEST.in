@@ -1,1 +1,8 @@
 graft pyTMD/data
+prune .github*
+prune doc*
+prune notebooks*
+prune test*
+exclude *.cfg
+exclude *.yml
+include requirements.txt
