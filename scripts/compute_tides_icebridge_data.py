@@ -63,7 +63,7 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
-    utilities: download and management utilities for syncing files
+    utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
@@ -137,7 +137,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
-            i = [i for i in f.read().splitlines() if re.match(r'^(?!#)',i)]
+            i = [i for i in f.read().splitlines() if re.match(r'^(?!\#)',i)]
         file_lines = len(i)
     #-- return the number of lines
     return file_lines
@@ -167,7 +167,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
             file_contents = [i for i in f.read().splitlines() if
-                re.match(r'^(?!#)',i)]
+                re.match(r'^(?!\#)',i)]
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter)
         #-- create output variables with length equal to the number of lines
@@ -277,7 +277,7 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     #-- read the input file, split at lines and remove all commented lines
     with open(input_file,'r') as f:
         file_contents = [i for i in f.read().splitlines() if
-            re.match(r'^(?!#)',i)]
+            re.match(r'^(?!\#)',i)]
     #-- number of lines of data within file
     file_lines = file_length(input_file,input_subsetter)
     #-- output python dictionary with variables

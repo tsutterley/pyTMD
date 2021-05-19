@@ -11,7 +11,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 PROGRAM DEPENDENCIES:
-    utilities: download and management utilities for syncing files
+    utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings

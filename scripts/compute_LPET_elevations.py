@@ -52,7 +52,7 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
-    utilities: download and management utilities for syncing files
+    utilities.py: download and management utilities for syncing files
     calc_delta_time.py: calculates difference between universal and dynamic time
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 

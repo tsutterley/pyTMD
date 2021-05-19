@@ -25,6 +25,7 @@ conventions for calculating radial pole tide displacements.
     user_guide/bilinear_interp.md
     user_guide/calc_astrol_longitudes.md
     user_guide/calc_delta_time.md
+    user_guide/check_tide_points.md
     user_guide/compute_equilibrium_tide.md
     user_guide/compute_tide_corrections.md
     user_guide/convert_ll_xy.md
