@@ -13,7 +13,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 PROGRAM DEPENDENCIES:
-    utilities: download and management utilities for syncing files
+    utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
     Updated 04/2021: updated NIST ftp server url for leap-seconds.list

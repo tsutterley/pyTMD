@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (03/2021)
+test_download_and_read.py (05/2021)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://oct2py.readthedocs.io/en/latest/
 
 UPDATE HISTORY:
+    Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
         use TMD tmd_tide_pred_plus to calculate OB time series
         refactor program into two classes for CATS2008 and AOTIM-5-2018
@@ -42,6 +43,7 @@ import pyTMD.utilities
 import pyTMD.read_tide_model
 import pyTMD.predict_tidal_ts
 import pyTMD.infer_minor_corrections
+import pyTMD.check_tide_points
 import pyTMD.tidal_ellipse
 from oct2py import octave
 
@@ -138,6 +140,16 @@ class Test_CATS2008:
             assert (z.shape == (ny,nx))
             assert (u.shape == (ny,nx))
             assert (v.shape == (ny,nx))
+
+    #-- PURPOSE: Tests check point program
+    def test_check_CATS2008(self):
+        lons = np.zeros((10)) + 178.0
+        lats = -45.0 - np.arange(10)*5.0
+        obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
+            MODEL='CATS2008', EPSG=4326)
+        exp = np.array([False, False, False, False, True,
+            True, True, True, False, False])
+        assert np.all(obs == exp)
 
     #-- PURPOSE: Tests that interpolated results are comparable to AntTG database
     def test_compare_CATS2008(self):

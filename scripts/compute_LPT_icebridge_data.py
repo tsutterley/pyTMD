@@ -26,7 +26,7 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading, writing and operating on spatial data
-    utilities: download and management utilities for syncing files
+    utilities.py: download and management utilities for syncing files
     iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
     read_iers_EOP.py: read daily earth orientation parameters from IERS
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
@@ -75,7 +75,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
-            i = [i for i in f.read().splitlines() if re.match(r'^(?!#)',i)]
+            i = [i for i in f.read().splitlines() if re.match(r'^(?!\#)',i)]
         file_lines = len(i)
     #-- return the number of lines
     return file_lines
@@ -105,7 +105,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
             file_contents = [i for i in f.read().splitlines() if
-                re.match(r'^(?!#)',i)]
+                re.match(r'^(?!\#)',i)]
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter)
         #-- create output variables with length equal to the number of lines
@@ -215,7 +215,7 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     #-- read the input file, split at lines and remove all commented lines
     with open(input_file,'r') as f:
         file_contents = [i for i in f.read().splitlines() if
-            re.match(r'^(?!#)',i)]
+            re.match(r'^(?!\#)',i)]
     #-- number of lines of data within file
     file_lines = file_length(input_file,input_subsetter)
     #-- output python dictionary with variables

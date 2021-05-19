@@ -77,7 +77,7 @@ The GitHub Actions jobs include:
 Semantic Commit Messages
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Commit messages should follow the `Conventional Commits <https://www.conventionalcommits.org/>`_ specification:
+Please follow the `Conventional Commits <https://www.conventionalcommits.org/>`_ specification for your commit messages to help organize the pull requests:
 
 .. code-block:: bash
 

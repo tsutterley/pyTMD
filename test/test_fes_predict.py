@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (03/2021)
+test_fes_predict.py (05/2021)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
@@ -34,6 +35,7 @@ import pyTMD.utilities
 import pyTMD.read_FES_model
 import pyTMD.predict_tide_drift
 import pyTMD.infer_minor_corrections
+import pyTMD.check_tide_points
 import pyTMD.calc_delta_time
 
 #-- current file path
@@ -73,6 +75,16 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     yield
     #-- clean up model
     shutil.rmtree(modelpath)
+
+#-- PURPOSE: Tests check point program
+def test_check_FES2014():
+    lons = np.zeros((10)) + 178.0
+    lats = -45.0 - np.arange(10)*5.0
+    obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
+        MODEL='FES2014', EPSG=4326)
+    exp = np.array([True, True, True, True, True,
+        True, True, True, False, False])
+    assert np.all(obs == exp)
 
 #-- PURPOSE: Tests that interpolated results are comparable to FES program
 def test_verify_FES2014():

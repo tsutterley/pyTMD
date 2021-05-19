@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (03/2021)
+test_perth3_read.py (05/2021)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
         replaced numpy bool/int to prevent deprecation warnings
     Written 08/2020
@@ -34,6 +35,7 @@ import pyTMD.read_GOT_model
 import pyTMD.predict_tide_drift
 import pyTMD.infer_minor_corrections
 import pyTMD.compute_tide_corrections
+import pyTMD.check_tide_points
 import pyTMD.calc_delta_time
 
 #-- current file path
@@ -140,6 +142,16 @@ def test_verify_GOT47(METHOD):
     difference.mask = (tide.mask | validation.mask)
     if not np.all(difference.mask):
         assert np.all(np.abs(difference) <= eps)
+
+#-- PURPOSE: Tests check point program
+def test_check_GOT47():
+    lons = np.zeros((10)) + 178.0
+    lats = -45.0 - np.arange(10)*5.0
+    obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
+        MODEL='GOT4.7', EPSG=4326)
+    exp = np.array([True, True, True, True, True,
+        True, True, True, False, False])
+    assert np.all(obs == exp)
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest','bilinear'])

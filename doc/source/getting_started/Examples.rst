@@ -18,7 +18,7 @@ Jupyter Notebooks providing demonstrations of ``pyTMD`` functionality:
     Creates an animation of hourly tidal currents around Antarctica
 - Plot Tides under the Ross Ice Shelf in Antarctica |github ross| |nbviewer ross|
     Creates an animation of hourly tidal elevations around Antarctica
-- Plot Radial Ocean Pole Tide Components from `Desai et al. (2002) <https://doi.org/10.1029/2001JC001224>`_ |github opt| |nbviewer opt|
+- Plot Radial Ocean Pole Tide Components |github opt| |nbviewer opt|
     Plots maps of the real and imaginary geocentric pole tide admittance functions
 
 .. |github check| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github

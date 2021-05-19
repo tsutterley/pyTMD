@@ -5,6 +5,9 @@ name: Python on pull request
 
 on:
   pull_request:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 0 1 * *'
 
 jobs:
   build:
@@ -36,6 +39,7 @@ jobs:
         pip install numpy
         pip install zarr
         pip install pandas
+        pip install scikit-learn
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
         pip install .
@@ -53,6 +57,7 @@ jobs:
         pip install numpy
         pip install zarr
         pip install pandas
+        pip install scikit-learn
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
         pip install .

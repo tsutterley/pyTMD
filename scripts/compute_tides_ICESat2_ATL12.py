@@ -59,7 +59,7 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     read_ICESat2_ATL12.py: reads ICESat-2 ocean surface height data files
     time.py: utilities for calculating time operations
-    utilities: download and management utilities for syncing files
+    utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
