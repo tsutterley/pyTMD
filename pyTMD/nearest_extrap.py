@@ -112,7 +112,7 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     if (EPSG == '4326'):
         #-- calculate Cartesian coordinates of input grid
         xflat,yflat,zflat = pyTMD.spatial.to_cartesian(gridlon[indy,indx],
-            gridlat[indy,indx])
+            gridlat[indy,indx],a_axis=6378.137)
         tree = scipy.spatial.cKDTree(np.c_[xflat,yflat,zflat])
         #-- calculate Cartesian coordinates of output coordinates
         #-- set ellipsoidal major axis to kilometers
