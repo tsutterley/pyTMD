@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (05/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -57,6 +57,8 @@ COMMAND LINE OPTIONS:
         nearest
         bilinear
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
+    -c X, --cutoff X: Extrapolation cutoff in kilometers
+        set to inf to extrapolate for all points
     -V, --verbose: Verbose output of processing run
     -M X, --mode X: Permission mode of output file
 
@@ -95,6 +97,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
@@ -137,7 +140,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     TIDE_MODEL=None, FORMAT='csv', VARIABLES=['time','lat','lon','data'],
     HEADER=0, TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
     TIME=None, PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
-    VERBOSE=False, MODE=0o775):
+    CUTOFF=None, VERBOSE=False, MODE=0o775):
 
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
@@ -404,17 +407,19 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
                 grid_file, model_file, EPSG, TYPE=t, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, GRID=model_format)
+                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, GRID=model_format)
             deltat = np.zeros((nt))
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
                 grid_file, model_file[t], TYPE=t, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale, GZIP=GZIP)
+                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model_scale,
+                GZIP=GZIP)
             deltat = np.zeros((nt))
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
                 model_file[t], TYPE=t, VERSION=TIDE_MODEL, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, SCALE=model_scale, GZIP=GZIP)
+                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model_scale,
+                GZIP=GZIP)
             #-- interpolate delta times from calendar dates to tide time
             deltat = calc_delta_time(delta_file, tide_time)
 
@@ -534,6 +539,11 @@ def main():
     parser.add_argument('--extrapolate','-E',
         default=False, action='store_true',
         help='Extrapolate with nearest-neighbors')
+    #-- extrapolation cutoff in kilometers
+    #-- set to inf to extrapolate over all points
+    parser.add_argument('--cutoff','-c',
+        type=np.float64, default=10.0,
+        help='Extrapolation cutoff in kilometers')
     #-- verbose output of processing run
     #-- print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -557,7 +567,7 @@ def main():
         HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
         TIME=args.deltatime, PROJECTION=args.projection,
         METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-        VERBOSE=args.verbose, MODE=args.mode)
+        CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

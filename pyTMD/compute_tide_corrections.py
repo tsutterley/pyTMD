@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (05/2021)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -35,6 +35,8 @@ OPTIONS:
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate with nearest-neighbors
+    CUTOFF: Extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     FILL_VALUE: output invalid value (default NaN)
 
 PYTHON DEPENDENCIES:
@@ -67,6 +69,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
@@ -84,7 +87,6 @@ from __future__ import print_function
 
 import os
 import pyproj
-import datetime
 import numpy as np
 import pyTMD.time
 import pyTMD.utilities
@@ -100,7 +102,7 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC',
-    METHOD='spline', EXTRAPOLATE=False, FILL_VALUE=np.nan):
+    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, FILL_VALUE=np.nan):
     """
     Compute tides at points and times using tidal harmonics
 
@@ -130,6 +132,8 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate with nearest-neighbors
+    CUTOFF: Extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     FILL_VALUE: output invalid value (default NaN)
 
     Returns
@@ -382,22 +386,22 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
             model_EPSG, TYPE=model_type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            GRID=model_format)
+            CUTOFF=CUTOFF, GRID=model_format)
         deltat = np.zeros_like(t)
     elif (model_format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, grid_file, model_file,
             TYPE=model_type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            SCALE=SCALE, GZIP=GZIP)
+            CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
         amp,ph,c = extract_GOT_constants(lon, lat, model_file, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model_file, TYPE=model_type,
             VERSION=MODEL, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            SCALE=SCALE, GZIP=GZIP)
+            CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
 

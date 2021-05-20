@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (03/2021)
+read_FES_model.py (05/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -30,6 +30,8 @@ OPTIONS:
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate model using nearest-neighbors
+    CUTOFF: extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     GZIP: input ascii or netCDF4 files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -51,6 +53,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
         simplified inputs to be similar to binary OTIS read program
@@ -75,7 +78,7 @@ from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
-    METHOD='spline', EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
+    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
     """
     Reads files for an ascii or netCDF4 tidal model
     Makes initial calculations to run the tide program
@@ -104,6 +107,8 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate model using nearest-neighbors
+    CUTOFF: extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     GZIP: input files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -185,9 +190,9 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
             inv, = np.nonzero(hci.mask)
             #-- replace invalid values with nan
             hc[hc.mask] = np.nan
-            #-- extrapolate points within 10km of valid model points
+            #-- extrapolate points within cutoff of valid model points
             hci.data[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
-                dtype=hc.dtype,cutoff=10.0)
+                dtype=hc.dtype,cutoff=CUTOFF)
             #-- replace nan values with fill_value
             hci.mask[inv] = np.isnan(hci.data[inv])
             hci.data[hci.mask] = hci.fill_value

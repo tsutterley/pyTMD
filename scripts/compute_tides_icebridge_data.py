@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (05/2021)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -45,6 +45,8 @@ COMMAND LINE OPTIONS:
         nearest
         bilinear
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
+    -c X, --cutoff X: Extrapolation cutoff in kilometers
+        set to inf to extrapolate for all points
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -80,6 +82,8 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
+        modified import of ATM1b QFIT reader
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
         replaced numpy bool/int to prevent deprecation warnings
@@ -113,7 +117,7 @@ import argparse
 import numpy as np
 import pyTMD.time
 from pyTMD.utilities import get_data_path
-from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
+import read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary as ATM1b
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
@@ -133,7 +137,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
             file_lines, = fileID[HDF5].shape
     elif QFIT:
         #-- read the size of a QFIT binary file
-        file_lines = read_ATM1b_QFIT_binary.ATM1b_QFIT_shape(input_file)
+        file_lines = ATM1b.ATM1b_QFIT_shape(input_file)
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
@@ -190,7 +194,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
     #-- Version 1 of ATM QFIT files (binary)
     elif (SFX == 'qi'):
         #-- read input QFIT data file and subset if specified
-        fid,h = read_ATM1b_QFIT_binary(input_file)
+        fid,h = ATM1b.read_ATM1b_QFIT_binary(input_file)
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter,QFIT=True)
         ATM_L1b_input['lat'] = fid['latitude'][:]
@@ -417,8 +421,8 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
-    METHOD='spline', EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
+def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL, METHOD='spline',
+    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
 
     #-- extract file name and subsetter indices lists
     match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
@@ -801,23 +805,25 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     if model_format in ('OTIS','ATLAS'):
         amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
             grid_file, model_file, EPSG, TYPE=TYPE, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, GRID=model_format)
+            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, GRID=model_format)
         deltat = np.zeros_like(t)
     elif model_format in ('netcdf'):
         amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
             grid_file, model_file, TYPE=TYPE, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=SCALE,
+            GZIP=GZIP)
         deltat = np.zeros_like(t)
     elif (model_format == 'GOT'):
         amp,ph,c = extract_GOT_constants(dinput['lon'], dinput['lat'],
             model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            SCALE=SCALE, GZIP=GZIP)
+            CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
     elif (model_format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
             model_file, TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=SCALE,
+            GZIP=GZIP)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
 
@@ -968,6 +974,11 @@ def main():
     parser.add_argument('--extrapolate','-E',
         default=False, action='store_true',
         help='Extrapolate with nearest-neighbors')
+    #-- extrapolation cutoff in kilometers
+    #-- set to inf to extrapolate over all points
+    parser.add_argument('--cutoff','-c',
+        type=np.float64, default=10.0,
+        help='Extrapolation cutoff in kilometers')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -983,7 +994,7 @@ def main():
     for arg in args.infile:
         compute_tides_icebridge_data(args.directory, arg, TIDE_MODEL=args.tide,
             METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-            VERBOSE=args.verbose, MODE=args.mode)
+            CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

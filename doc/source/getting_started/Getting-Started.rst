@@ -146,6 +146,8 @@ There are options to use nearest and linear interpolators with the
 `regular grid <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RegularGridInterpolator.html>`_ function.
 For coastal or near-grounded points, the model can be extrapolated using a
 `nearest-neighbor <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/nearest_extrap.py>`_ routine.
+The default maximum extrapolation distance is 10 kilometers.
+This extrapolation cutoff can be set to any distance in kilometers.
 
 References
 ##########

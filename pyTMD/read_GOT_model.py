@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (03/2021)
+read_GOT_model.py (05/2021)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -17,6 +17,8 @@ OPTIONS:
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate model using nearest-neighbors
+    CUTOFF: extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     GZIP: input files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -37,6 +39,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
         simplified inputs to be similar to binary OTIS read program
@@ -70,7 +73,7 @@ from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
 def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
-    EXTRAPOLATE=False, GZIP=True, SCALE=1.0):
+    EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
     """
     Reads files for Richard Ray's Global Ocean Tide (GOT) models
     Makes initial calculations to run the tide program
@@ -89,6 +92,8 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate model using nearest-neighbors
+    CUTOFF: extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     GZIP: input files are compressed
     SCALE: scaling factor for converting to output units
 
@@ -173,9 +178,9 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
             inv, = np.nonzero(hci.mask)
             #-- replace invalid values with nan
             hc[hc.mask] = np.nan
-            #-- extrapolate points within 10km of valid model points
+            #-- extrapolate points within cutoff of valid model points
             hci.data[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
-                dtype=hc.dtype,cutoff=10.0)
+                dtype=hc.dtype,cutoff=CUTOFF)
             #-- replace nan values with fill_value
             hci.mask[inv] = np.isnan(hci.data[inv])
             hci.data[hci.mask] = hci.fill_value

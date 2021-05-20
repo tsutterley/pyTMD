@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (05/2021)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -37,6 +37,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
         replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: merged time conversion routines into module
@@ -68,7 +69,7 @@ from pyTMD.utilities import get_data_path
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
-from read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary import read_ATM1b_QFIT_binary
+import read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary as ATM1b
 
 #-- PURPOSE: reading the number of file lines removing commented lines
 def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
@@ -81,7 +82,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
             file_lines, = fileID[HDF5].shape
     elif QFIT:
         #-- read the size of a QFIT binary file
-        file_lines = read_ATM1b_QFIT_binary.ATM1b_QFIT_shape(input_file)
+        file_lines = ATM1b.ATM1b_QFIT_shape(input_file)
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
@@ -138,7 +139,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
     #-- Version 1 of ATM QFIT files (binary)
     elif (SFX == 'qi'):
         #-- read input QFIT data file and subset if specified
-        fid,h = read_ATM1b_QFIT_binary(input_file)
+        fid,h = ATM1b.read_ATM1b_QFIT_binary(input_file)
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter,QFIT=True)
         ATM_L1b_input['lat'] = fid['latitude'][:]

@@ -21,6 +21,7 @@ data = nearest_extrap(ilon,ilat,idata,lon,lat)
  - `fill_value`: invalid value
  - `dtype`: output data type
  - `cutoff`: return only neighbors within distance in kilometers
+     * set to `np.inf` to extrapolate for all points
  - `EPSG`: projection of tide model data
 
 #### Returns
