@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL07.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (05/2021)
 Calculates tidal elevations for correcting ICESat-2 sea ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -42,6 +42,8 @@ COMMAND LINE OPTIONS:
         nearest
         bilinear
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
+    -c X, --cutoff X: Extrapolation cutoff in kilometers
+        set to inf to extrapolate for all points
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -75,6 +77,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 04/2021: can use a generically named ATL07 file as input
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
@@ -123,7 +126,7 @@ from icesat2_toolkit.read_ICESat2_ATL07 import read_HDF5_ATL07
 #-- PURPOSE: read ICESat-2 sea ice height (ATL07) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline',
-    EXTRAPOLATE=False, VERBOSE=False, MODE=0o775):
+    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
     #-- select between tide models
     if (TIDE_MODEL == 'CATS0201'):
         grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
@@ -527,23 +530,25 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
         if model_format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(val['longitude'],
                 val['latitude'], grid_file, model_file, EPSG, TYPE=TYPE,
-                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, GRID=model_format)
+                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
+                GRID=model_format)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(val['longitude'],
                 val['latitude'], grid_file, model_file, TYPE=TYPE, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+                EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, CUTOFF=CUTOFF, GZIP=GZIP)
             deltat = np.zeros_like(tide_time)
         elif (model_format == 'GOT'):
             amp,ph,c = extract_GOT_constants(val['longitude'], val['latitude'],
-                model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE,
-                GZIP=GZIP)
+                model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
             #-- interpolate delta times from calendar dates to tide time
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model_format == 'FES'):
             amp,ph = extract_FES_constants(val['longitude'], val['latitude'],
                 model_file, TYPE=TYPE, VERSION=TIDE_MODEL, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=SCALE,
+                GZIP=GZIP)
             #-- interpolate delta times from calendar dates to tide time
             deltat = calc_delta_time(delta_file, tide_time)
 
@@ -917,6 +922,11 @@ def main():
     parser.add_argument('--extrapolate','-E',
         default=False, action='store_true',
         help='Extrapolate with nearest-neighbors')
+    #-- extrapolation cutoff in kilometers
+    #-- set to inf to extrapolate over all points
+    parser.add_argument('--cutoff','-c',
+        type=np.float64, default=10.0,
+        help='Extrapolation cutoff in kilometers')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -932,7 +942,7 @@ def main():
     for FILE in args.infile:
         compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
             METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-            VERBOSE=args.verbose, MODE=args.mode)
+            CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

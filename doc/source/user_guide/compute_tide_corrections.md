@@ -37,7 +37,9 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
      * `'bilinear'`: quick bilinear interpolation
      * `'spline'`: scipy bivariate spline interpolation (default)
      * `'linear'`, `'nearest'`: scipy regular grid interpolations
- - `EXTRAPOLATE`: Extrapolate with nearest-neighbors
+ - `EXTRAPOLATE`: extrapolate with nearest-neighbors
+ - `CUTOFF`: extrapolation cutoff in kilometers
+     * set to `np.inf` to extrapolate for all points
  - `FILL_VALUE`: output invalid value
 
 #### Returns

@@ -33,6 +33,9 @@ amp,ph,D,c = read_tide_model(ilon, ilat, grid_file, model_file, EPSG,
     * `'bilinear'`: quick bilinear interpolation
     * `'spline'`: scipy bivariate spline interpolation
     * `'linear'`, `'nearest'`: scipy regular grid interpolations
+ - `EXTRAPOLATE`: extrapolate model using nearest-neighbors
+ - `CUTOFF`: extrapolation cutoff in kilometers
+     * set to `np.inf` to extrapolate for all points
  - `GRID`: binary file type to read
     * `'ATLAS'`: reading a global solution with high-resolution local solutions
     * `'OTIS'`: combined global solution

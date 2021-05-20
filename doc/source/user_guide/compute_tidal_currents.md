@@ -55,6 +55,8 @@ python compute_tidal_currents.py --directory <path_to_directory> --tide <model> 
      * `'linear'`
      * `'nearest'`
      * `'bilinear'`
- - `-E X`, `--extrapolate X`: Extrapolate with nearest-neighbors
+ - `-E`, `--extrapolate`: Extrapolate with nearest-neighbors
+ - `-c X`, `--cutoff X`: Extrapolation cutoff in kilometers
+     * set to `'inf'` to extrapolate for all points
  - `-V`, `--verbose`: Verbose output of processing run
  - `-M X`, `--mode X`: Permission mode of output file

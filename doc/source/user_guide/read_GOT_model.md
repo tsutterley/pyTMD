@@ -21,6 +21,9 @@ amp,ph,c = read_GOT_model(ilon,ilat,model_files,METHOD='spline')
     * `'bilinear'`: quick bilinear interpolation
     * `'spline'`: scipy bivariate spline interpolation
     * `'linear'`, `'nearest'`: scipy regular grid interpolations
+ - `EXTRAPOLATE`: extrapolate model using nearest-neighbors
+ - `CUTOFF`: extrapolation cutoff in kilometers
+     * set to `np.inf` to extrapolate for all points
  - `GZIP`: input files are compressed
  - `SCALE`: scaling factor for converting to output units
 

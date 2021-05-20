@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-nearest_extrap.py (03/2021)
+nearest_extrap.py (05/2021)
 Uses kd-trees for nearest-neighbor extrapolation of valid model data
 
 CALLING SEQUENCE:
@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for reading and writing spatial data
 
 UPDATE HISTORY:
+    Updated 05/2021: set ellipsoidal major axis to WGS84 in kilometers
     Updated 03/2021: add checks to prevent runtime exception
         where there are no valid points within the input bounds
         or no points to be extrapolated
@@ -111,10 +112,11 @@ def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     if (EPSG == '4326'):
         #-- calculate Cartesian coordinates of input grid
         xflat,yflat,zflat = pyTMD.spatial.to_cartesian(gridlon[indy,indx],
-            gridlat[indy,indx])
+            gridlat[indy,indx],a_axis=6378.137)
         tree = scipy.spatial.cKDTree(np.c_[xflat,yflat,zflat])
         #-- calculate Cartesian coordinates of output coordinates
-        xs,ys,zs = pyTMD.spatial.to_cartesian(lon,lat)
+        #-- set ellipsoidal major axis to kilometers
+        xs,ys,zs = pyTMD.spatial.to_cartesian(lon,lat,a_axis=6378.137)
         points = np.c_[xs,ys,zs]
     else:
         #-- flattened model coordinates

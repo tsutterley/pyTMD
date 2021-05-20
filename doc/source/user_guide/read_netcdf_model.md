@@ -28,6 +28,9 @@ amp,ph,D,c = read_netcdf_model(ilon,ilat,grid_file,model_files,TYPE='z',METHOD='
     * `'bilinear'`: quick bilinear interpolation
     * `'spline'`: scipy bivariate spline interpolation
     * `'linear'`, `'nearest'`: scipy regular grid interpolations
+ - `EXTRAPOLATE`: extrapolate model using nearest-neighbors
+ - `CUTOFF`: extrapolation cutoff in kilometers
+     * set to `np.inf` to extrapolate for all points
  - `GZIP`: input netCDF4 files are compressed
  - `SCALE`: scaling factor for converting to output units
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (03/2021)
+read_tide_model.py (05/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -29,6 +29,8 @@ OPTIONS:
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate model using nearest-neighbors
+    CUTOFF: extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
         OTIS: combined global solution
@@ -52,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
         can read from single constituent TPXO9 ATLAS binary files
@@ -87,7 +90,7 @@ import matplotlib.pyplot as plt
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
-    METHOD='spline', EXTRAPOLATE=False, GRID='OTIS'):
+    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GRID='OTIS'):
     """
     Reads files for an OTIS-formatted tidal model
     Makes initial calculations to run the tide program
@@ -114,6 +117,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
     EXTRAPOLATE: extrapolate model using nearest-neighbors
+    CUTOFF: extrapolation cutoff in kilometers
+        set to np.inf to extrapolate for all points
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
         OTIS: combined global solution
@@ -285,9 +290,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 inv, = np.nonzero(z1.mask)
                 #-- replace zero values with nan
                 z[z==0] = np.nan
-                #-- extrapolate points within 10km of valid model points
+                #-- extrapolate points within cutoff of valid model points
                 z1.data[inv] = nearest_extrap(xi,yi,z,x[inv],y[inv],
-                    dtype=np.complex128,cutoff=10.0,EPSG=EPSG)
+                    dtype=np.complex128,cutoff=CUTOFF,EPSG=EPSG)
                 #-- replace nan values with fill_value
                 z1.mask[inv] = np.isnan(z1.data[inv])
                 z1.data[z1.mask] = z1.fill_value
@@ -344,9 +349,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 inv, = np.nonzero(u1.mask)
                 #-- replace zero values with nan
                 u[u==0] = np.nan
-                #-- extrapolate points within 10km of valid model points
+                #-- extrapolate points within cutoff of valid model points
                 u1.data[inv] = nearest_extrap(xu,yi,u,x[inv],y[inv],
-                    dtype=np.complex128,cutoff=10.0,EPSG=EPSG)
+                    dtype=np.complex128,cutoff=CUTOFF,EPSG=EPSG)
                 #-- replace nan values with fill_value
                 u1.mask[inv] = np.isnan(u1.data[inv])
                 u1.data[u1.mask] = u1.fill_value
@@ -404,9 +409,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 inv, = np.nonzero(v1.mask)
                 #-- replace zero values with nan
                 v[z==v] = np.nan
-                #-- extrapolate points within 10km of valid model points
+                #-- extrapolate points within cutoff of valid model points
                 v1.data[inv] = nearest_extrap(x,yv,v,x[inv],y[inv],
-                    dtype=np.complex128,cutoff=10.0,EPSG=EPSG)
+                    dtype=np.complex128,cutoff=CUTOFF,EPSG=EPSG)
                 #-- replace nan values with fill_value
                 v1.mask[inv] = np.isnan(v1.data[inv])
                 v1.data[v1.mask] = v1.fill_value
