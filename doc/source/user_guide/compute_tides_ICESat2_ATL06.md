@@ -46,7 +46,7 @@ python compute_tides_ICESat2_ATL06.py --directory <path_to_directory> --tide <mo
      * `'nearest'`
      * `'bilinear'`
  - `-E`, `--extrapolate`: Extrapolate with nearest-neighbors
- - `-c X`, `--cutoff X: Extrapolation cutoff in kilometers
+ - `-c X`, `--cutoff X`: Extrapolation cutoff in kilometers
      * set to `'inf'` to extrapolate for all points
  - `-M X`, `--mode X`: Permission mode of output file
  - `-V`, `--verbose`: Output information about each created file
