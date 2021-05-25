@@ -80,7 +80,7 @@ jobs:
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \
             --aws-access=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            --aws-secret=${{ secrets.AWS_SECRET_KEY }} \
+            --aws-secret=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
             --aws-region=${{ secrets.AWS_REGION_NAME }}
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1

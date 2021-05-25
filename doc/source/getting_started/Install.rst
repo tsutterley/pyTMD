@@ -4,8 +4,10 @@ Setup and Installation
 
 Dependencies
 ############
-``pyTMD`` is dependent on open source programs that can be installed using OS-specific package management systems,
-`conda <https://anaconda.org/conda-forge/repo>`_ or from source:
+
+``pyTMD`` is dependent on several open source programs that can be installed using
+OS-specific package management systems (e.g. ``apt`` or ``homebrew``),
+``conda`` or from source:
 
 - `GDAL <https://gdal.org/index.html>`_
 - `GEOS <https://trac.osgeo.org/geos>`_
@@ -26,18 +28,31 @@ The ``pyTMD`` installation uses the ``gdal-config`` routines to set the GDAL pac
 
 Installation
 ############
-Presently ``pyTMD`` is available for use as a `GitHub repository <https://github.com/tsutterley/pyTMD>`_ and
-from the `Python Package Index (pypi) <https://pypi.org/project/pyTMD/>`_.
-The contents of the repository can be download as a
-`zipped file <https://github.com/tsutterley/pyTMD/archive/main.zip>`_  or cloned.
 
-To use this repository, please fork into your own account and then clone onto your system:
+``pyTMD`` is available for download from the `GitHub repository <https://github.com/tsutterley/pyTMD>`_,
+the `Python Package Index (pypi) <https://pypi.org/project/pyTMD/>`_,
+and from `conda-forge <https://anaconda.org/conda-forge/pytmd>`_.
+
+
+The simplest installation for most users will likely be using ``conda``:
+
+.. code-block:: bash
+
+    conda install -c conda-forge pytmd
+
+``conda`` installed versions of ``pyTMD`` can be upgraded to the latest stable release:
+
+.. code-block:: bash
+
+    conda update pytmd
+
+To use the development repository, please fork ``pyTMD`` into your own account and then clone onto your system:
 
 .. code-block:: bash
 
     git clone https://github.com/tsutterley/pyTMD.git
 
-Can then install using ``setuptools``:
+``pyTMD`` can then be installed within the package directory using ``setuptools``:
 
 .. code-block:: bash
 
@@ -49,12 +64,17 @@ or ``pip``
 
     python3 -m pip install --user .
 
-Alternatively can install the ``pyTMD`` utilities directly from GitHub with ``pip``:
+The development version of ``pyTMD`` can also be installed directly from GitHub using ``pip``:
 
 .. code-block:: bash
 
     python3 -m pip install --user git+https://github.com/tsutterley/pyTMD.git
 
-Executable versions of this repository can also be tested using
-`Binder <https://mybinder.org/v2/gh/tsutterley/pyTMD/main>`_ or
-`Pangeo <https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/main>`_.
+| This repository can be also tested using `BinderHub <https://github.com/jupyterhub/binderhub>`_ platforms:
+| |Binder| |Pangeo|
+
+.. |Binder| image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/tsutterley/pyTMD/main
+
+.. |Pangeo| image:: https://binder.pangeo.io/badge.svg
+   :target: https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/main

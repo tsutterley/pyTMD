@@ -1,0 +1,35 @@
+# Python Build #
+################
+__pycache__
+build/
+dist/
+develop-eggs/
+run/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache
+pythonenv*/
+setup.cfg
+# Jupyter #
+###########
+notebooks/
+.ipynb_checkpoints
+Untitled.ipynb
+# Documentation #
+#################
+requirements-dev.txt
+environment.yml
+readthedocs.yml
+codecov.yml
+postBuild
+test/
+doc/
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes

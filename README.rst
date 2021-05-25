@@ -5,19 +5,23 @@ pyTMD
 |Language|
 |License|
 |PyPI Version|
+|Anaconda-Server|
 |Documentation Status|
 |codecov|
 |Binder|
 |Pangeo|
 
-.. |Language| image:: https://img.shields.io/badge/python-v3.7-green.svg
+.. |Language| image:: https://img.shields.io/pypi/pyversions/pyTMD?color=green
    :target: https://www.python.org/
 
-.. |License| image:: https://img.shields.io/badge/license-MIT-green.svg
+.. |License| image:: https://img.shields.io/github/license/tsutterley/pyTMD
    :target: https://github.com/tsutterley/pyTMD/blob/main/LICENSE
 
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/pyTMD.svg
    :target: https://pypi.python.org/pypi/pyTMD/
+
+.. |Anaconda-Server| image:: https://img.shields.io/conda/vn/conda-forge/pytmd
+   :target: https://anaconda.org/conda-forge/pytmd
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/pytmd/badge/?version=latest
    :target: https://pytmd.readthedocs.io/en/latest/?badge=latest

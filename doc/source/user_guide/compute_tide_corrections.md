@@ -25,8 +25,8 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
  - `EPOCH`: time period for calculating delta times
      * default: J2000 (seconds since 2000-01-01T00:00:00)
  - `TYPE`: input data type
-     * 'drift': drift buoys or satellite/airborne altimetry (time per data point)
-     * 'grid': spatial grids or images (single time per image)
+     * `'drift'`: drift buoys or satellite/airborne altimetry (time per data point)
+     * `'grid'`: spatial grids or images (single time per image)
  - `TIME`: time type if need to compute leap seconds to convert to UTC
      * `'GPS'`: leap seconds needed
      * `'TAI'`: leap seconds needed (TAI = GPS + 19 seconds)

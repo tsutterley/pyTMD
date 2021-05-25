@@ -29,6 +29,10 @@ else:
     dependency_links = ['https://github.com/tsutterley/read-ICESat-2/tarball/main',
         'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main']
 
+# get version
+with open('version.txt') as fh:
+    fallback_version = fh.read()
+
 # list of all scripts to be included with package
 scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
 
@@ -56,6 +60,7 @@ setup_requires = ["setuptools_scm"]
 use_scm_version = {
     "relative_to": __file__,
     "local_scheme": "node-and-date",
+    "fallback_version":fallback_version,
 }
 
 setup(
