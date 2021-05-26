@@ -13,40 +13,40 @@ python compute_tides_ICESat2_ATL06.py --directory <path_to_directory> --tide <mo
 [Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py)
 
 #### Inputs
- 1. `input_file`: input ICESat-2 ATL06 file
+1. `input_file`: input ICESat-2 ATL06 file
 
 #### Command Line Options
- - `-D X`, `--directory X`: Working data directory
- - `-T X`, `--tide X`: Tide model to use in correction
-     * `'CATS0201'`
-     * `'CATS2008'`
-     * `'CATS2008_load'`
-     * `'TPXO9-atlas'`
-     * `'TPXO9-atlas-v2'`
-     * `'TPXO9-atlas-v3'`
-     * `'TPXO9-atlas-v4'`
-     * `'TPXO9.1'`
-     * `'TPXO8-atlas'`
-     * `'TPXO7.2'`
-     * `'TPXO7.2_load'`
-     * `'AODTM-5'`
-     * `'AOTIM-5'`
-     * `'AOTIM-5-2018'`
-     * `'GOT4.7'`
-     * `'GOT4.7_load'`
-     * `'GOT4.8'`
-     * `'GOT4.8_load'`
-     * `'GOT4.10'`
-     * `'GOT4.10_load'`
-     * `'FES2014'`
-     * `'FES2014_load'`
- - `-I X`, `--interpolate X`: Interpolation method
-     * `'spline'`
-     * `'linear'`
-     * `'nearest'`
-     * `'bilinear'`
- - `-E`, `--extrapolate`: Extrapolate with nearest-neighbors
- - `-c X`, `--cutoff X`: Extrapolation cutoff in kilometers
-     * set to `'inf'` to extrapolate for all points
- - `-M X`, `--mode X`: Permission mode of output file
- - `-V`, `--verbose`: Output information about each created file
+- `-D X`, `--directory X`: Working data directory
+- `-T X`, `--tide X`: Tide model to use in correction
+    * `'CATS0201'`
+    * `'CATS2008'`
+    * `'CATS2008_load'`
+    * `'TPXO9-atlas'`
+    * `'TPXO9-atlas-v2'`
+    * `'TPXO9-atlas-v3'`
+    * `'TPXO9-atlas-v4'`
+    * `'TPXO9.1'`
+    * `'TPXO8-atlas'`
+    * `'TPXO7.2'`
+    * `'TPXO7.2_load'`
+    * `'AODTM-5'`
+    * `'AOTIM-5'`
+    * `'AOTIM-5-2018'`
+    * `'GOT4.7'`
+    * `'GOT4.7_load'`
+    * `'GOT4.8'`
+    * `'GOT4.8_load'`
+    * `'GOT4.10'`
+    * `'GOT4.10_load'`
+    * `'FES2014'`
+    * `'FES2014_load'`
+- `-I X`, `--interpolate X`: Interpolation method
+    * `'spline'`
+    * `'linear'`
+    * `'nearest'`
+    * `'bilinear'`
+- `-E`, `--extrapolate`: Extrapolate with nearest-neighbors
+- `-c X`, `--cutoff X`: Extrapolation cutoff in kilometers
+    * set to `'inf'` to extrapolate for all points
+- `-M X`, `--mode X`: Permission mode of output file
+- `-V`, `--verbose`: Output information about each created file

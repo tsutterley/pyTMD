@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 aviso_fes_tides.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (05/2021)
 Downloads the FES (Finite Element Solution) global tide model from AVISO
 Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/data/products/auxiliary-products/
@@ -32,6 +32,7 @@ PYTHON DEPENDENCIES:
         https://python-future.org/
 
 UPDATE HISTORY:
+    Updated 05/2021: use try/except for retrieving netrc credentials
     Updated 04/2021: set a default netrc file and check access
     Updated 10/2020: using argparse to set command line parameters
     Updated 07/2020: add gzip option to compress output ascii and netCDF4 files
@@ -273,16 +274,16 @@ def main():
     #-- AVISO FTP Server hostname
     HOST = 'ftp.aviso.altimetry.fr'
     #-- get AVISO FTP Server credentials
-    if not args.user and not os.access(args.netrc,os.F_OK):
+    try:
+        args.user,_,PASSWORD = netrc.netrc(args.netrc).authenticators(HOST)
+    except:
         #-- check that AVISO FTP Server credentials were entered
-        args.user=builtins.input('Username for {0}: '.format(HOST))
+        if not args.user:
+            prompt = 'Username for {0}: '.format(HOST)
+            args.user = builtins.input(prompt)
         #-- enter password securely from command-line
-        PASSWORD=getpass.getpass('Password for {0}@{1}: '.format(args.user,HOST))
-    elif not args.user and os.access(args.netrc,os.F_OK):
-        args.user,_,PASSWORD=netrc.netrc(args.netrc).authenticators(HOST)
-    else:
-        #-- enter password securely from command-line
-        PASSWORD=getpass.getpass('Password for {0}@{1}: '.format(args.user,HOST))
+        prompt = 'Password for {0}@{1}: '.format(args.user,HOST)
+        PASSWORD = getpass.getpass(prompt)
 
     #-- check internet connection before attempting to run program
     if check_connection(args.user,PASSWORD):

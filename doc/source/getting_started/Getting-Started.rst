@@ -4,13 +4,14 @@ Getting Started
 
 This documentation is intended to explain how to compute ocean, load and pole tide variations using the set of ``pyTMD`` programs.
 The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface.
-Ocean tides are typically observed using float gauges, GPS stations, pressure recorders, and satellite altimetry.
+Ocean tides are typically observed using float gauges, GPS stations, gravimeters, tiltmeters, pressure recorders, and satellite altimeters.
+For each of these measurements, it is important to note the `vertical datum of the measurement technique <https://www.esr.org/data-products/antarctic_tg_database/ocean-tide-and-ocean-tide-loading/>`_.
 Ocean and load tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation.
 The tidal oscillations can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
 Ocean and load tide constituent files are available from different modeling groups in different formats.
 ``pyTMD`` can access the harmonic constituents for the OTIS, GOT and FES families of ocean and load tide models.
 These tide models will be one of following categories depending on the version: 1) an empirically adjusted model,
-2) a barotropic hydrodynamic model constrained by data assimilation,
+1) a barotropic hydrodynamic model constrained by data assimilation,
 or 3) an unconstrained hydrodynamic model [Stammer2014]_.
 
 Load and ocean pole tides are driven by variations in the Earth's figure axis.
