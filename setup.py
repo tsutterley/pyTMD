@@ -24,7 +24,7 @@ if on_rtd:
 else:
     # get install requirements
     with open('requirements.txt') as fh:
-        install_requires = fh.read().splitlines()
+        install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
     # dependency links (data readers)
     dependency_links = ['https://github.com/tsutterley/read-ICESat-2/tarball/main',
         'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main']

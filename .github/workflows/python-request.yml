@@ -47,17 +47,23 @@ jobs:
     - name: Install dependencies for MacOS
       if: matrix.os == 'macos-latest'
       run: |
-        brew install proj
+        brew install proj@7
         brew install geos
         brew install gdal
         brew install hdf5
         brew install netcdf
         brew install octave
+        brew install pkg-config
         pip install --upgrade pip
+        pip install cython
         pip install numpy
         pip install zarr
         pip install pandas
         pip install scikit-learn
+        export LDFLAGS="-L/usr/local/opt/proj@7/lib"
+        export CPPFLAGS="-I/usr/local/opt/proj@7/include"
+        export ACCEPT_USE_OF_DEPRECATED_PROJ_API_H=1
+        export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/proj@7/lib/pkgconfig"
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
         pip install .
