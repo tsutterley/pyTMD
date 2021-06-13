@@ -32,6 +32,7 @@ python compute_tides_ICESat_GLA12.py --directory <path_to_directory> --tide <mod
     * `'AODTM-5'`
     * `'AOTIM-5'`
     * `'AOTIM-5-2018'`
+    * `'Arc1km-v2'`
     * `'GOT4.7'`
     * `'GOT4.7_load'`
     * `'GOT4.8'`

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (06/2021)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -31,6 +31,7 @@ COMMAND LINE OPTIONS:
         AODTM-5
         AOTIM-5
         AOTIM-5-2018
+        Arc1km-v2
         GOT4.7
         GOT4.7_load
         GOT4.8
@@ -82,6 +83,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 06/2021: added new Arc1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
         modified import of ATM1b QFIT reader
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
@@ -613,6 +615,15 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL, METHOD='spline',
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
         EPSG = 'PSNorth'
+        TYPE = 'z'
+    elif (TIDE_MODEL == 'Arc1km-v2'):
+        grid_file = os.path.join(tide_dir,'GreenlandTMD_v2','grid_Greenland8.v2')
+        model_file = os.path.join(tide_dir,'GreenlandTMD_v2','h_Greenland8.v2')
+        reference = 'https://www.esr.org/research/polar-tide-models/'
+        output_variable = 'tide_ocean'
+        variable_long_name = 'Ocean_Tide'
+        model_format = 'OTIS'
+        EPSG = '3413'
         TYPE = 'z'
     elif (TIDE_MODEL == 'GOT4.7'):
         model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')

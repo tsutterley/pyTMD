@@ -37,6 +37,7 @@ RUN wget -q http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz && \
     ./configure --prefix=/usr/local && \
     make --quiet --jobs=${JOBS} && \
     make --quiet install && \
+    make clean && \
     cd contrib/minizip && \
     autoreconf -fvi && \
     ./configure --quiet --prefix=/usr/local/ && \

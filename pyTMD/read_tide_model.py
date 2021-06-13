@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (05/2021)
+read_tide_model.py (06/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 06/2021: fix tidal currents for bilinear interpolation
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
@@ -381,7 +382,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- replace zero values with nan
                 v[v==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                v1.data = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
+                v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (~mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value

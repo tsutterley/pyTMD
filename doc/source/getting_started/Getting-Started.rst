@@ -46,6 +46,7 @@ This structure was chosen based on the different formats of each tide model.
     * `AODTM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N>`_: ``<path_to_tide_models>/aodtm5_tmd/``
     * `AOTIM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80>`_: ``<path_to_tide_models>/aotim5_tmd/``
     * `AOTIM-5-2018 <https://arcticdata.io/catalog/view/doi:10.18739/A21R6N14K>`_: ``<path_to_tide_models>/Arc5km2018/``
+    * `Arc1km-v2 <https://www.esr.org/research/polar-tide-models/>`_: ``<path_to_tide_models>/GreenlandTMD_v2/``
 
 - TOPEX/POSEIDON global tide models [Egbert2002]_
     * `TPXO9-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas/``
