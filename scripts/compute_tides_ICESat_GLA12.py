@@ -29,7 +29,7 @@ COMMAND LINE OPTIONS:
         AODTM-5
         AOTIM-5
         AOTIM-5-2018
-        Arc1km-v2
+        Gr1km-v2
         GOT4.7
         GOT4.7_load
         GOT4.8
@@ -79,7 +79,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
-    Updated 06/2021: added new Arc1km-v2 1km Greenland model from ESR
+    Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 04/2021: can use a generically named GLA12 file as input
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
@@ -329,9 +329,9 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline',
         model_format = 'OTIS'
         EPSG = 'PSNorth'
         TYPE = 'z'
-    elif (TIDE_MODEL == 'Arc1km-v2'):
-        grid_file = os.path.join(tide_dir,'GreenlandTMD_v2','grid_Greenland8.v2')
-        model_file = os.path.join(tide_dir,'GreenlandTMD_v2','h_Greenland8.v2')
+    elif (TIDE_MODEL == 'Gr1km-v2'):
+        grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
+        model_file = os.path.join(tide_dir,'greenlandTMD_v2','h_Greenland8.v2')
         variable = 'd_ocElv'
         long_name = "Ocean Tide Elevation"
         description = ("Ocean Tides including diurnal and semi-diurnal "

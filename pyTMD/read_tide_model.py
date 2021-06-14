@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 06/2021: fix tidal currents for bilinear interpolation
+        check for nan points when reading elevation and transport files
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
@@ -679,6 +680,9 @@ def read_elevation_file(input_file,ic):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
         h.data.imag[i,:] = temp[1:2*nx:2]
+    #-- replace nan values and set mask
+    h.mask[np.isnan(h.data)] = True
+    h.data[h.mask] = h.fill_value
     #-- close the file
     fid.close()
     #-- return the elevation
@@ -812,6 +816,11 @@ def read_transport_file(input_file,ic):
         u.data.imag[i,:] = temp[1:4*nx-2:4]
         v.data.real[i,:] = temp[2:4*nx-1:4]
         v.data.imag[i,:] = temp[3:4*nx:4]
+    #-- replace nan values and set mask
+    u.mask[np.isnan(u.data)] = True
+    v.mask[np.isnan(v.data)] = True
+    u.data[u.mask] = u.fill_value
+    v.data[v.mask] = v.fill_value
     #-- close the file
     fid.close()
     #-- return the transport components

@@ -259,9 +259,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         model_format = 'OTIS'
         model_EPSG = 'PSNorth'
         model_type = 'z'
-    elif (MODEL == 'Arc1km-v2'):
-        grid_file = os.path.join(DIRECTORY,'GreenlandTMD_v2','grid_Greenland8.v2')
-        model_file = os.path.join(DIRECTORY,'GreenlandTMD_v2','h_Greenland8.v2')
+    elif (MODEL == 'Gr1km-v2'):
+        grid_file = os.path.join(DIRECTORY,'greenlandTMD_v2','grid_Greenland8.v2')
+        model_file = os.path.join(DIRECTORY,'greenlandTMD_v2','h_Greenland8.v2')
         model_format = 'OTIS'
         model_EPSG = '3413'
         model_type = 'z'

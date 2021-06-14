@@ -31,7 +31,7 @@ python compute_tidal_currents.py --directory <path_to_directory> --tide <model> 
     * `'AODTM-5'`
     * `'AOTIM-5'`
     * `'AOTIM-5-2018'`
-    * `'Arc1km-v2'`
+    * `'Gr1km-v2'`
     * `'FES2014'`
 - `--format X`: input and output data format
     * `'csv'` (default)

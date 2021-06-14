@@ -46,7 +46,7 @@ This structure was chosen based on the different formats of each tide model.
     * `AODTM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N>`_: ``<path_to_tide_models>/aodtm5_tmd/``
     * `AOTIM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80>`_: ``<path_to_tide_models>/aotim5_tmd/``
     * `AOTIM-5-2018 <https://arcticdata.io/catalog/view/doi:10.18739/A21R6N14K>`_: ``<path_to_tide_models>/Arc5km2018/``
-    * `Arc1km-v2 <https://www.esr.org/research/polar-tide-models/>`_: ``<path_to_tide_models>/GreenlandTMD_v2/``
+    * `Gr1km-v2 <https://www.esr.org/research/polar-tide-models/>`_: ``<path_to_tide_models>/greenlandTMD_v2/``
 
 - TOPEX/POSEIDON global tide models [Egbert2002]_
     * `TPXO9-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas/``
@@ -149,7 +149,8 @@ There are options to use nearest and linear interpolators with the
 For coastal or near-grounded points, the model can be extrapolated using a
 `nearest-neighbor <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/nearest_extrap.py>`_ routine.
 The default maximum extrapolation distance is 10 kilometers.
-This extrapolation cutoff can be set to any distance in kilometers.
+This default distance may not be a large enough extrapolation for some applications and models.
+The extrapolation cutoff can be set to any distance in kilometers, but should be used with caution in cases such as narrow fjords or ice sheet grounding zones [Padman2018]_.
 
 References
 ##########
@@ -161,6 +162,8 @@ References
 .. [Padman2004] L. Padman and S. Y. Erofeeva, "A barotropic inverse tidal model for the Arctic Ocean", *Geophysical Research Letters*, 31(2), L02303. (2004). `doi: 10.1029/2003GL019003 <https://doi.org/10.1029/2003GL019003>`_
 
 .. [Padman2008] L. Padman, S. Y. Erofeeva, and H. A. Fricker, "Improving Antarctic tide models by assimilation of ICESat laser altimetry over ice shelves", *Geophysical Research Letters*, 35, L22504, (2008). `doi: 10.1029/2008GL035592 <https://doi.org/10.1029/2008GL035592>`_
+
+.. [Padman2018] L. Padman, M. R. Siegfried, and H. A. Fricker, "Ocean Tide Inﬂuences on the Antarctic and Greenland Ice Sheets", *Reviews of Geophysics*, 56, (2018). `doi: 10.1002/2016RG000546 <https://doi.org/10.1002/2016RG000546>`_
 
 .. [Ray1999] R. D. Ray, "A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2", *NASA Technical Memorandum*, `NASA/TM--1999-209478 <https://ntrs.nasa.gov/search.jsp?R=19990089548>`_.
 
