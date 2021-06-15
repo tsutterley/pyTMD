@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (05/2021)
+read_tide_model.py (06/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,8 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 06/2021: fix tidal currents for bilinear interpolation
+        check for nan points when reading elevation and transport files
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
         prevent ComplexWarning for fill values when calculating amplitudes
@@ -381,7 +383,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- replace zero values with nan
                 v[v==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                v1.data = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
+                v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (~mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value
@@ -678,6 +680,10 @@ def read_elevation_file(input_file,ic):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
         h.data.imag[i,:] = temp[1:2*nx:2]
+    #-- update mask for nan values
+    h.mask[np.isnan(h.data)] = True
+    #-- replace masked values with fill value
+    h.data[h.mask] = h.fill_value
     #-- close the file
     fid.close()
     #-- return the elevation
@@ -811,6 +817,12 @@ def read_transport_file(input_file,ic):
         u.data.imag[i,:] = temp[1:4*nx-2:4]
         v.data.real[i,:] = temp[2:4*nx-1:4]
         v.data.imag[i,:] = temp[3:4*nx:4]
+    #-- update mask for nan values
+    u.mask[np.isnan(u.data)] = True
+    v.mask[np.isnan(v.data)] = True
+    #-- replace masked values with fill value
+    u.data[u.mask] = u.fill_value
+    v.data[v.mask] = v.fill_value
     #-- close the file
     fid.close()
     #-- return the transport components

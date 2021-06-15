@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-convert_ll_xy.py (08/2020)
+convert_ll_xy.py (06/2021)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
@@ -29,6 +29,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 06/2021: added 3413 for new 1km Greenland model from ESR
     Updated 08/2020: using conversion protocols following pyproj-2 updates
         https://pyproj4.github.io/pyproj/stable/gotchas.html
     Updated 07/2020: added function docstrings. changed function name
@@ -62,6 +63,7 @@ def convert_ll_xy(i1,i2,PROJ,BF,EPSG=4326):
     #-- python dictionary with conversion functions
     conversion_functions = {}
     conversion_functions['3031'] = xy_ll_EPSG3031
+    conversion_functions['3413'] = xy_ll_EPSG3413
     conversion_functions['CATS2008'] = xy_ll_CATS2008
     conversion_functions['3976'] = xy_ll_EPSG3976
     conversion_functions['PSNorth'] = xy_ll_PSNorth
@@ -79,6 +81,23 @@ def xy_ll_EPSG3031(i1,i2,BF,EPSG=4326):
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-71,
         'lon_0':0,'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84',
+        'units':'km'})
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    #-- convert lat/lon to Polar-Stereographic x/y
+    if (BF.upper() == 'F'):
+        direction = pyproj.enums.TransformDirection.FORWARD
+    #-- convert Polar-Stereographic x/y to lat/lon
+    elif (BF.upper() == 'B'):
+        direction = pyproj.enums.TransformDirection.INVERSE
+    #-- return the output variables
+    return transformer.transform(i1, i2, direction=direction)
+
+#-- wrapper function for models in EPSG 3413 (Sea Ice Polar Stereographic North)
+def xy_ll_EPSG3413(i1,i2,BF,EPSG=4326):
+    #-- projections for converting from input EPSG (default latitude/longitude)
+    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':90,'lat_ts':70,
+        'lon_0':-45,'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84',
         'units':'km'})
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     #-- convert lat/lon to Polar-Stereographic x/y

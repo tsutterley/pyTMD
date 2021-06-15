@@ -161,8 +161,10 @@ def compute_OPT_displacements(input_file, output_file, FORMAT='csv',
     #-- converting x,y from projection to latitude/longitude
     #-- could try to extract projection attributes from netCDF4 and HDF5 files
     try:
+        #-- EPSG projection code string or int
         crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
     except (ValueError,pyproj.exceptions.CRSError):
+        #-- Projection SRS string
         crs1 = pyproj.CRS.from_string(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)

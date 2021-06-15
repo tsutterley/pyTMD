@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (06/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -32,6 +32,7 @@ COMMAND LINE OPTIONS:
         AODTM-5
         AOTIM-5
         AOTIM-5-2018
+        Gr1km-v2
         FES2014
     --format X: input and output data format
         csv (default)
@@ -97,6 +98,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
@@ -289,6 +291,13 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         model_format = 'OTIS'
         EPSG = 'PSNorth'
         TYPES = ['u','v']
+    elif (TIDE_MODEL == 'Gr1km-v2'):
+        grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
+        model_file = os.path.join(tide_dir,'greenlandTMD_v2','u_Greenland8_rot.v2')
+        reference = 'https://www.esr.org/research/polar-tide-models/'
+        model_format = 'OTIS'
+        EPSG = '3413'
+        TYPES = ['u','v']
     elif (TIDE_MODEL == 'FES2014'):
         model_directory = {}
         model_directory['u'] = os.path.join(tide_dir,'fes2014','eastward_velocity')
@@ -372,8 +381,10 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- converting x,y from projection to latitude/longitude
     #-- could try to extract projection attributes from netCDF4 and HDF5 files
     try:
+        #-- EPSG projection code string or int
         crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
     except (ValueError,pyproj.exceptions.CRSError):
+        #-- Projection SRS string
         crs1 = pyproj.CRS.from_string(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
