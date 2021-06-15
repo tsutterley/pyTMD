@@ -680,8 +680,10 @@ def read_elevation_file(input_file,ic):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
         h.data.imag[i,:] = temp[1:2*nx:2]
-    #-- replace nan values with fill value
-    h.data[np.isnan(h.data)] = h.fill_value
+    #-- update mask for nan values
+    h.mask[np.isnan(h.data)] = True
+    #-- replace masked values with fill value
+    h.data[h.mask] = h.fill_value
     #-- close the file
     fid.close()
     #-- return the elevation
@@ -815,9 +817,12 @@ def read_transport_file(input_file,ic):
         u.data.imag[i,:] = temp[1:4*nx-2:4]
         v.data.real[i,:] = temp[2:4*nx-1:4]
         v.data.imag[i,:] = temp[3:4*nx:4]
-    #-- replace nan values with fill value
-    u.data[np.isnan(u.data)] = u.fill_value
-    v.data[np.isnan(v.data)] = v.fill_value
+    #-- update mask for nan values
+    u.mask[np.isnan(u.data)] = True
+    v.mask[np.isnan(v.data)] = True
+    #-- replace masked values with fill value
+    u.data[u.mask] = u.fill_value
+    v.data[v.mask] = v.fill_value
     #-- close the file
     fid.close()
     #-- return the transport components

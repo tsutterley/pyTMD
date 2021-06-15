@@ -596,7 +596,7 @@ class Test_AOTIM5_2018:
         eps = np.finfo(np.float16).eps
 
         #-- compare daily outputs at each station point
-        invalid_list = ['KS14']
+        invalid_list = ['BC1','KS12','KS14']
         #-- remove coastal stations from the list
         valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
 
