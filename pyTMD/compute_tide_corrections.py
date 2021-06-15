@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (06/2021)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -69,6 +69,8 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
+        add try/except for input projection strings
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
         simplified netcdf inputs to be similar to binary OTIS read program
@@ -354,7 +356,12 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         raise Exception("Unlisted tide model")
 
     #-- converting x,y from EPSG to latitude/longitude
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    try:
+        #-- EPSG projection code string or int
+        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(EPSG)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        #-- Projection SRS string
+        crs1 = pyproj.CRS.from_string(EPSG)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())

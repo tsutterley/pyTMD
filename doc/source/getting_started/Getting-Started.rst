@@ -42,11 +42,11 @@ This structure was chosen based on the different formats of each tide model.
     * `CATS2008 <https://www.usap-dc.org/view/dataset/601235>`_: ``<path_to_tide_models>/CATS2008/``
     * CATS2008_load: ``<path_to_tide_models>/CATS2008a_SPOTL_Load/``
 
-- Arctic Ocean Tidal Simulations [Padman2004]_
+- Arctic Ocean and Greenland Coast Tidal Simulations [Padman2004]_
     * `AODTM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N>`_: ``<path_to_tide_models>/aodtm5_tmd/``
     * `AOTIM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80>`_: ``<path_to_tide_models>/aotim5_tmd/``
     * `AOTIM-5-2018 <https://arcticdata.io/catalog/view/doi:10.18739/A21R6N14K>`_: ``<path_to_tide_models>/Arc5km2018/``
-    * `Gr1km-v2 <https://www.esr.org/research/polar-tide-models/>`_: ``<path_to_tide_models>/greenlandTMD_v2/``
+    * Gr1km-v2: ``<path_to_tide_models>/greenlandTMD_v2/``
 
 - TOPEX/POSEIDON global tide models [Egbert2002]_
     * `TPXO9-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas/``
