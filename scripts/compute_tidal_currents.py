@@ -504,7 +504,7 @@ def main():
     #-- tide model to use
     model_choices = ('CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
         'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9.1','TPXO8-atlas','TPXO7.2',
-        'AODTM-5','AOTIM-5','AOTIM-5-2018','FES2014')
+        'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2','FES2014')
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, default='CATS2008',
         choices=model_choices,
