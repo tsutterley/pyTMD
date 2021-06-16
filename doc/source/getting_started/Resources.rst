@@ -7,6 +7,7 @@ Ocean and Load Tide Resources
 
 - `OSU Global and Regional Tide Models <https://www.tpxo.net>`_
 - `ESR Polar Tide Models <https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/>`_
+- `Ocean Tides around Antarctica and in the Southern Ocean <https://www.usap-dc.org/view/project/p0010116>`_
 - `A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2 <https://ntrs.nasa.gov/search.jsp?R=19990089548>`_
 - `Finite Element Solution (FES) tide models <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html>`_
 - `Antarctic Tide Gauge Database <https://www.esr.org/data-products/antarctic_tg_database/>`_
@@ -28,5 +29,6 @@ Software
 
 - `ESR Tide Model Driver (TMD) Matlab Toolbox <https://www.esr.org/research/polar-tide-models/tmd-software/>`_
 - `TMD Matlab Toolbox Repository <https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5>`_
+- `Antarctic Tide Gauge (AntTG) Database Tools <https://github.com/EarthAndSpaceResearch/AntTG_Database_Tools>`_
 - `OSU Tidal Prediction Software (OTPS) <https://www.tpxo.net/otps>`_
 - `FES (Finite Element Solution) tide model software <https://bitbucket.org/cnes_aviso/fes/src/master/>`_

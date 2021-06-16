@@ -10,8 +10,9 @@ Ocean and load tides are driven by gravitational undulations due to the relative
 The tidal oscillations can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
 Ocean and load tide constituent files are available from different modeling groups in different formats.
 ``pyTMD`` can access the harmonic constituents for the OTIS, GOT and FES families of ocean and load tide models.
-These tide models will be one of following categories depending on the version: 1) an empirically adjusted model,
-1) a barotropic hydrodynamic model constrained by data assimilation,
+These tide models will be one of following categories depending on the version:
+1) an empirically adjusted model,
+2) a barotropic hydrodynamic model constrained by data assimilation,
 or 3) an unconstrained hydrodynamic model [Stammer2014]_.
 
 Load and ocean pole tides are driven by variations in the Earth's figure axis.
