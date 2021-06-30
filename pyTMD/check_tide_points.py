@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (06/2021)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -48,6 +48,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 06/2021: add try/except for input projection strings
     Written 05/2021
 """
 from __future__ import print_function
@@ -164,7 +165,12 @@ def check_tide_points(x,y,DIRECTORY=None,MODEL=None,EPSG=3031,METHOD='spline'):
     # input shape of data
     idim = np.shape(x)
     # converting x,y from EPSG to latitude/longitude
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    try:
+        # EPSG projection code string or int
+        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(EPSG)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        # Projection SRS string
+        crs1 = pyproj.CRS.from_string(EPSG)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(np.atleast_1d(x).flatten(),
