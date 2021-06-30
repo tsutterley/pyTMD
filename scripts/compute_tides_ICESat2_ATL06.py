@@ -336,7 +336,7 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
     elif (TIDE_MODEL == 'Gr1km-v2'):
         grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
         model_file = os.path.join(tide_dir,'greenlandTMD_v2','h_Greenland8.v2')
-        reference = 'https://www.esr.org/research/polar-tide-models/'
+        reference = 'https://doi.org/10.1002/2016RG000546'
         variable = 'tide_ocean'
         long_name = "Ocean Tide"
         description = ("Ocean Tides including diurnal and semi-diurnal "

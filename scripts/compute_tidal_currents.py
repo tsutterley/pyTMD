@@ -294,7 +294,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     elif (TIDE_MODEL == 'Gr1km-v2'):
         grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
         model_file = os.path.join(tide_dir,'greenlandTMD_v2','u_Greenland8_rot.v2')
-        reference = 'https://www.esr.org/research/polar-tide-models/'
+        reference = 'https://doi.org/10.1002/2016RG000546'
         model_format = 'OTIS'
         EPSG = '3413'
         TYPES = ['u','v']

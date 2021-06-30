@@ -323,7 +323,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (TIDE_MODEL == 'Gr1km-v2'):
         grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
         model_file = os.path.join(tide_dir,'greenlandTMD_v2','h_Greenland8.v2')
-        reference = 'https://www.esr.org/research/polar-tide-models/'
+        reference = 'https://doi.org/10.1002/2016RG000546'
         output_variable = 'tide_ocean'
         variable_long_name = 'Ocean_Tide'
         model_format = 'OTIS'
