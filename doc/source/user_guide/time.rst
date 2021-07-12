@@ -92,6 +92,23 @@ General Methods
         ``dpm``: number of days for each month
 
 
+.. method:: pyTMD.time.convert_datetime(date, epoch=(1970,1,1,0,0,0))
+
+    Convert a numpy datetime array to seconds since an epoch
+
+    Arguments:
+
+        ``date``: numpy datetime array
+
+    Keyword arguments:
+
+        ``epoch``: epoch for output delta_time
+
+    Returns:
+
+        ``delta_time``: seconds since epoch
+
+
 .. method:: pyTMD.time.convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0)
 
     Convert delta time from seconds since epoch1 to time since epoch2
@@ -196,18 +213,26 @@ General Methods
         ``second``: second (and fractions of a second) of the minute
 
 
-.. method:: pyTMD.time.count_leap_seconds(GPS_Time)
+.. method:: pyTMD.time.count_leap_seconds(GPS_Time, truncate=True)
 
     Counts the number of leap seconds between a given GPS time and UTC
+
+    Keyword arguments:
+
+        ``truncate``: Reduce list of leap seconds to positive GPS times
 
     Arguments:
 
         ``GPS_Time``: seconds since January 6, 1980 at 00:00:00
 
 
-.. method:: pyTMD.time.get_leap_seconds()
+.. method:: pyTMD.time.get_leap_seconds(truncate=True)
 
     Gets a list of GPS times for when leap seconds occurred
+
+    Keyword arguments:
+
+        ``truncate``: Reduce list of leap seconds to positive GPS times
 
 
 .. method:: pyTMD.time.update_leap_seconds(verbose=False, mode=0o775)

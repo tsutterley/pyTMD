@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (07/2021)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
         add routines for converting to and from cartesian coordinates
         eplaced numpy bool/int to prevent deprecation warnings
@@ -55,6 +56,25 @@ def case_insensitive_filename(filename):
             raise IOError('{0} not found in file system'.format(filename))
         filename = os.path.join(directory,f.pop())
     return os.path.expanduser(filename)
+
+def data_type(x, y, t):
+    """
+    Determines input data type based on variable dimensions
+    Inputs: spatial and temporal coordinates
+    """
+    xsize = np.size(x)
+    ysize = np.size(y)
+    tsize = np.size(t)
+    if (xsize == 1) and (ysize == 1) and (tsize >= 1):
+        return 'time series'
+    elif (xsize == ysize) & (xsize == tsize):
+        return 'drift'
+    elif (np.ndim(x) > 1) & (xsize == ysize):
+        return 'grid'
+    elif (xsize != ysize):
+        return 'grid'
+    else:
+        raise ValueError('Unknown data type')
 
 def from_ascii(filename, compression=None, verbose=False,
     columns=['time','y','x','data'], header=0):

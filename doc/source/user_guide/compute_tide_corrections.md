@@ -17,7 +17,7 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
 #### Arguments
 1. `x`: x-coordinates in projection EPSG
 2. `y`: y-coordinates in projection EPSG
-3. `delta_time`: seconds since EPOCH
+3. `delta_time`: seconds since EPOCH or datetime array
 
 #### Keyword arguments
 - `DIRECTORY`: working data directory for tide models
@@ -25,12 +25,14 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
 - `EPOCH`: time period for calculating delta times
     * default: J2000 (seconds since 2000-01-01T00:00:00)
 - `TYPE`: input data type
+    * `None`: determined from input variable dimensions
     * `'drift'`: drift buoys or satellite/airborne altimetry (time per data point)
     * `'grid'`: spatial grids or images (single time per image)
-- `TIME`: time type if need to compute leap seconds to convert to UTC
+- `TIME`: input time standard or input type
     * `'GPS'`: leap seconds needed
     * `'TAI'`: leap seconds needed (TAI = GPS + 19 seconds)
     * `'UTC'`: no leap seconds needed
+    * `'datetime'`: numpy datatime array in UTC
 - `EPSG`: input coordinate system
     * default: `3031` Polar Stereographic South, WGS84
 - `METHOD`: interpolation method

@@ -16,6 +16,50 @@ import pyTMD.utilities
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
+#-- PURPOSE: test the data type function
+def test_data_type():
+    #-- test drift type
+    exp = 'drift'
+    #-- number of data points
+    npts = 30; ntime = 30
+    x = np.random.rand(npts)
+    y = np.random.rand(npts)
+    t = np.random.rand(ntime)
+    obs = pyTMD.spatial.data_type(x,y,t)
+    assert (obs == exp)
+    #-- test grid type
+    exp = 'grid'
+    xgrid,ygrid = np.meshgrid(x,y)
+    obs = pyTMD.spatial.data_type(xgrid,ygrid,t)
+    assert (obs == exp)
+    #-- test grid type with spatial dimensions
+    exp = 'grid'
+    nx = 30; ny = 20; ntime = 10
+    x = np.random.rand(nx)
+    y = np.random.rand(ny)
+    t = np.random.rand(ntime)
+    xgrid,ygrid = np.meshgrid(x,y)
+    obs = pyTMD.spatial.data_type(xgrid,ygrid,t)
+    assert (obs == exp)
+    #-- test time series type
+    exp = 'time series'
+    #-- number of data points
+    npts = 1; ntime = 1
+    x = np.random.rand(npts)
+    y = np.random.rand(npts)
+    t = np.random.rand(ntime)
+    obs = pyTMD.spatial.data_type(x,y,t)
+    assert (obs == exp)
+    #-- test catch for unknown data type
+    ermsg = 'Unknown data type'
+    #-- number of data points
+    npts = 30; ntime = 10
+    x = np.random.rand(npts)
+    y = np.random.rand(npts)
+    t = np.random.rand(ntime)
+    with pytest.raises(ValueError, match=ermsg):
+        pyTMD.spatial.data_type(x,y,t)
+
 #-- PURPOSE: test the read and write of ascii files
 def test_ascii():
     #-- number of data points

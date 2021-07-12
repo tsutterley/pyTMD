@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (05/2021)
+test_perth3_read.py (07/2021)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 07/2021: added test for invalid tide model name
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
         replaced numpy bool/int to prevent deprecation warnings
@@ -174,3 +175,10 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
         TYPE='grid', TIME='GPS', EPSG=3031, METHOD=METHOD,
         EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
+
+#-- PURPOSE: test the catch in the correction wrapper function
+def test_unlisted_model():
+    ermsg = "Unlisted tide model"
+    with pytest.raises(Exception, match=ermsg):
+        pyTMD.compute_tide_corrections(None, None, None,
+            DIRECTORY=filepath, MODEL='invalid')

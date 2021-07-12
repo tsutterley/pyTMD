@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (06/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -14,7 +14,7 @@ or Finite Element Solution (FES) models provided by AVISO
 INPUTS:
     x: x-coordinates in projection EPSG
     y: y-coordinates in projection EPSG
-    delta_time: seconds since EPOCH
+    delta_time: seconds since EPOCH or datetime array
 
 OPTIONS:
     DIRECTORY: working data directory for tide models
@@ -22,12 +22,14 @@ OPTIONS:
     EPOCH: time period for calculating delta times
         default: J2000 (seconds since 2000-01-01T00:00:00)
     TYPE: input data type
+        None: determined from input variable dimensions
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time for all data points)
-    TIME: time type if need to compute leap seconds to convert to UTC
+    TIME: input time standard or input type
         GPS: leap seconds needed
         TAI: leap seconds needed (TAI = GPS + 19 seconds)
         UTC: no leap seconds needed
+        datetime: numpy datatime array in UTC
     EPSG: input coordinate system
         default: 3031 Polar Stereographic South, WGS84
     METHOD: interpolation method
@@ -52,6 +54,7 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
+    spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time
@@ -69,6 +72,9 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 07/2021: can use numpy datetime arrays as input time variable
+        added function for determining the input spatial variable type
+        added check that tide model directory is accessible
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
         add try/except for input projection strings
     Updated 05/2021: added option for extrapolation cutoff in kilometers
@@ -91,6 +97,7 @@ import os
 import pyproj
 import numpy as np
 import pyTMD.time
+import pyTMD.spatial
 import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
@@ -112,7 +119,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     ---------
     x: x-coordinates in projection EPSG
     y: y-coordinates in projection EPSG
-    delta_time: seconds since EPOCH
+    delta_time: seconds since EPOCH or datetime array
 
     Keyword arguments
     -----------------
@@ -121,12 +128,14 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     EPOCH: time period for calculating delta times
         default: J2000 (seconds since 2000-01-01T00:00:00)
     TYPE: input data type
+        None: determined from input variable dimensions
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time per image)
     TIME: time type if need to compute leap seconds to convert to UTC
         GPS: leap seconds needed
         TAI: leap seconds needed (TAI = GPS + 19 seconds)
         UTC: no leap seconds needed
+        datetime: numpy datatime array in UTC
     EPSG: input coordinate system
         default: 3031 Polar Stereographic South, WGS84
     METHOD: interpolation method
@@ -142,6 +151,12 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     -------
     tide: tidal elevation at coordinates and time in meters
     """
+
+    #-- check that tide directory is accessible
+    try:
+        os.access(DIRECTORY, os.F_OK)
+    except:
+        raise FileNotFoundError("Invalid tide directory")
 
     #-- select between tide models
     if (MODEL == 'CATS0201'):
@@ -355,6 +370,13 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     else:
         raise Exception("Unlisted tide model")
 
+    #-- determine input data type based on variable dimensions
+    if not TYPE:
+        TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    #-- reform coordinate dimensions for input grids
+    if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
+        x,y = np.meshgrid(np.copy(x),np.copy(y))
+
     #-- converting x,y from EPSG to latitude/longitude
     try:
         #-- EPSG projection code string or int
@@ -389,9 +411,16 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     else:
         leap_seconds = 0.0
 
-    #-- convert time to days relative to Jan 1, 1992 (48622mjd)
-    t = pyTMD.time.convert_delta_time(delta_time - leap_seconds, epoch1=EPOCH,
-        epoch2=(1992,1,1,0,0,0), scale=(1.0/86400.0))
+    #-- convert delta times or datetimes objects
+    if (TIME.lower() == 'datetime'):
+        #-- convert delta time array from datetime object
+        #-- to days relative to 1992-01-01T00:00:00
+        t = pyTMD.time.convert_datetime(delta_time,
+            epoch=(1992,1,1,0,0,0))/86400.0
+    else:
+        #-- convert time to days relative to Jan 1, 1992 (48622mjd)
+        t = pyTMD.time.convert_delta_time(delta_time - leap_seconds,
+            epoch1=EPOCH, epoch2=(1992,1,1,0,0,0), scale=(1.0/86400.0))
     #-- delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
@@ -436,7 +465,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             #-- add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
-    else:
+    elif (TYPE.lower() == 'drift'):
         npts = len(t)
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)

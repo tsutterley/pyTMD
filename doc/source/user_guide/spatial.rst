@@ -37,6 +37,21 @@ General Methods
     Searches a directory for a filename without case dependence
 
 
+.. method:: pyTMD.spatial.data_type(x, y, t)
+
+    Determines input data type based on variable dimensions
+
+    Arguments: spatial and temporal coordinates
+
+    Returns:
+
+        string denoting input data type
+
+          * ``'time series'``
+          * ``'drift'``
+          * ``'grid'``
+
+
 .. method:: pyTMD.spatial.from_ascii(filename, compression=None, verbose=False, columns=['time','y','x','data'], header=0)
 
     Read data from an ascii file

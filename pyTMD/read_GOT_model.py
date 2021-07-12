@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (06/2021)
+read_GOT_model.py (07/2021)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
@@ -131,6 +132,9 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
     ph.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,model_file in enumerate(model_files):
+        #-- check that model file is accessible
+        if not os.access(os.path.expanduser(model_file), os.F_OK):
+            raise FileNotFoundError(os.path.expanduser(model_file))
         #-- read constituent from elevation file
         hc,lon,lat,cons = read_GOT_grid(os.path.expanduser(model_file),
             GZIP=GZIP)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (06/2021)
+read_netcdf_model.py (07/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: add extrapolation check where there are no invalid points
@@ -129,6 +130,9 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
+    #-- check that grid file is accessible
+    if not os.access(os.path.expanduser(grid_file), os.F_OK):
+        raise FileNotFoundError(os.path.expanduser(grid_file))
     #-- read the tide grid file for bathymetry and spatial coordinates
     lon,lat,bathymetry = read_netcdf_grid(grid_file, TYPE, GZIP=GZIP)
     #-- grid step size of tide model
@@ -196,6 +200,9 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
     ph.mask = np.zeros((npts,nc),dtype=bool)
     #-- read and interpolate each constituent
     for i,model_file in enumerate(model_files):
+        #-- check that model file is accessible
+        if not os.access(os.path.expanduser(model_file), os.F_OK):
+            raise FileNotFoundError(os.path.expanduser(model_file))
         if (TYPE == 'z'):
             #-- read constituent from elevation file
             z,con = read_elevation_file(model_file, GZIP=GZIP)

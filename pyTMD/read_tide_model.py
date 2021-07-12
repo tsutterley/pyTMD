@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (06/2021)
+read_tide_model.py (07/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 07/2021: added checks that tide model files are accessible
     Updated 06/2021: fix tidal currents for bilinear interpolation
         check for nan points when reading elevation and transport files
     Updated 05/2021: added option for extrapolation cutoff in kilometers
@@ -132,6 +133,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     D: bathymetry of tide model
     constituents: list of model constituents
     """
+    #-- check that grid file is accessible
+    if not os.access(os.path.expanduser(grid_file), os.F_OK):
+        raise FileNotFoundError(os.path.expanduser(grid_file))
     #-- read the OTIS-format tide grid file
     if (GRID == 'ATLAS'):
         #-- if reading a global solution with localized solutions
@@ -639,6 +643,9 @@ def read_constituents(input_file):
     constituents: list of tidal constituent IDs
     nc: number of constituents
     """
+    #-- check that model file is accessible
+    if not os.access(os.path.expanduser(input_file), os.F_OK):
+        raise FileNotFoundError(os.path.expanduser(input_file))
     #-- open the file
     fid = open(os.path.expanduser(input_file),'rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)

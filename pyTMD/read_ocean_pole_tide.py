@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_ocean_pole_tide.py (03/2021)
+read_ocean_pole_tide.py (07/2021)
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
 http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/icc7.pdf
@@ -29,12 +29,14 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 07/2021: added check that ocean pole tide file is accessible
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 08/2020: output north load and east load deformation components
     Updated 07/2020: added function docstrings
     Updated 12/2018: Compatibility updates for Python3
     Written 09/2017
 """
+import os
 import re
 import gzip
 import numpy as np
@@ -56,8 +58,12 @@ def read_ocean_pole_tide(input_file):
     glon: ocean grid longitude
     glat: ocean grid latitude
     """
+    #-- check that ocean pole tide file is accessible
+    if not os.access(os.path.expanduser(input_file), os.F_OK):
+        raise FileNotFoundError(os.path.expanduser(input_file))
+
     #-- read GZIP ocean pole tide file
-    with gzip.open(input_file,'rb') as f:
+    with gzip.open(os.path.expanduser(input_file),'rb') as f:
         file_contents = f.read().splitlines()
 
     #-- counts the number of lines in the header
