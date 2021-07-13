@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (06/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -98,6 +98,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 07/2021: added tide model reference to output attributes
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
@@ -339,6 +340,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     attrib['u'] = {}
     attrib['u']['description'] = ('depth_averaged_tidal_zonal_current_'
         'from_harmonic_constants')
+    attrib['u']['reference'] = reference
     attrib['u']['model'] = TIDE_MODEL
     attrib['u']['units'] = 'cm/s'
     attrib['u']['long_name'] = 'zonal_tidal_current'
@@ -347,6 +349,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     attrib['v'] = {}
     attrib['v']['description'] = ('depth_averaged_tidal_meridional_current_'
         'from_harmonic_constants')
+    attrib['v']['reference'] = reference
     attrib['v']['model'] = TIDE_MODEL
     attrib['v']['units'] = 'cm/s'
     attrib['v']['long_name'] = 'meridional_tidal_current'

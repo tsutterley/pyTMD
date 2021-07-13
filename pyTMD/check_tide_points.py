@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (06/2021)
+Written by Tyler Sutterley (07/2021)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -48,6 +48,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 07/2021: added check that tide model directory is accessible
     Updated 06/2021: add try/except for input projection strings
     Written 05/2021
 """
@@ -89,6 +90,12 @@ def check_tide_points(x,y,DIRECTORY=None,MODEL=None,EPSG=3031,METHOD='spline'):
     -------
     valid: array describing if input coordinate is within model domain
     """
+
+    #-- check that tide directory is accessible
+    try:
+        os.access(DIRECTORY, os.F_OK)
+    except:
+        raise FileNotFoundError("Invalid tide directory")
 
     # select between tide models
     if (MODEL == 'CATS0201'):

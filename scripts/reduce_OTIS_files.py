@@ -70,7 +70,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, TYPE=['z','uv'],
         model_file['z'] = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
         model_format = 'OTIS'
         EPSG = 'CATS2008'
-    elif (MODEL == 'TPXO9_atlas'):
+    elif (TIDE_MODEL == 'TPXO9_atlas'):
         grid_file = os.path.join(tide_dir,'tpxo9_atlas','grid_tpxo9atlas_30_v1')
         model_file['z'] = os.path.join(tide_dir,'tpxo9_atlas','hf.tpxo9_atlas_30_v1')
         model_file['uv'] = os.path.join(tide_dir,'tpxo9_atlas','uv.tpxo9_atlas_30_v1')

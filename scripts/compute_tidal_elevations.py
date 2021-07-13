@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (06/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -108,6 +108,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 07/2021: added tide model reference to output attributes
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
@@ -464,6 +465,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     attrib[output_variable] = {}
     attrib[output_variable]['description'] = ('tidal_elevation_from_harmonic_'
         'constants')
+    attrib[output_variable]['reference'] = reference
     attrib[output_variable]['model'] = TIDE_MODEL
     attrib[output_variable]['units'] = 'meters'
     attrib[output_variable]['long_name'] = variable_long_name

@@ -135,6 +135,26 @@ def calendar_days(year):
     elif ((m4 != 0) | (m100 == 0) & (m400 != 0) | (m4000 == 0)):
         return dpm_stnd
 
+#-- PURPOSE: convert a numpy datetime array to delta times from the UNIX epoch
+def convert_datetime(date, epoch=(1970,1,1,0,0,0)):
+    """
+    Convert a numpy datetime array to seconds since an epoch
+
+    Arguments
+    ---------
+    date: numpy datetime array
+
+    Keyword arguments
+    -----------------
+    epoch: epoch for output delta_time
+
+    Returns
+    -------
+    delta_time: seconds since epoch
+    """
+    epoch = datetime.datetime(*epoch)
+    return (date - np.datetime64(epoch)) / np.timedelta64(1, 's')
+
 #-- PURPOSE: convert times from seconds since epoch1 to time since epoch2
 def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
     """
@@ -426,7 +446,7 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
         return zip(YEAR, MONTH, DAY, HOUR, MINUTE, SECOND)
 
 #-- PURPOSE: Count number of leap seconds that have passed for each GPS time
-def count_leap_seconds(GPS_Time):
+def count_leap_seconds(GPS_Time, truncate=True):
     """
     Counts the number of leap seconds between a given GPS time and UTC
 
@@ -434,12 +454,16 @@ def count_leap_seconds(GPS_Time):
     ---------
     GPS_Time: seconds since January 6, 1980 at 00:00:00
 
+    Keyword arguments
+    -----------------
+    truncate: Reduce list of leap seconds to positive GPS times
+
     Returns
     -------
     n_leaps: number of elapsed leap seconds
     """
     #-- get the valid leap seconds
-    leaps = get_leap_seconds()
+    leaps = get_leap_seconds(truncate=truncate)
     #-- number of leap seconds prior to GPS_Time
     n_leaps = np.zeros_like(GPS_Time,dtype=np.float64)
     for i,leap in enumerate(leaps):
@@ -451,9 +475,13 @@ def count_leap_seconds(GPS_Time):
     return n_leaps
 
 #-- PURPOSE: Define GPS leap seconds
-def get_leap_seconds():
+def get_leap_seconds(truncate=True):
     """
     Gets a list of GPS times for when leap seconds occurred
+
+    Keyword arguments
+    -----------------
+    truncate: Reduce list of leap seconds to positive GPS times
 
     Returns
     -------
@@ -477,7 +505,10 @@ def get_leap_seconds():
     leap_GPS = convert_delta_time(leap_UTC+TAI_UTC-TAI_GPS-1,
         epoch1=(1900,1,1,0,0,0), epoch2=(1980,1,6,0,0,0))
     #-- return the GPS times of leap second occurance
-    return leap_GPS[leap_GPS >= 0].astype(np.float64)
+    if truncate:
+        return leap_GPS[leap_GPS >= 0].astype(np.float64)
+    else:
+        return leap_GPS.astype(np.float64)
 
 #-- PURPOSE: connects to servers and downloads leap second files
 def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
