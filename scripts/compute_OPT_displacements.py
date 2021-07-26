@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -72,6 +72,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: fix arguments to program (using internal EOP files)
         Add missing delta time argument for files without time variables
         Thanks to Karen Alley for pointing these out!
@@ -95,8 +96,8 @@ import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
+import pyTMD.utilities
 import scipy.interpolate
-from pyTMD.utilities import get_data_path
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
@@ -225,8 +226,8 @@ def compute_OPT_displacements(input_file, output_file, FORMAT='csv',
     K1 = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
 
     #-- pole tide files (mean and daily)
-    mean_pole_file = get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = get_data_path(['data','finals.all'])
+    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     #-- calculate angular coordinates of mean pole at time
     mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,'2015')
     #-- read IERS daily polar motion values
@@ -241,7 +242,8 @@ def compute_OPT_displacements(input_file, output_file, FORMAT='csv',
     my = -(py - mpy)
 
     #-- read ocean pole tide map from Desai (2002)
-    ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
+    ocean_pole_tide_file = pyTMD.utilities.get_data_path(['data',
+        'opoleloadcoefcmcor.txt.gz'])
     iur,iun,iue,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
     #-- interpolate ocean pole tide map from Desai (2002)
     if (METHOD == 'spline'):
@@ -298,8 +300,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates radial ocean pole load tide displacements for
             an input file following IERS Convention (2010) guidelines
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     #-- input and output file
     parser.add_argument('infile',

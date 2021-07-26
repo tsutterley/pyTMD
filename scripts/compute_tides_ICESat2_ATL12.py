@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL12.py
-Written by Tyler Sutterley (06/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates tidal elevations for correcting ICESat-2 ocean surface height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -78,6 +78,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 04/2021: can use a generically named ATL12 file as input
@@ -868,8 +869,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates tidal elevations for correcting ICESat-2 ATL12
             ocean surface height data
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

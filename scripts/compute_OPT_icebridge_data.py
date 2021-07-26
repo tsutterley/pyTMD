@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -37,6 +37,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
         replaced numpy bool/int to prevent deprecation warnings
@@ -62,10 +63,10 @@ import gzip
 import h5py
 import argparse
 import numpy as np
-import scipy.interpolate
 import pyTMD.time
 import pyTMD.spatial
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
+import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
@@ -501,12 +502,13 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     K1 = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
 
     #-- read ocean pole tide map from Desai (2002)
-    ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
+    ocean_pole_tide_file = pyTMD.utilities.get_data_path(['data',
+        'opoleloadcoefcmcor.txt.gz'])
     iur,iun,iue,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
 
     #-- pole tide files (mean and daily)
-    mean_pole_file = get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = get_data_path(['data','finals.all'])
+    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
 
     #-- read IERS daily polar motion values
     EOP = read_iers_EOP(pole_tide_file)
@@ -644,8 +646,10 @@ def main():
         description="""Calculates radial ocean pole tide displacements for
             correcting Operation IceBridge elevation data following IERS
             Convention (2010) guidelines
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

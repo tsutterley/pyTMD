@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (07/2021)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -22,11 +22,13 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    utilities.py: download and management utilities for syncing files
     read_tide_model.py: extract tidal harmonic constants out of a tidal model
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use projected coordinates for output model bounds
         compatibility updates for python3
@@ -43,6 +45,7 @@ import os
 import pyproj
 import argparse
 import numpy as np
+import pyTMD.utilities
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.read_tide_model import *
 from pyTMD.output_otis_tides import *
@@ -239,8 +242,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Read OTIS-format tidal files and reduce to a regional
             subset
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     #-- set data directory containing the tidal data
     parser.add_argument('--directory','-D',

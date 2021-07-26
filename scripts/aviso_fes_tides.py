@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 aviso_fes_tides.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (07/2021)
 Downloads the FES (Finite Element Solution) global tide model from AVISO
 Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/data/products/auxiliary-products/
@@ -31,7 +31,11 @@ PYTHON DEPENDENCIES:
     future: Compatibility layer between Python 2 and Python 3
         https://python-future.org/
 
+PROGRAM DEPENDENCIES:
+    utilities.py: download and management utilities for syncing files
+
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: use try/except for retrieving netrc credentials
     Updated 04/2021: set a default netrc file and check access
     Updated 10/2020: using argparse to set command line parameters
@@ -55,20 +59,7 @@ import builtins
 import posixpath
 import calendar, time
 import ftplib
-
-#-- PURPOSE: check internet connection
-def check_connection(USER, PASSWORD):
-    #-- attempt to connect to ftp host for AVISO products
-    try:
-        f = ftplib.FTP('ftp-access.aviso.altimetry.fr')
-        f.login(USER, PASSWORD)
-        f.voidcmd("NOOP")
-    except IOError:
-        raise RuntimeError('Check internet connection')
-    except ftplib.error_perm:
-        raise RuntimeError('Check login credentials')
-    else:
-        return True
+import pyTMD.utilities
 
 #-- PURPOSE: download local AVISO FES files with ftp server
 def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
@@ -227,8 +218,10 @@ def main():
         description="""Downloads the FES (Finite Element Solution) global tide
             model from AVISO.  Decompresses the model tar files into the
             constituent files and auxiliary files.
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     #-- AVISO FTP credentials
     parser.add_argument('--user','-U',
@@ -272,7 +265,7 @@ def main():
     args = parser.parse_args()
 
     #-- AVISO FTP Server hostname
-    HOST = 'ftp.aviso.altimetry.fr'
+    HOST = 'ftp-access.aviso.altimetry.fr'
     #-- get AVISO FTP Server credentials
     try:
         args.user,_,PASSWORD = netrc.netrc(args.netrc).authenticators(HOST)
@@ -286,7 +279,7 @@ def main():
         PASSWORD = getpass.getpass(prompt)
 
     #-- check internet connection before attempting to run program
-    if check_connection(args.user,PASSWORD):
+    if pyTMD.utilities.check_ftp_connection(HOST,args.user,PASSWORD):
         for m in args.tide:
             aviso_fes_tides(m, DIRECTORY=args.directory, USER=args.user,
                 PASSWORD=PASSWORD, LOAD=args.load, CURRENTS=args.currents,

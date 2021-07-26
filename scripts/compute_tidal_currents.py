@@ -99,6 +99,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2021: added tide model reference to output attributes
+        can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
     Updated 03/2021: added TPXO9-atlas-v4 in binary OTIS format
@@ -128,7 +129,7 @@ import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide import predict_tide
@@ -411,7 +412,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- number of time points
     nt = len(tide_time)
     #-- delta time (TT - UT1) file
-    delta_file = get_data_path(['data','merged_deltat.data'])
+    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     #-- python dictionary with output data
     output = {'time':tide_time,'lon':lon,'lat':lat}
@@ -489,8 +490,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates zonal and meridional tidal currents for
             an input file
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     #-- input and output file
     parser.add_argument('infile',

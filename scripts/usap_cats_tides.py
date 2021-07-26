@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (07/2021)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
 
@@ -23,6 +23,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
     Written 08/2020
 """
@@ -73,8 +74,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Download Circum-Antarctic Tidal Simulations from the
             US Antarctic Program
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     #-- working data directory for location of tide models
     parser.add_argument('--directory','-D',

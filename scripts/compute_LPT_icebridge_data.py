@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_icebridge_data.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates load pole tide displacements for correcting Operation IceBridge
     elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -32,6 +32,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
         replaced numpy bool/int to prevent deprecation warnings
@@ -56,6 +57,7 @@ import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
+import pyTMD.utilities
 import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
@@ -626,8 +628,10 @@ def main():
         description="""Calculates radial load pole tide displacements for
             correcting Operation IceBridge elevation data following IERS
             Convention (2010) guidelines
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

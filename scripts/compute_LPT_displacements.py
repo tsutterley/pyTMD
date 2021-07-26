@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 12/2020: merged time conversion routines into module
@@ -79,6 +80,7 @@ import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
+import pyTMD.utilities
 import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
@@ -282,8 +284,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates radial pole load tide displacements for
             an input file following IERS Convention (2010) guidelines
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     #-- input and output file
     parser.add_argument('infile',

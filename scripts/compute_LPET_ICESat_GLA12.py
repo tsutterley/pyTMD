@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat_GLA12.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates long-period equilibrium tidal elevations for correcting
     ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet elevation data
 Will calculate the long-period tides for all GLAS elevations and not just
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: can use a generically named GLA12 file as input
     Updated 12/2020: H5py deprecation warning change to use make_scale
     Written 12/2020
@@ -306,8 +307,10 @@ def main():
         description="""Calculates long-period equilibrium tidal elevations for
             correcting ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet
             elevation data
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

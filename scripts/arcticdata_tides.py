@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arcticdata_tides.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (07/2021)
 Download Arctic Ocean Tide Models from the NSF ArcticData archive
 AODTM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N
 AOTIM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80
@@ -27,6 +27,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
     Written 08/2020
 """
@@ -86,8 +87,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Download Arctic Ocean Tide Models from the NSF ArcticData
             archive
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     #-- working data directory for location of tide models
     parser.add_argument('--directory','-D',

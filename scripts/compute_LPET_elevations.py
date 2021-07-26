@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (11/2020)
+Written by Tyler Sutterley (07/2021)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 11/2020: added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
     Written 09/2020
@@ -70,7 +71,7 @@ import argparse
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 
@@ -156,7 +157,7 @@ def compute_LPET_elevations(input_file, output_file,
     tide_time = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
         epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
     #-- interpolate delta times from calendar dates to tide time
-    delta_file = get_data_path(['data','merged_deltat.data'])
+    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = calc_delta_time(delta_file, tide_time)
     #-- number of time points
     nt = len(tide_time)
@@ -191,8 +192,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates long-period equilibrium tidal elevations for
             an input file
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     #-- input and output file
     parser.add_argument('infile',

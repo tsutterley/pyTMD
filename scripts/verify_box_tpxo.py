@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (10/2020)
+Written by Tyler Sutterley (07/2021)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -27,6 +27,7 @@ PYTHON DEPENDENCIES:
         https://python-future.org/
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Written 03/2021
 """
 from __future__ import print_function
@@ -135,8 +136,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Verifies downloaded TPXO9-atlas global
             tide models from the box file sharing service
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     #-- working data directory
     parser.add_argument('--directory','-D',

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (03/2021)
+Written by Tyler Sutterley (07/2021)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 07/2021: add parser for converting file files to arguments
     Updated 03/2021: added sha1 option for retrieving file hashes
     Updated 01/2021: added username and password to ftp functions
         added ftp connection check
@@ -112,6 +113,21 @@ def url_split(s):
     elif head in ('', posixpath.sep):
         return tail,
     return url_split(head) + (tail,)
+
+#-- PURPOSE: convert file lines to arguments
+def convert_arg_line_to_args(arg_line):
+    """
+    Convert file lines to arguments
+
+    Arguments
+    ---------
+    arg_line: line string containing a single argument and/or comments
+    """
+    # remove commented lines and after argument comments
+    for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
+        if not arg.strip():
+            continue
+        yield arg
 
 #-- PURPOSE: convert Roman numerals to (Arabic) integers
 def roman_to_int(roman):
@@ -487,6 +503,7 @@ def build_opener(username, password, context=ssl.SSLContext(ssl.PROTOCOL_TLS),
     #-- All calls to urllib2.urlopen will now use handler
     #-- Make sure not to include the protocol in with the URL, or
     #-- HTTPPasswordMgrWithDefaultRealm will be confused.
+    return opener
 
 #-- PURPOSE: check that entered NASA Earthdata credentials are valid
 def check_credentials():

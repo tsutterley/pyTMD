@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat2_ATL06.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates long-period equilibrium tidal elevations for correcting ICESat-2
     land ice elevation data
 Will calculate the long-period tides for all ATL06 segments and not just ocean
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: can use a generically named ATL06 file as input
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: H5py deprecation warning change to use make_scale
@@ -46,7 +47,7 @@ import argparse
 import datetime
 import numpy as np
 import pyTMD.time
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 from icesat2_toolkit.read_ICESat2_ATL06 import read_HDF5_ATL06
@@ -117,7 +118,7 @@ def compute_LPET_ICESat2(INPUT_FILE, VERBOSE=False, MODE=0o775):
         tide_time = pyTMD.time.convert_delta_time(gps_seconds-leap_seconds,
             epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
         #-- interpolate delta times from calendar dates to tide time
-        delta_file = get_data_path(['data','merged_deltat.data'])
+        delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
         deltat = calc_delta_time(delta_file, tide_time)
 
         #-- predict long-period equilibrium tides at latitudes and time
@@ -419,8 +420,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates long-period equilibrium tidal elevations for
             correcting ICESat-2 ATL06 land ice elevation data
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

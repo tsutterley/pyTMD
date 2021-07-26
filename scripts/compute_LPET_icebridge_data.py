@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_icebridge_data.py
-Written by Tyler Sutterley (05/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates long-period equilibrium tidal elevations for correcting Operation
     IceBridge elevation data
 
@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: merged time conversion routines into module
@@ -50,7 +51,7 @@ import h5py
 import argparse
 import numpy as np
 import pyTMD.time
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 import read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary as ATM1b
@@ -440,7 +441,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
         epoch1=(2000,1,1,12,0,0), epoch2=(1992,1,1,0,0,0),
         scale=1.0/86400.0)
     #-- interpolate delta times from calendar dates to tide time
-    delta_file = get_data_path(['data','merged_deltat.data'])
+    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = calc_delta_time(delta_file, tide_time)
 
     #-- output tidal HDF5 file
@@ -541,8 +542,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates long-period equilibrium tidal elevations for
             correcting Operation IceBridge elevation data
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

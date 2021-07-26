@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_ICESat_GLA12.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates radial load pole tide displacements for correcting ICESat/GLAS
     L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following
     IERS Convention (2010) guidelines
@@ -36,6 +36,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: can use a generically named GLA12 file as input
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 12/2020: H5py deprecation warning change to use make_scale
@@ -53,7 +54,7 @@ import numpy as np
 import scipy.interpolate
 import pyTMD.time
 import pyTMD.spatial
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 
@@ -171,8 +172,8 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
         (3.0/a_axis**2.0)*elev_40HZ**2.0)
 
     #-- pole tide files (mean and daily)
-    mean_pole_file = get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = get_data_path(['data','finals.all'])
+    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
+    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     #-- read IERS daily polar motion values
     EOP = read_iers_EOP(pole_tide_file)
     #-- create cubic spline interpolations of daily polar motion values
@@ -384,8 +385,10 @@ def main():
         description="""Calculates radial load pole tide displacements for
             correcting ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet
             elevation data following IERS Convention (2010) guidelines
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

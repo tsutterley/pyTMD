@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (06/2021)
+Written by Tyler Sutterley (07/2021)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -83,6 +83,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 07/2021: can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
         modified import of ATM1b QFIT reader
@@ -118,7 +119,7 @@ import h5py
 import argparse
 import numpy as np
 import pyTMD.time
-from pyTMD.utilities import get_data_path
+import pyTMD.utilities
 import read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary as ATM1b
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
@@ -810,7 +811,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL, METHOD='spline',
         epoch1=(2000,1,1,12,0,0), epoch2=(1992,1,1,0,0,0),
         scale=1.0/86400.0)
     #-- delta time (TT - UT1) file
-    delta_file = get_data_path(['data','merged_deltat.data'])
+    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     #-- read tidal constants and interpolate to grid points
     if model_format in ('OTIS','ATLAS'):
@@ -954,8 +955,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Calculates tidal elevations for correcting Operation
             IceBridge elevation data
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
