@@ -65,11 +65,6 @@ def convert_calendar_serial(year, month, day, hour=0.0, minute=0.0, second=0.0):
 
 #-- PURPOSE: Test and Verify CATS2008 model read and prediction programs
 class Test_CATS2008:
-    np.seterr(invalid='ignore')
-    def __init__(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
-        self.aws_access_key_id=aws_access_key_id
-        self.aws_secret_access_key=aws_secret_access_key
-        self.aws_region_name=aws_region_name
 
     #-- PURPOSE: Download CATS2008 from US Antarctic Program
     @pytest.fixture(scope="class", autouse=False)
@@ -113,12 +108,12 @@ class Test_CATS2008:
 
     #-- PURPOSE: Download CATS2008 from AWS S3 bucket
     @pytest.fixture(scope="class", autouse=False)
-    def AWS_CATS2008(self):
+    def AWS_CATS2008(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
         #-- get aws session object
         session = boto3.Session(
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
-            region_name=self.aws_region_name)
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region_name)
         #-- get s3 object and bucket object for pytmd data
         s3 = session.resource('s3')
         bucket = s3.Bucket('pytmd')
@@ -168,12 +163,12 @@ class Test_CATS2008:
 
     #-- PURPOSE: Download Antarctic Tide Gauge Database from AWS
     @pytest.fixture(scope="class", autouse=True)
-    def AWS_AntTG(self):
+    def AWS_AntTG(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
         #-- get aws session object
         session = boto3.Session(
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
-            region_name=self.aws_region_name)
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region_name)
         #-- get s3 object and bucket object for pytmd data
         s3 = session.resource('s3')
         bucket = s3.Bucket('pytmd')
@@ -555,11 +550,6 @@ class Test_CATS2008:
 
 #-- PURPOSE: Test and Verify AOTIM-5-2018 model read and prediction programs
 class Test_AOTIM5_2018:
-    np.seterr(invalid='ignore')
-    def __init__(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
-        self.aws_access_key_id=aws_access_key_id
-        self.aws_secret_access_key=aws_secret_access_key
-        self.aws_region_name=aws_region_name
 
     #-- PURPOSE: Download AOTIM-5-2018 from NSF ArcticData server
     @pytest.fixture(scope="class", autouse=True)
