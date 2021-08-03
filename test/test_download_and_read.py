@@ -107,7 +107,7 @@ class Test_CATS2008:
         os.remove(CFname)
 
     #-- PURPOSE: Download CATS2008 from AWS S3 bucket
-    @pytest.fixture(scope="class", autouse=False)
+    @pytest.fixture(scope="class", autouse=True)
     def AWS_CATS2008(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
         #-- get aws session object
         session = boto3.Session(
