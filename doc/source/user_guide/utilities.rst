@@ -27,6 +27,15 @@ General Methods
         ``relpath``: local relative path as list or string
 
 
+.. method:: pyTMD.utilities.file_opener(filename)
+
+    Platform independent file opener
+
+    Arguments:
+    
+        ``filename``: path to file
+
+
 .. method:: pyTMD.utilities.get_hash(local, algorithm='MD5')
 
     Get the hash value from a local file or BytesIO object

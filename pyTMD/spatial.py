@@ -402,7 +402,7 @@ def to_ascii(output, attributes, filename, delimiter=',',
                 fid.write('      {0:20}: {1}\n'.format(atn,atv))
             #-- add precision and column attributes for ascii yaml header
             fid.write('      {0:20}: double_precision\n'.format('precision'))
-            fid.write('      {0:20}: column {1:d}\n'.format('comments',i+1))
+            fid.write('      {0:20}: column {1:d}\n'.format('comment',i+1))
         #-- end of header
         fid.write('\n\n# End of YAML header\n')
     #-- write to file for each data point

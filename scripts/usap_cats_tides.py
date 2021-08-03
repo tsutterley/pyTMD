@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (08/2021)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
+
+NOTE: USAP now requires a captcha to download datasets
 
 CALLING SEQUENCE:
     python usap_cats_tides.py --tide=CATS2008
@@ -23,6 +25,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 08/2021: USAP now requires captchas for dataset downloads
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
     Written 08/2020
@@ -34,8 +37,10 @@ import os
 import re
 import time
 import zipfile
+import warnings
 import argparse
 import posixpath
+import webbrowser
 import pyTMD.utilities
 
 #-- PURPOSE: Download Circum-Antarctic Tidal Simulations from USAP
@@ -50,6 +55,15 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     #-- recursively create directories if non-existent
     if not os.access(os.path.join(DIRECTORY,LOCAL[MODEL]), os.F_OK):
         os.makedirs(os.path.join(DIRECTORY,LOCAL[MODEL]), MODE)
+
+    #-- USAP now requires a captcha to download datasets
+    #-- use a manual download until USAP allows some sort of verification
+    DATASET = {}
+    DATASET['CATS2008'] = ['https://www.usap-dc.org','view','dataset','601235']
+    #-- open USAP url in a new browser window
+    webbrowser.open_new_tab(posixpath.join(*DATASET[MODEL]))
+    pyTMD.utilities.file_opener(os.path.join(DIRECTORY,LOCAL[MODEL]))
+    return
 
     #-- download CATS2008 zip file and read as virtual file object
     HOST = ['https://www.usap-dc.org','dataset','usap-dc',*REMOTE[MODEL]]
@@ -95,6 +109,9 @@ def main():
         help='Permissions mode of the files downloaded')
     args = parser.parse_args()
 
+    #-- warn user that USAP requires a reCAPTCHA check
+    warnings.filterwarnings("always")
+    warnings.warn("Deprecated. USAP now requires captcha",DeprecationWarning)
     #-- check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://www.usap-dc.org'):
         for m in args.tide:
