@@ -219,7 +219,7 @@ def test_geotiff(username, password):
     #-- build urllib2 opener for NSIDC with NASA Earthdata credentials
     pyTMD.utilities.build_opener(username, password, context=ssl.SSLContext(),
         password_manager=True, get_ca_certs=False, redirect=False,
-        authorization_header=True, urs='https://urs.earthdata.nasa.gov')
+        authorization_header=False, urs='https://urs.earthdata.nasa.gov')
     #-- download NASA Operation IceBridge DMS L3 Photogrammetric DEM
     HOST = ['https://n5eil01u.ecs.nsidc.org','ICEBRIDGE','IODEM3.001',
         '2009.10.25','IODEM3_20091025_212618_02720_DEM.tif']

@@ -65,7 +65,6 @@ def convert_calendar_serial(year, month, day, hour=0.0, minute=0.0, second=0.0):
 
 #-- PURPOSE: Test and Verify CATS2008 model read and prediction programs
 class Test_CATS2008:
-
     #-- PURPOSE: Download CATS2008 from US Antarctic Program
     @pytest.fixture(scope="class", autouse=False)
     def download_CATS2008(self):
@@ -126,16 +125,21 @@ class Test_CATS2008:
         fid = open(CFname,'w')
         #-- retrieve each model file from s3
         for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
-            #-- retrieve CATS2008 file
+            #-- retrieve CATS2008 modelfile
             obj = bucket.Object(key=posixpath.join('CATS2008',model_file))
             response = obj.get()
-            #-- save constituent data
             with open(os.path.join(modelpath,model_file), 'wb') as destination:
                 shutil.copyfileobj(response['Body'], destination)
             assert os.access(os.path.join(modelpath,model_file), os.F_OK)
             #-- print to model control file
             print(os.path.join(modelpath,model_file),file=fid)
-        #-- print coordinate conversion to model control file
+        #-- retrieve CATS2008 coordinate file
+        model_file = 'xy_ll_CATS2008.m'
+        obj = bucket.Object(key=posixpath.join('CATS2008',model_file))
+        response = obj.get()
+        with open(os.path.join(modelpath,model_file), 'wb') as destination:
+            shutil.copyfileobj(response['Body'], destination)
+        #-- print coordinate conversion function to model control file
         print('xy_ll_CATS2008',file=fid)
         fid.close()
         #-- verify control file
@@ -550,7 +554,6 @@ class Test_CATS2008:
 
 #-- PURPOSE: Test and Verify AOTIM-5-2018 model read and prediction programs
 class Test_AOTIM5_2018:
-
     #-- PURPOSE: Download AOTIM-5-2018 from NSF ArcticData server
     @pytest.fixture(scope="class", autouse=True)
     def download_AOTIM5_2018(self):
