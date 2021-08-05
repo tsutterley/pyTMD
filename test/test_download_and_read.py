@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://oct2py.readthedocs.io/en/latest/
 
 UPDATE HISTORY:
+    Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
         use TMD tmd_tide_pred_plus to calculate OB time series
@@ -31,6 +32,7 @@ UPDATE HISTORY:
 """
 import os
 import re
+import boto3
 import shutil
 import pytest
 import inspect
@@ -64,7 +66,7 @@ def convert_calendar_serial(year, month, day, hour=0.0, minute=0.0, second=0.0):
 #-- PURPOSE: Test and Verify CATS2008 model read and prediction programs
 class Test_CATS2008:
     #-- PURPOSE: Download CATS2008 from US Antarctic Program
-    @pytest.fixture(scope="class", autouse=True)
+    @pytest.fixture(scope="class", autouse=False)
     def download_CATS2008(self):
         #-- download CATS2008 zip file and read as virtual file object
         HOST = ['https://www.usap-dc.org','dataset','usap-dc','601235',
@@ -103,14 +105,83 @@ class Test_CATS2008:
         #-- clean up
         os.remove(CFname)
 
-    #-- PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
+    #-- PURPOSE: Download CATS2008 from AWS S3 bucket
     @pytest.fixture(scope="class", autouse=True)
+    def AWS_CATS2008(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
+        #-- get aws session object
+        session = boto3.Session(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region_name)
+        #-- get s3 object and bucket object for pytmd data
+        s3 = session.resource('s3')
+        bucket = s3.Bucket('pytmd')
+        #-- model parameters for CATS2008
+        modelpath = os.path.join(filepath,'CATS2008')
+        #-- recursively create model directory
+        os.makedirs(modelpath)
+        #-- output control file for tide model
+        CFname = os.path.join(filepath,'Model_CATS2008')
+        fid = open(CFname,'w')
+        #-- retrieve each model file from s3
+        for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
+            #-- retrieve CATS2008 modelfile
+            obj = bucket.Object(key=posixpath.join('CATS2008',model_file))
+            response = obj.get()
+            with open(os.path.join(modelpath,model_file), 'wb') as destination:
+                shutil.copyfileobj(response['Body'], destination)
+            assert os.access(os.path.join(modelpath,model_file), os.F_OK)
+            #-- print to model control file
+            print(os.path.join(modelpath,model_file),file=fid)
+        #-- retrieve CATS2008 coordinate file
+        model_file = 'xy_ll_CATS2008.m'
+        obj = bucket.Object(key=posixpath.join('CATS2008',model_file))
+        response = obj.get()
+        with open(os.path.join(modelpath,model_file), 'wb') as destination:
+            shutil.copyfileobj(response['Body'], destination)
+        #-- print coordinate conversion function to model control file
+        print('xy_ll_CATS2008',file=fid)
+        fid.close()
+        #-- verify control file
+        assert os.access(CFname, os.F_OK)
+        #-- run tests
+        yield
+        #-- clean up model
+        shutil.rmtree(modelpath)
+        #-- clean up
+        os.remove(CFname)
+
+    #-- PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
+    @pytest.fixture(scope="class", autouse=False)
     def download_AntTG(self):
         #-- download Tide Gauge Database text file
         HOST = ['https://www.usap-dc.org','dataset','usap-dc','601358',
             '2020-07-10T19:50:08.8Z','AntTG_ocean_height_v1.txt?dataset_id=601358']
         local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
         pyTMD.utilities.from_http(HOST,local=local)
+        assert os.access(local, os.F_OK)
+        #-- run tests
+        yield
+        #-- clean up
+        os.remove(local)
+
+    #-- PURPOSE: Download Antarctic Tide Gauge Database from AWS
+    @pytest.fixture(scope="class", autouse=True)
+    def AWS_AntTG(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
+        #-- get aws session object
+        session = boto3.Session(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region_name)
+        #-- get s3 object and bucket object for pytmd data
+        s3 = session.resource('s3')
+        bucket = s3.Bucket('pytmd')
+        #-- retrieve Tide Gauge Database text file
+        obj = bucket.Object(key='AntTG_ocean_height_v1.txt')
+        response = obj.get()
+        local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
+        with open(local, 'wb') as destination:
+            shutil.copyfileobj(response['Body'], destination)
         assert os.access(local, os.F_OK)
         #-- run tests
         yield

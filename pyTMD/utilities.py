@@ -8,6 +8,7 @@ PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 08/2021: added function to open a file path
     Updated 07/2021: add parser for converting file files to arguments
     Updated 03/2021: added sha1 option for retrieving file hashes
     Updated 01/2021: added username and password to ftp functions
@@ -37,6 +38,7 @@ import socket
 import inspect
 import hashlib
 import posixpath
+import subprocess
 import lxml.etree
 import calendar,time
 if sys.version_info[0] == 2:
@@ -48,6 +50,7 @@ else:
     from http.cookiejar import CookieJar
     import urllib.request as urllib2
 
+#-- PURPOSE: get absolute path within a package from a relative path
 def get_data_path(relpath):
     """
     Get the absolute path within a package from a relative path
@@ -64,6 +67,22 @@ def get_data_path(relpath):
         return os.path.join(filepath,*relpath)
     elif isinstance(relpath,str):
         return os.path.join(filepath,relpath)
+
+#-- PURPOSE: platform independent file opener
+def file_opener(filename):
+    """
+    Platform independent file opener
+
+    Arguments
+    ---------
+    filename: path to file
+    """
+    if (sys.platform == "win32"):
+        os.startfile(os.path.expanduser(filename), "explore")
+    elif (sys.platform == "darwin"):
+        subprocess.call(["open", os.path.expanduser(filename)])
+    else:
+        subprocess.call(["xdg-open", os.path.expanduser(filename)])
 
 #-- PURPOSE: get the hash value of a file
 def get_hash(local, algorithm='MD5'):

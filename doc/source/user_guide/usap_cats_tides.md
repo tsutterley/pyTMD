@@ -3,6 +3,7 @@ usap_cats_tides.py
 
 - Download Circum-Antarctic Tidal Simulations from the [US Antarctic Program](https://www.usap-dc.org)
    * [CATS2008](https://www.usap-dc.org/view/dataset/601235)
+- NOTE: USAP now requires a captcha to download datasets
 
 #### Calling Sequence
 ```bash
