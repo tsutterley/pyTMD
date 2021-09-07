@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (09/2021)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 09/2021: can calculate height differences between ellipsoids
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
         add routines for converting to and from cartesian coordinates
@@ -676,6 +677,39 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
 
     #-- return the latitude and height
     return (phi2, h2)
+
+def compute_delta_h(a1, f1, a2, f2, lat):
+    """
+    Compute difference in elevation for two ellipsoids at a given
+        latitude using a simplified empirical equation
+
+    Inputs:
+        a1: semi-major axis of input ellipsoid
+        f1: flattening of input ellipsoid
+        a2: semi-major axis of output ellipsoid
+        f2: flattening of output ellipsoid
+        lat: array of latitudes in degrees
+
+    Returns:
+        delta_h: difference in elevation for two ellipsoids
+
+    Reference:
+        J Meeus, Astronomical Algorithms, pp. 77-82 (1991)
+    """
+    #-- force phi into range -90 <= phi <= 90
+    gt90, = np.nonzero((lat < -90.0) | (lat > 90.0))
+    lat[gt90] = np.sign(lat[gt90])*90.0
+    #-- semiminor axis of input and output ellipsoid
+    b1 = (1.0 - f1)*a1
+    b2 = (1.0 - f2)*a2
+    #-- compute delta_a and delta_b coefficients
+    delta_a = a2 - a1
+    delta_b = b2 - b1
+    #-- compute differences between ellipsoids
+    #-- delta_h = -(delta_a * cos(phi)^2 + delta_b * sin(phi)^2)
+    phi = lat * np.pi/180.0
+    delta_h = -(delta_a*np.cos(phi)**2 + delta_b*np.sin(phi)**2)
+    return delta_h
 
 def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
     """
