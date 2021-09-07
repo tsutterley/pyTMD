@@ -242,6 +242,26 @@ General Methods
         ``h2``: height above output ellipsoid in meters
 
 
+.. method:: pyTMD.spatial.compute_delta_h(a1, f1, a2, f2, lat)
+
+    Compute difference in elevation for two ellipsoids at a given latitude using a simplified empirical equation
+
+    Arguments:
+
+        ``a1``: semi-major axis of input ellipsoid
+
+        ``f1``: flattening of input ellipsoid
+
+        ``a2``: semi-major axis of output ellipsoid
+
+        ``f2``: flattening of output ellipsoid
+
+        ``lat``: array of latitudes in degrees
+
+    Returns:
+    
+        ``delta_h``: difference in elevation for two ellipsoids
+
 .. method:: pyTMD.spatial.to_cartesian(lon,lat,a_axis=6378137.0,flat=1.0/298.257223563)
 
     Converts geodetic coordinates to Cartesian coordinates

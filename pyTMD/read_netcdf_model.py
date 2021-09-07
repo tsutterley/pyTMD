@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (07/2021)
+read_netcdf_model.py (09/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 09/2021: fix cases where there is no mask on constituent files
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
     Updated 05/2021: added option for extrapolation cutoff in kilometers
@@ -210,6 +211,8 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
             constituents.append(con)
             #-- replace original values with extend matrices
             z = extend_matrix(z)
+            #-- update constituent mask with bathymetry mask
+            z.mask[:] |= bathymetry.mask[:]
             #-- interpolate amplitude and phase of the constituent
             z1 = np.ma.zeros((npts),dtype=z.dtype)
             z1.mask = np.zeros((npts),dtype=bool)
@@ -263,6 +266,8 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
             constituents.append(con)
             #-- replace original values with extend matrices
             tr = extend_matrix(tr)
+            #-- update constituent mask with bathymetry mask
+            tr.mask[:] |= bathymetry.mask[:]
             #-- interpolate amplitude and phase of the constituent
             tr1 = np.ma.zeros((npts),dtype=tr.dtype)
             tr1.mask = np.zeros((npts),dtype=bool)

@@ -15,6 +15,8 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
     Oct2Py: Python to GNU Octave Bridge
         https://oct2py.readthedocs.io/en/latest/
+    boto3: Amazon Web Services (AWS) SDK for Python
+        https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
     Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha
