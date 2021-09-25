@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL11.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (09/2021)
 Calculates tidal elevations for correcting ICESat-2 annual land ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -78,6 +78,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
     Updated 05/2021: added option for extrapolation cutoff in kilometers
@@ -101,6 +102,7 @@ import datetime
 import numpy as np
 import collections
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.read_tide_model import extract_tidal_constants
@@ -113,356 +115,12 @@ from icesat2_toolkit.read_ICESat2_ATL11 import read_HDF5_ATL11
 
 #-- PURPOSE: read ICESat-2 annual land ice height data (ATL11) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
-    #-- select between tide models
-    if (TIDE_MODEL == 'CATS0201'):
-        grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
-        model_file = os.path.join(tide_dir,'cats0201_tmd','h0_CATS02_01')
-        reference = 'https://mail.esr.org/polar_tide_models/Model_CATS0201.html'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'CATS2008'):
-        grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
-        model_file = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/cats2008/')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = 'CATS2008'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'CATS2008_load'):
-        grid_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
-        model_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/cats2008/')
-        variable = 'tide_load'
-        long_name = "Load Tide"
-        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
-        model_format = 'OTIS'
-        EPSG = 'CATS2008'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'TPXO9-atlas'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas.nc.gz')
-        model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
-            'h_p1_tpxo9_atlas_30.nc.gz','h_k1_tpxo9_atlas_30.nc.gz',
-            'h_n2_tpxo9_atlas_30.nc.gz','h_m2_tpxo9_atlas_30.nc.gz',
-            'h_s2_tpxo9_atlas_30.nc.gz','h_k2_tpxo9_atlas_30.nc.gz',
-            'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
-            'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'netcdf'
-        TYPE = 'z'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
-        model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
-            'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
-            'h_n2_tpxo9_atlas_30_v2.nc.gz','h_m2_tpxo9_atlas_30_v2.nc.gz',
-            'h_s2_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
-            'h_m4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
-            'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'netcdf'
-        TYPE = 'z'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v3.nc.gz')
-        model_files = ['h_q1_tpxo9_atlas_30_v3.nc.gz','h_o1_tpxo9_atlas_30_v3.nc.gz',
-            'h_p1_tpxo9_atlas_30_v3.nc.gz','h_k1_tpxo9_atlas_30_v3.nc.gz',
-            'h_n2_tpxo9_atlas_30_v3.nc.gz','h_m2_tpxo9_atlas_30_v3.nc.gz',
-            'h_s2_tpxo9_atlas_30_v3.nc.gz','h_k2_tpxo9_atlas_30_v3.nc.gz',
-            'h_m4_tpxo9_atlas_30_v3.nc.gz','h_ms4_tpxo9_atlas_30_v3.nc.gz',
-            'h_mn4_tpxo9_atlas_30_v3.nc.gz','h_2n2_tpxo9_atlas_30_v3.nc.gz',
-            'h_mf_tpxo9_atlas_30_v3.nc.gz','h_mm_tpxo9_atlas_30_v3.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'netcdf'
-        TYPE = 'z'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v4')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v4')
-        model_files = ['h_q1_tpxo9_atlas_30_v4','h_o1_tpxo9_atlas_30_v4',
-            'h_p1_tpxo9_atlas_30_v4','h_k1_tpxo9_atlas_30_v4',
-            'h_n2_tpxo9_atlas_30_v4','h_m2_tpxo9_atlas_30_v4',
-            'h_s2_tpxo9_atlas_30_v4','h_k2_tpxo9_atlas_30_v4',
-            'h_m4_tpxo9_atlas_30_v4','h_ms4_tpxo9_atlas_30_v4',
-            'h_mn4_tpxo9_atlas_30_v4','h_2n2_tpxo9_atlas_30_v4',
-            'h_mf_tpxo9_atlas_30_v4','h_mm_tpxo9_atlas_30_v4']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'TPXO9.1'):
-        grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
-        model_file = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
-        reference = 'http://volkov.oce.orst.edu/tides/global.html'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'TPXO8-atlas'):
-        grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
-        model_file = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
-        reference = 'http://volkov.oce.orst.edu/tides/tpxo8_atlas.html'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'ATLAS'
-        EPSG = '4326'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'TPXO7.2'):
-        grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
-        model_file = os.path.join(tide_dir,'TPXO7.2_tmd','h_tpxo7.2')
-        reference = 'http://volkov.oce.orst.edu/tides/global.html'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'TPXO7.2_load'):
-        grid_file = os.path.join(tide_dir,'TPXO7.2_load','grid_tpxo6.2')
-        model_file = os.path.join(tide_dir,'TPXO7.2_load','h_tpxo7.2_load')
-        reference = 'http://volkov.oce.orst.edu/tides/global.html'
-        variable = 'tide_load'
-        long_name = "Load Tide"
-        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'AODTM-5'):
-        grid_file = os.path.join(tide_dir,'aodtm5_tmd','grid_Arc5km')
-        model_file = os.path.join(tide_dir,'aodtm5_tmd','h0_Arc5km.oce')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/aodtm-5/')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'AOTIM-5'):
-        grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
-        model_file = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/aotim-5/')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'AOTIM-5-2018'):
-        grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
-        model_file = os.path.join(tide_dir,'Arc5km2018','h_Arc5km2018')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/aotim-5/')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'Gr1km-v2'):
-        grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
-        model_file = os.path.join(tide_dir,'greenlandTMD_v2','h_Greenland8.v2')
-        reference = 'https://doi.org/10.1002/2016RG000546'
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'OTIS'
-        EPSG = '3413'
-        TYPE = 'z'
-    elif (TIDE_MODEL == 'GOT4.7'):
-        model_directory = os.path.join(tide_dir,'GOT4.7','grids_oceantide')
-        model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-            'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
-            'MiscPubs/19990089548_1999150788.pdf')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'GOT'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'GOT4.7_load'):
-        model_directory = os.path.join(tide_dir,'GOT4.7','grids_loadtide')
-        model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
-            'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
-            's1load.d.gz','m4load.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
-            'MiscPubs/19990089548_1999150788.pdf')
-        variable = 'tide_load'
-        long_name = "Load Tide"
-        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
-        model_format = 'GOT'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (TIDE_MODEL == 'GOT4.8'):
-        model_directory = os.path.join(tide_dir,'got4.8','grids_oceantide')
-        model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-            'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
-            'MiscPubs/19990089548_1999150788.pdf')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'GOT'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'GOT4.8_load'):
-        model_directory = os.path.join(tide_dir,'got4.8','grids_loadtide')
-        model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
-            'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
-            's1load.d.gz','m4load.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
-            'MiscPubs/19990089548_1999150788.pdf')
-        variable = 'tide_load'
-        long_name = "Load Tide"
-        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
-        model_format = 'GOT'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (TIDE_MODEL == 'GOT4.10'):
-        model_directory = os.path.join(tide_dir,'GOT4.10c','grids_oceantide')
-        model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-            'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
-            'MiscPubs/19990089548_1999150788.pdf')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'GOT'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'GOT4.10_load'):
-        model_directory = os.path.join(tide_dir,'GOT4.10c','grids_loadtide')
-        model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
-            'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
-            's1load.d.gz','m4load.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = ('https://denali.gsfc.nasa.gov/personal_pages/ray/'
-            'MiscPubs/19990089548_1999150788.pdf')
-        variable = 'tide_load'
-        long_name = "Load Tide"
-        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
-        model_format = 'GOT'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (TIDE_MODEL == 'FES2014'):
-        model_directory = os.path.join(tide_dir,'fes2014','ocean_tide')
-        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
-            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
-            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
-            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
-            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
-            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
-            'ssa.nc.gz','t2.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
-            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
-            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        reference = ('https://www.aviso.altimetry.fr/en/data/products'
-            'auxiliary-products/global-tide-fes.html')
-        variable = 'tide_ocean'
-        long_name = "Ocean Tide"
-        description = ("Ocean Tides including diurnal and semi-diurnal "
-            "(harmonic analysis), and longer period tides (dynamic and "
-            "self-consistent equilibrium).")
-        model_format = 'FES'
-        TYPE = 'z'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'FES2014_load'):
-        model_directory = os.path.join(tide_dir,'fes2014','load_tide')
-        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
-            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
-            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
-            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
-            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
-            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
-            'ssa.nc.gz','t2.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
-            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
-            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        reference = ('https://www.aviso.altimetry.fr/en/data/products'
-            'auxiliary-products/global-tide-fes.html')
-        variable = 'tide_load'
-        long_name = "Load Tide"
-        description = "Local displacement due to Ocean Loading (-6 to 0 cm)"
-        model_format = 'FES'
-        TYPE = 'z'
-        SCALE = 1.0/100.0
-        GZIP = True
+def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
+    ATLAS_FORMAT=None, METHOD='spline', EXTRAPOLATE=False, CUTOFF=None,
+    GZIP=True, VERBOSE=False, MODE=0o775):
+    #-- get parameters for tide model
+    model = pyTMD.model(tide_dir).elevation(TIDE_MODEL,
+        format=ATLAS_FORMAT, compressed=GZIP)
 
     #-- read data from input file
     print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
@@ -566,30 +224,32 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
                 epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0),
                 scale=1.0/86400.0)
             #-- read tidal constants and interpolate to grid points
-            if model_format in ('OTIS','ATLAS'):
+            if model.format in ('OTIS','ATLAS'):
                 amp,ph,D,c = extract_tidal_constants(longitude[track],
-                    latitude[track], grid_file, model_file, EPSG,
-                    TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-                    CUTOFF=CUTOFF, GRID=model_format)
+                    latitude[track], model.grid_file, model.model_file,
+                    model.projection, TYPE=model.type, METHOD=METHOD,
+                    EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, GRID=model.format)
                 deltat = np.zeros_like(tide_time)
-            elif (model_format == 'netcdf'):
+            elif (model.format == 'netcdf'):
                 amp,ph,D,c = extract_netcdf_constants(longitude[track],
-                    latitude[track], grid_file, model_file, TYPE=TYPE,
-                    METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-                    SCALE=SCALE, GZIP=GZIP)
+                    latitude[track], model.grid_file, model.model_file,
+                    TYPE=model.type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                    CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
                 deltat = np.zeros_like(tide_time)
-            elif (model_format == 'GOT'):
+            elif (model.format == 'GOT'):
                 amp,ph,c = extract_GOT_constants(longitude[track],
-                    latitude[track], model_file, METHOD=METHOD,
-                    EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=SCALE,
-                    GZIP=GZIP)
+                    latitude[track], model.model_file, METHOD=METHOD,
+                    EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
+                    GZIP=model.compressed)
                 #-- interpolate delta times from calendar dates to tide time
                 deltat = calc_delta_time(delta_file, tide_time)
-            elif (model_format == 'FES'):
+            elif (model.format == 'FES'):
                 amp,ph = extract_FES_constants(longitude[track],
-                    latitude[track], model_file, TYPE=TYPE,
-                    VERSION=TIDE_MODEL, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-                    CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
+                    latitude[track], model.model_file, TYPE=model.type,
+                    VERSION=model.name, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
+                    CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+                #-- available model constituents
+                c = model.constituents
                 #-- interpolate delta times from calendar dates to tide time
                 deltat = calc_delta_time(delta_file, tide_time)
 
@@ -608,9 +268,9 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
                     #-- predict tidal elevations and infer minor corrections
                     tide[track].data[valid,cycle] = predict_tide_drift(
                         tide_time[valid,cycle], hc[valid,:], c,
-                        DELTAT=deltat[valid,cycle], CORRECTIONS=model_format)
+                        DELTAT=deltat[valid,cycle], CORRECTIONS=model.format)
                     minor = infer_minor_corrections(tide_time[valid,cycle], hc[valid,:],
-                        c, DELTAT=deltat[valid,cycle], CORRECTIONS=model_format)
+                        c, DELTAT=deltat[valid,cycle], CORRECTIONS=model.format)
                     tide[track].data[valid,cycle] += minor.data[:]
             elif (track == 'XT'):
                 #-- find valid time and spatial points
@@ -619,9 +279,9 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
                 #-- predict tidal elevations and infer minor corrections
                 tide[track].data[valid] = predict_tide_drift(tide_time[valid],
                     hc[valid,:], c, DELTAT=deltat[valid],
-                    CORRECTIONS=model_format)
+                    CORRECTIONS=model.format)
                 minor = infer_minor_corrections(tide_time[valid], hc[valid,:],
-                    c, DELTAT=deltat[valid], CORRECTIONS=model_format)
+                    c, DELTAT=deltat[valid], CORRECTIONS=model.format)
                 tide[track].data[valid] += minor.data[:]
 
             #-- replace masked and nan values with fill value
@@ -726,17 +386,17 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
         IS2_atl11_tide_attrs[ptx]['cycle_stats']['data_rate'] = ("Data within this group "
             "are stored at the average segment rate.")
         #-- computed tide
-        IS2_atl11_tide[ptx]['cycle_stats'][variable] = tide['AT'].copy()
-        IS2_atl11_fill[ptx]['cycle_stats'][variable] = tide['AT'].fill_value
-        IS2_atl11_dims[ptx]['cycle_stats'][variable] = ['ref_pt','cycle_number']
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable] = collections.OrderedDict()
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['units'] = "meters"
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['contentType'] = "referenceInformation"
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['long_name'] = long_name
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['description'] = description
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['source'] = TIDE_MODEL
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['reference'] = reference
-        IS2_atl11_tide_attrs[ptx]['cycle_stats'][variable]['coordinates'] = \
+        IS2_atl11_tide[ptx]['cycle_stats'][model.atl11] = tide['AT'].copy()
+        IS2_atl11_fill[ptx]['cycle_stats'][model.atl11] = tide['AT'].fill_value
+        IS2_atl11_dims[ptx]['cycle_stats'][model.atl11] = ['ref_pt','cycle_number']
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11] = collections.OrderedDict()
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['units'] = "meters"
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['contentType'] = "referenceInformation"
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['long_name'] = model.long_name
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['description'] = model.description
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['source'] = model.name
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['reference'] = model.reference
+        IS2_atl11_tide_attrs[ptx]['cycle_stats'][model.atl11]['coordinates'] = \
             "../ref_pt ../cycle_number ../delta_time ../latitude ../longitude"
 
         #-- crossing track variables
@@ -841,17 +501,17 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None, METHOD='spline'
         IS2_atl11_tide_attrs[ptx][XT]['longitude']['coordinates'] = \
             "ref_pt delta_time latitude"
         #-- computed tide for the crossover measurement
-        IS2_atl11_tide[ptx][XT][variable] = tide['XT'].copy()
-        IS2_atl11_fill[ptx][XT][variable] = tide['XT'].fill_value
-        IS2_atl11_dims[ptx][XT][variable] = ['ref_pt']
-        IS2_atl11_tide_attrs[ptx][XT][variable] = collections.OrderedDict()
-        IS2_atl11_tide_attrs[ptx][XT][variable]['units'] = "meters"
-        IS2_atl11_tide_attrs[ptx][XT][variable]['contentType'] = "referenceInformation"
-        IS2_atl11_tide_attrs[ptx][XT][variable]['long_name'] = long_name
-        IS2_atl11_tide_attrs[ptx][XT][variable]['description'] = description
-        IS2_atl11_tide_attrs[ptx][XT][variable]['source'] = TIDE_MODEL
-        IS2_atl11_tide_attrs[ptx][XT][variable]['reference'] = reference
-        IS2_atl11_tide_attrs[ptx][XT][variable]['coordinates'] = \
+        IS2_atl11_tide[ptx][XT][model.atl11] = tide['XT'].copy()
+        IS2_atl11_fill[ptx][XT][model.atl11] = tide['XT'].fill_value
+        IS2_atl11_dims[ptx][XT][model.atl11] = ['ref_pt']
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11] = collections.OrderedDict()
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['units'] = "meters"
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['contentType'] = "referenceInformation"
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['long_name'] = model.long_name
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['description'] = model.description
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['source'] = model.name
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['reference'] = model.reference
+        IS2_atl11_tide_attrs[ptx][XT][model.atl11]['coordinates'] = \
             "ref_pt delta_time latitude longitude"
 
     #-- print file information

@@ -5,6 +5,7 @@ dependencies:
   - python>=3.6
   - setuptools_scm
   - notebook
+  - ipywidgets
   - ipyleaflet
   - numpy
   - scipy

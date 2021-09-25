@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (09/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -98,6 +98,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: added tide model reference to output attributes
         can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
@@ -128,6 +129,7 @@ import pyproj
 import argparse
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.spatial
 import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
@@ -141,188 +143,14 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_currents(tide_dir, input_file, output_file,
-    TIDE_MODEL=None, FORMAT='csv', VARIABLES=['time','lat','lon','data'],
-    HEADER=0, TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
-    TIME=None, PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
-    CUTOFF=None, VERBOSE=False, MODE=0o775):
-
-    #-- select between tide models
-    if (TIDE_MODEL == 'CATS0201'):
-        grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
-        model_file = os.path.join(tide_dir,'cats0201_tmd','UV0_CATS02_01')
-        reference = 'https://mail.esr.org/polar_tide_models/Model_CATS0201.html'
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'CATS2008'):
-        grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
-        model_file = os.path.join(tide_dir,'CATS2008','uv.CATS2008.out')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/cats2008/')
-        model_format = 'OTIS'
-        EPSG = 'CATS2008'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'TPXO9-atlas'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas')
-        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas.nc.gz')
-        model_files = {}
-        model_files['u'] = ['u_q1_tpxo9_atlas_30.nc.gz','u_o1_tpxo9_atlas_30.nc.gz',
-            'u_p1_tpxo9_atlas_30.nc.gz','u_k1_tpxo9_atlas_30.nc.gz',
-            'u_n2_tpxo9_atlas_30.nc.gz','u_m2_tpxo9_atlas_30.nc.gz',
-            'u_s2_tpxo9_atlas_30.nc.gz','u_k2_tpxo9_atlas_30.nc.gz',
-            'u_m4_tpxo9_atlas_30.nc.gz','u_ms4_tpxo9_atlas_30.nc.gz',
-            'u_mn4_tpxo9_atlas_30.nc.gz','u_2n2_tpxo9_atlas_30.nc.gz']
-        model_files['v'] = ['v_q1_tpxo9_atlas_30.nc.gz','v_o1_tpxo9_atlas_30.nc.gz',
-            'v_p1_tpxo9_atlas_30.nc.gz','v_k1_tpxo9_atlas_30.nc.gz',
-            'v_n2_tpxo9_atlas_30.nc.gz','v_m2_tpxo9_atlas_30.nc.gz',
-            'v_s2_tpxo9_atlas_30.nc.gz','v_k2_tpxo9_atlas_30.nc.gz',
-            'v_m4_tpxo9_atlas_30.nc.gz','v_ms4_tpxo9_atlas_30.nc.gz',
-            'v_mn4_tpxo9_atlas_30.nc.gz','v_2n2_tpxo9_atlas_30.nc.gz']
-        model_file = {}
-        for key,val in model_files.items():
-            model_file[key] = [os.path.join(model_directory,m) for m in val]
-        reference = 'http://volkov.oce.orst.edu/tides/tpxo9_atlas.html'
-        model_format = 'netcdf'
-        TYPES = ['u','v']
-        model_scale = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v2')
-        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v2.nc.gz')
-        model_files = {}
-        model_files['u'] = ['u_q1_tpxo9_atlas_30_v2.nc.gz','u_o1_tpxo9_atlas_30_v2.nc.gz',
-            'u_p1_tpxo9_atlas_30_v2.nc.gz','u_k1_tpxo9_atlas_30_v2.nc.gz',
-            'u_n2_tpxo9_atlas_30_v2.nc.gz','u_m2_tpxo9_atlas_30_v2.nc.gz',
-            'u_s2_tpxo9_atlas_30_v2.nc.gz','u_k2_tpxo9_atlas_30_v2.nc.gz',
-            'u_m4_tpxo9_atlas_30_v2.nc.gz','u_ms4_tpxo9_atlas_30_v2.nc.gz',
-            'u_mn4_tpxo9_atlas_30_v2.nc.gz','u_2n2_tpxo9_atlas_30_v2.nc.gz']
-        model_files['v'] = ['v_q1_tpxo9_atlas_30_v2.nc.gz','v_o1_tpxo9_atlas_30_v2.nc.gz',
-            'v_p1_tpxo9_atlas_30_v2.nc.gz','v_k1_tpxo9_atlas_30_v2.nc.gz',
-            'v_n2_tpxo9_atlas_30_v2.nc.gz','v_m2_tpxo9_atlas_30_v2.nc.gz',
-            'v_s2_tpxo9_atlas_30_v2.nc.gz','v_k2_tpxo9_atlas_30_v2.nc.gz',
-            'v_m4_tpxo9_atlas_30_v2.nc.gz','v_ms4_tpxo9_atlas_30_v2.nc.gz',
-            'v_mn4_tpxo9_atlas_30_v2.nc.gz','v_2n2_tpxo9_atlas_30_v2.nc.gz']
-        model_file = {}
-        for key,val in model_files.items():
-            model_file[key] = [os.path.join(model_directory,m) for m in val]
-        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        model_format = 'netcdf'
-        TYPES = ['u','v']
-        model_scale = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v3')
-        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v3.nc.gz')
-        model_files = {}
-        model_files['u'] = ['u_q1_tpxo9_atlas_30_v3.nc.gz','u_o1_tpxo9_atlas_30_v3.nc.gz',
-            'u_p1_tpxo9_atlas_30_v3.nc.gz','u_k1_tpxo9_atlas_30_v3.nc.gz',
-            'u_n2_tpxo9_atlas_30_v3.nc.gz','u_m2_tpxo9_atlas_30_v3.nc.gz',
-            'u_s2_tpxo9_atlas_30_v3.nc.gz','u_k2_tpxo9_atlas_30_v3.nc.gz',
-            'u_m4_tpxo9_atlas_30_v3.nc.gz','u_ms4_tpxo9_atlas_30_v3.nc.gz',
-            'u_mn4_tpxo9_atlas_30_v3.nc.gz','u_2n2_tpxo9_atlas_30_v3.nc.gz']
-        model_files['v'] = ['v_q1_tpxo9_atlas_30_v3.nc.gz','v_o1_tpxo9_atlas_30_v3.nc.gz',
-            'v_p1_tpxo9_atlas_30_v3.nc.gz','v_k1_tpxo9_atlas_30_v3.nc.gz',
-            'v_n2_tpxo9_atlas_30_v3.nc.gz','v_m2_tpxo9_atlas_30_v3.nc.gz',
-            'v_s2_tpxo9_atlas_30_v3.nc.gz','v_k2_tpxo9_atlas_30_v3.nc.gz',
-            'v_m4_tpxo9_atlas_30_v3.nc.gz','v_ms4_tpxo9_atlas_30_v3.nc.gz',
-            'v_mn4_tpxo9_atlas_30_v3.nc.gz','v_2n2_tpxo9_atlas_30_v3.nc.gz']
-        model_file = {}
-        for key,val in model_files.items():
-            model_file[key] = [os.path.join(model_directory,m) for m in val]
-        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        model_format = 'netcdf'
-        TYPES = ['u','v']
-        model_scale = 1.0/100.0
-        GZIP = True
-    elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
-        model_directory = os.path.join(tide_dir,'TPXO9_atlas_v4')
-        grid_file = os.path.join(tide_dir,'grid_tpxo9_atlas_30_v4')
-        model_files = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
-            'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
-            'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
-            'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
-            'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
-            'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'TPXO9.1'):
-        grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
-        model_file = os.path.join(tide_dir,'TPXO9.1','DATA','u_tpxo9.v1')
-        reference = 'http://volkov.oce.orst.edu/tides/global.html'
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'TPXO8-atlas'):
-        grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
-        model_file = os.path.join(tide_dir,'tpxo8_atlas','uv.tpxo8_atlas_30_v1')
-        reference = 'http://volkov.oce.orst.edu/tides/tpxo8_atlas.html'
-        model_format = 'ATLAS'
-        EPSG = '4326'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'TPXO7.2'):
-        grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
-        model_file = os.path.join(tide_dir,'TPXO7.2_tmd','u_tpxo7.2')
-        reference = 'http://volkov.oce.orst.edu/tides/global.html'
-        model_format = 'OTIS'
-        EPSG = '4326'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'AODTM-5'):
-        grid_file = os.path.join(tide_dir,'aodtm5_tmd','grid_Arc5km')
-        model_file = os.path.join(tide_dir,'aodtm5_tmd','UV0_Arc5km')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/aodtm-5/')
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'AOTIM-5'):
-        grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
-        model_file = os.path.join(tide_dir,'aotim5_tmd','UV_Arc5km')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/aotim-5/')
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'AOTIM-5-2018'):
-        grid_file = os.path.join(tide_dir,'Arc5km2018','grid_Arc5km2018')
-        model_file = os.path.join(tide_dir,'Arc5km2018','UV_Arc5km2018')
-        reference = ('https://www.esr.org/research/polar-tide-models/'
-            'list-of-polar-tide-models/aotim-5/')
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'Gr1km-v2'):
-        grid_file = os.path.join(tide_dir,'greenlandTMD_v2','grid_Greenland8.v2')
-        model_file = os.path.join(tide_dir,'greenlandTMD_v2','u_Greenland8_rot.v2')
-        reference = 'https://doi.org/10.1002/2016RG000546'
-        model_format = 'OTIS'
-        EPSG = '3413'
-        TYPES = ['u','v']
-    elif (TIDE_MODEL == 'FES2014'):
-        model_directory = {}
-        model_directory['u'] = os.path.join(tide_dir,'fes2014','eastward_velocity')
-        model_directory['v'] = os.path.join(tide_dir,'fes2014','northward_velocity')
-        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
-            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
-            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
-            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
-            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
-            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
-            'ssa.nc.gz','t2.nc.gz']
-        model_file = {}
-        for key,val in model_directory.items():
-            model_file[key] = [os.path.join(val,m) for m in model_files]
-        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
-            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
-            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        reference = ('https://www.aviso.altimetry.fr/en/data/products'
-            'auxiliary-products/global-tide-fes.html')
-        model_format = 'FES'
-        TYPES = ['u','v']
-        model_scale = 1.0
-        GZIP = True
+    TIDE_MODEL=None, ATLAS_FORMAT='netcdf', FORMAT='csv',
+    VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
+    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
+    PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
+    CUTOFF=None, GZIP=True, VERBOSE=False, MODE=0o775):
+    #-- get parameters for tide model
+    model = pyTMD.model(tide_dir).current(TIDE_MODEL,
+        format=ATLAS_FORMAT, compressed=GZIP)
 
     #-- invalid value
     fill_value = -9999.0
@@ -341,8 +169,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     attrib['u'] = {}
     attrib['u']['description'] = ('depth_averaged_tidal_zonal_current_'
         'from_harmonic_constants')
-    attrib['u']['reference'] = reference
-    attrib['u']['model'] = TIDE_MODEL
+    attrib['u']['reference'] = model.reference
+    attrib['u']['model'] = model.name
     attrib['u']['units'] = 'cm/s'
     attrib['u']['long_name'] = 'zonal_tidal_current'
     attrib['u']['_FillValue'] = fill_value
@@ -350,8 +178,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     attrib['v'] = {}
     attrib['v']['description'] = ('depth_averaged_tidal_meridional_current_'
         'from_harmonic_constants')
-    attrib['v']['reference'] = reference
-    attrib['v']['model'] = TIDE_MODEL
+    attrib['v']['reference'] =  model.reference
+    attrib['v']['model'] = model.name
     attrib['v']['units'] = 'cm/s'
     attrib['v']['long_name'] = 'meridional_tidal_current'
     attrib['v']['_FillValue'] = fill_value
@@ -417,24 +245,27 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- python dictionary with output data
     output = {'time':tide_time,'lon':lon,'lat':lat}
     #-- iterate over u and v currents
-    for t in TYPES:
+    for t in model.type:
         #-- read tidal constants and interpolate to grid points
-        if model_format in ('OTIS','ATLAS'):
+        if model.format in ('OTIS','ATLAS'):
             amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
-                grid_file, model_file, EPSG, TYPE=t, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, GRID=model_format)
+                model.grid_file, model.model_file['u'], model.projection,
+                TYPE=t, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
+                GRID=model.format)
             deltat = np.zeros((nt))
-        elif (model_format == 'netcdf'):
+        elif (model.format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
-                grid_file, model_file[t], TYPE=t, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model_scale,
-                GZIP=GZIP)
+                model.grid_file, model.model_file[t], TYPE=t, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
+                GZIP=model.compressed)
             deltat = np.zeros((nt))
-        elif (model_format == 'FES'):
+        elif (model.format == 'FES'):
             amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
-                model_file[t], TYPE=t, VERSION=TIDE_MODEL, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model_scale,
-                GZIP=GZIP)
+                model.model_file[t], TYPE=t, VERSION=model.name, METHOD=METHOD,
+                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
+                GZIP=model.compressed)
+            #-- available model constituents
+            c = model.constituents
             #-- interpolate delta times from calendar dates to tide time
             deltat = calc_delta_time(delta_file, tide_time)
 
@@ -449,9 +280,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             output[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
                 TIDE = predict_tide(tide_time[i], hc, c,
-                    DELTAT=deltat[i], CORRECTIONS=model_format)
+                    DELTAT=deltat[i], CORRECTIONS=model.format)
                 MINOR = infer_minor_corrections(tide_time[i], hc, c,
-                    DELTAT=deltat[i], CORRECTIONS=model_format)
+                    DELTAT=deltat[i], CORRECTIONS=model.format)
                 #-- add major and minor components and reform grid
                 output[t][:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
                 output[t].mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask),
@@ -460,9 +291,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             output[t] = np.ma.zeros((nt), fill_value=fill_value)
             output[t].mask = np.any(hc.mask,axis=1)
             output[t].data[:] = predict_tide_drift(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=model_format)
+                DELTAT=deltat, CORRECTIONS=model.format)
             minor = infer_minor_corrections(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=model_format)
+                DELTAT=deltat, CORRECTIONS=model.format)
             output[t].data[:] += minor.data[:]
         #-- replace invalid values with fill value
         output[t].data[output[t].mask] = output[t].fill_value

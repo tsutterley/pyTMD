@@ -202,7 +202,7 @@ RUN wget -q https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 && \
     make --quiet install && \
     make clean
 
-ENV PROJ_VERSION=7.2.1
+ENV PROJ_VERSION=8.0.1
 ENV PROJ_DATUMGRID_VERSION=1.8
 ENV PROJ_NETWORK ON
 ENV SQLITE3_CFLAGS="-I/usr/local/include"
@@ -227,7 +227,8 @@ RUN wget -q https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz && \
     cmake --build . && \
     make --quiet --jobs=${JOBS} && \
     make --quiet install && \
-    make clean
+    make clean && \
+    projsync --system-directory --all
 
 ENV CC=mpicc
 ENV CPPFLAGS="-I/usr/local/include"

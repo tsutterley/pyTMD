@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (09/2021)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -72,6 +72,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use numpy datetime arrays as input time variable
         added function for determining the input spatial variable type
         added check that tide model directory is accessible
@@ -97,6 +98,7 @@ import os
 import pyproj
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.spatial
 import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
@@ -110,8 +112,9 @@ from pyTMD.read_FES_model import extract_FES_constants
 
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
-    EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC',
-    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, FILL_VALUE=np.nan):
+    ATLAS_FORMAT='netcdf', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift',
+    TIME='UTC', METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0,
+    FILL_VALUE=np.nan, GZIP=True):
     """
     Compute tides at points and times using tidal harmonics
 
@@ -158,217 +161,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     except:
         raise FileNotFoundError("Invalid tide directory")
 
-    #-- select between tide models
-    if (MODEL == 'CATS0201'):
-        grid_file = os.path.join(DIRECTORY,'cats0201_tmd','grid_CATS')
-        model_file = os.path.join(DIRECTORY,'cats0201_tmd','h0_CATS02_01')
-        model_format = 'OTIS'
-        model_EPSG = '4326'
-        model_type = 'z'
-    elif (MODEL == 'CATS2008'):
-        grid_file = os.path.join(DIRECTORY,'CATS2008','grid_CATS2008')
-        model_file = os.path.join(DIRECTORY,'CATS2008','hf.CATS2008.out')
-        model_format = 'OTIS'
-        model_EPSG = 'CATS2008'
-        model_type = 'z'
-    elif (MODEL == 'CATS2008_load'):
-        grid_file = os.path.join(DIRECTORY,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
-        model_file = os.path.join(DIRECTORY,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
-        model_format = 'OTIS'
-        model_EPSG = 'CATS2008'
-        model_type = 'z'
-    elif (MODEL == 'TPXO9-atlas'):
-        model_directory = os.path.join(DIRECTORY,'TPXO9_atlas')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas.nc.gz')
-        model_files = ['h_q1_tpxo9_atlas_30.nc.gz','h_o1_tpxo9_atlas_30.nc.gz',
-            'h_p1_tpxo9_atlas_30.nc.gz','h_k1_tpxo9_atlas_30.nc.gz',
-            'h_n2_tpxo9_atlas_30.nc.gz','h_m2_tpxo9_atlas_30.nc.gz',
-            'h_s2_tpxo9_atlas_30.nc.gz','h_k2_tpxo9_atlas_30.nc.gz',
-            'h_m4_tpxo9_atlas_30.nc.gz','h_ms4_tpxo9_atlas_30.nc.gz',
-            'h_mn4_tpxo9_atlas_30.nc.gz','h_2n2_tpxo9_atlas_30.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'netcdf'
-        model_type = 'z'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (MODEL == 'TPXO9-atlas-v2'):
-        model_directory = os.path.join(DIRECTORY,'TPXO9_atlas_v2')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
-        model_files = ['h_q1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
-            'h_p1_tpxo9_atlas_30_v2.nc.gz','h_k1_tpxo9_atlas_30_v2.nc.gz',
-            'h_n2_tpxo9_atlas_30_v2.nc.gz','h_m2_tpxo9_atlas_30_v2.nc.gz',
-            'h_s2_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
-            'h_m4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
-            'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'netcdf'
-        model_type = 'z'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (MODEL == 'TPXO9-atlas-v3'):
-        model_directory = os.path.join(DIRECTORY,'TPXO9_atlas_v3')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v3.nc.gz')
-        model_files = ['h_q1_tpxo9_atlas_30_v3.nc.gz','h_o1_tpxo9_atlas_30_v3.nc.gz',
-            'h_p1_tpxo9_atlas_30_v3.nc.gz','h_k1_tpxo9_atlas_30_v3.nc.gz',
-            'h_n2_tpxo9_atlas_30_v3.nc.gz','h_m2_tpxo9_atlas_30_v3.nc.gz',
-            'h_s2_tpxo9_atlas_30_v3.nc.gz','h_k2_tpxo9_atlas_30_v3.nc.gz',
-            'h_m4_tpxo9_atlas_30_v3.nc.gz','h_ms4_tpxo9_atlas_30_v3.nc.gz',
-            'h_mn4_tpxo9_atlas_30_v3.nc.gz','h_2n2_tpxo9_atlas_30_v3.nc.gz',
-            'h_mf_tpxo9_atlas_30_v3.nc.gz','h_mm_tpxo9_atlas_30_v3.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'netcdf'
-        model_type = 'z'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (MODEL == 'TPXO9-atlas-v4'):
-        model_directory = os.path.join(DIRECTORY,'TPXO9_atlas_v4')
-        grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v4')
-        model_files = ['h_q1_tpxo9_atlas_30_v4','h_o1_tpxo9_atlas_30_v4',
-            'h_p1_tpxo9_atlas_30_v4','h_k1_tpxo9_atlas_30_v4',
-            'h_n2_tpxo9_atlas_30_v4','h_m2_tpxo9_atlas_30_v4',
-            'h_s2_tpxo9_atlas_30_v4','h_k2_tpxo9_atlas_30_v4',
-            'h_m4_tpxo9_atlas_30_v4','h_ms4_tpxo9_atlas_30_v4',
-            'h_mn4_tpxo9_atlas_30_v4','h_2n2_tpxo9_atlas_30_v4',
-            'h_mf_tpxo9_atlas_30_v4','h_mm_tpxo9_atlas_30_v4']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'OTIS'
-        model_EPSG = '4326'
-        model_type = 'z'
-    elif (MODEL == 'TPXO9.1'):
-        grid_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','grid_tpxo9')
-        model_file = os.path.join(DIRECTORY,'TPXO9.1','DATA','h_tpxo9.v1')
-        model_format = 'OTIS'
-        model_EPSG = '4326'
-        model_type = 'z'
-    elif (MODEL == 'TPXO8-atlas'):
-        grid_file = os.path.join(DIRECTORY,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
-        model_file = os.path.join(DIRECTORY,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
-        model_format = 'ATLAS'
-        model_EPSG = '4326'
-        model_type = 'z'
-    elif (MODEL == 'TPXO7.2'):
-        grid_file = os.path.join(DIRECTORY,'TPXO7.2_tmd','grid_tpxo7.2')
-        model_file = os.path.join(DIRECTORY,'TPXO7.2_tmd','h_tpxo7.2')
-        model_format = 'OTIS'
-        model_EPSG = '4326'
-        model_type = 'z'
-    elif (MODEL == 'TPXO7.2_load'):
-        grid_file = os.path.join(DIRECTORY,'TPXO7.2_load','grid_tpxo6.2')
-        model_file = os.path.join(DIRECTORY,'TPXO7.2_load','h_tpxo7.2_load')
-        model_format = 'OTIS'
-        model_EPSG = '4326'
-        model_type = 'z'
-    elif (MODEL == 'AODTM-5'):
-        grid_file = os.path.join(DIRECTORY,'aodtm5_tmd','grid_Arc5km')
-        model_file = os.path.join(DIRECTORY,'aodtm5_tmd','h0_Arc5km.oce')
-        model_format = 'OTIS'
-        model_EPSG = 'PSNorth'
-        model_type = 'z'
-    elif (MODEL == 'AOTIM-5'):
-        grid_file = os.path.join(DIRECTORY,'aotim5_tmd','grid_Arc5km')
-        model_file = os.path.join(DIRECTORY,'aotim5_tmd','h_Arc5km.oce')
-        model_format = 'OTIS'
-        model_EPSG = 'PSNorth'
-        model_type = 'z'
-    elif (MODEL == 'AOTIM-5-2018'):
-        grid_file = os.path.join(DIRECTORY,'Arc5km2018','grid_Arc5km2018')
-        model_file = os.path.join(DIRECTORY,'Arc5km2018','h_Arc5km2018')
-        model_format = 'OTIS'
-        model_EPSG = 'PSNorth'
-        model_type = 'z'
-    elif (MODEL == 'Gr1km-v2'):
-        grid_file = os.path.join(DIRECTORY,'greenlandTMD_v2','grid_Greenland8.v2')
-        model_file = os.path.join(DIRECTORY,'greenlandTMD_v2','h_Greenland8.v2')
-        model_format = 'OTIS'
-        model_EPSG = '3413'
-        model_type = 'z'
-    elif (MODEL == 'GOT4.7'):
-        model_directory = os.path.join(DIRECTORY,'GOT4.7','grids_oceantide')
-        model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-            'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'GOT'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (MODEL == 'GOT4.7_load'):
-        model_directory = os.path.join(DIRECTORY,'GOT4.7','grids_loadtide')
-        model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
-            'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
-            's1load.d.gz','m4load.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'GOT'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (MODEL == 'GOT4.8'):
-        model_directory = os.path.join(DIRECTORY,'got4.8','grids_oceantide')
-        model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-            'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'GOT'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (MODEL == 'GOT4.8_load'):
-        model_directory = os.path.join(DIRECTORY,'got4.8','grids_loadtide')
-        model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
-            'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
-            's1load.d.gz','m4load.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'GOT'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (MODEL == 'GOT4.10'):
-        model_directory = os.path.join(DIRECTORY,'GOT4.10c','grids_oceantide')
-        model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-            'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'GOT'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (MODEL == 'GOT4.10_load'):
-        model_directory = os.path.join(DIRECTORY,'GOT4.10c','grids_loadtide')
-        model_files = ['q1load.d.gz','o1load.d.gz','p1load.d.gz','k1load.d.gz',
-            'n2load.d.gz','m2load.d.gz','s2load.d.gz','k2load.d.gz',
-            's1load.d.gz','m4load.d.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        model_format = 'GOT'
-        SCALE = 1.0/1000.0
-        GZIP = True
-    elif (MODEL == 'FES2014'):
-        model_directory = os.path.join(DIRECTORY,'fes2014','ocean_tide')
-        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
-            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
-            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
-            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
-            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
-            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
-            'ssa.nc.gz','t2.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6','m8',
-            'mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2','n4',
-            'nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        model_format = 'FES'
-        TYPE = 'z'
-        SCALE = 1.0/100.0
-        GZIP = True
-    elif (MODEL == 'FES2014_load'):
-        model_directory = os.path.join(DIRECTORY,'fes2014','load_tide')
-        model_files = ['2n2.nc.gz','eps2.nc.gz','j1.nc.gz','k1.nc.gz',
-            'k2.nc.gz','l2.nc.gz','la2.nc.gz','m2.nc.gz','m3.nc.gz','m4.nc.gz',
-            'm6.nc.gz','m8.nc.gz','mf.nc.gz','mks2.nc.gz','mm.nc.gz',
-            'mn4.nc.gz','ms4.nc.gz','msf.nc.gz','msqm.nc.gz','mtm.nc.gz',
-            'mu2.nc.gz','n2.nc.gz','n4.nc.gz','nu2.nc.gz','o1.nc.gz','p1.nc.gz',
-            'q1.nc.gz','r2.nc.gz','s1.nc.gz','s2.nc.gz','s4.nc.gz','sa.nc.gz',
-            'ssa.nc.gz','t2.nc.gz']
-        model_file = [os.path.join(model_directory,m) for m in model_files]
-        c = ['2n2','eps2','j1','k1','k2','l2','lambda2','m2','m3','m4','m6',
-            'm8','mf','mks2','mm','mn4','ms4','msf','msqm','mtm','mu2','n2',
-            'n4','nu2','o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-        model_format = 'FES'
-        model_type = 'z'
-        SCALE = 1.0/100.0
-        GZIP = True
-    else:
-        raise Exception("Unlisted tide model")
+    #-- get parameters for tide model
+    model = pyTMD.model(DIRECTORY).elevation(MODEL,
+        format=ATLAS_FORMAT, compressed=GZIP)
 
     #-- determine input data type based on variable dimensions
     if not TYPE:
@@ -425,25 +220,31 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     #-- read tidal constants and interpolate to grid points
-    if model_format in ('OTIS','ATLAS'):
-        amp,ph,D,c = extract_tidal_constants(lon, lat, grid_file, model_file,
-            model_EPSG, TYPE=model_type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, GRID=model_format)
+    if model.format in ('OTIS','ATLAS'):
+        amp,ph,D,c = extract_tidal_constants(lon, lat, model.grid_file,
+            model.model_file, model.projection, TYPE=model.type,
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
+            GRID=model.format)
         deltat = np.zeros_like(t)
-    elif (model_format == 'netcdf'):
-        amp,ph,D,c = extract_netcdf_constants(lon, lat, grid_file, model_file,
-            TYPE=model_type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
+    elif (model.format == 'netcdf'):
+        amp,ph,D,c = extract_netcdf_constants(lon, lat, model.grid_file,
+            model.model_file, TYPE=model.type, METHOD=METHOD,
+            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
+            GZIP=model.compressed)
         deltat = np.zeros_like(t)
-    elif (model_format == 'GOT'):
-        amp,ph,c = extract_GOT_constants(lon, lat, model_file, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
+    elif (model.format == 'GOT'):
+        amp,ph,c = extract_GOT_constants(lon, lat, model.model_file,
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
+            SCALE=model.scale, GZIP=model.compressed)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
-    elif (model_format == 'FES'):
-        amp,ph = extract_FES_constants(lon, lat, model_file, TYPE=model_type,
-            VERSION=MODEL, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, SCALE=SCALE, GZIP=GZIP)
+    elif (model.format == 'FES'):
+        amp,ph = extract_FES_constants(lon, lat, model.model_file,
+            TYPE=model.type, VERSION=model.name, METHOD=METHOD,
+            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
+            GZIP=model.compressed)
+        #-- available model constituents
+        c = model.constituents
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
 
@@ -459,9 +260,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             TIDE = predict_tide(t[i], hc, c,
-                DELTAT=deltat[i], CORRECTIONS=model_format)
+                DELTAT=deltat[i], CORRECTIONS=model.format)
             MINOR = infer_minor_corrections(t[i], hc, c,
-                DELTAT=deltat[i], CORRECTIONS=model_format)
+                DELTAT=deltat[i], CORRECTIONS=model.format)
             #-- add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
@@ -470,9 +271,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = predict_tide_drift(t, hc, c,
-            DELTAT=deltat, CORRECTIONS=model_format)
+            DELTAT=deltat, CORRECTIONS=model.format)
         minor = infer_minor_corrections(t, hc, c,
-            DELTAT=deltat, CORRECTIONS=model_format)
+            DELTAT=deltat, CORRECTIONS=model.format)
         tide.data[:] += minor.data[:]
     #-- replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
