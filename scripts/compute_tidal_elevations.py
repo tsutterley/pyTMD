@@ -154,14 +154,17 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_elevations(tide_dir, input_file, output_file,
-    TIDE_MODEL=None, ATLAS_FORMAT='netcdf', FORMAT='csv',
-    VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
-    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
+    TIDE_MODEL=None, ATLAS_FORMAT='netcdf', GZIP=True,
+    DEFINITION_FILE=None, FORMAT='csv', VARIABLES=[], HEADER=0,
+    TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
     PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
-    CUTOFF=None, GZIP=True, VERBOSE=False, MODE=0o775):
+    CUTOFF=None, VERBOSE=False, MODE=0o775):
     #-- get parameters for tide model
-    model = pyTMD.model(tide_dir).elevation(TIDE_MODEL,
-        format=ATLAS_FORMAT, compressed=GZIP)
+    if DEFINITION_FILE is not None:
+        model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
+    else:
+        model = pyTMD.model(tide_dir, format=ATLAS_FORMAT,
+            compressed=GZIP).elevation(TIDE_MODEL)
     output_variable = model.variable
 
     #-- invalid value
@@ -181,7 +184,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     attrib[output_variable] = {}
     attrib[output_variable]['description'] = model.description
     attrib[output_variable]['reference'] = model.reference
-    attrib[output_variable]['model'] = TIDE_MODEL
+    attrib[output_variable]['model'] = model.name
     attrib[output_variable]['units'] = 'meters'
     attrib[output_variable]['long_name'] = model.long_name
     attrib[output_variable]['_FillValue'] = fill_value
@@ -326,6 +329,7 @@ def main():
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
+    group = parser.add_mutually_exclusive_group(required=True)
     #-- input and output file
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
@@ -345,10 +349,20 @@ def main():
         'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
         'FES2014','FES2014_load')
-    parser.add_argument('--tide','-T',
-        metavar='TIDE', type=str, default='CATS2008',
+    group.add_argument('--tide','-T',
+        metavar='TIDE', type=str,
         choices=model_choices,
         help='Tide model to use in correction')
+    parser.add_argument('--atlas-format',
+        type=str, choices=('OTIS','netcdf'), default='netcdf',
+        help='ATLAS tide model format')
+    parser.add_argument('--gzip','-G',
+        default=False, action='store_true',
+        help='Tide model files are gzip compressed')
+    #-- tide model definition file to set an undefined model
+    group.add_argument('--definition-file',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        help='Tide model definition file for use as correction')
     #-- input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
@@ -414,7 +428,9 @@ def main():
 
     #-- run tidal elevation program for input file
     compute_tidal_elevations(args.directory, args.infile, args.outfile,
-        FORMAT=args.format, TIDE_MODEL=args.tide, VARIABLES=args.variables,
+        TIDE_MODEL=args.tide, ATLAS_FORMAT=args.atlas_format,
+        GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
+        FORMAT=args.format, VARIABLES=args.variables,
         HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
         TIME=args.deltatime, PROJECTION=args.projection,
         METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,

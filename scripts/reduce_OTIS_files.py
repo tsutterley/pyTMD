@@ -56,7 +56,7 @@ from pyTMD.output_otis_tides import *
 def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     PROJECTION='4326', MODE=0o775):
     #-- get parameters for tide model
-    model = pyTMD.model(tide_dir).grid(TIDE_MODEL)
+    model = pyTMD.model(directory=tide_dir).elevation(TIDE_MODEL)
     #-- directionaries with input and output files
     model_file = {}
     new_model_file = {}

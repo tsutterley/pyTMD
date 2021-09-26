@@ -427,11 +427,14 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
-    ATLAS_FORMAT=None, METHOD='spline', EXTRAPOLATE=False, CUTOFF=None,
-    GZIP=True, VERBOSE=False, MODE=0o775):
+    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
+    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
     #-- get parameters for tide model
-    model = pyTMD.model(tide_dir).elevation(TIDE_MODEL,
-        format=ATLAS_FORMAT, compressed=GZIP)
+    if DEFINITION_FILE is not None:
+        model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
+    else:
+        model = pyTMD.model(tide_dir, format=ATLAS_FORMAT,
+            compressed=GZIP).elevation(TIDE_MODEL)
 
     #-- extract file name and subsetter indices lists
     match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
@@ -563,7 +566,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     #-- output tidal HDF5 file
     #-- form: rg_NASA_model_TIDES_WGS84_fl1yyyymmddjjjjj.H5
     #-- where rg is the hemisphere flag (GR or AN) for the region
-    #-- model is the tidal TIDE_MODEL flag (e.g. CATS0201)
+    #-- model is the tidal model name flag (e.g. CATS0201)
     #-- fl1 and fl2 are the data flags (ATM, LVIS, GLAS)
     #-- yymmddjjjjj is the year, month, day and second of the input file
     #-- output region flags: GR for Greenland and AN for Antarctica
@@ -571,7 +574,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     #-- use starting second to distinguish between files for the day
     JJ1 = np.min(dinput['time']) % 86400
     #-- output file format
-    args = (hem_flag[HEM],TIDE_MODEL,OIB,YY1,MM1,DD1,JJ1)
+    args = (hem_flag[HEM],model.name,OIB,YY1,MM1,DD1,JJ1)
     FILENAME = '{0}_NASA_{1}_TIDES_WGS84_{2}{3}{4}{5}{6:05.0f}.H5'.format(*args)
     #-- print file information
     print('\t{0}'.format(FILENAME)) if VERBOSE else None
@@ -633,7 +636,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     fid.attrs['date_created'] = time.strftime('%Y-%m-%d',time.localtime())
     #-- add attributes for input file
     fid.attrs['elevation_file'] = os.path.basename(input_file)
-    fid.attrs['tide_model'] = TIDE_MODEL
+    fid.attrs['tide_model'] = model.name
     #-- add geospatial and temporal attributes
     fid.attrs['geospatial_lat_min'] = dinput['lat'].min()
     fid.attrs['geospatial_lat_max'] = dinput['lat'].max()
@@ -676,6 +679,8 @@ def main():
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
+    group = parser.add_mutually_exclusive_group(required=True)
+    #-- input operation icebridge files
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
         help='Input Operation IceBridge file')
@@ -691,10 +696,20 @@ def main():
         'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
         'FES2014','FES2014_load')
-    parser.add_argument('--tide','-T',
-        metavar='TIDE', type=str, default='CATS2008',
+    group.add_argument('--tide','-T',
+        metavar='TIDE', type=str,
         choices=model_choices,
         help='Tide model to use in correction')
+    parser.add_argument('--atlas-format',
+        type=str, choices=('OTIS','netcdf'), default='netcdf',
+        help='ATLAS tide model format')
+    parser.add_argument('--gzip','-G',
+        default=False, action='store_true',
+        help='Tide model files are gzip compressed')
+    #-- tide model definition file to set an undefined model
+    group.add_argument('--definition-file',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        help='Tide model definition file for use as correction')
     #-- interpolation method
     parser.add_argument('--interpolate','-I',
         metavar='METHOD', type=str, default='spline',
@@ -722,7 +737,9 @@ def main():
 
     #-- run for each input Operation IceBridge file
     for arg in args.infile:
-        compute_tides_icebridge_data(args.directory, arg, TIDE_MODEL=args.tide,
+        compute_tides_icebridge_data(args.directory, arg,
+            TIDE_MODEL=args.tide, ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
             METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
             CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
 

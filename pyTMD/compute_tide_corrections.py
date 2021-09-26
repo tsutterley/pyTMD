@@ -19,6 +19,9 @@ INPUTS:
 OPTIONS:
     DIRECTORY: working data directory for tide models
     MODEL: Tide model to use in correction
+    ATLAS_FORMAT: ATLAS tide model format (OTIS, netcdf)
+    GZIP: Tide model files are gzip compressed
+    DEFINITION_FILE: Tide model definition file for use as correction
     EPOCH: time period for calculating delta times
         default: J2000 (seconds since 2000-01-01T00:00:00)
     TYPE: input data type
@@ -112,9 +115,9 @@ from pyTMD.read_FES_model import extract_FES_constants
 
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
-    ATLAS_FORMAT='netcdf', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift',
-    TIME='UTC', METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0,
-    FILL_VALUE=np.nan, GZIP=True):
+    ATLAS_FORMAT='netcdf', GZIP=True, DEFINITION_FILE=None, EPSG=3031,
+    EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC', METHOD='spline',
+    EXTRAPOLATE=False, CUTOFF=10.0, FILL_VALUE=np.nan):
     """
     Compute tides at points and times using tidal harmonics
 
@@ -128,6 +131,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     -----------------
     DIRECTORY: working data directory for tide models
     MODEL: Tide model to use in correction
+    ATLAS_FORMAT: ATLAS tide model format (OTIS, netcdf)
+    GZIP: Tide model files are gzip compressed
+    DEFINITION_FILE: Tide model definition file for use as correction
     EPOCH: time period for calculating delta times
         default: J2000 (seconds since 2000-01-01T00:00:00)
     TYPE: input data type
@@ -162,8 +168,11 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         raise FileNotFoundError("Invalid tide directory")
 
     #-- get parameters for tide model
-    model = pyTMD.model(DIRECTORY).elevation(MODEL,
-        format=ATLAS_FORMAT, compressed=GZIP)
+    if DEFINITION_FILE is not None:
+        model = pyTMD.model(DIRECTORY).from_file(DEFINITION_FILE)
+    else:
+        model = pyTMD.model(DIRECTORY, format=ATLAS_FORMAT,
+            compressed=GZIP).elevation(MODEL)
 
     #-- determine input data type based on variable dimensions
     if not TYPE:

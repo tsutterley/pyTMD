@@ -143,14 +143,17 @@ from pyTMD.read_FES_model import extract_FES_constants
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_currents(tide_dir, input_file, output_file,
-    TIDE_MODEL=None, ATLAS_FORMAT='netcdf', FORMAT='csv',
-    VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
-    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
+    TIDE_MODEL=None, ATLAS_FORMAT='netcdf', GZIP=True,
+    DEFINITION_FILE=None, FORMAT='csv', VARIABLES=[], HEADER=0,
+    TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
     PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
-    CUTOFF=None, GZIP=True, VERBOSE=False, MODE=0o775):
+    CUTOFF=None, VERBOSE=False, MODE=0o775):
     #-- get parameters for tide model
-    model = pyTMD.model(tide_dir).current(TIDE_MODEL,
-        format=ATLAS_FORMAT, compressed=GZIP)
+    if DEFINITION_FILE is not None:
+        model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
+    else:
+        model = pyTMD.model(tide_dir, format=ATLAS_FORMAT,
+            compressed=GZIP).current(TIDE_MODEL)
 
     #-- invalid value
     fill_value = -9999.0
@@ -326,6 +329,7 @@ def main():
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line options
+    group = parser.add_mutually_exclusive_group(required=True)
     #-- input and output file
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
@@ -342,10 +346,20 @@ def main():
     model_choices = ('CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
         'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9.1','TPXO8-atlas','TPXO7.2',
         'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2','FES2014')
-    parser.add_argument('--tide','-T',
-        metavar='TIDE', type=str, default='CATS2008',
+    group.add_argument('--tide','-T',
+        metavar='TIDE', type=str,
         choices=model_choices,
         help='Tide model to use in calculating currents')
+    parser.add_argument('--atlas-format',
+        type=str, choices=('OTIS','netcdf'), default='netcdf',
+        help='ATLAS tide model format')
+    parser.add_argument('--gzip','-G',
+        default=False, action='store_true',
+        help='Tide model files are gzip compressed')
+    #-- tide model definition file to set an undefined model
+    group.add_argument('--definition-file',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        help='Tide model definition file for use in calculating currents')
     #-- input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
@@ -411,7 +425,9 @@ def main():
 
     #-- run tidal current program for input file
     compute_tidal_currents(args.directory, args.infile, args.outfile,
-        FORMAT=args.format, TIDE_MODEL=args.tide, VARIABLES=args.variables,
+        TIDE_MODEL=args.tide, ATLAS_FORMAT=args.atlas_format,
+        GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
+        FORMAT=args.format, VARIABLES=args.variables,
         HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
         TIME=args.deltatime, PROJECTION=args.projection,
         METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,

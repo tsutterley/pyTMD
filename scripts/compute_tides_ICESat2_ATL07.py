@@ -131,11 +131,14 @@ from icesat2_toolkit.read_ICESat2_ATL07 import read_HDF5_ATL07
 #-- PURPOSE: read ICESat-2 sea ice height (ATL07) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
-    ATLAS_FORMAT=None, METHOD='spline', EXTRAPOLATE=False, CUTOFF=None,
-    GZIP=True, VERBOSE=False, MODE=0o775):
+    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
+    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
     #-- get parameters for tide model
-    model = pyTMD.model(tide_dir).elevation(TIDE_MODEL,
-        format=ATLAS_FORMAT, compressed=GZIP)
+    if DEFINITION_FILE is not None:
+        model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
+    else:
+        model = pyTMD.model(tide_dir, format=ATLAS_FORMAT,
+            compressed=GZIP).elevation(TIDE_MODEL)
 
     #-- read data from input file
     print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
@@ -150,11 +153,11 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     except:
         #-- output tide HDF5 file (generic)
         fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
-        args = (fileBasename,TIDE_MODEL,fileExtension)
+        args = (fileBasename,model.name,fileExtension)
         OUTPUT_FILE = '{0}_{1}_TIDES{2}'.format(*args)
     else:
         #-- output tide HDF5 file for ASAS/NSIDC granules
-        args = (PRD,HEM,TIDE_MODEL,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX)
+        args = (PRD,HEM,model.name,YY,MM,DD,HH,MN,SS,TRK,CYCL,SN,RL,VERS,AUX)
         ff = '{0}-{1}_{2}_TIDES_{3}{4}{5}{6}{7}{8}_{9}{10}{11}_{12}_{13}{14}.h5'
         OUTPUT_FILE = ff.format(*args)
 
@@ -572,6 +575,8 @@ def main():
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
     #-- command line parameters
+    group = parser.add_mutually_exclusive_group(required=True)
+    #-- input ICESat-2 sea ice height files
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
         help='ICESat-2 ATL07 file to run')
@@ -587,10 +592,20 @@ def main():
         'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
         'FES2014','FES2014_load')
-    parser.add_argument('--tide','-T',
-        metavar='TIDE', type=str, default='CATS2008',
+    group.add_argument('--tide','-T',
+        metavar='TIDE', type=str,
         choices=model_choices,
         help='Tide model to use in correction')
+    parser.add_argument('--atlas-format',
+        type=str, choices=('OTIS','netcdf'), default='netcdf',
+        help='ATLAS tide model format')
+    parser.add_argument('--gzip','-G',
+        default=False, action='store_true',
+        help='Tide model files are gzip compressed')
+    #-- tide model definition file to set an undefined model
+    group.add_argument('--definition-file',
+        type=lambda p: os.path.abspath(os.path.expanduser(p)),
+        help='Tide model definition file for use as correction')
     #-- interpolation method
     parser.add_argument('--interpolate','-I',
         metavar='METHOD', type=str, default='spline',
@@ -619,8 +634,10 @@ def main():
     #-- run for each input ATL07 file
     for FILE in args.infile:
         compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
-            METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-            CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
+            ATLAS_FORMAT=args.atlas_format, GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file, METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate, CUTOFF=args.cutoff,
+            VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

@@ -2,7 +2,8 @@
 u"""
 model.py
 Written by Tyler Sutterley (09/2021)
-Class with parameters for named tide models
+Retrieves tide model parameters for named models or
+    from a model definition file
 
 UPDATE HISTORY:
     Written 09/2021
@@ -12,7 +13,7 @@ import re
 import copy
 
 class model:
-    def __init__(self, directory, **kwargs):
+    def __init__(self, directory=os.getcwd(), **kwargs):
         # set default keyword arguments
         kwargs.setdefault('compressed',False)
         kwargs.setdefault('format','netcdf')
@@ -900,13 +901,13 @@ class model:
         # return the model parameters
         return self
 
-    def from_file(self, parameter_file):
+    def from_file(self, definition_file):
         """Create a model object from an input definition file
         """
         # variable with parameter definitions
         parameters = {}
-        # Opening parameter file and assigning file ID number (fid)
-        fid = open(parameter_file, 'r')
+        # Opening definition file and assigning file ID number
+        fid = open(definition_file, 'r')
         # for each line in the file will extract the parameter (name and value)
         for fileline in fid:
             # Splitting the input line between parameter name and value
@@ -921,6 +922,9 @@ class model:
         assert temp.type in ('OTIS','ATLAS','netcdf','GOT','FES')
         # convert scale from string to float
         temp.scale = float(temp.scale)
+        # split type into list if currents u,v
+        if re.search(r'[\s\,]+', temp.type):
+            temp.type = re.split(r'[\s\,]+',temp.type)
         # split model file into list if an ATLAS, GOT or FES file
         # model files can be comma, tab or space delimited
         if re.search(r'[\s\,]+', temp.model_file):
