@@ -226,7 +226,7 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model.format == 'FES'):
             amp,ph = extract_FES_constants(val['longitude'], val['latitude'],
-                model.model_file, TYPE=model.type, VERSION=model.name,
+                model.model_file, TYPE=model.type, VERSION=model.version,
                 METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
                 SCALE=model.scale, GZIP=model.compressed)
             #-- available model constituents

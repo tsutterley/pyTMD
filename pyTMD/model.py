@@ -35,65 +35,71 @@ class model:
         self.projection = None
         self.scale = 1.0
         self.type = None
+        self.version = None
 
     def grid(self,m):
         """Create a model object from known tide grid files
         """
         # model name
         self.name = m
-        # compression and output flags
-        gzip = '.gz' if self.compressed else ''
-        suffix = '.nc' if (self.format == 'netcdf') else ''
         # select between known tide models
         if (m == 'CATS0201'):
-            self.grid_file = os.path.join(self.directory,
-                'cats0201_tmd','grid_CATS')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'cats0201_tmd')
+            self.grid_file = self.pathfinder('grid_CATS')
         elif (m == 'CATS2008'):
-            self.grid_file = os.path.join(self.directory,
-                'CATS2008','grid_CATS2008')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'CATS2008')
+            self.grid_file = self.pathfinder('grid_CATS2008')
         elif (m == 'CATS2008_load'):
-            self.grid_file = os.path.join(self.directory,
-                'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,
+                'CATS2008a_SPOTL_Load')
+            self.grid_file = self.pathfinder('grid_CATS2008a_opt')
         elif (m == 'TPXO9-atlas'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas')
         elif (m == 'TPXO9-atlas-v2'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v2',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v2')
         elif (m == 'TPXO9-atlas-v3'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v3',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v3')
         elif (m == 'TPXO9-atlas-v4'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v4',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
         elif (m == 'TPXO9.1'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO9.1','DATA','grid_tpxo9')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO9.1','DATA')
+            self.grid_file = self.pathfinder('grid_tpxo9')
         elif (m == 'TPXO8-atlas'):
-            self.grid_file = os.path.join(self.directory,
-                'tpxo8_atlas','grid_tpxo8atlas_30_v1')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'tpxo8_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
         elif (m == 'TPXO7.2'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO7.2_tmd','grid_tpxo7.2')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO7.2_tmd')
+            self.grid_file = self.pathfinder('grid_tpxo7.2')
         elif (m == 'TPXO7.2_load'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO7.2_load','grid_tpxo6.2')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO7.2_load')
+            self.grid_file = self.pathfinder('grid_tpxo6.2')
         elif (m == 'AODTM-5'):
-            self.grid_file = os.path.join(self.directory,
-                'aodtm5_tmd','grid_Arc5km')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'aodtm5_tmd')
+            self.grid_file = self.pathfinder('grid_Arc5km')
         elif (m == 'AOTIM-5'):
-            self.grid_file = os.path.join(self.directory,
-                'aotim5_tmd','grid_Arc5km')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'aotim5_tmd')
+            self.grid_file = self.pathfinder('grid_Arc5km')
         elif (m == 'AOTIM-5-2018'):
-            self.grid_file = os.path.join(self.directory,
-                'Arc5km2018','grid_Arc5km2018')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Arc5km2018')
+            self.grid_file = self.pathfinder('grid_Arc5km2018')
         elif (m == 'Gr1km-v2'):
-            self.grid_file = os.path.join(self.directory,
-                'greenlandTMD_v2','grid_Greenland8.v2')
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
+            self.grid_file = self.pathfinder('grid_Greenland8.v2')
         else:
             raise Exception("Unlisted tide model")
         # return the model parameters
@@ -106,15 +112,11 @@ class model:
         self.name = m
         # model type
         self.type = 'z'
-        # compression and output flags
-        gzip = '.gz' if self.compressed else ''
-        suffix = '.nc' if (self.format == 'netcdf') else ''
         # select between known tide models
         if (m == 'CATS0201'):
-            self.grid_file = os.path.join(self.directory,
-                'cats0201_tmd','grid_CATS')
-            self.model_file = os.path.join(self.directory,
-                'cats0201_tmd','h0_CATS02_01')
+            self.model_directory = os.path.join(self.directory,'cats0201_tmd')
+            self.grid_file = self.pathfinder('grid_CATS')
+            self.model_file = self.pathfinder('h0_CATS02_01')
             self.format = 'OTIS'
             self.projection = '4326'
             # model description and references
@@ -132,11 +134,10 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'CATS2008'):
-            self.grid_file = os.path.join(self.directory,
-                'CATS2008','grid_CATS2008')
-            self.model_file = os.path.join(self.directory,
-                'CATS2008','hf.CATS2008.out')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'CATS2008')
+            self.grid_file = self.pathfinder('grid_CATS2008')
+            self.model_file = self.pathfinder('hf.CATS2008.out')
             self.projection = 'CATS2008'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
@@ -153,11 +154,11 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'CATS2008_load'):
-            self.grid_file = os.path.join(self.directory,
-                'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
-            self.model_file = os.path.join(self.directory,
-                'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,
+                'CATS2008a_SPOTL_Load')
+            self.grid_file = self.pathfinder('grid_CATS2008a_opt')
+            self.model_file = self.pathfinder('h_CATS2008a_SPOTL_load')
             self.projection = 'CATS2008'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
@@ -173,19 +174,18 @@ class model:
             self.description = ("Local displacement due to Ocean "
                 "Loading (-6 to 0 cm)")
         elif (m == 'TPXO9-atlas'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas')
             model_files = ['h_q1_tpxo9_atlas_30','h_o1_tpxo9_atlas_30',
                 'h_p1_tpxo9_atlas_30','h_k1_tpxo9_atlas_30',
                 'h_n2_tpxo9_atlas_30','h_m2_tpxo9_atlas_30',
                 'h_s2_tpxo9_atlas_30','h_k2_tpxo9_atlas_30',
                 'h_m4_tpxo9_atlas_30','h_ms4_tpxo9_atlas_30',
                 'h_mn4_tpxo9_atlas_30','h_2n2_tpxo9_atlas_30']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}{2}'.format(f,suffix,gzip)) for f in model_files]
+            self.model_file = self.pathfinder(model_files)
             self.projection = '4326'
             self.scale = 1.0/1000.0
+            self.version = 'v1'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/tides/'
                 'tpxo9_atlas.html')
@@ -201,19 +201,18 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO9-atlas-v2'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v2',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v2')
             model_files = ['h_q1_tpxo9_atlas_30_v2','h_o1_tpxo9_atlas_30_v2',
                 'h_p1_tpxo9_atlas_30_v2','h_k1_tpxo9_atlas_30_v2',
                 'h_n2_tpxo9_atlas_30_v2','h_m2_tpxo9_atlas_30_v2',
                 'h_s2_tpxo9_atlas_30_v2','h_k2_tpxo9_atlas_30_v2',
                 'h_m4_tpxo9_atlas_30_v2','h_ms4_tpxo9_atlas_30_v2',
                 'h_mn4_tpxo9_atlas_30_v2','h_2n2_tpxo9_atlas_30_v2']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}{2}'.format(f,suffix,gzip)) for f in model_files]
+            self.model_file = self.pathfinder(model_files)
             self.projection = '4326'
             self.scale = 1.0/1000.0
+            self.version = 'v2'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
             self.atl03 = 'tide_ocean'
@@ -228,9 +227,8 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO9-atlas-v3'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v3',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v3')
             model_files = ['h_q1_tpxo9_atlas_30_v3','h_o1_tpxo9_atlas_30_v3',
                 'h_p1_tpxo9_atlas_30_v3','h_k1_tpxo9_atlas_30_v3',
                 'h_n2_tpxo9_atlas_30_v3','h_m2_tpxo9_atlas_30_v3',
@@ -238,10 +236,10 @@ class model:
                 'h_m4_tpxo9_atlas_30_v3','h_ms4_tpxo9_atlas_30_v3',
                 'h_mn4_tpxo9_atlas_30_v3','h_2n2_tpxo9_atlas_30_v3',
                 'h_mf_tpxo9_atlas_30_v3','h_mm_tpxo9_atlas_30_v3']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}{2}'.format(f,suffix,gzip)) for f in model_files]
+            self.model_file = self.pathfinder(model_files)
             self.projection = '4326'
             self.scale = 1.0/1000.0
+            self.version = 'v3'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
             self.atl03 = 'tide_ocean'
@@ -256,9 +254,8 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO9-atlas-v4'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v4',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
             model_files = ['h_q1_tpxo9_atlas_30_v4','h_o1_tpxo9_atlas_30_v4',
                 'h_p1_tpxo9_atlas_30_v4','h_k1_tpxo9_atlas_30_v4',
                 'h_n2_tpxo9_atlas_30_v4','h_m2_tpxo9_atlas_30_v4',
@@ -266,10 +263,10 @@ class model:
                 'h_m4_tpxo9_atlas_30_v4','h_ms4_tpxo9_atlas_30_v4',
                 'h_mn4_tpxo9_atlas_30_v4','h_2n2_tpxo9_atlas_30_v4',
                 'h_mf_tpxo9_atlas_30_v4','h_mm_tpxo9_atlas_30_v4']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}{2}'.format(f,suffix,gzip)) for f in model_files]
+            self.model_file = self.pathfinder(model_files)
             self.projection = '4326'
             self.scale = 1.0/1000.0
+            self.version = 'v4'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
             self.atl03 = 'tide_ocean'
@@ -284,12 +281,12 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO9.1'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO9.1','DATA','grid_tpxo9')
-            self.model_file = os.path.join(self.directory,
-                'TPXO9.1','DATA','h_tpxo9.v1')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO9.1','DATA')
+            self.grid_file = self.pathfinder('grid_tpxo9')
+            self.model_file = self.pathfinder('h_tpxo9.v1')
             self.projection = '4326'
+            self.version = '9.1'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/'
                 'tides/global.html')
@@ -305,12 +302,12 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO8-atlas'):
-            self.grid_file = os.path.join(self.directory,
-                'tpxo8_atlas','grid_tpxo8atlas_30_v1')
-            self.model_file = os.path.join(self.directory,
-                'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
             self.format = 'ATLAS'
+            self.model_directory = os.path.join(self.directory,'tpxo8_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
+            self.model_file = self.pathfinder('hf.tpxo8_atlas_30_v1')
             self.projection = '4326'
+            self.version = '8'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/'
                 'tides/tpxo8_atlas.html')
@@ -326,12 +323,12 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO7.2'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO7.2_tmd','grid_tpxo7.2')
-            self.model_file = os.path.join(self.directory,
-                'TPXO7.2_tmd','h_tpxo7.2')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO7.2_tmd')
+            self.grid_file = self.pathfinder('grid_tpxo7.2')
+            self.model_file = self.pathfinder('h_tpxo7.2')
             self.projection = '4326'
+            self.version = '7.2'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/'
                 'tides/global.html')
@@ -347,12 +344,12 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'TPXO7.2_load'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO7.2_load','grid_tpxo6.2')
-            self.model_file = os.path.join(self.directory,
-                'TPXO7.2_load','h_tpxo7.2_load')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO7.2_load')
+            self.grid_file = self.pathfinder('grid_tpxo6.2')
+            self.model_file = self.pathfinder('h_tpxo7.2_load')
             self.projection = '4326'
+            self.version = '7.2'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/'
                 'tides/global.html')
@@ -367,11 +364,10 @@ class model:
             self.description = ("Local displacement due to Ocean "
                 "Loading (-6 to 0 cm)")
         elif (m == 'AODTM-5'):
-            self.grid_file = os.path.join(self.directory,
-                'aodtm5_tmd','grid_Arc5km')
-            self.model_file = os.path.join(self.directory,
-                'aodtm5_tmd','h0_Arc5km.oce')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'aodtm5_tmd')
+            self.grid_file = self.pathfinder('grid_Arc5km')
+            self.model_file = self.pathfinder('h0_Arc5km.oce')
             self.projection = 'PSNorth'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
@@ -389,11 +385,10 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'AOTIM-5'):
-            self.grid_file = os.path.join(self.directory,
-                'aotim5_tmd','grid_Arc5km')
-            self.model_file = os.path.join(self.directory,
-                'aotim5_tmd','h_Arc5km.oce')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'aotim5_tmd')
+            self.grid_file = self.pathfinder('grid_Arc5km')
+            self.model_file = self.pathfinder('h_Arc5km.oce')
             self.projection = 'PSNorth'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
@@ -411,12 +406,12 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'AOTIM-5-2018'):
-            self.grid_file = os.path.join(self.directory,
-                'Arc5km2018','grid_Arc5km2018')
-            self.model_file = os.path.join(self.directory,
-                'Arc5km2018','h_Arc5km2018')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Arc5km2018')
+            self.grid_file = self.pathfinder('grid_Arc5km2018')
+            self.model_file = self.pathfinder('h_Arc5km2018')
             self.projection = 'PSNorth'
+            self.version = '2018'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/'
@@ -433,12 +428,12 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'Gr1km-v2'):
-            self.grid_file = os.path.join(self.directory,
-                'greenlandTMD_v2','grid_Greenland8.v2')
-            self.model_file = os.path.join(self.directory,
-                'greenlandTMD_v2','h_Greenland8.v2')
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
+            self.grid_file = self.pathfinder('grid_Greenland8.v2')
+            self.model_file = self.pathfinder('h_Greenland8.v2')
             self.projection = '3413'
+            self.version = 'v2'
             # model description and references
             self.reference = 'https://doi.org/10.1002/2016RG000546'
             self.atl03 = 'tide_ocean'
@@ -453,14 +448,14 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'GOT4.7'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'GOT'
+            self.model_directory = os.path.join(self.directory,
                 'GOT4.7','grids_oceantide')
             model_files = ['q1.d','o1.d','p1.d','k1.d','n2.d',
                 'm2.d','s2.d','k2.d','s1.d','m4.d']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
-            self.format = 'GOT'
+            self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
+            self.version = '4.7'
             # model description and references
             self.reference = ('https://denali.gsfc.nasa.gov/'
                 'personal_pages/ray/MiscPubs/'
@@ -477,16 +472,16 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'GOT4.7_load'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'GOT'
+            self.model_directory = os.path.join(self.directory,
                 'GOT4.7','grids_loadtide')
             model_files = ['q1load.d','o1load.d',
                 'p1load.d','k1load.d','n2load.d',
                 'm2load.d','s2load.d','k2load.d',
                 's1load.d','m4load.d']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
-            self.format = 'GOT'
+            self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
+            self.version = '4.7'
             # model description and references
             self.reference = ('https://denali.gsfc.nasa.gov/'
                 'personal_pages/ray/MiscPubs/'
@@ -502,14 +497,14 @@ class model:
             self.description = ("Local displacement due to Ocean "
                 "Loading (-6 to 0 cm)")
         elif (m == 'GOT4.8'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'GOT'
+            self.model_directory = os.path.join(self.directory,
                 'got4.8','grids_oceantide')
             model_files = ['q1.d','o1.d','p1.d','k1.d','n2.d',
                 'm2.d','s2.d','k2.d','s1.d','m4.d']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
-            self.format = 'GOT'
+            self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
+            self.version = '4.8'
             # model description and references
             self.reference = ('https://denali.gsfc.nasa.gov/'
                 'personal_pages/ray/MiscPubs/'
@@ -526,16 +521,16 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'GOT4.8_load'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'GOT'
+            self.model_directory = os.path.join(self.directory,
                 'got4.8','grids_loadtide')
             model_files = ['q1load.d','o1load.d',
                 'p1load.d','k1load.d','n2load.d',
                 'm2load.d','s2load.d','k2load.d',
                 's1load.d','m4load.d']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
-            self.format = 'GOT'
+            self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
+            self.version = '4.8'
             # model description and references
             self.reference = ('https://denali.gsfc.nasa.gov/'
                 'personal_pages/ray/MiscPubs/'
@@ -551,14 +546,14 @@ class model:
             self.description = ("Local displacement due to Ocean "
                 "Loading (-6 to 0 cm)")
         elif (m == 'GOT4.10'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'GOT'
+            self.model_directory = os.path.join(self.directory,
                 'GOT4.10c','grids_oceantide')
             model_files = ['q1.d','o1.d','p1.d','k1.d','n2.d',
                 'm2.d','s2.d','k2.d','s1.d','m4.d']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
-            self.format = 'GOT'
+            self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
+            self.version = '4.10'
             # model description and references
             self.reference = ('https://denali.gsfc.nasa.gov/'
                 'personal_pages/ray/MiscPubs/'
@@ -575,16 +570,16 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'GOT4.10_load'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'GOT'
+            self.model_directory = os.path.join(self.directory,
                 'GOT4.10c','grids_loadtide')
             model_files = ['q1load.d','o1load.d',
                 'p1load.d','k1load.d','n2load.d',
                 'm2load.d','s2load.d','k2load.d',
                 's1load.d','m4load.d']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
-            self.format = 'GOT'
+            self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
+            self.version = '4.10'
             # model description and references
             self.reference = ('https://denali.gsfc.nasa.gov/'
                 'personal_pages/ray/MiscPubs/'
@@ -600,7 +595,8 @@ class model:
             self.description = ("Local displacement due to Ocean "
                 "Loading (-6 to 0 cm)")
         elif (m == 'FES2014'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'FES'
+            self.model_directory = os.path.join(self.directory,
                 'fes2014','ocean_tide')
             model_files = ['2n2.nc','eps2.nc','j1.nc','k1.nc',
                 'k2.nc','l2.nc','la2.nc','m2.nc','m3.nc','m4.nc',
@@ -609,14 +605,13 @@ class model:
                 'mu2.nc','n2.nc','n4.nc','nu2.nc','o1.nc','p1.nc',
                 'q1.nc','r2.nc','s1.nc','s2.nc','s4.nc','sa.nc',
                 'ssa.nc','t2.nc']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
+            self.model_file = self.pathfinder(model_files)
             self.constituents = ['2n2','eps2','j1','k1','k2','l2',
                 'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
                 'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
                 'o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-            self.format = 'FES'
             self.scale = 1.0/100.0
+            self.version = 'FES2014'
             # model description and references
             self.reference = ('https://www.aviso.altimetry.fr/'
                 'en/data/products/auxiliary-products/'
@@ -633,7 +628,8 @@ class model:
                 "semi-diurnal (harmonic analysis), and longer period "
                 "tides (dynamic and self-consistent equilibrium).")
         elif (m == 'FES2014_load'):
-            model_directory = os.path.join(self.directory,
+            self.format = 'FES'
+            self.model_directory = os.path.join(self.directory,
                 'fes2014','load_tide')
             model_files = ['2n2.nc','eps2.nc','j1.nc','k1.nc',
                 'k2.nc','l2.nc','la2.nc','m2.nc','m3.nc','m4.nc',
@@ -642,14 +638,13 @@ class model:
                 'mu2.nc','n2.nc','n4.nc','nu2.nc','o1.nc','p1.nc',
                 'q1.nc','r2.nc','s1.nc','s2.nc','s4.nc','sa.nc',
                 'ssa.nc','t2.nc']
-            self.model_file = [os.path.join(model_directory,
-                '{0}{1}'.format(f,gzip)) for f in model_files]
+            self.model_file = self.pathfinder(model_files)
             self.constituents = ['2n2','eps2','j1','k1','k2','l2',
                 'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
                 'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
                 'o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
-            self.format = 'FES'
             self.scale = 1.0/100.0
+            self.version = 'FES2014'
             # model description and references
             self.reference = ('https://www.aviso.altimetry.fr/'
                 'en/data/products/auxiliary-products/'
@@ -676,31 +671,25 @@ class model:
         self.name = m
         # model type
         self.type = ['u','v']
-        # compression and output flags
-        gzip = '.gz' if self.compressed else ''
-        suffix = '.nc' if (self.format == 'netcdf') else ''
         # select between tide models
         if (m == 'CATS0201'):
-            self.grid_file = os.path.join(self.directory,
-                'cats0201_tmd','grid_CATS')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'cats0201_tmd','UV0_CATS02_01'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'cats0201_tmd')
+            self.grid_file = self.pathfinder('grid_CATS')
+            self.model_file = dict(u=self.pathfinder('UV0_CATS02_01'))
             self.projection = '4326'
             # model description and references
             self.reference = ('https://mail.esr.org/polar_tide_models/'
                 'Model_CATS0201.html')
         elif (m == 'CATS2008'):
-            self.grid_file = os.path.join(self.directory,
-                'CATS2008','grid_CATS2008')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'CATS2008','uv.CATS2008.out'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'CATS2008')
+            self.grid_file = self.pathfinder('grid_CATS2008')
+            self.model_file = dict(u=self.pathfinder('uv.CATS2008.out'))
             self.projection = 'CATS2008'
         elif (m == 'TPXO9-atlas'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas')
             model_files = {}
             model_files['u'] = ['u_q1_tpxo9_atlas_30','u_o1_tpxo9_atlas_30',
                 'u_p1_tpxo9_atlas_30','u_k1_tpxo9_atlas_30',
@@ -716,17 +705,16 @@ class model:
                 'v_mn4_tpxo9_atlas_30','v_2n2_tpxo9_atlas_30']
             self.model_file = {}
             for key,val in model_files.items():
-                self.model_file[key] = [os.path.join(model_directory,
-                    '{0}{1}{2}'.format(f,suffix,gzip)) for f in val]
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
+            self.version = 'v1'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/tides/'
                 'tpxo9_atlas.html')
         elif (m == 'TPXO9-atlas-v2'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v2',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v2')
             model_files = {}
             model_files['u'] = ['u_q1_tpxo9_atlas_30_v2','u_o1_tpxo9_atlas_30_v2',
                 'u_p1_tpxo9_atlas_30_v2','u_k1_tpxo9_atlas_30_v2',
@@ -742,16 +730,15 @@ class model:
                 'v_mn4_tpxo9_atlas_30_v2','v_2n2_tpxo9_atlas_30_v2']
             self.model_file = {}
             for key,val in model_files.items():
-                self.model_file[key] = [os.path.join(model_directory,
-                    '{0}{1}{2}'.format(f,suffix,gzip)) for f in val]
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
+            self.version = 'v2'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         elif (m == 'TPXO9-atlas-v3'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v3',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v3')
             model_files = {}
             model_files['u'] = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
                 'u_p1_tpxo9_atlas_30_v3','u_k1_tpxo9_atlas_30_v3',
@@ -767,16 +754,15 @@ class model:
                 'v_mn4_tpxo9_atlas_30_v3','v_2n2_tpxo9_atlas_30_v3']
             self.model_file = {}
             for key,val in model_files.items():
-                self.model_file[key] = [os.path.join(model_directory,
-                    '{0}{1}{2}'.format(f,suffix,gzip)) for f in val]
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
+            self.version = 'v3'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         elif (m == 'TPXO9-atlas-v4'):
-            model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
-            self.grid_file = os.path.join(model_directory,
-                '{0}{1}{2}'.format('grid_tpxo9_atlas_30_v4',suffix,gzip))
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
             model_files = {}
             model_files['u'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
                 'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
@@ -792,85 +778,84 @@ class model:
                 'v_mn4_tpxo9_atlas_30_v4','v_2n2_tpxo9_atlas_30_v4']
             self.model_file = {}
             for key,val in model_files.items():
-                self.model_file[key] = [os.path.join(model_directory,
-                    '{0}{1}{2}'.format(f,suffix,gzip)) for f in val]
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
+            self.version = 'v4'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         elif (m == 'TPXO9.1'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO9.1','DATA','grid_tpxo9')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'TPXO9.1','DATA','u_tpxo9.v1'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO9.1')
+            self.grid_file = self.pathfinder('grid_tpxo9')
+            self.model_file = dict(u=self.pathfinder('u_tpxo9.v1'))
             self.projection = '4326'
+            self.version = '9.1'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/tides/'
                 'global.html')
         elif (m == 'TPXO8-atlas'):
-            self.grid_file = os.path.join(self.directory,
-                'tpxo8_atlas','grid_tpxo8atlas_30_v1')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'tpxo8_atlas','uv.tpxo8_atlas_30_v1'))
             self.format = 'ATLAS'
+            self.model_directory = os.path.join(self.directory,'tpxo8_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
+            self.model_file = dict(u=self.pathfinder('uv.tpxo8_atlas_30_v1'))
             self.projection = '4326'
+            self.version = '8'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/tides/'
                 'tpxo8_atlas.html')
         elif (m == 'TPXO7.2'):
-            self.grid_file = os.path.join(self.directory,
-                'TPXO7.2_tmd','grid_tpxo7.2')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'TPXO7.2_tmd','u_tpxo7.2'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'TPXO7.2_tmd')
+            self.grid_file = self.pathfinder('grid_tpxo7.2')
+            self.model_file = dict(u=self.pathfinder('u_tpxo7.2'))
             self.projection = '4326'
+            self.version = '7.2'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/tides/'
                 'global.html')
         elif (m == 'AODTM-5'):
-            self.grid_file = os.path.join(self.directory,
-                'aodtm5_tmd','grid_Arc5km')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'aodtm5_tmd','UV0_Arc5km'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'aodtm5_tmd')
+            self.grid_file = self.pathfinder('grid_Arc5km')
+            self.model_file = dict(u=self.pathfinder('UV0_Arc5km'))
             self.projection = 'PSNorth'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/'
                 'aodtm-5/')
         elif (m == 'AOTIM-5'):
-            self.grid_file = os.path.join(self.directory,
-                'aotim5_tmd','grid_Arc5km')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'aotim5_tmd','UV_Arc5km'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'aotim5_tmd')
+            self.grid_file = self.pathfinder('grid_Arc5km')
+            self.model_file = dict(u=self.pathfinder('UV_Arc5km'))
             self.projection = 'PSNorth'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/'
                 'aotim-5/')
         elif (m == 'AOTIM-5-2018'):
-            self.grid_file = os.path.join(self.directory,
-                'Arc5km2018','grid_Arc5km2018')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'Arc5km2018','UV_Arc5km2018'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Arc5km2018')
+            self.grid_file = self.pathfinder('grid_Arc5km2018')
+            self.model_file = dict(u=self.pathfinder('UV_Arc5km2018'))
             self.projection = 'PSNorth'
+            self.version = '2018'
             # model description and references
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/'
                 'aotim-5/')
         elif (m == 'Gr1km-v2'):
-            self.grid_file = os.path.join(self.directory,
-                'greenlandTMD_v2','grid_Greenland8.v2')
-            self.model_file = dict(u=os.path.join(self.directory,
-                'greenlandTMD_v2','u_Greenland8_rot.v2'))
             self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
+            self.grid_file = self.pathfinder('grid_Greenland8.v2')
+            self.model_file = dict(u=self.pathfinder('u_Greenland8_rot.v2'))
             self.projection = '3413'
+            self.version = 'v2'
             # model description and references
             self.reference = 'https://doi.org/10.1002/2016RG000546'
         elif (m == 'FES2014'):
+            self.format = 'FES'
             model_directory = {}
             model_directory['u'] = os.path.join(self.directory,
                 'fes2014','eastward_velocity')
@@ -885,14 +870,14 @@ class model:
                 'ssa.nc','t2.nc']
             self.model_file = {}
             for key,val in model_directory.items():
-                self.model_file[key] = [os.path.join(model_directory,
-                    '{0}{1}'.format(f,gzip)) for f in val]
+                self.model_directory = os.path.expanduser(model_directory)
+                self.model_file[key] = self.pathfinder(val)
             self.constituents = ['2n2','eps2','j1','k1','k2','l2','lambda2',
                 'm2','m3','m4','m6','m8','mf','mks2','mm','mn4','ms4','msf',
                 'msqm','mtm','mu2','n2','n4','nu2','o1','p1','q1','r2','s1',
                 's2','s4','sa','ssa','t2']
-            self.format = 'FES'
             self.scale = 1.0
+            self.version = 'FES2014'
             # model description and references
             self.reference = ('https://www.aviso.altimetry.fr/en/data/products'
                 'auxiliary-products/global-tide-fes.html')
@@ -941,3 +926,30 @@ class model:
             setattr(self,key,copy.copy(val))
         # return the model parameters
         return self
+
+    @property
+    def gzip(self):
+        """compression flag"""
+        return '.gz' if self.compressed else ''
+
+    @property
+    def suffix(self):
+        """format suffix flag"""
+        return '.nc' if (self.format == 'netcdf') else ''
+
+    def pathfinder(self,model_file):
+        """Completes file paths and appends file and gzip suffixes
+        """
+        if isinstance(model_file,list):
+            output_file = [os.path.join(self.model_directory,
+                ''.join([f,self.suffix,self.gzip])) for f in model_file]
+            valid = all([os.access(f, os.F_OK) for f in output_file])
+        elif isinstance(model_file,str):
+            output_file = os.path.join(self.model_directory,
+                ''.join([model_file,self.suffix,self.gzip]))
+            valid = os.access(output_file, os.F_OK)
+        #-- check that (all) output files exist
+        if not valid:
+            raise FileNotFoundError(output_file)
+        #-- return the complete output path
+        return output_file

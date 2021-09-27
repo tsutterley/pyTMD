@@ -18,7 +18,7 @@ INPUTS:
 
 COMMAND LINE OPTIONS:
     -D X, --directory X: Working data directory
-    -T X, --tide X: Tide model to use in correction
+    -T X, --tide X: Tide model to use in calculating currents
         CATS0201
         CATS2008
         TPXO9-atlas
@@ -34,6 +34,9 @@ COMMAND LINE OPTIONS:
         AOTIM-5-2018
         Gr1km-v2
         FES2014
+    --atlas-format X: ATLAS tide model format (OTIS, netcdf)
+    --gzip, -G: Tide model files are gzip compressed
+    --definition-file X: Model definition file for use in calculating currents
     --format X: input and output data format
         csv (default)
         netCDF4
@@ -264,9 +267,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             deltat = np.zeros((nt))
         elif (model.format == 'FES'):
             amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
-                model.model_file[t], TYPE=t, VERSION=model.name, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-                GZIP=model.compressed)
+                model.model_file[t], TYPE=t, VERSION=model.version,
+                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
+                SCALE=model.scale, GZIP=model.compressed)
             #-- available model constituents
             c = model.constituents
             #-- interpolate delta times from calendar dates to tide time

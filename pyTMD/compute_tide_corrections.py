@@ -249,7 +249,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         deltat = calc_delta_time(delta_file, t)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model.model_file,
-            TYPE=model.type, VERSION=model.name, METHOD=METHOD,
+            TYPE=model.type, VERSION=model.version, METHOD=METHOD,
             EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
             GZIP=model.compressed)
         #-- available model constituents

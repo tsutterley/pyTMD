@@ -65,6 +65,10 @@ General Attributes and Methods
 
         HDF5 ``long_name`` attribute string for output tide heights
 
+    .. attribute:: model.model_directory
+
+        Full path to model directory
+
     .. attribute:: model.model_file
 
         Model constituent file or list of files

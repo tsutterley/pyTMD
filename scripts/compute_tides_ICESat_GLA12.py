@@ -38,6 +38,9 @@ COMMAND LINE OPTIONS:
         GOT4.10_load
         FES2014
         FES2014_load
+    --atlas-format X: ATLAS tide model format (OTIS, netcdf)
+    --gzip, -G: Tide model files are gzip compressed
+    --definition-file X: Model definition file for use as correction
     -I X, --interpolate X: Interpolation method
         spline
         linear
@@ -219,9 +222,9 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
         deltat = calc_delta_time(delta_file, tide_time)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon_40HZ, lat_40HZ,
-            model.model_file, TYPE=TYPE, VERSION=model.name, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            model.model_file, TYPE=TYPE, VERSION=model.version,
+            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
+            SCALE=model.scale, GZIP=model.compressed)
         #-- available model constituents
         c = model.constituents
         #-- interpolate delta times from calendar dates to tide time

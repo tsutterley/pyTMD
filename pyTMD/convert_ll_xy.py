@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-convert_ll_xy.py (06/2021)
+convert_ll_xy.py (09/2021)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
@@ -29,6 +29,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 09/2021: added function for using custom projections
     Updated 06/2021: added 3413 for new 1km Greenland model from ESR
     Updated 08/2020: using conversion protocols following pyproj-2 updates
         https://pyproj4.github.io/pyproj/stable/gotchas.html
@@ -60,23 +61,35 @@ def convert_ll_xy(i1,i2,PROJ,BF,EPSG=4326):
     o1: projection easting x ('F') or longitude ('B')
     o2: projection northing y ('F') or latitude ('B')
     """
-    #-- python dictionary with conversion functions
+    #-- python dictionary with named conversion functions
     conversion_functions = {}
-    conversion_functions['3031'] = xy_ll_EPSG3031
-    conversion_functions['3413'] = xy_ll_EPSG3413
-    conversion_functions['CATS2008'] = xy_ll_CATS2008
-    conversion_functions['3976'] = xy_ll_EPSG3976
-    conversion_functions['PSNorth'] = xy_ll_PSNorth
-    conversion_functions['4326'] = xy_ll_EPSG4326
+    conversion_functions['3031'] = convert_EPSG3031
+    conversion_functions['3413'] = convert_EPSG3413
+    conversion_functions['CATS2008'] = convert_CATS2008
+    conversion_functions['3976'] = convert_EPSG3976
+    conversion_functions['PSNorth'] = convert_PSNorth
+    conversion_functions['4326'] = convert_EPSG4326
     #-- check that PROJ for conversion was entered correctly
-    if PROJ not in conversion_functions.keys():
-        raise Exception('PROJ:{0} conversion function not found'.format(PROJ))
-    #-- run conversion program and return values
-    o1,o2 = conversion_functions[PROJ](i1,i2,BF,EPSG=EPSG)
-    return (o1,o2)
+    #-- run named conversion program and return values
+    try:
+        o1,o2 = conversion_functions[PROJ](i1,i2,BF,EPSG=EPSG)
+    except:
+        pass
+    else:
+        return (o1,o2)
+    #-- try changing the projection using a custom projection
+    #-- run custom conversion program and return values
+    try:
+        o1,o2 = convert_projection(i1,i2,PROJ,BF,EPSG=EPSG)
+    except:
+        pass
+    else:
+        return (o1,o2)
+    #-- projection not found or available
+    raise Exception('PROJ:{0} conversion function not found'.format(PROJ))
 
 #-- wrapper function for models in EPSG 3031 (Antarctic Polar Stereographic)
-def xy_ll_EPSG3031(i1,i2,BF,EPSG=4326):
+def convert_EPSG3031(i1,i2,BF,EPSG=4326):
     #-- projections for converting from input EPSG (default latitude/longitude)
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-71,
@@ -93,7 +106,7 @@ def xy_ll_EPSG3031(i1,i2,BF,EPSG=4326):
     return transformer.transform(i1, i2, direction=direction)
 
 #-- wrapper function for models in EPSG 3413 (Sea Ice Polar Stereographic North)
-def xy_ll_EPSG3413(i1,i2,BF,EPSG=4326):
+def convert_EPSG3413(i1,i2,BF,EPSG=4326):
     #-- projections for converting from input EPSG (default latitude/longitude)
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':90,'lat_ts':70,
@@ -110,7 +123,7 @@ def xy_ll_EPSG3413(i1,i2,BF,EPSG=4326):
     return transformer.transform(i1, i2, direction=direction)
 
 #-- wrapper function for CATS2008 tide models
-def xy_ll_CATS2008(i1,i2,BF,EPSG=4326):
+def convert_CATS2008(i1,i2,BF,EPSG=4326):
     #-- projections for converting from input EPSG (default latitude/longitude)
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-71,
@@ -127,7 +140,7 @@ def xy_ll_CATS2008(i1,i2,BF,EPSG=4326):
     return transformer.transform(i1, i2, direction=direction)
 
 #-- wrapper function for models in EPSG 3976 (NSIDC Sea Ice Stereographic South)
-def xy_ll_EPSG3976(i1,i2,BF,EPSG=4326):
+def convert_EPSG3976(i1,i2,BF,EPSG=4326):
     #-- projections for converting from input EPSG (default latitude/longitude)
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-70,
@@ -144,7 +157,7 @@ def xy_ll_EPSG3976(i1,i2,BF,EPSG=4326):
     return transformer.transform(i1, i2, direction=direction)
 
 #-- wrapper function for models in (idealized) PSNorth projection
-def xy_ll_PSNorth(i1,i2,BF,EPSG=4326):
+def convert_PSNorth(i1,i2,BF,EPSG=4326):
     #-- projections for converting to and from input EPSG
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
@@ -167,12 +180,27 @@ def xy_ll_PSNorth(i1,i2,BF,EPSG=4326):
     return (o1,o2)
 
 #-- wrapper function to pass lat/lon values or convert if EPSG
-def xy_ll_EPSG4326(i1,i2,BF,EPSG=4326):
+def convert_EPSG4326(i1,i2,BF,EPSG=4326):
     crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (BF.upper() == 'F'):
         direction = pyproj.enums.TransformDirection.FORWARD
+    elif (BF.upper() == 'B'):
+        direction = pyproj.enums.TransformDirection.INVERSE
+    #-- return the output variables
+    return transformer.transform(i1, i2, direction=direction)
+
+#-- wrapper function for using custom projections
+def convert_projection(i1,i2,PROJ,BF,EPSG=4326):
+    #-- projections for converting from input EPSG (default latitude/longitude)
+    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs2 = pyproj.CRS.from_string(PROJ)
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    #-- convert lat/lon to custom projection
+    if (BF.upper() == 'F'):
+        direction = pyproj.enums.TransformDirection.FORWARD
+    #-- convert custom projection to lat/lon
     elif (BF.upper() == 'B'):
         direction = pyproj.enums.TransformDirection.INVERSE
     #-- return the output variables

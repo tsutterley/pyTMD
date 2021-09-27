@@ -33,6 +33,9 @@ python compute_tidal_currents.py --directory <path_to_directory> --tide <model> 
     * `'AOTIM-5-2018'`
     * `'Gr1km-v2'`
     * `'FES2014'`
+- `--atlas-format X`: ATLAS tide model format (`'OTIS'`, `'netcdf'`)
+- `--gzip`, `-G`: Tide model files are gzip compressed
+- `--definition-file X`: Model definition file for use as correction
 - `--format X`: input and output data format
     * `'csv'` (default)
     * `'netCDF4'`
