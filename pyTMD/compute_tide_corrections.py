@@ -115,7 +115,7 @@ from pyTMD.read_FES_model import extract_FES_constants
 
 #-- PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
-    ATLAS_FORMAT='netcdf', GZIP=True, DEFINITION_FILE=None, EPSG=3031,
+    ATLAS_FORMAT='netcdf', GZIP=False, DEFINITION_FILE=None, EPSG=3031,
     EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC', METHOD='spline',
     EXTRAPOLATE=False, CUTOFF=10.0, FILL_VALUE=np.nan):
     """
