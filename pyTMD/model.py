@@ -10,13 +10,19 @@ UPDATE HISTORY:
 """
 import os
 import re
+import io
 import copy
 
 class model:
+    """Retrieves tide model parameters for named models or
+    from a model definition file for use in the pyTMD tide
+    prediction programs
+    """
     def __init__(self, directory=os.getcwd(), **kwargs):
         # set default keyword arguments
         kwargs.setdefault('compressed',False)
         kwargs.setdefault('format','netcdf')
+        # set initial attributes
         self.atl03 = None
         self.atl06 = None
         self.atl07 = None
@@ -33,8 +39,10 @@ class model:
         self.model_file = None
         self.name = None
         self.projection = None
-        self.scale = 1.0
+        self.reference = None
+        self.scale = None
         self.type = None
+        self.variable = None
         self.version = None
 
     def grid(self,m):
@@ -59,31 +67,39 @@ class model:
         elif (m == 'TPXO9-atlas'):
             self.model_directory = os.path.join(self.directory,'TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
+            self.version = 'v1'
         elif (m == 'TPXO9-atlas-v2'):
             self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v2')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v2')
+            self.version = 'v2'
         elif (m == 'TPXO9-atlas-v3'):
             self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v3')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v3')
+            self.version = 'v3'
         elif (m == 'TPXO9-atlas-v4'):
             self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
+            self.version = 'v4'
         elif (m == 'TPXO9.1'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'TPXO9.1','DATA')
             self.grid_file = self.pathfinder('grid_tpxo9')
+            self.version = '9.1'
         elif (m == 'TPXO8-atlas'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'tpxo8_atlas')
             self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
+            self.version = '8'
         elif (m == 'TPXO7.2'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'TPXO7.2_tmd')
             self.grid_file = self.pathfinder('grid_tpxo7.2')
+            self.version = '7.2'
         elif (m == 'TPXO7.2_load'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'TPXO7.2_load')
             self.grid_file = self.pathfinder('grid_tpxo6.2')
+            self.version = '7.2'
         elif (m == 'AODTM-5'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'aodtm5_tmd')
@@ -96,10 +112,12 @@ class model:
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'Arc5km2018')
             self.grid_file = self.pathfinder('grid_Arc5km2018')
+            self.version = '2018'
         elif (m == 'Gr1km-v2'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
             self.grid_file = self.pathfinder('grid_Greenland8.v2')
+            self.version = 'v2'
         else:
             raise Exception("Unlisted tide model")
         # return the model parameters
@@ -892,7 +910,10 @@ class model:
         # variable with parameter definitions
         parameters = {}
         # Opening definition file and assigning file ID number
-        fid = open(definition_file, 'r')
+        if isinstance(definition_file,io.IOBase):
+            fid = open(definition_file, 'r')
+        else:
+            fid = open(os.path.expanduser(definition_file), 'r')
         # for each line in the file will extract the parameter (name and value)
         for fileline in fid:
             # Splitting the input line between parameter name and value
@@ -903,20 +924,38 @@ class model:
         fid.close()
         # convert from dictionary to model variable
         temp = self.from_dict(parameters)
-        # verify model type
-        assert temp.type in ('OTIS','ATLAS','netcdf','GOT','FES')
+        # verify model name, format and type
+        assert temp.name
+        assert temp.format in ('OTIS','ATLAS','netcdf','GOT','FES')
+        assert temp.type
+        # verify necessary attributes are with model format
+        assert temp.model_file
+        # split model file into list if an ATLAS, GOT or FES file
+        # model files can be comma, tab or space delimited
+        # extract full path to tide model files
+        if re.search(r'[\s\,]+', temp.model_file):
+            temp.model_file = [os.path.expanduser(f) for f in
+                re.split(r'[\s\,]+',temp.model_file)]
+            temp.model_directory = os.path.dirname(temp.model_file[0])
+        else:
+            temp.model_file = os.path.expanduser(temp.model_file)
+            temp.model_directory = os.path.dirname(temp.model_file)
+        # extract full path to tide grid file
+        if temp.format in ('OTIS','ATLAS','netcdf'):
+            assert temp.grid_file
+            temp.grid_file = os.path.expanduser(temp.grid_file)
+        if temp.format in ('OTIS','ATLAS'):
+            assert temp.projection
         # convert scale from string to float
-        temp.scale = float(temp.scale)
+        if temp.format in ('netcdf','GOT','FES'):
+            assert temp.scale
+            temp.scale = float(temp.scale)
+        if temp.format in ('FES',):
+            assert temp.version
         # split type into list if currents u,v
         if re.search(r'[\s\,]+', temp.type):
             temp.type = re.split(r'[\s\,]+',temp.type)
-        # split model file into list if an ATLAS, GOT or FES file
-        # model files can be comma, tab or space delimited
-        if re.search(r'[\s\,]+', temp.model_file):
-            temp.model_file = re.split(r'[\s\,]+',temp.model_file)
-        # make sure necessary keys are with model type
-        if temp.type in ('OTIS','ATLAS'):
-            assert temp.projection
+        # return the model parameters
         return temp
 
     def from_dict(self,d):
