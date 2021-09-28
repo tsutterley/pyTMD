@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (09/2021)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
     Updated 09/2020: can use projected coordinates for output model bounds
@@ -45,91 +46,30 @@ import os
 import pyproj
 import argparse
 import numpy as np
+import pyTMD.model
 import pyTMD.utilities
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.read_tide_model import *
 from pyTMD.output_otis_tides import *
 
-#-- PURPOSE: read 1 degree land sea mask and create masks for specific regions
-def make_regional_OTIS_files(tide_dir, TIDE_MODEL, TYPE=['z','uv'],
-    BOUNDS=4*[None], PROJECTION='4326', MODE=0o775):
+#-- PURPOSE: reads OTIS-format tidal files and reduces to a regional subset
+def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
+    PROJECTION='4326', MODE=0o775):
+    #-- get parameters for tide model
+    model = pyTMD.model(directory=tide_dir).elevation(TIDE_MODEL)
+    #-- directionaries with input and output files
     model_file = {}
     new_model_file = {}
-    #-- select between tide models
-    if (TIDE_MODEL == 'CATS0201'):
-        grid_file = os.path.join(tide_dir,'cats0201_tmd','grid_CATS')
-        model_file['z'] = os.path.join(tide_dir,'cats0201_tmd','h0_CATS02_01')
-        model_file['uv'] = os.path.join(tide_dir,'cats0201_tmd','UV0_CATS02_01')
-        model_format = 'OTIS'
-        EPSG = '4326'
-    elif (TIDE_MODEL == 'CATS2008'):
-        grid_file = os.path.join(tide_dir,'CATS2008','grid_CATS2008')
-        model_file['z'] = os.path.join(tide_dir,'CATS2008','hf.CATS2008.out')
-        model_file['uv'] = os.path.join(tide_dir,'CATS2008','uv.CATS2008.out')
-        model_format = 'OTIS'
-        EPSG = 'CATS2008'
-    elif (TIDE_MODEL == 'CATS2008_load'):
-        grid_file = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','grid_CATS2008a_opt')
-        model_file['z'] = os.path.join(tide_dir,'CATS2008a_SPOTL_Load','h_CATS2008a_SPOTL_load')
-        model_format = 'OTIS'
-        EPSG = 'CATS2008'
-    elif (TIDE_MODEL == 'TPXO9_atlas'):
-        grid_file = os.path.join(tide_dir,'tpxo9_atlas','grid_tpxo9atlas_30_v1')
-        model_file['z'] = os.path.join(tide_dir,'tpxo9_atlas','hf.tpxo9_atlas_30_v1')
-        model_file['uv'] = os.path.join(tide_dir,'tpxo9_atlas','uv.tpxo9_atlas_30_v1')
-        model_format = 'ATLAS'
-        EPSG = '4326'
-    elif (TIDE_MODEL == 'TPXO9.1'):
-        grid_file = os.path.join(tide_dir,'TPXO9.1','DATA','grid_tpxo9')
-        model_file['z'] = os.path.join(tide_dir,'TPXO9.1','DATA','h_tpxo9.v1')
-        model_file['uv'] = os.path.join(tide_dir,'TPXO9.1','DATA','u_tpxo9.v1')
-        model_format = 'OTIS'
-        EPSG = '4326'
-    elif (TIDE_MODEL == 'TPXO8-atlas'):
-        grid_file = os.path.join(tide_dir,'tpxo8_atlas','grid_tpxo8atlas_30_v1')
-        model_file['z'] = os.path.join(tide_dir,'tpxo8_atlas','hf.tpxo8_atlas_30_v1')
-        model_file['uv'] = os.path.join(tide_dir,'tpxo8_atlas','uv.tpxo8_atlas_30_v1')
-        model_format = 'ATLAS'
-        EPSG = '4326'
-    elif (TIDE_MODEL == 'TPXO7.2'):
-        grid_file = os.path.join(tide_dir,'TPXO7.2_tmd','grid_tpxo7.2')
-        model_file['z'] = os.path.join(tide_dir,'TPXO7.2_tmd','h_tpxo7.2')
-        model_file['uv'] = os.path.join(tide_dir,'TPXO7.2_tmd','u_tpxo7.2')
-        model_format = 'OTIS'
-        EPSG = '4326'
-    elif (TIDE_MODEL == 'TPXO7.2_load'):
-        grid_file = os.path.join(tide_dir,'TPXO7.2_load','grid_tpxo6.2')
-        model_file['z'] = os.path.join(tide_dir,'TPXO7.2_load','h_tpxo7.2_load')
-        model_format = 'OTIS'
-        EPSG = '4326'
-    elif (TIDE_MODEL == 'AODTM-5'):
-        grid_file = os.path.join(tide_dir,'aodtm5_tmd','grid_Arc5km')
-        model_file['z'] = os.path.join(tide_dir,'aodtm5_tmd','h0_Arc5km.oce')
-        model_file['uv'] = os.path.join(tide_dir,'aodtm5_tmd','u0_Arc5km.oce')
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-    elif (TIDE_MODEL == 'AOTIM-5'):
-        grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
-        model_file['z'] = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km.oce')
-        model_file['uv'] = os.path.join(tide_dir,'aotim5_tmd','u_Arc5km.oce')
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
-    elif (TIDE_MODEL == 'AOTIM-5-2018'):
-        grid_file = os.path.join(tide_dir,'aotim5_tmd','grid_Arc5km')
-        model_file['z'] = os.path.join(tide_dir,'aotim5_tmd','h_Arc5km2018')
-        model_file['uv'] = os.path.join(tide_dir,'aotim5_tmd','u_Arc5km2018_T')
-        model_format = 'OTIS'
-        EPSG = 'PSNorth'
 
     #-- read the OTIS-format tide grid file
-    if (model_format == 'ATLAS'):
+    if (model.format == 'ATLAS'):
         #-- if reading a global solution with localized solutions
-        x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
+        x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(model.grid_file)
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
     else:
         #-- if reading a pure global solution
-        xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
+        xi,yi,hz,mz,iob,dt = read_tide_grid(model.grid_file)
 
     #-- converting bounds x,y from projection to latitude/longitude
     try:
@@ -143,7 +83,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, TYPE=['z','uv'],
     lon,lat = transformer.transform(xbox,ybox)
 
     #-- convert bounds from latitude/longitude to model coordinates
-    x,y = convert_ll_xy(lon,lat,EPSG,'F')
+    x,y = convert_ll_xy(lon,lat,model.projection,'F')
 
     #-- find indices to reduce to xmin,xmax,ymin,ymax
     gridx,gridy = np.meshgrid(xi,yi)
@@ -162,20 +102,25 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, TYPE=['z','uv'],
     hz1[:,:] = hz[indy,indx].reshape(ny,nx)
     mz1[:,:] = mz[indy,indx].reshape(ny,nx)
     #-- output reduced grid to file
-    new_grid_file = create_unique_filename(grid_file)
+    new_grid_file = create_unique_filename(model.grid_file)
     output_otis_grid(new_grid_file,xlim,ylim,hz1,mz1,iob,dt)
     #-- change the permissions level to MODE
     os.chmod(new_grid_file, MODE)
 
     #-- combine ATLAS sub-grids into single output grid
     #-- reduce elevation files to bounds
-    if 'z' in model_file.keys():
+    try:
+        #-- get parameters for tide model
+        model = pyTMD.model(tide_dir).elevation(TIDE_MODEL)
+    except:
+        pass
+    else:
         #-- read each constituent
         constituents,nc = read_constituents(model_file['z'])
         z1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         for i,c in enumerate(constituents):
             #-- read constituent from elevation file
-            if (model_format == 'ATLAS'):
+            if (model.format == 'ATLAS'):
                 z0,zlocal=read_atlas_elevation(model_file['z'],i,c)
                 xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,VARIABLE='z')
             else:
@@ -190,27 +135,32 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, TYPE=['z','uv'],
 
     #-- combine ATLAS sub-grids into single output grid
     #-- reduce transport files to bounds
-    if 'uv' in model_file.keys():
+    try:
+        #-- get parameters for tide model
+        model = pyTMD.model(tide_dir).current(TIDE_MODEL)
+    except:
+        pass
+    else:
         #-- read each constituent
-        constituents,nc = read_constituents(model_file['uv'])
+        constituents,nc = read_constituents(model_file['u'])
         u1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         v1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         for i,c in enumerate(constituents):
             #-- read constituent from transport file
-            if (model_format == 'ATLAS'):
-                u0,v0,uvlocal=read_atlas_transport(model_file['uv'],i,c)
+            if (model.format == 'ATLAS'):
+                u0,v0,uvlocal=read_atlas_transport(model_file['u'],i,c)
                 xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,VARIABLE='u')
                 xi,yi,v=combine_atlas_model(x0,y0,v0,pmask,uvlocal,VARIABLE='v')
             else:
-                u,v=read_transport_file(model_file['uv'],i)
+                u,v=read_transport_file(model_file['u'],i)
             #-- reduce transport components to new bounds
             u1[:,:,i] = u[indy,indx].reshape(ny,nx)
             v1[:,:,i] = v[indy,indx].reshape(ny,nx)
         #-- output reduced transport components
-        new_model_file['uv'] = create_unique_filename(model_file['uv'])
-        output_otis_transport(new_model_file['uv'],u1,v1,xlim,ylim,constituents)
+        new_model_file['uv'] = create_unique_filename(model_file['u'])
+        output_otis_transport(new_model_file['u'],u1,v1,xlim,ylim,constituents)
         #-- change the permissions level to MODE
-        os.chmod(new_model_file['uv'], MODE)
+        os.chmod(new_model_file['u'], MODE)
 
 #-- PURPOSE: create a unique filename adding a numerical instance if existing
 def create_unique_filename(filename):

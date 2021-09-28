@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, macos-latest]
-        python-version: [3.7, 3.8]
+        python-version: [3.8]
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
@@ -29,17 +29,46 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies for Linux
       if: matrix.os == 'ubuntu-20.04'
+      env:
+        JOBS: 2
+        PROJ_VERSION: 8.0.1
+        PROJ_DATUMGRID_VERSION: 1.8
+        PROJ_NETWORK: ON
+        SQLITE3_CFLAGS: "-I/usr/local/include"
+        SQLITE3_LIBS: "-L/usr/local/lib -lsqlite3"
       run: |
         sudo apt-get update
-        sudo apt-get install gdal-bin libgdal-dev libproj-dev proj-data proj-bin \
-            libgeos-dev libhdf5-dev libnetcdf-dev octave
-        export CPLUS_INCLUDE_PATH=/usr/include/gdal
-        export C_INCLUDE_PATH=/usr/include/gdal
+        sudo apt-get install gdal-bin libgdal-dev libgeos-dev
+        sudo apt-get install libhdf5-dev libnetcdf-dev octave
+        sudo apt-get install libstdc++6 libxml2-dev libxslt1-dev libsqlite3-dev
+        cd ${RUNNER_TEMP}
+        wget -q https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
+        wget -q http://download.osgeo.org/proj/proj-datumgrid-${PROJ_DATUMGRID_VERSION}.zip
+        tar -xzf proj-${PROJ_VERSION}.tar.gz
+        unzip proj-datumgrid-${PROJ_DATUMGRID_VERSION}.zip -d proj-${PROJ_VERSION}/data/
+        cd proj-${PROJ_VERSION}
+        mkdir build
+        cd build
+        sudo cmake \
+            -DPYTHON_EXECUTABLE=/usr/local/bin/python3 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=true \
+            -DCMAKE_INSTALL_PREFIX=/usr/local/ ..
+        sudo cmake --build .
+        sudo make --quiet --jobs=${JOBS}
+        sudo make --quiet install
+        make clean
+        cd ${GITHUB_WORKSPACE}
+        sudo ldconfig --verbose
+        sudo projsync --system-directory --all
         pip install --upgrade pip
         pip install numpy
         pip install zarr
         pip install pandas
         pip install scikit-learn
+        export CPLUS_INCLUDE_PATH=/usr/include/gdal
+        export C_INCLUDE_PATH=/usr/include/gdal
+        pip install git+https://github.com/SciTools/cartopy.git
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
         pip install .
@@ -47,7 +76,7 @@ jobs:
     - name: Install dependencies for MacOS
       if: matrix.os == 'macos-latest'
       run: |
-        brew install proj@7
+        brew install proj
         brew install geos
         brew install gdal
         brew install hdf5
@@ -60,10 +89,11 @@ jobs:
         pip install zarr
         pip install pandas
         pip install scikit-learn
-        export LDFLAGS="-L/usr/local/opt/proj@7/lib"
-        export CPPFLAGS="-I/usr/local/opt/proj@7/include"
+        export LDFLAGS="-L/usr/local/opt/proj/lib"
+        export CPPFLAGS="-I/usr/local/opt/proj/include"
         export ACCEPT_USE_OF_DEPRECATED_PROJ_API_H=1
-        export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/proj@7/lib/pkgconfig"
+        export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/proj/lib/pkgconfig"
+        pip install git+https://github.com/SciTools/cartopy.git
         pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
         pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
         pip install .

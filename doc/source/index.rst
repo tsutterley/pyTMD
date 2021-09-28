@@ -34,6 +34,7 @@ conventions for calculating radial pole tide displacements.
     user_guide/infer_minor_corrections.md
     user_guide/load_constituent.md
     user_guide/load_nodal_corrections.md
+    user_guide/model.rst
     user_guide/nearest_extrap.md
     user_guide/output_otis_tides.md
     user_guide/predict_tidal_ts.md

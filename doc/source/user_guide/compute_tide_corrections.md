@@ -22,6 +22,9 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
 #### Keyword arguments
 - `DIRECTORY`: working data directory for tide models
 - `MODEL`: Tide model to use in correction
+- `ATLAS_FORMAT`: ATLAS tide model format (`'OTIS'`, `'netcdf'`)
+- `GZIP`: Tide model files are gzip compressed
+- `DEFINITION_FILE`: Tide model definition file for use as correction
 - `EPOCH`: time period for calculating delta times
     * default: J2000 (seconds since 2000-01-01T00:00:00)
 - `TYPE`: input data type

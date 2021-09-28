@@ -120,8 +120,9 @@ def test_verify_FES2014():
     tide_time = file_contents['CNES'] - 15340.0
 
     #-- extract amplitude and phase from tide model
-    amp,ph = pyTMD.read_FES_model.extract_FES_constants(longitude, latitude,
-        model_file, TYPE=TYPE, VERSION=VERSION, METHOD='spline', SCALE=SCALE)
+    amp,ph = pyTMD.read_FES_model.extract_FES_constants(longitude,
+        latitude, model_file, TYPE=TYPE, VERSION=VERSION,
+        METHOD='spline', GZIP=True, SCALE=SCALE,)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)

@@ -42,6 +42,9 @@ python compute_tides_ICESat2_ATL11.py --directory <path_to_directory> --tide <mo
     * `'GOT4.10_load'`
     * `'FES2014'`
     * `'FES2014_load'`
+- `--atlas-format X`: ATLAS tide model format (`'OTIS'`, `'netcdf'`)
+- `--gzip`, `-G`: Tide model files are gzip compressed
+- `--definition-file X`: Model definition file for use as correction
 - `-I X`, `--interpolate X`: Interpolation method
     * `'spline'`
     * `'linear'`

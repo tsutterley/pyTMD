@@ -10,4 +10,5 @@ h5py
 gdal
 lxml
 pyyaml
+ipywidgets
 ipyleaflet

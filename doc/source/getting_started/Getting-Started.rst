@@ -37,19 +37,23 @@ Directories
 
 ``pyTMD`` uses a tree structure for storing the tidal constituent data.
 This structure was chosen based on the different formats of each tide model.
+Presently, the following models and their directories parameterized within ``pyTMD``.
 
 - Circum-Antarctic Tidal Simulations [Padman2008]_
+
     * CATS0201: ``<path_to_tide_models>/cats0201_tmd/``
     * `CATS2008 <https://www.usap-dc.org/view/dataset/601235>`_: ``<path_to_tide_models>/CATS2008/``
     * CATS2008_load: ``<path_to_tide_models>/CATS2008a_SPOTL_Load/``
 
 - Arctic Ocean and Greenland Coast Tidal Simulations [Padman2004]_
+
     * `AODTM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N>`_: ``<path_to_tide_models>/aodtm5_tmd/``
     * `AOTIM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80>`_: ``<path_to_tide_models>/aotim5_tmd/``
     * `AOTIM-5-2018 <https://arcticdata.io/catalog/view/doi:10.18739/A21R6N14K>`_: ``<path_to_tide_models>/Arc5km2018/``
     * Gr1km-v2: ``<path_to_tide_models>/greenlandTMD_v2/``
 
 - TOPEX/POSEIDON global tide models [Egbert2002]_
+
     * `TPXO9-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas/``
     * `TPXO9-atlas-v2 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v2/``
     * `TPXO9-atlas-v3 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v3/``
@@ -60,6 +64,7 @@ This structure was chosen based on the different formats of each tide model.
     * TPXO7.2_load: ``<path_to_tide_models>/TPXO7.2_load/``
 
 - Global Ocean Tide models [Ray1999]_
+
     * GOT4.7: ``<path_to_tide_models>/GOT4.7/grids_oceantide/``
     * GOT4.7_load: ``<path_to_tide_models>/GOT4.7/grids_loadtide/``
     * GOT4.8: ``<path_to_tide_models>/got4.8/grids_oceantide/``
@@ -68,8 +73,12 @@ This structure was chosen based on the different formats of each tide model.
     * GOT4.10_load: ``<path_to_tide_models>/GOT4.10c/grids_loadtide/``
 
 - Finite Element Solution tide models [Lyard2020]_
+
     * `FES2014 <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/ocean_tide/``
     * `FES2014_load <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/load_tide/``
+
+
+For other tide models, the model parameters can be set with a `model definition file <./Getting-Started.html#definition-files>`_.
 
 Programs
 ########
@@ -119,6 +128,54 @@ There are specific programs for correcting some publicly available elevation dat
 - `ICESat-2 ATL11 annual land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py>`_
 - `ICESat-2 ATL12 ocean surface height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py>`_
 
+Definition Files
+################
+
+For models not parameterized within ``pyTMD``, the parameters can be set with a model definition file.
+The definition files are read line by line to fill a python dictionary variable mapping specific parameter names with their values.
+The parameter names are the first column in the file and the parameter values are in the subsequent columns.
+For parameters consisting of lists, the parameter values can be separated by spaces or commas.
+Each definition file should have a ``name``, ``format`` and ``type`` parameters.
+Each model format also requires specific sets of parameters.
+
+- ``OTIS`` and ``ATLAS``
+
+    * ``format``: ``'OTIS'`` or ``'ATLAS'``
+    * ``grid_file``: full path to model grid file
+    * ``model_file``: full path to model constituent file(s)
+    * ``name``: tide model name
+    * ``projection``: `model spatial projection <./Getting-Started.html#spatial-coordinates>`_.
+    * ``type``: ``'z'`` or ``'u,v'``
+
+- ``netcdf``
+
+    * ``compressed``: model files are gzip compressed
+    * ``format``: ``'netcdf'``
+    * ``grid_file``: full path to model grid file
+    * ``model_file``: full path to model constituent files
+    * ``name``: tide model name
+    * ``scale``: scaling factor for converting to output units
+    * ``type``: ``'z'`` or ``'u,v'``
+
+- ``GOT``
+
+    * ``compressed``: model files are gzip compressed
+    * ``format``: ``'GOT'``
+    * ``model_file``: full path to model constituent files
+    * ``name``: tide model name
+    * ``scale``: scaling factor for converting to output units
+    * ``type``: ``'z'``
+
+- ``FES``
+
+    * ``compressed``: model files are gzip compressed
+    * ``format``: ``'FES'``
+    * ``model_file``: full path to model constituent files
+    * ``name``: tide model name
+    * ``scale``: scaling factor for converting to output units
+    * ``type``: ``'z'`` or ``'u,v'``
+    * ``version``: tide model version
+
 Time
 ####
 
@@ -137,6 +194,15 @@ The default coordinate system in ``pyTMD`` is WGS84 geodetic coordinates in lati
 ``pyTMD`` uses `pyproj <https://pypi.org/project/pyproj/>`_ to convert from different coordinate systems and datums.
 Some regional tide models are projected in a different coordinate system.
 For these cases, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py>`_.
+OTIS models may be projected into a separate coordinate system.
+The available OTIS projections within ``pyTMD`` are
+``'4326'`` (global latitude and longitude),
+``'3031'`` (Antarctic Polar Stereographic in kilometers),
+``'3413'`` (NSIDC Sea Ice Polar Stereographic North in kilometers),
+``'CATS2008'`` (CATS2008 Polar Stereographic in kilometers),
+``'3976'`` (NSIDC Sea Ice Polar Stereographic South in kilometers), and
+``'PSNorth'`` (idealized polar stereographic in kilometers).
+For other OTIS model projections, a formatted projection string (e.g. PROJ, WKT, or EPSG) can be used.
 
 Interpolation
 #############
