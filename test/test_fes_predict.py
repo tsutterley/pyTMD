@@ -17,7 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
-    Updated 09/2021: added test for model definition files
+    Updated 09/2021: update check tide points to add compression flags
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
@@ -84,7 +84,7 @@ def test_check_FES2014():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
     obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
-        MODEL='FES2014', EPSG=4326)
+        MODEL='FES2014', GZIP=True, EPSG=4326)
     exp = np.array([True, True, True, True, True,
         True, True, True, False, False])
     assert np.all(obs == exp)
@@ -152,23 +152,3 @@ def test_verify_FES2014():
     difference.mask = np.copy(tide.mask)
     if not np.all(difference.mask):
         assert np.all(np.abs(difference) <= eps)
-
-#-- PURPOSE: test definition file functionality
-@pytest.mark.parametrize("MODEL", ['FES2014'])
-def test_definition_file(MODEL):
-    #-- get model parameters
-    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
-    #-- create model definition file
-    fid = io.StringIO()
-    attrs = ['name','format','model_file','compressed','type','scale','version']
-    for attr in attrs:
-        val = getattr(model,attr)
-        if isinstance(val,list):
-            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-        else:
-            fid.write('{0}\t{1}\n'.format(attr,val))
-    fid.seek(0)
-    #-- use model definition file as input
-    m = pyTMD.model().from_file(fid)
-    for attr in attrs:
-        assert getattr(model,attr) == getattr(m,attr)

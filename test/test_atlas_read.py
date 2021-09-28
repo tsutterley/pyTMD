@@ -259,7 +259,7 @@ def test_definition_file(MODEL):
     model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
     #-- create model definition file
     fid = io.StringIO()
-    attrs = ['name','format','grid_model','model_file','compressed','type','scale']
+    attrs = ['name','format','grid_file','model_file','compressed','type','scale']
     for attr in attrs:
         val = getattr(model,attr)
         if isinstance(val,list):

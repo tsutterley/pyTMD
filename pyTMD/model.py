@@ -983,7 +983,8 @@ class model:
         if re.search(r'[\s\,]+', temp.type):
             temp.type = re.split(r'[\s\,]+',temp.type)
         # convert boolean strings
-        temp.compressed = self.to_bool(temp.compressed)
+        if isinstance(temp.compressed,str):
+            temp.compressed = self.to_bool(temp.compressed)
         # return the model parameters
         return temp
 

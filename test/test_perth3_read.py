@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2021: added test for model definition files
+        update check tide points to add compression flags
     Updated 07/2021: added test for invalid tide model name
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
@@ -91,6 +92,7 @@ def test_verify_GOT47(METHOD):
     model_file = [os.path.join(model_directory,m) for m in model_files]
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model_format = 'GOT'
+    GZIP = True
     SCALE = 1.0
 
     #-- read validation dataset
@@ -117,7 +119,7 @@ def test_verify_GOT47(METHOD):
 
     #-- extract amplitude and phase from tide model
     amp,ph,cons = pyTMD.read_GOT_model.extract_GOT_constants(longitude,
-        latitude, model_file, METHOD=METHOD, SCALE=SCALE)
+        latitude, model_file, METHOD=METHOD, GZIP=GZIP, SCALE=SCALE)
     assert all(c in constituents for c in cons)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
@@ -152,7 +154,7 @@ def test_check_GOT47():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
     obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
-        MODEL='GOT4.7', EPSG=4326)
+        MODEL='GOT4.7', GZIP=True, EPSG=4326)
     exp = np.array([True, True, True, True, True,
         True, True, True, False, False])
     assert np.all(obs == exp)
@@ -179,13 +181,6 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
 
-#-- PURPOSE: test the catch in the correction wrapper function
-def test_unlisted_model():
-    ermsg = "Unlisted tide model"
-    with pytest.raises(Exception, match=ermsg):
-        pyTMD.compute_tide_corrections(None, None, None,
-            DIRECTORY=filepath, MODEL='invalid')
-
 #-- PURPOSE: test definition file functionality
 @pytest.mark.parametrize("MODEL", ['GOT4.7'])
 def test_definition_file(MODEL):
@@ -205,3 +200,10 @@ def test_definition_file(MODEL):
     m = pyTMD.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
+
+#-- PURPOSE: test the catch in the correction wrapper function
+def test_unlisted_model():
+    ermsg = "Unlisted tide model"
+    with pytest.raises(Exception, match=ermsg):
+        pyTMD.compute_tide_corrections(None, None, None,
+            DIRECTORY=filepath, MODEL='invalid')
