@@ -2,8 +2,8 @@
 u"""
 model.py
 Written by Tyler Sutterley (09/2021)
-Retrieves tide model parameters for named models or
-    from a model definition file
+Retrieves tide model parameters for named tide models and
+    from model definition files
 
 UPDATE HISTORY:
     Written 09/2021
@@ -22,6 +22,7 @@ class model:
         # set default keyword arguments
         kwargs.setdefault('compressed',False)
         kwargs.setdefault('format','netcdf')
+        kwargs.setdefault('verify',True)
         # set initial attributes
         self.atl03 = None
         self.atl06 = None
@@ -43,6 +44,7 @@ class model:
         self.scale = None
         self.type = None
         self.variable = None
+        self.verify = copy.copy(kwargs['verify'])
         self.version = None
 
     def grid(self,m):
@@ -926,7 +928,7 @@ class model:
                 ''.join([model_file,self.suffix,self.gzip]))
             valid = os.access(output_file, os.F_OK)
         #-- check that (all) output files exist
-        if not valid:
+        if self.verify and not valid:
             raise FileNotFoundError(output_file)
         #-- return the complete output path
         return output_file

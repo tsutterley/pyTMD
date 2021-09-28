@@ -60,25 +60,24 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for GOT4.7
-    modelpath = os.path.join(filepath,'GOT4.7')
-    model_directory = os.path.join(modelpath,'grids_oceantide')
-    model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-        'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
+    model = pyTMD.model(filepath,compressed=True,
+        verify=False).elevation('GOT4.7')
     #-- recursively create model directory
-    os.makedirs(model_directory)
+    os.makedirs(model.model_directory)
     #-- retrieve each model file from s3
-    for f in model_files:
+    for model_file in model.model_file:
         #-- retrieve constituent file
+        f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('GOT4.7','grids_oceantide',f))
         response = obj.get()
         #-- save constituent data
-        with open(os.path.join(model_directory,f), 'wb') as destination:
+        with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(os.path.join(model_directory,f), os.F_OK)
+        assert os.access(model_file, os.F_OK)
     #-- run tests
     yield
     #-- clean up model
-    shutil.rmtree(modelpath)
+    shutil.rmtree(model.model_directory)
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])

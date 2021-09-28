@@ -86,29 +86,24 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for TPXO9-atlas-v2
-    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
-    model_files = ['grid_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz',
-        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
-        'h_m2_tpxo9_atlas_30_v2.nc.gz','h_m4_tpxo9_atlas_30_v2.nc.gz',
-        'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
-        'h_n2_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
-        'h_p1_tpxo9_atlas_30_v2.nc.gz','h_q1_tpxo9_atlas_30_v2.nc.gz',
-        'h_s2_tpxo9_atlas_30_v2.nc.gz']
+    model = pyTMD.model(filepath,format='netcdf',compressed=True,
+        verify=False).elevation('TPXO9-atlas-v2')
     #-- recursively create model directory
-    os.makedirs(model_directory)
+    os.makedirs(model.model_directory)
     #-- retrieve each model file from s3
-    for f in model_files:
+    for model_file in model.model_file:
         #-- retrieve constituent file
+        f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',f))
         response = obj.get()
         #-- save constituent data
-        with open(os.path.join(model_directory,f), 'wb') as destination:
+        with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(os.path.join(model_directory,f), os.F_OK)
+        assert os.access(model_file, os.F_OK)
     #-- run tests
     yield
     #-- clean up model
-    shutil.rmtree(model_directory)
+    shutil.rmtree(model.model_directory)
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])

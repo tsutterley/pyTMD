@@ -2,7 +2,7 @@
 model.py
 ========
 
-Class with parameters for named tide models
+Retrieves tide model parameters for named tide models and from model definition files
 
 `Source code`__
 
@@ -96,6 +96,14 @@ General Attributes and Methods
     .. attribute:: model.type
 
         Model type (``z``, ``u``, ``v``)
+
+    .. attribute:: model.verify
+
+        Verify that all model files exist
+
+    .. attribute:: model.version
+
+        Tide model version
 
     .. method:: model.pathfinder(model_file)
 
