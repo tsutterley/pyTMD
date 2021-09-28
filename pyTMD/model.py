@@ -904,6 +904,33 @@ class model:
         # return the model parameters
         return self
 
+    @property
+    def gzip(self):
+        """compression flag"""
+        return '.gz' if self.compressed else ''
+
+    @property
+    def suffix(self):
+        """format suffix flag"""
+        return '.nc' if (self.format == 'netcdf') else ''
+
+    def pathfinder(self,model_file):
+        """Completes file paths and appends file and gzip suffixes
+        """
+        if isinstance(model_file,list):
+            output_file = [os.path.join(self.model_directory,
+                ''.join([f,self.suffix,self.gzip])) for f in model_file]
+            valid = all([os.access(f, os.F_OK) for f in output_file])
+        elif isinstance(model_file,str):
+            output_file = os.path.join(self.model_directory,
+                ''.join([model_file,self.suffix,self.gzip]))
+            valid = os.access(output_file, os.F_OK)
+        #-- check that (all) output files exist
+        if not valid:
+            raise FileNotFoundError(output_file)
+        #-- return the complete output path
+        return output_file
+
     def from_file(self, definition_file):
         """Create a model object from an input definition file
         """
@@ -911,7 +938,7 @@ class model:
         parameters = {}
         # Opening definition file and assigning file ID number
         if isinstance(definition_file,io.IOBase):
-            fid = open(definition_file, 'r')
+            fid = copy.copy(definition_file)
         else:
             fid = open(os.path.expanduser(definition_file), 'r')
         # for each line in the file will extract the parameter (name and value)
@@ -955,6 +982,8 @@ class model:
         # split type into list if currents u,v
         if re.search(r'[\s\,]+', temp.type):
             temp.type = re.split(r'[\s\,]+',temp.type)
+        # convert boolean strings
+        temp.compressed = self.to_bool(temp.compressed)
         # return the model parameters
         return temp
 
@@ -966,29 +995,12 @@ class model:
         # return the model parameters
         return self
 
-    @property
-    def gzip(self):
-        """compression flag"""
-        return '.gz' if self.compressed else ''
-
-    @property
-    def suffix(self):
-        """format suffix flag"""
-        return '.nc' if (self.format == 'netcdf') else ''
-
-    def pathfinder(self,model_file):
-        """Completes file paths and appends file and gzip suffixes
+    def to_bool(self,val):
+        """Converts strings of True/False to a boolean values
         """
-        if isinstance(model_file,list):
-            output_file = [os.path.join(self.model_directory,
-                ''.join([f,self.suffix,self.gzip])) for f in model_file]
-            valid = all([os.access(f, os.F_OK) for f in output_file])
-        elif isinstance(model_file,str):
-            output_file = os.path.join(self.model_directory,
-                ''.join([model_file,self.suffix,self.gzip]))
-            valid = os.access(output_file, os.F_OK)
-        #-- check that (all) output files exist
-        if not valid:
-            raise FileNotFoundError(output_file)
-        #-- return the complete output path
-        return output_file
+        if val.lower() in ('y','yes','t','true','1'):
+            return True
+        elif val.lower() in ('n','no','f','false','0'):
+            return False
+        else:
+            raise ValueError('Invalid boolean string {0}'.format(val))

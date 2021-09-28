@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (07/2021)
+test_perth3_read.py (09/2021)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2021: added test for model definition files
     Updated 07/2021: added test for invalid tide model name
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
@@ -22,6 +23,7 @@ UPDATE HISTORY:
     Written 08/2020
 """
 import os
+import io
 import gzip
 import boto3
 import shutil
@@ -31,6 +33,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 import pyTMD.read_GOT_model
 import pyTMD.predict_tide_drift
@@ -182,3 +185,23 @@ def test_unlisted_model():
     with pytest.raises(Exception, match=ermsg):
         pyTMD.compute_tide_corrections(None, None, None,
             DIRECTORY=filepath, MODEL='invalid')
+
+#-- PURPOSE: test definition file functionality
+@pytest.mark.parametrize("MODEL", ['GOT4.7'])
+def test_definition_file(MODEL):
+    #-- get model parameters
+    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    #-- create model definition file
+    fid = io.StringIO()
+    attrs = ['name','format','model_file','compressed','type','scale']
+    for attr in attrs:
+        val = getattr(model,attr)
+        if isinstance(val,list):
+            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+        else:
+            fid.write('{0}\t{1}\n'.format(attr,val))
+    fid.seek(0)
+    #-- use model definition file as input
+    m = pyTMD.model().from_file(fid)
+    for attr in attrs:
+        assert getattr(model,attr) == getattr(m,attr)

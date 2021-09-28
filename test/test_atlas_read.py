@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (03/2021)
+test_atlas_read.py (09/2021)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2021: added test for model definition files
     Updated 03/2021: use pytest fixture to setup and teardown model data
         simplified netcdf inputs to be similar to binary OTIS read program
         replaced numpy bool/int to prevent deprecation warnings
@@ -23,6 +24,7 @@ UPDATE HISTORY:
 """
 import os
 import re
+import io
 import gzip
 import boto3
 import shutil
@@ -32,6 +34,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 import pyTMD.read_tide_model
 import pyTMD.read_netcdf_model
@@ -248,3 +251,23 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
         EPOCH=(2000,1,1,0,0,0), TYPE='grid', TIME='TAI',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
+
+#-- PURPOSE: test definition file functionality
+@pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2'])
+def test_definition_file(MODEL):
+    #-- get model parameters
+    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    #-- create model definition file
+    fid = io.StringIO()
+    attrs = ['name','format','grid_model','model_file','compressed','type','scale']
+    for attr in attrs:
+        val = getattr(model,attr)
+        if isinstance(val,list):
+            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+        else:
+            fid.write('{0}\t{1}\n'.format(attr,val))
+    fid.seek(0)
+    #-- use model definition file as input
+    m = pyTMD.model().from_file(fid)
+    for attr in attrs:
+        assert getattr(model,attr) == getattr(m,attr)
