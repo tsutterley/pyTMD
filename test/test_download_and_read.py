@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (05/2021)
+test_download_and_read.py (09/2021)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2021: added test for model definition files
     Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
@@ -34,6 +35,7 @@ UPDATE HISTORY:
 """
 import os
 import re
+import io
 import boto3
 import shutil
 import pytest
@@ -43,6 +45,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 import pyTMD.read_tide_model
 import pyTMD.predict_tidal_ts
@@ -554,6 +557,27 @@ class Test_CATS2008:
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 
+    #-- PURPOSE: test definition file functionality
+    @pytest.mark.parametrize("MODEL", ['CATS2008'])
+    def test_definition_file(self, MODEL):
+        #-- get model parameters
+        model = pyTMD.model(filepath).elevation(MODEL)
+        #-- create model definition file
+        fid = io.StringIO()
+        attrs = ['name','format','grid_file','model_file','type','projection']
+        for attr in attrs:
+            val = getattr(model,attr)
+            if isinstance(val,list):
+                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+            else:
+                fid.write('{0}\t{1}\n'.format(attr,val))
+        fid.seek(0)
+        #-- use model definition file as input
+        m = pyTMD.model().from_file(fid)
+        for attr in attrs:
+            assert getattr(model,attr) == getattr(m,attr)
+
+
 #-- PURPOSE: Test and Verify AOTIM-5-2018 model read and prediction programs
 class Test_AOTIM5_2018:
     #-- PURPOSE: Download AOTIM-5-2018 from NSF ArcticData server
@@ -737,3 +761,23 @@ class Test_AOTIM5_2018:
             EPOCH=(2000,1,1,12,0,0), TYPE='grid', TIME='UTC',
             EPSG=3413, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
+
+    #-- PURPOSE: test definition file functionality
+    @pytest.mark.parametrize("MODEL", ['AOTIM-5-2018'])
+    def test_definition_file(self, MODEL):
+        #-- get model parameters
+        model = pyTMD.model(filepath).elevation(MODEL)
+        #-- create model definition file
+        fid = io.StringIO()
+        attrs = ['name','format','grid_file','model_file','type','projection']
+        for attr in attrs:
+            val = getattr(model,attr)
+            if isinstance(val,list):
+                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+            else:
+                fid.write('{0}\t{1}\n'.format(attr,val))
+        fid.seek(0)
+        #-- use model definition file as input
+        m = pyTMD.model().from_file(fid)
+        for attr in attrs:
+            assert getattr(model,attr) == getattr(m,attr)

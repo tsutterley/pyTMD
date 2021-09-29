@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (07/2021)
+test_perth3_read.py (09/2021)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,8 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2021: added test for model definition files
+        update check tide points to add compression flags
     Updated 07/2021: added test for invalid tide model name
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
@@ -22,6 +24,7 @@ UPDATE HISTORY:
     Written 08/2020
 """
 import os
+import io
 import gzip
 import boto3
 import shutil
@@ -31,6 +34,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 import pyTMD.read_GOT_model
 import pyTMD.predict_tide_drift
@@ -56,25 +60,24 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for GOT4.7
-    modelpath = os.path.join(filepath,'GOT4.7')
-    model_directory = os.path.join(modelpath,'grids_oceantide')
-    model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
-        'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz','m4.d.gz']
+    model = pyTMD.model(filepath,compressed=True,
+        verify=False).elevation('GOT4.7')
     #-- recursively create model directory
-    os.makedirs(model_directory)
+    os.makedirs(model.model_directory)
     #-- retrieve each model file from s3
-    for f in model_files:
+    for model_file in model.model_file:
         #-- retrieve constituent file
+        f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('GOT4.7','grids_oceantide',f))
         response = obj.get()
         #-- save constituent data
-        with open(os.path.join(model_directory,f), 'wb') as destination:
+        with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(os.path.join(model_directory,f), os.F_OK)
+        assert os.access(model_file, os.F_OK)
     #-- run tests
     yield
     #-- clean up model
-    shutil.rmtree(modelpath)
+    shutil.rmtree(model.model_directory)
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
@@ -88,6 +91,7 @@ def test_verify_GOT47(METHOD):
     model_file = [os.path.join(model_directory,m) for m in model_files]
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model_format = 'GOT'
+    GZIP = True
     SCALE = 1.0
 
     #-- read validation dataset
@@ -114,7 +118,7 @@ def test_verify_GOT47(METHOD):
 
     #-- extract amplitude and phase from tide model
     amp,ph,cons = pyTMD.read_GOT_model.extract_GOT_constants(longitude,
-        latitude, model_file, METHOD=METHOD, SCALE=SCALE)
+        latitude, model_file, METHOD=METHOD, GZIP=GZIP, SCALE=SCALE)
     assert all(c in constituents for c in cons)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
@@ -149,7 +153,7 @@ def test_check_GOT47():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
     obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
-        MODEL='GOT4.7', EPSG=4326)
+        MODEL='GOT4.7', GZIP=True, EPSG=4326)
     exp = np.array([True, True, True, True, True,
         True, True, True, False, False])
     assert np.all(obs == exp)
@@ -175,6 +179,26 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
         EPOCH=(2018,1,1,0,0,0), TYPE='grid', TIME='GPS',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
+
+#-- PURPOSE: test definition file functionality
+@pytest.mark.parametrize("MODEL", ['GOT4.7'])
+def test_definition_file(MODEL):
+    #-- get model parameters
+    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    #-- create model definition file
+    fid = io.StringIO()
+    attrs = ['name','format','model_file','compressed','type','scale']
+    for attr in attrs:
+        val = getattr(model,attr)
+        if isinstance(val,list):
+            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+        else:
+            fid.write('{0}\t{1}\n'.format(attr,val))
+    fid.seek(0)
+    #-- use model definition file as input
+    m = pyTMD.model().from_file(fid)
+    for attr in attrs:
+        assert getattr(model,attr) == getattr(m,attr)
 
 #-- PURPOSE: test the catch in the correction wrapper function
 def test_unlisted_model():

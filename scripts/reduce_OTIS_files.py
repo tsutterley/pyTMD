@@ -22,6 +22,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    model.py: retrieves tide model parameters for named tide models
     utilities.py: download and management utilities for syncing files
     read_tide_model.py: extract tidal harmonic constants out of a tidal model
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates

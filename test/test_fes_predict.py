@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (05/2021)
+test_fes_predict.py (09/2021)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,12 +17,14 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2021: update check tide points to add compression flags
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
 """
 import os
+import io
 import boto3
 import shutil
 import pytest
@@ -31,6 +33,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 import pyTMD.read_FES_model
 import pyTMD.predict_tide_drift
@@ -55,33 +58,31 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for FES2014
-    modelpath = os.path.join(filepath,'fes2014')
-    model_directory = os.path.join(modelpath,'ocean_tide')
-    model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
-        'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
-        'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
+    model = pyTMD.model(filepath,compressed=True,
+        verify=False).elevation('FES2014')
     #-- recursively create model directory
-    os.makedirs(model_directory)
+    os.makedirs(model.model_directory)
     #-- retrieve each model file from s3
-    for f in model_files:
+    for model_file in model.model_file:
         #-- retrieve constituent file
+        f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('fes2014','ocean_tide',f))
         response = obj.get()
         #-- save constituent data
-        with open(os.path.join(model_directory,f), 'wb') as destination:
+        with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(os.path.join(model_directory,f), os.F_OK)
+        assert os.access(model_file, os.F_OK)
     #-- run tests
     yield
     #-- clean up model
-    shutil.rmtree(modelpath)
+    shutil.rmtree(model.model_directory)
 
 #-- PURPOSE: Tests check point program
 def test_check_FES2014():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
     obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
-        MODEL='FES2014', EPSG=4326)
+        MODEL='FES2014', GZIP=True, EPSG=4326)
     exp = np.array([True, True, True, True, True,
         True, True, True, False, False])
     assert np.all(obs == exp)
@@ -149,3 +150,23 @@ def test_verify_FES2014():
     difference.mask = np.copy(tide.mask)
     if not np.all(difference.mask):
         assert np.all(np.abs(difference) <= eps)
+
+#-- PURPOSE: test definition file functionality
+@pytest.mark.parametrize("MODEL", ['FES2014'])
+def test_definition_file(MODEL):
+    #-- get model parameters
+    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    #-- create model definition file
+    fid = io.StringIO()
+    attrs = ['name','format','model_file','compressed','type','scale','version']
+    for attr in attrs:
+        val = getattr(model,attr)
+        if isinstance(val,list):
+            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+        else:
+            fid.write('{0}\t{1}\n'.format(attr,val))
+    fid.seek(0)
+    #-- use model definition file as input
+    m = pyTMD.model().from_file(fid)
+    for attr in attrs:
+        assert getattr(model,attr) == getattr(m,attr)

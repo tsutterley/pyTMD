@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (03/2021)
+test_atlas_read.py (09/2021)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2021: added test for model definition files
     Updated 03/2021: use pytest fixture to setup and teardown model data
         simplified netcdf inputs to be similar to binary OTIS read program
         replaced numpy bool/int to prevent deprecation warnings
@@ -23,6 +24,7 @@ UPDATE HISTORY:
 """
 import os
 import re
+import io
 import gzip
 import boto3
 import shutil
@@ -32,6 +34,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.time
+import pyTMD.model
 import pyTMD.utilities
 import pyTMD.read_tide_model
 import pyTMD.read_netcdf_model
@@ -83,29 +86,32 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     #-- model parameters for TPXO9-atlas-v2
-    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
-    model_files = ['grid_tpxo9_atlas_30_v2.nc.gz','h_2n2_tpxo9_atlas_30_v2.nc.gz',
-        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_k2_tpxo9_atlas_30_v2.nc.gz',
-        'h_m2_tpxo9_atlas_30_v2.nc.gz','h_m4_tpxo9_atlas_30_v2.nc.gz',
-        'h_mn4_tpxo9_atlas_30_v2.nc.gz','h_ms4_tpxo9_atlas_30_v2.nc.gz',
-        'h_n2_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz',
-        'h_p1_tpxo9_atlas_30_v2.nc.gz','h_q1_tpxo9_atlas_30_v2.nc.gz',
-        'h_s2_tpxo9_atlas_30_v2.nc.gz']
+    model = pyTMD.model(filepath,format='netcdf',compressed=True,
+        verify=False).elevation('TPXO9-atlas-v2')
     #-- recursively create model directory
-    os.makedirs(model_directory)
+    os.makedirs(model.model_directory)
+    #-- retrieve grid file from s3
+    f = os.path.basename(model.grid_file)
+    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',f))
+    response = obj.get()
+    #-- save grid data
+    with open(model.grid_file, 'wb') as destination:
+        shutil.copyfileobj(response['Body'], destination)
+    assert os.access(model.grid_file, os.F_OK)
     #-- retrieve each model file from s3
-    for f in model_files:
+    for model_file in model.model_file:
         #-- retrieve constituent file
+        f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',f))
         response = obj.get()
         #-- save constituent data
-        with open(os.path.join(model_directory,f), 'wb') as destination:
+        with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(os.path.join(model_directory,f), os.F_OK)
+        assert os.access(model_file, os.F_OK)
     #-- run tests
     yield
     #-- clean up model
-    shutil.rmtree(model_directory)
+    shutil.rmtree(model.model_directory)
 
 #-- parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
@@ -248,3 +254,23 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
         EPOCH=(2000,1,1,0,0,0), TYPE='grid', TIME='TAI',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
+
+#-- PURPOSE: test definition file functionality
+@pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2'])
+def test_definition_file(MODEL):
+    #-- get model parameters
+    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    #-- create model definition file
+    fid = io.StringIO()
+    attrs = ['name','format','grid_file','model_file','compressed','type','scale']
+    for attr in attrs:
+        val = getattr(model,attr)
+        if isinstance(val,list):
+            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+        else:
+            fid.write('{0}\t{1}\n'.format(attr,val))
+    fid.seek(0)
+    #-- use model definition file as input
+    m = pyTMD.model().from_file(fid)
+    for attr in attrs:
+        assert getattr(model,attr) == getattr(m,attr)

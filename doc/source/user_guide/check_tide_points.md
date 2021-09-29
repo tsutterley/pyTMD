@@ -20,7 +20,12 @@ valid = check_tide_points(x, y, DIRECTORY=DIRECTORY,
 
 #### Keyword arguments
 - `DIRECTORY`: working data directory for tide models
-- `MODEL`: Tide model to use in correction
+- `MODEL`: Tide model to use
+- `ATLAS_FORMAT`: ATLAS tide model format
+    * `'OTIS'`
+    * `'netcdf'`
+- `GZIP`: Tide model files are gzip compressed
+- `DEFINITION_FILE`: Tide model definition file for use
 - `EPSG`: input coordinate system
     * default: `3031` Polar Stereographic South, WGS84
 - `METHOD`: interpolation method

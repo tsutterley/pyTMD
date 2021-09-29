@@ -57,6 +57,7 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
+    model.py: retrieves tide model parameters for named tide models
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes

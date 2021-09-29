@@ -67,6 +67,7 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     read_ICESat2_ATL03.py: reads ICESat-2 global geolocated photon data files
     time.py: utilities for calculating time operations
+    model.py: retrieves tide model parameters for named tide models
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
     calc_delta_time.py: calculates difference between universal and dynamic time

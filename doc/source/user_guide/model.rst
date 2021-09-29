@@ -2,7 +2,7 @@
 model.py
 ========
 
-Class with parameters for named tide models
+Retrieves tide model parameters for named tide models and from model definition files
 
 `Source code`__
 
@@ -61,6 +61,10 @@ General Attributes and Methods
 
         Model grid file for ``OTIS`` and ``ATLAS`` models
 
+    .. attribute:: model.gzip
+
+        Suffix if model is compressed
+
     .. attribute:: model.long_name
 
         HDF5 ``long_name`` attribute string for output tide heights
@@ -85,6 +89,34 @@ General Attributes and Methods
 
         Model scaling factor for converting to output units
 
+    .. attribute:: model.suffix
+
+        Suffix if ATLAS model is ``'netcdf'`` format
+
     .. attribute:: model.type
 
         Model type (``z``, ``u``, ``v``)
+
+    .. attribute:: model.verify
+
+        Verify that all model files exist
+
+    .. attribute:: model.version
+
+        Tide model version
+
+    .. method:: model.pathfinder(model_file)
+
+        Completes file paths and appends file and gzip suffixes
+
+    .. method:: model.from_file(definition_file)
+
+        Create a model object from an input definition file
+
+    .. method:: model.from_dict(d)
+
+        Create a model object from a python dictionary
+
+    .. method:: model.to_bool(val)
+
+        Converts strings of True/False to a boolean values
