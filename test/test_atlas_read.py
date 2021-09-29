@@ -90,6 +90,14 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
         verify=False).elevation('TPXO9-atlas-v2')
     #-- recursively create model directory
     os.makedirs(model.model_directory)
+    #-- retrieve grid file from s3
+    f = os.path.basename(model.grid_file)
+    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',f))
+    response = obj.get()
+    #-- save grid data
+    With open(model.grid_file, 'wb') as destination:
+        shutil.copyfileobj(response['Body'], destination)
+    assert os.access(model.grid_file, os.F_OK)
     #-- retrieve each model file from s3
     for model_file in model.model_file:
         #-- retrieve constituent file
