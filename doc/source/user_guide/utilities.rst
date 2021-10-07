@@ -32,7 +32,7 @@ General Methods
     Platform independent file opener
 
     Arguments:
-    
+
         ``filename``: path to file
 
 
@@ -190,6 +190,35 @@ General Methods
     Arguments:
 
         ``HOST``: remote http host
+
+
+.. method:: pyTMD.utilities.http_list(HOST,timeout=None,context=ssl.SSLContext(),parser=lxml.etree.HTMLParser(),format='%Y-%m-%d %H:%M',pattern='',sort=False)
+
+    List a directory on an Apache http Server
+
+    Arguments:
+
+        ``HOST``: remote http host path split as list
+
+    Keyword arguments:
+
+        ``timeout``: timeout in seconds for blocking operations
+
+        ``context``: SSL context for url opener object
+
+        ``parser``: HTML parser for lxml
+
+        ``format``: format for input time string
+
+        ``pattern``: regular expression pattern for reducing list
+
+        ``sort``: sort output list
+
+    Returns:
+
+        ``output``: list of items in a directory
+
+        ``mtimes``: list of last modification times for items in the directory
 
 
 .. method:: pyTMD.utilities.from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)

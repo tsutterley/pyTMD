@@ -259,8 +259,16 @@ General Methods
         ``lat``: array of latitudes in degrees
 
     Returns:
-    
+
         ``delta_h``: difference in elevation for two ellipsoids
+
+.. method:: pyTMD.spatial.wrap_longitudes(lon):
+
+    Wraps longitudes to range from -180 to +180
+
+    Arguments:
+
+        ``lon``: longitude
 
 .. method:: pyTMD.spatial.to_cartesian(lon,lat,a_axis=6378137.0,flat=1.0/298.257223563)
 

@@ -52,6 +52,7 @@ This software is also dependent on other commonly used Python packages:
 - `cartopy: Python package designed for geospatial data processing <https://scitools.org.uk/cartopy/docs/latest/>`_
 - `ipywidgets: interactive HTML widgets for Jupyter notebooks and IPython <https://ipywidgets.readthedocs.io/en/latest/>`_
 - `ipyleaflet: Jupyter / Leaflet bridge enabling interactive maps <https://github.com/jupyter-widgets/ipyleaflet>`_
+- `setuptools_scm: manager for python package versions using scm metadata <https://pypi.org/project/setuptools-scm/1.9.0/>`_
 
 Credits
 #######

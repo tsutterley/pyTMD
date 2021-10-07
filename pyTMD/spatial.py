@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 10/2021: add pole case in stereographic area scale calculation
     Updated 09/2021: can calculate height differences between ellipsoids
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
@@ -188,8 +189,8 @@ def from_netCDF4(filename, compression=None, verbose=False,
     for attr in ['title','description','projection']:
         #-- try getting the attribute
         try:
-            ncattr, = [s for s in dir(fileID) if re.match(attr,s,re.I)]
-            dinput['attributes'][attr] = getattr(fileID,ncattr)
+            ncattr, = [s for s in fileID.ncattrs() if re.match(attr,s,re.I)]
+            dinput['attributes'][attr] = fileID.getncattr(ncattr)
         except (ValueError,AttributeError):
             pass
     #-- list of attributes to attempt to retrieve from included variables
@@ -206,9 +207,10 @@ def from_netCDF4(filename, compression=None, verbose=False,
         for attr in attributes_list:
             #-- try getting the attribute
             try:
-                ncattr, = [s for s in dir(fileID) if re.match(attr,s,re.I)]
+                ncattr, = [s for s in fileID.variables[nc].ncattrs()
+                    if re.match(attr,s,re.I)]
                 dinput['attributes'][key][attr] = \
-                    getattr(fileID.variables[nc],ncattr)
+                    fileID.variables[nc].getncattr(ncattr)
             except (ValueError,AttributeError):
                 pass
     #-- convert to masked array if fill values
@@ -711,6 +713,17 @@ def compute_delta_h(a1, f1, a2, f2, lat):
     delta_h = -(delta_a*np.cos(phi)**2 + delta_b*np.sin(phi)**2)
     return delta_h
 
+def wrap_longitudes(lon):
+    """
+    Wraps longitudes to range from -180 to +180
+
+    Inputs:
+        lon: longitude (degrees east)
+    """
+    phi = np.arctan2(np.sin(lon*np.pi/180.0),np.cos(lon*np.pi/180.0))
+    #-- convert phi from radians to degrees
+    return phi*180.0/np.pi
+
 def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
     """
     Converts geodetic coordinates to Cartesian coordinates
@@ -835,6 +848,7 @@ def to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563):
 def scale_areas(lat, flat=1.0/298.257223563, ref=70.0):
     """
     Calculates area scaling factors for a polar stereographic projection
+    including special case of at the exact pole
 
     Inputs:
         lat: latitude (degrees north)
@@ -869,8 +883,9 @@ def scale_areas(lat, flat=1.0/298.257223563, ref=70.0):
     mref = np.cos(theta_ref)/np.sqrt(1.0 - ecc2*np.sin(theta_ref)**2)
     tref = np.tan(np.pi/4.0 - theta_ref/2.0)/((1.0 - ecc*np.sin(theta_ref)) / \
         (1.0 + ecc*np.sin(theta_ref)))**(ecc/2.0)
-    #-- area scaling
+    #-- distance scaling
     k = (mref/m)*(t/tref)
-    #-- return the area scaling factors
-    scale = 1.0/(k**2)
+    kp = 0.5*mref*np.sqrt(((1.0+ecc)**(1.0+ecc))*((1.0-ecc)**(1.0-ecc)))/tref
+    #-- area scaling
+    scale = np.where(np.isclose(theta,np.pi/2.0),1.0/(kp**2),1.0/(k**2))
     return scale

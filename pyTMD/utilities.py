@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (09/2021)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 09/2021: added generic list from Apache http server
     Updated 08/2021: added function to open a file path
     Updated 07/2021: add parser for converting file files to arguments
     Updated 03/2021: added sha1 option for retrieving file hashes
@@ -406,6 +407,60 @@ def check_connection(HOST):
         raise RuntimeError('Check internet connection')
     else:
         return True
+
+#-- PURPOSE: list a directory on an Apache http Server
+def http_list(HOST,timeout=None,context=ssl.SSLContext(),
+    parser=lxml.etree.HTMLParser(),format='%Y-%m-%d %H:%M',
+    pattern='',sort=False):
+    """
+    List a directory on an Apache http Server
+
+    Arguments
+    ---------
+    HOST: remote http host path split as list
+
+    Keyword arguments
+    -----------------
+    timeout: timeout in seconds for blocking operations
+    context: SSL context for url opener object
+    parser: HTML parser for lxml
+    format: format for input time string
+    pattern: regular expression pattern for reducing list
+    sort: sort output list
+
+    Returns
+    -------
+    output: list of items in a directory
+    mtimes: list of last modification times for items in the directory
+    """
+    #-- try listing from http
+    try:
+        #-- Create and submit request.
+        request=urllib2.Request(posixpath.join(*HOST))
+        response=urllib2.urlopen(request,timeout=timeout,context=context)
+    except (urllib2.HTTPError, urllib2.URLError):
+        raise Exception('List error from {0}'.format(posixpath.join(*HOST)))
+    else:
+        #-- read and parse request for files (column names and modified times)
+        tree = lxml.etree.parse(response,parser)
+        colnames = tree.xpath('//tr/td[not(@*)]//a/@href')
+        #-- get the Unix timestamp value for a modification time
+        lastmod = [get_unix_time(i,format=format)
+            for i in tree.xpath('//tr/td[@align="right"][1]/text()')]
+        #-- reduce using regular expression pattern
+        if pattern:
+            i = [i for i,f in enumerate(colnames) if re.search(pattern,f)]
+            #-- reduce list of column names and last modified times
+            colnames = [colnames[indice] for indice in i]
+            lastmod = [lastmod[indice] for indice in i]
+        #-- sort the list
+        if sort:
+            i = [i for i,j in sorted(enumerate(colnames), key=lambda i: i[1])]
+            #-- sort list of column names and last modified times
+            colnames = [colnames[indice] for indice in i]
+            lastmod = [lastmod[indice] for indice in i]
+        #-- return the list of column names and last modified times
+        return (colnames,lastmod)
 
 #-- PURPOSE: download a file from a http host
 def from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',
