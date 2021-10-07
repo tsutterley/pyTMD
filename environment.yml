@@ -2,23 +2,23 @@ name: pyTMD
 channels:
   - conda-forge
 dependencies:
-  - python>=3.6
-  - setuptools_scm
-  - notebook
-  - ipywidgets
+  - cartopy
+  - gdal
+  - h5py
   - ipyleaflet
-  - numpy
-  - scipy
-  - pyproj
-  - python-dateutil
+  - ipywidgets
+  - lxml
   - matplotlib
   - netCDF4
-  - h5py
-  - gdal
-  - lxml
-  - pyyaml
-  - cartopy
+  - notebook
+  - numpy
   - pip
+  - pyproj
+  - python>=3.6
+  - python-dateutil
+  - pyyaml
+  - scipy
+  - setuptools_scm
   - pip:
      - git+https://github.com/tsutterley/read-ICESat-2.git
      - git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git

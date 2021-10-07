@@ -282,3 +282,14 @@ def test_convert_ellipsoid():
     maxelevdel = 100.0*np.max(h_WGS84-elev_WGS84)
     assert np.isclose([minlatdel,maxlatdel],[-2.1316282e-14,2.1316282e-14]).all()
     assert np.isclose([minelevdel,maxelevdel],[-1.3287718e-7,1.6830199e-7]).all()
+
+#-- PURPOSE: test wrap longitudes
+def test_wrap_longitudes():
+    #-- number of data points
+    lon = np.arange(360)
+    obs = pyTMD.spatial.wrap_longitudes(lon)
+    #-- expected wrapped longitudes
+    exp = np.zeros((360))
+    exp[:181] = np.arange(181)
+    exp[181:] = np.arange(-179,0)
+    assert np.isclose(obs,exp).all()

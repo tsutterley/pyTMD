@@ -1,14 +1,12 @@
-setuptools_scm
+cartopy --no-binary=cartopy
+gdal
+h5py
+lxml
+matplotlib
+netCDF4
 numpy
-scipy
 pyproj
 python-dateutil
-matplotlib
-cartopy --no-binary=cartopy
-netCDF4
-h5py
-gdal
-lxml
 pyyaml
-ipywidgets
-ipyleaflet
+scipy
+setuptools_scm

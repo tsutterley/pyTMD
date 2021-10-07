@@ -33,13 +33,12 @@ def test_julian(YEAR,MONTH):
     YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(JD,
         FORMAT='tuple', ASTYPE=np.float64)
     #-- assert dates
-    eps = np.finfo(np.float16).eps
     assert (YY == YEAR)
     assert (MM == MONTH)
     assert (DD == DAY)
     assert (HH == HOUR)
     assert (MN == MINUTE)
-    assert (np.abs(SS - SECOND) < eps)
+    assert np.isclose(SS, SECOND)
 
 #-- parameterize calendar dates
 @pytest.mark.parametrize("YEAR", np.random.randint(1992,2020,size=2))
@@ -76,13 +75,12 @@ def test_decimal_dates(YEAR,MONTH):
     minute_temp = np.mod(hour_temp,1)*60.0
     second = np.mod(minute_temp,1)*60.0
     #-- assert dates
-    eps = np.finfo(np.float16).eps
     assert (np.floor(tdec) == YEAR)
     assert (month == MONTH)
     assert (day == DAY)
     assert (np.floor(hour_temp) == HOUR)
     assert (np.floor(minute_temp) == MINUTE)
-    assert (np.abs(second - SECOND) < eps)
+    assert np.isclose(second, SECOND)
 
 #-- PURPOSE: test UNIX time
 def test_unix_time():
