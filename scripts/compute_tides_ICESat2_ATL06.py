@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL06.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates tidal elevations for correcting ICESat-2 land ice elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -79,6 +79,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
@@ -115,6 +116,7 @@ import sys
 import os
 import re
 import h5py
+import logging
 import argparse
 import datetime
 import numpy as np
@@ -135,6 +137,11 @@ from icesat2_toolkit.read_ICESat2_ATL06 import read_HDF5_ATL06
 def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
     EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logger = pyTMD.utilities.build_logger('pytmd',level=loglevel)
+
     #-- get parameters for tide model
     if DEFINITION_FILE is not None:
         model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
@@ -143,7 +150,7 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
             compressed=GZIP).elevation(TIDE_MODEL)
 
     #-- read data from input file
-    print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
+    logger.info('{0} -->'.format(INPUT_FILE))
     IS2_atl06_mds,IS2_atl06_attrs,IS2_atl06_beams = read_HDF5_ATL06(INPUT_FILE,
         ATTRIBUTES=True)
     DIRECTORY = os.path.dirname(INPUT_FILE)
@@ -365,7 +372,7 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
             "../segment_id ../delta_time ../latitude ../longitude"
 
     #-- print file information
-    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
+    logger.info('\t{0}'.format(OUTPUT_FILE))
     HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_tide_attrs,
         CLOBBER=True, INPUT=os.path.basename(INPUT_FILE),
         FILL_VALUE=IS2_atl06_fill, DIMENSIONS=IS2_atl06_dims,

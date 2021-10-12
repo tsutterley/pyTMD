@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_ICESat_GLA12.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates radial load pole tide displacements for correcting ICESat/GLAS
     L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following
     IERS Convention (2010) guidelines
@@ -36,6 +36,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: can use a generically named GLA12 file as input
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
@@ -49,6 +50,7 @@ import sys
 import os
 import re
 import h5py
+import logging
 import argparse
 import numpy as np
 import scipy.interpolate
@@ -62,8 +64,12 @@ from pyTMD.read_iers_EOP import read_iers_EOP
 #-- compute load pole tide radial displacements at points and times
 def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
 
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logger = pyTMD.utilities.build_logger('pytmd',level=loglevel)
+
     #-- get directory from FILE
-    print('{0} -->'.format(os.path.basename(FILE))) if VERBOSE else None
+    logger.info('{0} -->'.format(FILE))
     DIRECTORY = os.path.dirname(FILE)
 
     #-- compile regular expression operator for extracting information from file
@@ -296,7 +302,7 @@ def compute_LPT_ICESat(FILE, VERBOSE=False, MODE=0o775):
     fileID.close()
 
     #-- print file information
-    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
+    logger.info('\t{0}'.format(OUTPUT_FILE))
     HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_tide_attrs,
         FILENAME=os.path.join(DIRECTORY,OUTPUT_FILE),
         FILL_VALUE=IS_gla12_fill, CLOBBER=True)

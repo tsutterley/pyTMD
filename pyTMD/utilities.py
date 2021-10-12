@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
     lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
 
 UPDATE HISTORY:
+    Updated 10/2021: build python logging instance for handling verbose output
     Updated 09/2021: added generic list from Apache http server
     Updated 08/2021: added function to open a file path
     Updated 07/2021: add parser for converting file files to arguments
@@ -38,6 +39,7 @@ import base64
 import socket
 import inspect
 import hashlib
+import logging
 import posixpath
 import subprocess
 import lxml.etree
@@ -148,6 +150,41 @@ def convert_arg_line_to_args(arg_line):
         if not arg.strip():
             continue
         yield arg
+
+#-- PURPOSE: build a logging instance with a specified name
+def build_logger(name, **kwargs):
+    """
+    Builds a logging instance with the specified name
+
+    Arguments
+    ---------
+    name: name of the logger
+
+    Keyword arguments
+    -----------------
+    format: event description message format
+    level: lowest-severity log message logger will handle
+    propagate: events logged will be passed to higher level handlers
+    stream: specified stream to initialize StreamHandler
+    """
+    #-- set default arguments
+    kwargs.setdefault('format', '%(levelname)s:%(name)s:%(message)s')
+    kwargs.setdefault('level', logging.CRITICAL)
+    kwargs.setdefault('propagate',False)
+    kwargs.setdefault('stream',None)
+    #-- build logger
+    logger = logging.getLogger(name)
+    logger.setLevel(kwargs['level'])
+    logger.propagate = kwargs['propagate']
+    #-- create and add handlers to logger
+    if not logger.handlers:
+        #-- create handler for logger
+        handler = logging.StreamHandler(stream=kwargs['stream'])
+        formatter = logging.Formatter(kwargs['format'])
+        handler.setFormatter(formatter)
+        #-- add handler to logger
+        logger.addHandler(handler)
+    return logger
 
 #-- PURPOSE: convert Roman numerals to (Arabic) integers
 def roman_to_int(roman):

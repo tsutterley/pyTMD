@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (08/2021)
+Written by Tyler Sutterley (10/2021)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
 
@@ -25,6 +25,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 08/2021: USAP now requires captchas for dataset downloads
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
@@ -36,6 +37,7 @@ import sys
 import os
 import re
 import time
+import logging
 import zipfile
 import warnings
 import argparse
@@ -45,6 +47,10 @@ import pyTMD.utilities
 
 #-- PURPOSE: Download Circum-Antarctic Tidal Simulations from USAP
 def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
+
+    #-- create logger for verbosity level
+    logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
+
     #-- remote subdirectories for each model
     REMOTE = {}
     REMOTE['CATS2008'] = ['601235','2019-12-19T23:26:43.6Z',
@@ -69,16 +75,17 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     HOST = ['https://www.usap-dc.org','dataset','usap-dc',*REMOTE[MODEL]]
     #-- download zipfile from host
     zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST))
-    print('{0} -->\n'.format(posixpath.join(*HOST)))
+    logger.info('{0} -->\n'.format(posixpath.join(*HOST)))
     #-- extract each member
     for m in zfile.filelist:
         #-- strip directories from member filename
         m.filename = posixpath.basename(m.filename)
-        print('\t{0}\n'.format(os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)))
+        local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
+        logger.info('\t{0}\n'.format(local_file))
         #-- extract file
         zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
         #-- change permissions mode
-        os.chmod(os.path.join(DIRECTORY,LOCAL[MODEL],m.filename), MODE)
+        os.chmod(local_file, MODE)
     #-- close the zipfile object
     zfile.close()
 

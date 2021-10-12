@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -112,6 +112,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: added tide model reference to output attributes
         can use prefix files to define command line arguments
@@ -140,6 +141,7 @@ from __future__ import print_function
 import sys
 import os
 import pyproj
+import logging
 import argparse
 import numpy as np
 import pyTMD.time
@@ -163,6 +165,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
     PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
     CUTOFF=None, VERBOSE=False, MODE=0o775):
+
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logging.basicConfig(level=loglevel)
+
     #-- get parameters for tide model
     if DEFINITION_FILE is not None:
         model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
@@ -201,17 +208,15 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=HEADER, verbose=VERBOSE)
+            header=HEADER)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
-            verbose=VERBOSE)
+            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'HDF5'):
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
-            verbose=VERBOSE)
+            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'geotiff'):
-        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        dinput = pyTMD.spatial.from_geotiff(input_file)
         #-- copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = dinput['attributes'][att_name]
@@ -312,13 +317,13 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     output = {'time':tide_time,'lon':lon,'lat':lat,output_variable:tide}
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
-            columns=['time','lat','lon',output_variable], verbose=VERBOSE)
+            columns=['time','lat','lon',output_variable])
     elif (FORMAT == 'netCDF4'):
-        pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
+        pyTMD.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
-        pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+        pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
-        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+        pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname=output_variable)
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
