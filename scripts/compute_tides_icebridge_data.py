@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -87,6 +87,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
@@ -121,6 +122,7 @@ import os
 import re
 import time
 import h5py
+import logging
 import argparse
 import numpy as np
 import pyTMD.time
@@ -433,6 +435,11 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
     EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logger = pyTMD.utilities.build_logger('pytmd',level=loglevel)
+
     #-- get parameters for tide model
     if DEFINITION_FILE is not None:
         model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
@@ -514,7 +521,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
         MM1,DD1 = MMDD1[:2],MMDD1[2:]
 
     #-- read data from input_file
-    print('{0} -->'.format(input_file)) if VERBOSE else None
+    logger.info('{0} -->'.format(input_file))
     if (OIB == 'ATM'):
         #-- load IceBridge ATM data from input_file
         dinput,file_lines,HEM = read_ATM_icessn_file(input_file,input_subsetter)
@@ -581,7 +588,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     args = (hem_flag[HEM],model.name,OIB,YY1,MM1,DD1,JJ1)
     FILENAME = '{0}_NASA_{1}_TIDES_WGS84_{2}{3}{4}{5}{6:05.0f}.H5'.format(*args)
     #-- print file information
-    print('\t{0}'.format(FILENAME)) if VERBOSE else None
+    logger.info('\t{0}'.format(FILENAME))
 
     #-- open output HDF5 file
     fid = h5py.File(os.path.join(DIRECTORY,FILENAME), 'w')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat_GLA12.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates long-period equilibrium tidal elevations for correcting
     ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet elevation data
 Will calculate the long-period tides for all GLAS elevations and not just
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: can use a generically named GLA12 file as input
     Updated 12/2020: H5py deprecation warning change to use make_scale
@@ -41,6 +42,7 @@ import sys
 import os
 import re
 import h5py
+import logging
 import argparse
 import numpy as np
 import pyTMD.time
@@ -53,8 +55,12 @@ from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 #-- compute long-period equilibrium tides at points and times
 def compute_LPET_ICESat(INPUT_FILE, VERBOSE=False, MODE=0o775):
 
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logger = pyTMD.utilities.build_logger('pytmd',level=loglevel)
+
     #-- get directory from INPUT_FILE
-    print('{0} -->'.format(os.path.basename(INPUT_FILE))) if VERBOSE else None
+    logger.info('{0} -->'.format(INPUT_FILE))
     DIRECTORY = os.path.dirname(INPUT_FILE)
 
     #-- compile regular expression operator for extracting information from file
@@ -218,7 +224,7 @@ def compute_LPET_ICESat(INPUT_FILE, VERBOSE=False, MODE=0o775):
     fileID.close()
 
     #-- print file information
-    print('\t{0}'.format(OUTPUT_FILE)) if VERBOSE else None
+    logger.info('\t{0}'.format(OUTPUT_FILE))
     HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_tide_attrs,
         FILENAME=os.path.join(DIRECTORY,OUTPUT_FILE),
         FILL_VALUE=IS_gla12_fill, CLOBBER=True)

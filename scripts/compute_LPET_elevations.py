@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 11/2020: added options to read from and write to geotiff image files
     Updated 10/2020: using argparse to set command line parameters
@@ -67,6 +68,7 @@ from __future__ import print_function
 import sys
 import os
 import pyproj
+import logging
 import argparse
 import numpy as np
 import pyTMD.time
@@ -81,6 +83,10 @@ def compute_LPET_elevations(input_file, output_file,
     FORMAT='csv', VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
     TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
     VERBOSE=False, MODE=0o775):
+
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logging.basicConfig(level=loglevel)
 
     #-- output netCDF4 and HDF5 file attributes
     #-- will be added to YAML header in csv files
@@ -110,17 +116,15 @@ def compute_LPET_elevations(input_file, output_file,
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=HEADER, verbose=VERBOSE)
+            header=HEADER)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
-            verbose=VERBOSE)
+            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'HDF5'):
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
-            verbose=VERBOSE)
+            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'geotiff'):
-        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        dinput = pyTMD.spatial.from_geotiff(input_file)
         #-- copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = dinput['attributes'][att_name]
@@ -175,13 +179,13 @@ def compute_LPET_elevations(input_file, output_file,
     output = dict(time=tide_time,lon=lon,lat=lat,tide_lpe=tide_lpe)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
-            columns=['time','lat','lon','tide_lpe'], verbose=VERBOSE)
+            columns=['time','lat','lon','tide_lpe'])
     elif (FORMAT == 'netCDF4'):
-        pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
+        pyTMD.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
-        pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+        pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
-        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+        pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_lpe')
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)

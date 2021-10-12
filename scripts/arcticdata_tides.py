@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arcticdata_tides.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Download Arctic Ocean Tide Models from the NSF ArcticData archive
 AODTM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N
 AOTIM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80
@@ -27,6 +27,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
     Written 08/2020
@@ -37,6 +38,7 @@ import sys
 import os
 import re
 import time
+import logging
 import zipfile
 import argparse
 import posixpath
@@ -44,6 +46,10 @@ import pyTMD.utilities
 
 #-- PURPOSE: Download Arctic Ocean Tide Models from the NSF ArcticData archive
 def arcticdata_tides(MODEL,DIRECTORY=None,MODE=0o775):
+
+    #-- create logger for verbosity level
+    logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
+
     #-- doi for each model
     DOI = {}
     DOI['AODTM-5'] = '10.18739/A2901ZG3N'
@@ -65,7 +71,7 @@ def arcticdata_tides(MODEL,DIRECTORY=None,MODE=0o775):
         pyTMD.utilities.quote_plus(resource_map_doi)]
     #-- download zipfile from host
     zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST))
-    print('{0} -->\n'.format(posixpath.join(*HOST)))
+    logger.info('{0} -->\n'.format(posixpath.join(*HOST)))
     #-- find model files within zip file
     rx = re.compile('(grid|h[0]?|UV[0]?|Model|xy)_(.*?)',re.VERBOSE)
     members = [m for m in zfile.filelist if rx.search(m.filename)]
@@ -73,11 +79,12 @@ def arcticdata_tides(MODEL,DIRECTORY=None,MODE=0o775):
     for m in members:
         #-- strip directories from member filename
         m.filename = posixpath.basename(m.filename)
-        print('\t{0}\n'.format(os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)))
+        local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
+        logger.info('\t{0}\n'.format(local_file))
         #-- extract file
         zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
         #-- change permissions mode
-        os.chmod(os.path.join(DIRECTORY,LOCAL[MODEL],m.filename), MODE)
+        os.chmod(local_file, MODE)
     #-- close the zipfile object
     zfile.close()
 

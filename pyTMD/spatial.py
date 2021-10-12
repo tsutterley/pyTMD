@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2021: add pole case in stereographic area scale calculation
+        using python logging for handling verbose output
     Updated 09/2021: can calculate height differences between ellipsoids
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
@@ -35,10 +36,12 @@ UPDATE HISTORY:
 import os
 import re
 import io
+import copy
 import gzip
 import uuid
 import h5py
 import yaml
+import logging
 import netCDF4
 import datetime
 import numpy as np
@@ -78,25 +81,29 @@ def data_type(x, y, t):
     else:
         raise ValueError('Unknown data type')
 
-def from_ascii(filename, compression=None, verbose=False,
-    columns=['time','y','x','data'], header=0):
+def from_ascii(filename, **kwargs):
     """
     Read data from an ascii file
     Inputs: full path of input ascii file
     Options:
         ascii file is compressed or streamed from memory
-        verbose output of file information
         column names of ascii file
         header lines to skip from start of file
     """
-    #-- set filename
-    print(filename) if verbose else None
+    #-- set default keyword arguments
+    kwargs.setdefault('compression',None)
+    kwargs.setdefault('columns',['time','y','x','data'])
+    kwargs.setdefault('header',0)
+    #-- print filename
+    logging.info(filename)
+    #-- get column names
+    columns = copy.copy(kwargs['columns'])
     #-- open the ascii file and extract contents
-    if (compression == 'gzip'):
+    if (kwargs['compression'] == 'gzip'):
         #-- read input ascii data from gzip compressed file and split lines
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             file_contents = f.read().decode('ISO-8859-1').splitlines()
-    elif (compression == 'bytes'):
+    elif (kwargs['compression'] == 'bytes'):
         #-- read input file object and split lines
         file_contents = filename.read().splitlines()
     else:
@@ -110,7 +117,7 @@ def from_ascii(filename, compression=None, verbose=False,
     regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[EeD][+-]?\d+)?'
     rx = re.compile(regex_pattern, re.VERBOSE)
     #-- check if header has a known format
-    if (str(header).upper() == 'YAML'):
+    if (str(kwargs['header']).upper() == 'YAML'):
         #-- counts the number of lines in the header
         YAML = False
         count = 0
@@ -137,7 +144,7 @@ def from_ascii(filename, compression=None, verbose=False,
         header = int(count)
     else:
         #-- output spatial data and attributes
-        dinput = {c:np.zeros((file_lines-header)) for c in columns}
+        dinput = {c:np.zeros((file_lines-kwargs['header'])) for c in columns}
         dinput['attributes'] = {c:dict() for c in columns}
     #-- extract spatial data array
     #-- for each line in the file
@@ -156,32 +163,36 @@ def from_ascii(filename, compression=None, verbose=False,
     #-- return the spatial variables
     return dinput
 
-def from_netCDF4(filename, compression=None, verbose=False,
-    timename='time', xname='lon', yname='lat', varname='data'):
+def from_netCDF4(filename, **kwargs):
     """
     Read data from a netCDF4 file
     Inputs: full path of input netCDF4 file
     Options:
         netCDF4 file is compressed or streamed from memory
-        verbose output of file information
         netCDF4 variable names of time, longitude, latitude, and data
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('compression',None)
+    kwargs.setdefault('timename','time')
+    kwargs.setdefault('xname','lon')
+    kwargs.setdefault('yname','lat')
+    kwargs.setdefault('yname','lat')
+    kwargs.setdefault('varname','data')
     #-- read data from netCDF4 file
     #-- Open the NetCDF4 file for reading
-    if (compression == 'gzip'):
+    if (kwargs['compression'] == 'gzip'):
         #-- read as in-memory (diskless) netCDF4 dataset
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             fileID = netCDF4.Dataset(uuid.uuid4().hex,memory=f.read())
-    elif (compression == 'bytes'):
+    elif (kwargs['compression'] == 'bytes'):
         #-- read as in-memory (diskless) netCDF4 dataset
         fileID = netCDF4.Dataset(uuid.uuid4().hex,memory=filename.read())
     else:
         #-- read netCDF4 dataset
         fileID = netCDF4.Dataset(case_insensitive_filename(filename), 'r')
     #-- Output NetCDF file information
-    if verbose:
-        print(fileID.filepath())
-        print(list(fileID.variables.keys()))
+    logging.info(fileID.filepath())
+    logging.info(list(fileID.variables.keys()))
     #-- create python dictionary for output variables and attributes
     dinput = {}
     dinput['attributes'] = {}
@@ -197,7 +208,8 @@ def from_netCDF4(filename, compression=None, verbose=False,
     attributes_list = ['description','units','long_name','calendar',
         'standard_name','_FillValue']
     #-- mapping between netCDF4 variable names and output names
-    variable_mapping = dict(x=xname,y=yname,data=varname,time=timename)
+    variable_mapping = dict(x=kwargs['xname'],y=kwargs['yname'],
+        data=kwargs['varname'],time=kwargs['timename'])
     #-- for each variable
     for key,nc in variable_mapping.items():
         #-- Getting the data from each NetCDF variable
@@ -223,19 +235,24 @@ def from_netCDF4(filename, compression=None, verbose=False,
     #-- return the spatial variables
     return dinput
 
-def from_HDF5(filename, compression=None, verbose=False,
-    timename='time', xname='lon', yname='lat', varname='data'):
+def from_HDF5(filename, **kwargs):
     """
     Read data from a HDF5 file
     Inputs: full path of input HDF5 file
     Options:
         HDF5 file is compressed or streamed from memory
-        verbose output of file information
         HDF5 variable names of time, longitude, latitude, and data
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('compression',None)
+    kwargs.setdefault('timename','time')
+    kwargs.setdefault('xname','lon')
+    kwargs.setdefault('yname','lat')
+    kwargs.setdefault('yname','lat')
+    kwargs.setdefault('varname','data')
     #-- read data from HDF5 file
     #-- Open the HDF5 file for reading
-    if (compression == 'gzip'):
+    if (kwargs['compression'] == 'gzip'):
         #-- read gzip compressed file and extract into in-memory file object
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             fid = io.BytesIO(f.read())
@@ -245,16 +262,15 @@ def from_HDF5(filename, compression=None, verbose=False,
         fid.seek(0)
         #-- read as in-memory (diskless) HDF5 dataset from BytesIO object
         fileID = h5py.File(fid, 'r')
-    elif (compression == 'bytes'):
+    elif (kwargs['compression'] == 'bytes'):
         #-- read as in-memory (diskless) HDF5 dataset
         fileID = h5py.File(filename, 'r')
     else:
         #-- read HDF5 dataset
         fileID = h5py.File(case_insensitive_filename(filename), 'r')
     #-- Output HDF5 file information
-    if verbose:
-        print(fileID.filename)
-        print(list(fileID.keys()))
+    logging.info(fileID.filename)
+    logging.info(list(fileID.keys()))
     #-- create python dictionary for output variables and attributes
     dinput = {}
     dinput['attributes'] = {}
@@ -269,7 +285,8 @@ def from_HDF5(filename, compression=None, verbose=False,
     attributes_list = ['description','units','long_name','calendar',
         'standard_name','_FillValue']
     #-- mapping between HDF5 variable names and output names
-    variable_mapping = dict(x=xname,y=yname,data=varname,time=timename)
+    variable_mapping = dict(x=kwargs['xname'],y=kwargs['yname'],
+        data=kwargs['varname'],time=kwargs['timename'])
     #-- for each variable
     for key,h5 in variable_mapping.items():
         #-- Getting the data from each HDF5 variable
@@ -292,23 +309,24 @@ def from_HDF5(filename, compression=None, verbose=False,
     #-- return the spatial variables
     return dinput
 
-def from_geotiff(filename, compression=None, verbose=False):
+def from_geotiff(filename, **kwargs):
     """
     Read data from a geotiff file
     Inputs: full path of input geotiff file
     Options:
         geotiff file is compressed or streamed from memory
-        verbose output of file information
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('compression',None)
     #-- Open the geotiff file for reading
-    if (compression == 'gzip'):
+    if (kwargs['compression'] == 'gzip'):
         #-- read gzip compressed file and extract into memory-mapped object
         mmap_name = "/vsimem/{0}".format(uuid.uuid4().hex)
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             osgeo.gdal.FileFromMemBuffer(mmap_name, f.read())
         #-- read as GDAL memory-mapped (diskless) geotiff dataset
         ds = osgeo.gdal.Open(mmap_name)
-    elif (compression == 'bytes'):
+    elif (kwargs['compression'] == 'bytes'):
         #-- read as GDAL memory-mapped (diskless) geotiff dataset
         mmap_name = "/vsimem/{0}".format(uuid.uuid4().hex)
         osgeo.gdal.FileFromMemBuffer(mmap_name, filename.read())
@@ -317,7 +335,7 @@ def from_geotiff(filename, compression=None, verbose=False):
         #-- read geotiff dataset
         ds = osgeo.gdal.Open(case_insensitive_filename(filename))
     #-- print geotiff file if verbose
-    print(filename) if verbose else None
+    logging.info(filename)
     #-- create python dictionary for output variables and attributes
     dinput = {}
     dinput['attributes'] = {c:dict() for c in ['x','y','data']}
@@ -360,8 +378,7 @@ def from_geotiff(filename, compression=None, verbose=False):
     #-- return the spatial variables
     return dinput
 
-def to_ascii(output, attributes, filename, delimiter=',',
-    columns=['time','lat','lon','tide'], header=False, verbose=False):
+def to_ascii(output, attributes, filename, **kwargs):
     """
     Write data to an ascii file
     Inputs:
@@ -372,17 +389,23 @@ def to_ascii(output, attributes, filename, delimiter=',',
         delimiter for output spatial file
         order of columns for output spatial file
         create a YAML header with data attributes
-        verbose output
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('delimiter',',')
+    kwargs.setdefault('columns',['time','lat','lon','tide'])
+    kwargs.setdefault('header',False)
+    #-- get column names
+    columns = copy.copy(kwargs['columns'])
+    #-- output filename
     filename = os.path.expanduser(filename)
-    print(filename) if verbose else None
+    logging.info(filename)
     #-- open the output file
     fid = open(filename, 'w')
     #-- create a column stack arranging data in column order
     data_stack = np.c_[[output[col] for col in columns]]
     ncol,nrow = np.shape(data_stack)
     #-- print YAML header to top of file
-    if header:
+    if kwargs['header']:
         fid.write('{0}:\n'.format('header'))
         #-- data dimensions
         fid.write('\n  {0}:\n'.format('dimensions'))
@@ -411,18 +434,17 @@ def to_ascii(output, attributes, filename, delimiter=',',
     #-- write to file for each data point
     for line in range(nrow):
         line_contents = ['{0:0.8f}'.format(d) for d in data_stack[:,line]]
-        print(delimiter.join(line_contents), file=fid)
+        print(kwargs['delimiter'].join(line_contents), file=fid)
     #-- close the output file
     fid.close()
 
-def to_netCDF4(output, attributes, filename, verbose=False):
+def to_netCDF4(output, attributes, filename, **kwargs):
     """
     Write data to a netCDF4 file
     Inputs:
         python dictionary of output data
         python dictionary of output attributes
         full path of output netCDF4 file
-    Options: verbose output
     """
     #-- opening NetCDF file for writing
     fileID = netCDF4.Dataset(os.path.expanduser(filename),'w',format="NETCDF4")
@@ -444,20 +466,18 @@ def to_netCDF4(output, attributes, filename, verbose=False):
     #-- add attribute for date created
     fileID.date_created = datetime.datetime.now().isoformat()
     #-- Output NetCDF structure information
-    if verbose:
-        print(filename)
-        print(list(fileID.variables.keys()))
+    logging.info(filename)
+    logging.info(list(fileID.variables.keys()))
     #-- Closing the NetCDF file
     fileID.close()
 
-def to_HDF5(output, attributes, filename, verbose=False):
+def to_HDF5(output, attributes, filename, **kwargs):
     """
     Write data to a HDF5 file
     Inputs:
         python dictionary of output data
         python dictionary of output attributes
         full path of output HDF5 file
-    Options: verbose output
     """
     #-- opening HDF5 file for writing
     fileID = h5py.File(filename, 'w')
@@ -477,14 +497,12 @@ def to_HDF5(output, attributes, filename, verbose=False):
     #-- add attribute for date created
     fileID.attrs['date_created'] = datetime.datetime.now().isoformat()
     #-- Output HDF5 structure information
-    if verbose:
-        print(filename)
-        print(list(fileID.keys()))
+    logging.info(filename)
+    logging.info(list(fileID.keys()))
     #-- Closing the HDF5 file
     fileID.close()
 
-def to_geotiff(output, attributes, filename, verbose=False,
-    varname='data', dtype=osgeo.gdal.GDT_Float64):
+def to_geotiff(output, attributes, filename, **kwargs):
     """
     Write data to a geotiff file
     Inputs:
@@ -492,18 +510,24 @@ def to_geotiff(output, attributes, filename, verbose=False,
         python dictionary of output attributes
         full path of output geotiff file
     Options:
-        verbose output
         output variable name
         GDAL data type
+        GDAL driver creation options
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('varname','data')
+    kwargs.setdefault('dtype',osgeo.gdal.GDT_Float64)
+    kwargs.setdefault('options',['COMPRESS=LZW'])
+    varname = copy.copy(kwargs['varname'])
     #-- verify grid dimensions to be iterable
     output = expand_dims(output, varname=varname)
     #-- grid shape
     ny,nx,nband = np.shape(output[varname])
     #-- output as geotiff
     driver = osgeo.gdal.GetDriverByName("GTiff")
-    #-- set up the dataset with compression options
-    ds = driver.Create(filename,nx,ny,nband,dtype,['COMPRESS=LZW'])
+    #-- set up the dataset with creation options
+    ds = driver.Create(filename, nx, ny, nband,
+        kwargs['dtype'], kwargs['options'])
     #-- top left x, w-e pixel resolution, rotation
     #-- top left y, rotation, n-s pixel resolution
     xmin,xmax,ymin,ymax = attributes['extent']
@@ -523,7 +547,7 @@ def to_geotiff(output, attributes, filename, verbose=False,
         #-- write band to geotiff array
         ds.GetRasterBand(band+1).WriteArray(output[varname][:,:,band])
     #-- print filename if verbose
-    print(filename) if verbose else None
+    logging.info(filename)
     #-- close dataset
     ds.FlushCache()
 

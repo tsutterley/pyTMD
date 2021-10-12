@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
@@ -76,6 +77,7 @@ from __future__ import print_function
 import sys
 import os
 import pyproj
+import logging
 import argparse
 import numpy as np
 import pyTMD.time
@@ -91,6 +93,10 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
     TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
     VERBOSE=False, MODE=0o775):
+
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logging.basicConfig(level=loglevel)
 
     #-- invalid value
     fill_value = -9999.0
@@ -124,17 +130,15 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     #-- read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            header=HEADER, verbose=VERBOSE)
+            header=HEADER)
     elif (FORMAT == 'netCDF4'):
         dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
-            verbose=VERBOSE)
+            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'HDF5'):
         dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3],
-            verbose=VERBOSE)
+            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'geotiff'):
-        dinput = pyTMD.spatial.from_geotiff(input_file, verbose=VERBOSE)
+        dinput = pyTMD.spatial.from_geotiff(input_file)
         #-- copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = dinput['attributes'][att_name]
@@ -267,13 +271,13 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     output = dict(time=MJD,lon=lon,lat=lat,tide_pole=Srad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
-            columns=['time','lat','lon','tide_pole'], verbose=VERBOSE)
+            columns=['time','lat','lon','tide_pole'])
     elif (FORMAT == 'netCDF4'):
-        pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=VERBOSE)
+        pyTMD.spatial.to_netCDF4(output, attrib, output_file)
     elif (FORMAT == 'HDF5'):
-        pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=VERBOSE)
+        pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
-        pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=VERBOSE,
+        pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_pole')
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)

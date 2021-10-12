@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -27,6 +27,7 @@ PYTHON DEPENDENCIES:
         https://python-future.org/
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Written 03/2021
 """
@@ -36,6 +37,7 @@ import os
 import re
 import ssl
 import json
+import logging
 import argparse
 import posixpath
 import pyTMD.utilities
@@ -74,6 +76,9 @@ def build_opener(token, context=ssl.SSLContext(), redirect=True):
 def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
     CURRENTS=False, MODE=None):
 
+    #-- create logger for verbosity level
+    logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
+
     #-- check if local directory exists and recursively create if not
     if (TIDE_MODEL == 'TPXO9-atlas'):
         localpath = os.path.join(tide_dir,'TPXO9_atlas')
@@ -108,7 +113,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
     for entry in file_entries:
         #-- print remote path
         file_url = posixpath.join(HOST,'files',entry['id'])
-        print('{0} -->'.format(file_url))
+        logger.info('{0} -->'.format(file_url))
         #-- get last modified time for file
         request = pyTMD.utilities.urllib2.Request(file_url)
         response = pyTMD.utilities.urllib2.urlopen(request)
@@ -118,12 +123,12 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
             format='%Y-%m-%dT%H:%M:%S%z')
         #-- print file information
         local = os.path.join(localpath,entry['name'])
-        print('\t{0}'.format(local))
+        logger.info('\t{0}'.format(local))
         #-- compare checksums to validate download
         sha1 = pyTMD.utilities.get_hash(local,algorithm='sha1')
         if sha1 != entry['sha1']:
-            print('Remote checksum: {0}'.format(entry['sha1']))
-            print('Local checksum: {0}' .format(sha1))
+            logger.critical('Remote checksum: {0}'.format(entry['sha1']))
+            logger.critical('Local checksum: {0}' .format(sha1))
             raise Exception('Checksum verification failed')
         #-- keep remote modification time of file and local access time
         os.utime(local, (os.stat(local).st_atime, remote_mtime))

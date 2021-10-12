@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_icebridge_data.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (10/2021)
 Calculates long-period equilibrium tidal elevations for correcting Operation
     IceBridge elevation data
 
@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
@@ -48,6 +49,7 @@ import os
 import re
 import time
 import h5py
+import logging
 import argparse
 import numpy as np
 import pyTMD.time
@@ -353,6 +355,10 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 #-- compute long-period equilibrium tides at points and times
 def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
 
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
+    logger = pyTMD.utilities.build_logger('pytmd',level=loglevel)
+
     #-- extract file name and subsetter indices lists
     match_object = re.match(r'(.*?)(\[(.*?)\])?$',arg)
     input_file = os.path.expanduser(match_object.group(1))
@@ -424,7 +430,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
         MM1,DD1 = MMDD1[:2],MMDD1[2:]
 
     #-- read data from input_file
-    print('{0} -->'.format(input_file)) if VERBOSE else None
+    logger.info('{0} -->'.format(input_file))
     if (OIB == 'ATM'):
         #-- load IceBridge ATM data from input_file
         dinput,file_lines,HEM = read_ATM_icessn_file(input_file,input_subsetter)
@@ -457,7 +463,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     file_format = '{0}_NASA_EQUILIBRIUM_TIDES_WGS84_{1}{2}{3}{4}{5:05.0f}.H5'
     FILENAME = file_format.format(hem_flag[HEM],OIB,YY1,MM1,DD1,JJ1)
     #-- print file information
-    print('\t{0}'.format(FILENAME)) if VERBOSE else None
+    logger.info('\t{0}'.format(FILENAME))
 
     #-- open output HDF5 file
     fid = h5py.File(os.path.join(DIRECTORY,FILENAME), 'w')
