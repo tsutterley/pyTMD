@@ -152,10 +152,8 @@ def compute_LPET_ICESat2(INPUT_FILE, VERBOSE=False, MODE=0o775):
 
         #-- geolocation, time and segment ID
         #-- delta time
-        delta_time = np.ma.array(val['delta_time'], fill_value=fv,
-            mask=(val['delta_time']==fv))
-        IS2_atl06_tide[gtx]['land_ice_segments']['delta_time'] = delta_time
-        IS2_atl06_fill[gtx]['land_ice_segments']['delta_time'] = delta_time.fill_value
+        IS2_atl06_tide[gtx]['land_ice_segments']['delta_time'] = val['delta_time'].copy()
+        IS2_atl06_fill[gtx]['land_ice_segments']['delta_time'] = None
         IS2_atl06_dims[gtx]['land_ice_segments']['delta_time'] = None
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['delta_time'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['delta_time']['units'] = "seconds since 2018-01-01"
@@ -171,10 +169,8 @@ def compute_LPET_ICESat2(INPUT_FILE, VERBOSE=False, MODE=0o775):
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['delta_time']['coordinates'] = \
             "segment_id latitude longitude"
         #-- latitude
-        latitude = np.ma.array(val['latitude'], fill_value=fv,
-            mask=(val['latitude']==fv))
-        IS2_atl06_tide[gtx]['land_ice_segments']['latitude'] = latitude
-        IS2_atl06_fill[gtx]['land_ice_segments']['latitude'] = latitude.fill_value
+        IS2_atl06_tide[gtx]['land_ice_segments']['latitude'] = val['latitude'].copy()
+        IS2_atl06_fill[gtx]['land_ice_segments']['latitude'] = None
         IS2_atl06_dims[gtx]['land_ice_segments']['latitude'] = ['delta_time']
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['latitude'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['latitude']['units'] = "degrees_north"
@@ -188,10 +184,8 @@ def compute_LPET_ICESat2(INPUT_FILE, VERBOSE=False, MODE=0o775):
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['latitude']['coordinates'] = \
             "segment_id delta_time longitude"
         #-- longitude
-        longitude = np.ma.array(val['longitude'], fill_value=fv,
-            mask=(val['longitude']==fv))
-        IS2_atl06_tide[gtx]['land_ice_segments']['longitude'] = longitude
-        IS2_atl06_fill[gtx]['land_ice_segments']['longitude'] = longitude.fill_value
+        IS2_atl06_tide[gtx]['land_ice_segments']['longitude'] = val['longitude'].copy()
+        IS2_atl06_fill[gtx]['land_ice_segments']['longitude'] = None
         IS2_atl06_dims[gtx]['land_ice_segments']['longitude'] = ['delta_time']
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['longitude'] = {}
         IS2_atl06_tide_attrs[gtx]['land_ice_segments']['longitude']['units'] = "degrees_east"
@@ -443,7 +437,7 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of directories and files created')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
     #-- run for each input ATL06 file
     for FILE in args.infile:

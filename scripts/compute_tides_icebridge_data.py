@@ -88,6 +88,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2021: using python logging for handling verbose output
+        using collections to store attributes in order of creation
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 06/2021: added new Gr1km-v2 1km Greenland model from ESR
@@ -124,6 +125,7 @@ import time
 import h5py
 import logging
 import argparse
+import collections
 import numpy as np
 import pyTMD.time
 import pyTMD.model
@@ -473,7 +475,15 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
             OIB = key
 
     #-- HDF5 file attributes
-    attrib = {}
+    attrib = collections.OrderedDict()
+    #-- time
+    attrib['time'] = {}
+    attrib['time']['long_name'] = 'Time'
+    attrib['time']['description'] = ('Time_corresponding_to_the_measurement_'
+        'position')
+    attrib['time']['units'] = 'Days since 1992-01-01T00:00:00'
+    attrib['time']['standard_name'] = 'time'
+    attrib['time']['calendar'] = 'standard'
     #-- latitude
     attrib['lat'] = {}
     attrib['lat']['long_name'] = 'Latitude_of_measurement'
@@ -493,13 +503,6 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     attrib[model.variable]['model'] = model.name
     attrib[model.variable]['units'] = 'meters'
     attrib[model.variable]['long_name'] = model.long_name
-    #-- time
-    attrib['time'] = {}
-    attrib['time']['long_name'] = 'Time'
-    attrib['time']['description'] = ('Time_corresponding_to_the_measurement_'
-        'position')
-    attrib['time']['units'] = 'Days since 1992-01-01T00:00:00'
-    attrib['time']['calendar'] = 'standard'
 
     #-- extract information from first input file
     #-- acquisition year, month and day
@@ -604,38 +607,25 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     tide.data[:] += minor.data[:]
     #-- replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
+    #-- copy tide to output variable
+    dinput[model.variable] = tide.copy()
 
-    #-- add latitude and longitude to output file
-    for key in ['lat','lon']:
+    #-- output dictionary with HDF5 variables
+    h5 = {}
+    #-- add variables to output file
+    for key,attributes in attrib.items():
         #-- Defining the HDF5 dataset variables for lat/lon
-        h5 = fid.create_dataset(key, (file_lines,), data=dinput[key][:],
-            dtype=dinput[key].dtype, compression='gzip')
+        h5[key] = fid.create_dataset(key, (file_lines,),
+            data=dinput[key][:], dtype=dinput[key].dtype,
+            compression='gzip')
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrib[key].items():
-            h5.attrs[att_name] = att_val
+        for att_name,att_val in attributes.items():
+            h5[key].attrs[att_name] = att_val
         #-- attach dimensions
-        h5.dims[0].label = 'RECORD_SIZE'
-
-    #-- output tides to HDF5 dataset
-    h5 = fid.create_dataset(model.variable, (file_lines,), data=tide,
-        dtype=tide.dtype, fillvalue=fill_value, compression='gzip')
-    #-- add HDF5 variable attributes
-    tide_count = np.count_nonzero(tide != fill_value)
-    h5.attrs['tide_count'] = tide_count
-    h5.attrs['_FillValue'] = fill_value
-    for att_name,att_val in attrib[model.variable].items():
-        h5.attrs[att_name] = att_val
-    #-- attach dimensions
-    h5.dims[0].label = 'RECORD_SIZE'
-
-    #-- output days to HDF5 dataset
-    h5 = fid.create_dataset('time', (file_lines,), data=t,
-        dtype=t.dtype, compression='gzip')
-    #-- add HDF5 variable attributes
-    for att_name,att_val in attrib['time'].items():
-        h5.attrs[att_name] = att_val
-    #-- attach dimensions
-    h5.dims[0].label = 'RECORD_SIZE'
+        if key not in ('time',):
+            for i,dim in enumerate(['time']):
+                h5[key].dims[i].label = 'RECORD_SIZE'
+                h5[key].dims[i].attach_scale(h5[dim])
 
     #-- HDF5 file attributes
     fid.attrs['featureType'] = 'trajectory'
@@ -744,7 +734,7 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of directories and files created')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
     #-- run for each input Operation IceBridge file
     for arg in args.infile:

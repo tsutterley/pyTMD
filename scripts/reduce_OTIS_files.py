@@ -223,7 +223,7 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of the output files')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
     #-- run program
     make_regional_OTIS_files(args.directory, args.tide, BOUNDS=args.bounds,
