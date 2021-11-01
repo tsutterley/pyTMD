@@ -35,6 +35,7 @@ dist/
 develop-eggs/
 run/
 wheels/
+.eggs/
 *.egg-info/
 .installed.cfg
 *.egg
