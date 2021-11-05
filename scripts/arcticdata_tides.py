@@ -113,7 +113,7 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permissions mode of the files downloaded')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
     #-- check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://arcticdata.io'):

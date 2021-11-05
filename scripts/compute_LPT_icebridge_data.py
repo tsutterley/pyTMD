@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2021: using python logging for handling verbose output
+        using collections to store attributes in order of creation
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: use cartesian coordinate conversion routine in spatial
@@ -56,6 +57,7 @@ import time
 import h5py
 import logging
 import argparse
+import collections
 import numpy as np
 import pyTMD.time
 import pyTMD.spatial
@@ -392,7 +394,14 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
             OIB = key
 
     #-- HDF5 file attributes
-    attrib = {}
+    attrib = collections.OrderedDict()
+    #-- Modified Julian Days
+    attrib['time'] = {}
+    attrib['time']['long_name'] = 'Time'
+    attrib['time']['units'] = 'days since 1858-11-17T00:00:00'
+    attrib['time']['description'] = 'Modified Julian Days'
+    attrib['time']['standard_name'] = 'time'
+    attrib['time']['calendar'] = 'standard'
     #-- latitude
     attrib['lat'] = {}
     attrib['lat']['long_name'] = 'Latitude_of_measurement'
@@ -414,12 +423,6 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     attrib['tide_pole']['reference'] = ('ftp://tai.bipm.org/iers/conv2010/'
         'chapter7/tn36_c7.pdf')
     attrib['tide_pole']['units'] = 'meters'
-    #-- Modified Julian Days
-    attrib['time'] = {}
-    attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1858-11-17T00:00:00'
-    attrib['time']['description'] = 'Modified Julian Days'
-    attrib['time']['calendar'] = 'standard'
 
     #-- extract information from first input file
     #-- acquisition year, month and day
@@ -555,36 +558,25 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     #-- replace fill values
     Srad.mask = np.isnan(Srad.data)
     Srad.data[Srad.mask] = Srad.fill_value
+    #-- copy radial displacement to output dictionary
+    dinput['tide_pole'] = Srad.copy()
 
-    #-- add latitude and longitude to output file
-    for key in ['lat','lon']:
+    #-- output dictionary with HDF5 variables
+    h5 = {}
+    #-- add variables to output file
+    for key,attributes in attrib.items():
         #-- Defining the HDF5 dataset variables for lat/lon
-        h5 = fid.create_dataset(key, (file_lines,), data=dinput[key][:],
-            dtype=dinput[key].dtype, compression='gzip')
+        h5[key] = fid.create_dataset(key, (file_lines,),
+            data=dinput[key][:], dtype=dinput[key].dtype,
+            compression='gzip')
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrib[key].items():
-            h5.attrs[att_name] = att_val
+        for att_name,att_val in attributes.items():
+            h5[key].attrs[att_name] = att_val
         #-- attach dimensions
-        h5.dims[0].label = 'RECORD_SIZE'
-
-    #-- output tides to HDF5 dataset
-    h5 = fid.create_dataset('tide_pole', (file_lines,), data=Srad,
-        dtype=Srad.dtype, compression='gzip')
-    #-- add HDF5 variable attributes
-    h5.attrs['_FillValue'] = fill_value
-    for att_name,att_val in attrib['tide_pole'].items():
-        h5.attrs[att_name] = att_val
-    #-- attach dimensions
-    h5.dims[0].label = 'RECORD_SIZE'
-
-    #-- output days to HDF5 dataset
-    h5 = fid.create_dataset('time', (file_lines,), data=t, dtype=t.dtype,
-        compression='gzip')
-    #-- add HDF5 variable attributes
-    for att_name,att_val in attrib['time'].items():
-        h5.attrs[att_name] = att_val
-    #-- attach dimensions
-    h5.dims[0].label = 'RECORD_SIZE'
+        if key not in ('time',):
+            for i,dim in enumerate(['time']):
+                h5[key].dims[i].label = 'RECORD_SIZE'
+                h5[key].dims[i].attach_scale(h5[dim])
 
     #-- HDF5 file attributes
     fid.attrs['featureType'] = 'trajectory'
@@ -650,7 +642,7 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
     #-- run for each input file
     for arg in args.infile:

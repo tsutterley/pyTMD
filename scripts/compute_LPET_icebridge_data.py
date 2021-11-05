@@ -34,6 +34,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2021: using python logging for handling verbose output
+        using collections to store attributes in order of creation
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 05/2021: modified import of ATM1b QFIT reader
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
@@ -51,6 +52,7 @@ import time
 import h5py
 import logging
 import argparse
+import collections
 import numpy as np
 import pyTMD.time
 import pyTMD.utilities
@@ -385,18 +387,27 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
             OIB = key
 
     #-- HDF5 file attributes
-    attrib = dict(lon={},lat={},tide_lpe={},day={})
+    attrib = collections.OrderedDict()
+    #-- time
+    attrib['time'] = {}
+    attrib['time']['long_name'] = 'Time'
+    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+    attrib['time']['standard_name'] = 'time'
+    attrib['time']['calendar'] = 'standard'
     #-- latitude
+    attrib['lat'] = {}
     attrib['lat']['long_name'] = 'Latitude_of_measurement'
     attrib['lat']['description'] = ('Corresponding_to_the_measurement_'
         'position_at_the_acquisition_time')
     attrib['lat']['units'] = 'Degrees_North'
     #-- longitude
+    attrib['lon'] = {}
     attrib['lon']['long_name'] = 'Longitude_of_measurement'
     attrib['lon']['description'] = ('Corresponding_to_the_measurement_'
         'position_at_the_acquisition_time')
     attrib['lon']['units'] = 'Degrees_East'
     #-- long-period equilibrium tides
+    attrib['tide_lpe'] = {}
     attrib['tide_lpe']['long_name'] = 'Equilibrium_Tide'
     attrib['tide_lpe']['description'] = ('Long-period_equilibrium_tidal_elevation_'
         'from_the_summation_of_fifteen_tidal_spectral_lines_at_the_measurement_'
@@ -404,11 +415,6 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     attrib['tide_lpe']['reference'] = ('https://doi.org/10.1111/'
         'j.1365-246X.1973.tb03420.x')
     attrib['tide_lpe']['units'] = 'meters'
-    #-- time
-    attrib['time'] = {}
-    attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
-    attrib['time']['calendar'] = 'standard'
 
     #-- extract information from first input file
     #-- acquisition year, month and day
@@ -469,36 +475,25 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     fid = h5py.File(os.path.join(DIRECTORY,FILENAME), 'w')
 
     #-- predict long-period equilibrium tides at time
-    tide_lpe = compute_equilibrium_tide(tide_time + deltat, dinput['lat'])
+    dinput['tide_lpe'] = compute_equilibrium_tide(tide_time + deltat,
+        dinput['lat'])
 
-    #-- add latitude and longitude to output file
-    for key in ['lat','lon']:
+    #-- output dictionary with HDF5 variables
+    h5 = {}
+    #-- add variables to output file
+    for key,attributes in attrib.items():
         #-- Defining the HDF5 dataset variables for lat/lon
-        h5 = fid.create_dataset(key, (file_lines,), data=dinput[key][:],
-            dtype=dinput[key].dtype, compression='gzip')
+        h5[key] = fid.create_dataset(key, (file_lines,),
+            data=dinput[key][:], dtype=dinput[key].dtype,
+            compression='gzip')
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrib[key].items():
-            h5.attrs[att_name] = att_val
+        for att_name,att_val in attributes.items():
+            h5[key].attrs[att_name] = att_val
         #-- attach dimensions
-        h5.dims[0].label = 'RECORD_SIZE'
-
-    #-- output tides to HDF5 dataset
-    h5 = fid.create_dataset('tide_lpe', (file_lines,), data=tide_lpe,
-        dtype=tide_lpe.dtype, compression='gzip')
-    #-- add HDF5 variable attributes
-    for att_name,att_val in attrib['tide_lpe'].items():
-        h5.attrs[att_name] = att_val
-    #-- attach dimensions
-    h5.dims[0].label = 'RECORD_SIZE'
-
-    #-- output days to HDF5 dataset
-    h5 = fid.create_dataset('time', (file_lines,), data=tide_time,
-        dtype=tide_time.dtype, compression='gzip')
-    #-- add HDF5 variable attributes
-    for att_name,att_val in attrib['time'].items():
-        h5.attrs[att_name] = att_val
-    #-- attach dimensions
-    h5.dims[0].label = 'RECORD_SIZE'
+        if key not in ('time',):
+            for i,dim in enumerate(['time']):
+                h5[key].dims[i].label = 'RECORD_SIZE'
+                h5[key].dims[i].attach_scale(h5[dim])
 
     #-- HDF5 file attributes
     fid.attrs['featureType'] = 'trajectory'
@@ -564,7 +559,7 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    args = parser.parse_args()
+    args,_ = parser.parse_known_args()
 
     #-- run for each input file
     for arg in args.infile:
