@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (11/2021)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -72,6 +72,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: fix arguments to program (using internal EOP files)
@@ -103,6 +104,32 @@ import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
+
+#-- PURPOSE: try to get the projection information for the input file
+def get_projection(attributes, PROJECTION):
+    #-- coordinate reference system string from file
+    try:
+        crs = pyproj.CRS.from_string(attributes['projection'])
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- EPSG projection code
+    try:
+        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- coordinate reference system string
+    try:
+        crs = pyproj.CRS.from_string(PROJECTION)
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- no projection can be made
+    raise pyproj.exceptions.CRSError
 
 #-- PURPOSE: compute the ocean pole load tide radial displacements following
 #-- IERS conventions (2010) and using data from Desai (2002)
@@ -164,13 +191,7 @@ def compute_OPT_displacements(input_file, output_file, FORMAT='csv',
         dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
-    #-- could try to extract projection attributes from netCDF4 and HDF5 files
-    try:
-        #-- EPSG projection code string or int
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
-    except (ValueError,pyproj.exceptions.CRSError):
-        #-- Projection SRS string
-        crs1 = pyproj.CRS.from_string(PROJECTION)
+    crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):

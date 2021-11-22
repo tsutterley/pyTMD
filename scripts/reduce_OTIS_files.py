@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (11/2021)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 11/2021: add function for attempting to extract projection
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 10/2020: using argparse to set command line parameters
@@ -53,6 +54,25 @@ from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.read_tide_model import *
 from pyTMD.output_otis_tides import *
 
+#-- PURPOSE: try to get the projection information for the input file
+def get_projection(PROJECTION):
+    #-- EPSG projection code
+    try:
+        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- coordinate reference system string
+    try:
+        crs = pyproj.CRS.from_string(PROJECTION)
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- no projection can be made
+    raise pyproj.exceptions.CRSError
+
 #-- PURPOSE: reads OTIS-format tidal files and reduces to a regional subset
 def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     PROJECTION='4326', MODE=0o775):
@@ -73,10 +93,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         xi,yi,hz,mz,iob,dt = read_tide_grid(model.grid_file)
 
     #-- converting bounds x,y from projection to latitude/longitude
-    try:
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
-    except (ValueError,pyproj.exceptions.CRSError):
-        crs1 = pyproj.CRS.from_string(PROJECTION)
+    crs1 = get_projection(PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     xbox = np.array([BOUNDS[0],BOUNDS[1],BOUNDS[1],BOUNDS[0],BOUNDS[0]])

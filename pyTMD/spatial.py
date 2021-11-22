@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (11/2021)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,8 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
+        try to get grid mapping attributes from netCDF4 and HDF5
     Updated 10/2021: add pole case in stereographic area scale calculation
         using python logging for handling verbose output
     Updated 09/2021: can calculate height differences between ellipsoids
@@ -156,10 +158,11 @@ def from_ascii(filename, **kwargs):
         for c in columns:
             dinput[c][i] = np.float64(column[c])
     #-- convert to masked array if fill values
+    dinput['data'] = np.ma.asarray(dinput['data'])
+    dinput['data'].mask = np.zeros_like(dinput['data'],dtype=bool)
     if '_FillValue' in dinput['attributes']['data'].keys():
-        dinput['data'] = np.ma.asarray(dinput['data'])
         dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
-        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
+        dinput['data'].mask[:] = (dinput['data'].data == dinput['data'].fill_value)
     #-- return the spatial variables
     return dinput
 
@@ -206,7 +209,7 @@ def from_netCDF4(filename, **kwargs):
             pass
     #-- list of attributes to attempt to retrieve from included variables
     attributes_list = ['description','units','long_name','calendar',
-        'standard_name','_FillValue']
+        'standard_name','grid_mapping','_FillValue']
     #-- mapping between netCDF4 variable names and output names
     variable_mapping = dict(x=kwargs['xname'],y=kwargs['yname'],
         data=kwargs['varname'],time=kwargs['timename'])
@@ -225,6 +228,18 @@ def from_netCDF4(filename, **kwargs):
                     fileID.variables[nc].getncattr(ncattr)
             except (ValueError,AttributeError):
                 pass
+    #-- get projection information if there is a grid_mapping attribute
+    if 'grid_mapping' in dinput['attributes']['data'].keys():
+        #-- try getting the attribute
+        grid_mapping = dinput['attributes']['data']['grid_mapping']
+        for att_name in fileID[grid_mapping].ncattrs():
+            dinput['attributes']['crs'][att_name] = \
+                fileID.variables[nc].getncattr(ncattr)
+        #-- get the spatial projection reference information from wkt
+        #-- and overwrite the file-level projection attribute (if existing)
+        srs = osgeo.osr.SpatialReference()
+        srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
+        dinput['attributes']['projection'] = srs.ExportToProj4()
     #-- convert to masked array if fill values
     if '_FillValue' in dinput['attributes']['data'].keys():
         dinput['data'] = np.ma.asarray(dinput['data'])
@@ -283,7 +298,7 @@ def from_HDF5(filename, **kwargs):
             pass
     #-- list of attributes to attempt to retrieve from included variables
     attributes_list = ['description','units','long_name','calendar',
-        'standard_name','_FillValue']
+        'standard_name','grid_mapping','_FillValue']
     #-- mapping between HDF5 variable names and output names
     variable_mapping = dict(x=kwargs['xname'],y=kwargs['yname'],
         data=kwargs['varname'],time=kwargs['timename'])
@@ -299,6 +314,17 @@ def from_HDF5(filename, **kwargs):
                 dinput['attributes'][key][attr] = fileID[h5].attrs[attr]
             except (KeyError,AttributeError):
                 pass
+    #-- get projection information if there is a grid_mapping attribute
+    if 'grid_mapping' in dinput['attributes']['data'].keys():
+        #-- try getting the attribute
+        grid_mapping = dinput['attributes']['data']['grid_mapping']
+        for att_name,att_val in fileID[grid_mapping].attrs.items():
+            dinput['attributes']['crs'][att_name] = att_val
+        #-- get the spatial projection reference information from wkt
+        #-- and overwrite the file-level projection attribute (if existing)
+        srs = osgeo.osr.SpatialReference()
+        srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
+        dinput['attributes']['projection'] = srs.ExportToProj4()
     #-- convert to masked array if fill values
     if '_FillValue' in dinput['attributes']['data'].keys():
         dinput['data'] = np.ma.asarray(dinput['data'])
@@ -364,13 +390,13 @@ def from_geotiff(filename, **kwargs):
     #-- set default time to zero for each band
     dinput.setdefault('time', np.zeros((bsize)))
     #-- check if image has fill values
+    dinput['data'] = np.ma.asarray(dinput['data'])
+    dinput['data'].mask = np.zeros_like(dinput['data'],dtype=bool)
     if ds.GetRasterBand(1).GetNoDataValue():
-        #-- convert to masked array if fill values
-        dinput['data'] = np.ma.asarray(dinput['data'])
         #-- mask invalid values
         dinput['data'].fill_value = ds.GetRasterBand(1).GetNoDataValue()
         #-- create mask array for bad values
-        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
+        dinput['data'].mask[:] = (dinput['data'].data == dinput['data'].fill_value)
         #-- set attribute for fill value
         dinput['attributes']['data']['_FillValue'] = dinput['data'].fill_value
     #-- close the dataset
@@ -456,15 +482,23 @@ def to_netCDF4(output, attributes, filename, **kwargs):
         if '_FillValue' in attributes[key].keys():
             nc[key] = fileID.createVariable(key, val.dtype, ('time',),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
-        else:
+        elif val.shape:
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
+
+        else:
+            nc[key] = fileID.createVariable(key, val.dtype, ())
         #-- filling NetCDF variables
         nc[key][:] = val
         #-- Defining attributes for variable
         for att_name,att_val in attributes[key].items():
-            setattr(nc[key],att_name,att_val)
+            nc[key].setncattr(att_name,att_val)
     #-- add attribute for date created
     fileID.date_created = datetime.datetime.now().isoformat()
+    #-- add file-level attributes if applicable
+    if 'ROOT' in attributes.keys():
+        #-- Defining attributes for file
+        for att_name,att_val in attributes['ROOT'].items():
+            fileID.setncattr(att_name,att_val)
     #-- Output NetCDF structure information
     logging.info(filename)
     logging.info(list(fileID.variables.keys()))
@@ -488,14 +522,22 @@ def to_HDF5(output, attributes, filename, **kwargs):
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, fillvalue=attributes[key]['_FillValue'],
                 compression='gzip')
-        else:
+        elif val.shape:
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, compression='gzip')
+        else:
+            h5[key] = fileID.create_dataset(key, val.shape,
+                dtype=val.dtype)
         #-- Defining attributes for variable
         for att_name,att_val in attributes[key].items():
             h5[key].attrs[att_name] = att_val
     #-- add attribute for date created
     fileID.attrs['date_created'] = datetime.datetime.now().isoformat()
+    #-- add file-level attributes if applicable
+    if 'ROOT' in attributes.keys():
+        #-- Defining attributes for file
+        for att_name,att_val in attributes['ROOT'].items():
+            fileID.attrs[att_name] = att_val
     #-- Output HDF5 structure information
     logging.info(filename)
     logging.info(list(fileID.keys()))
