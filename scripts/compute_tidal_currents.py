@@ -146,6 +146,32 @@ from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_FES_model import extract_FES_constants
 
+#-- PURPOSE: try to get the projection information for the input file
+def get_projection(attributes, PROJECTION):
+    #-- coordinate reference system string from file
+    try:
+        crs = pyproj.CRS.from_string(attributes['projection'])
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- EPSG projection code
+    try:
+        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- coordinate reference system string
+    try:
+        crs = pyproj.CRS.from_string(PROJECTION)
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- no projection can be made
+    raise pyproj.exceptions.CRSError
+
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_currents(tide_dir, input_file, output_file,
@@ -223,13 +249,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
-    #-- could try to extract projection attributes from netCDF4 and HDF5 files
-    try:
-        #-- EPSG projection code string or int
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
-    except (ValueError,pyproj.exceptions.CRSError):
-        #-- Projection SRS string
-        crs1 = pyproj.CRS.from_string(PROJECTION)
+    crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):

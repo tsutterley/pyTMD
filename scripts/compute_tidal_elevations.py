@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (11/2021)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -112,6 +112,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: added tide model reference to output attributes
@@ -156,6 +157,32 @@ from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
+
+#-- PURPOSE: try to get the projection information for the input file
+def get_projection(attributes, PROJECTION):
+    #-- coordinate reference system string from file
+    try:
+        crs = pyproj.CRS.from_string(attributes['projection'])
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- EPSG projection code
+    try:
+        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- coordinate reference system string
+    try:
+        crs = pyproj.CRS.from_string(PROJECTION)
+    except (ValueError,pyproj.exceptions.CRSError):
+        pass
+    else:
+        return crs
+    #-- no projection can be made
+    raise pyproj.exceptions.CRSError
 
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
@@ -225,13 +252,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         dinput['time'] = np.copy(TIME)
 
     #-- converting x,y from projection to latitude/longitude
-    #-- could try to extract projection attributes from netCDF4 and HDF5 files
-    try:
-        #-- EPSG projection code string or int
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
-    except (ValueError,pyproj.exceptions.CRSError):
-        #-- Projection SRS string
-        crs1 = pyproj.CRS.from_string(PROJECTION)
+    crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):

@@ -38,7 +38,7 @@ def test_julian(YEAR,MONTH):
     assert (DD == DAY)
     assert (HH == HOUR)
     assert (MN == MINUTE)
-    assert np.isclose(SS, SECOND)
+    assert np.isclose(SS, SECOND, atol=1e-5)
 
 #-- parameterize calendar dates
 @pytest.mark.parametrize("YEAR", np.random.randint(1992,2020,size=2))
@@ -80,7 +80,7 @@ def test_decimal_dates(YEAR,MONTH):
     assert (day == DAY)
     assert (np.floor(hour_temp) == HOUR)
     assert (np.floor(minute_temp) == MINUTE)
-    assert np.isclose(second, SECOND)
+    assert np.isclose(second, SECOND, atol=1e-5)
 
 #-- PURPOSE: test UNIX time
 def test_unix_time():
