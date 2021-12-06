@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (07/2021)
+read_GOT_model.py (12/2021)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
     Updated 05/2021: added option for extrapolation cutoff in kilometers
@@ -115,17 +116,13 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
     #-- adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(ilon)
     ilat = np.atleast_1d(ilat)
-    #-- adjust longitudinal convention of input latitude and longitude
-    #-- to fit tide model convention
-    if (np.min(ilon) < 0.0):
-        lt0, = np.nonzero(ilon < 0)
-        ilon[lt0] += 360.0
-
     #-- number of points
     npts = len(ilon)
-    #-- amplitude and phase
-    constituents = []
+    #-- number of constituents
     nc = len(model_files)
+    constituents = []
+
+    #-- amplitude and phase
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc),dtype=bool)
     ph = np.ma.zeros((npts,nc))
@@ -140,6 +137,16 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
             GZIP=GZIP)
         #-- append to the list of constituents
         constituents.append(cons)
+        #-- adjust longitudinal convention of input latitude and longitude
+        #-- to fit tide model convention
+        if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+            #-- input points convention (-180:180)
+            #-- tide model convention (0:360)
+            ilon[ilon<0.0] += 360.0
+        elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
+            #-- input points convention (0:360)
+            #-- tide model convention (-180:180)
+            ilon[ilon>180.0] -= 360.0
         #-- grid step size of tide model
         dlon = np.abs(lon[1] - lon[0])
         dlat = np.abs(lat[1] - lat[0])
