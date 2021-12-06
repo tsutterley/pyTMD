@@ -72,10 +72,7 @@ def test_geodetic(N=324):
 	for i in range(N):
 		lon[i],lat[i],h[i] = pyTMD.spatial.to_geodetic(X[i],Y[i],Z[i])
 	#-- fix coordinates to be 0:360
-	count = np.count_nonzero(lon < 0)
-	if (count != 0):
-		lt0, = np.nonzero(lon < 0)
-		lon[lt0] += 360.0
+	lon[lon < 0] += 360.0
 	# verify that coordinates are within tolerance
 	assert np.all(np.isclose(ln,lon))
 	assert np.all(np.isclose(lt,lat))

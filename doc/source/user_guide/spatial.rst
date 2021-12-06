@@ -22,7 +22,7 @@ Reading a HDF5 file
 .. code-block:: python
 
     import pyTMD.spatial
-    dinput = pyTMD.spatial.from_HDF5(path_to_netCDF4_file)
+    dinput = pyTMD.spatial.from_HDF5(path_to_HDF5_file)
 
 `Source code`__
 
