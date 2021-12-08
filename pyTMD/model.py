@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (12/2021)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Written 09/2021
 """
 import os
@@ -82,6 +83,10 @@ class model:
             self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v4')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
             self.version = 'v4'
+        elif (m == 'TPXO9-atlas-v5'):
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v5')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v5')
+            self.version = 'v5'
         elif (m == 'TPXO9.1'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'TPXO9.1','DATA')
@@ -287,6 +292,34 @@ class model:
             self.projection = '4326'
             self.scale = 1.0/1000.0
             self.version = 'v4'
+            # model description and references
+            self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+            self.atl03 = 'tide_ocean'
+            self.atl06 = 'tide_ocean'
+            self.atl07 = 'height_segment_ocean'
+            self.atl11 = 'tide_ocean'
+            self.atl12 = 'tide_ocean_seg'
+            self.gla12 = 'd_ocElv'
+            self.variable = 'tide_ocean'
+            self.long_name = "Ocean Tide"
+            self.description = ("Ocean Tides including diurnal and "
+                "semi-diurnal (harmonic analysis), and longer period "
+                "tides (dynamic and self-consistent equilibrium).")
+        elif (m == 'TPXO9-atlas-v5'):
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v5')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v5')
+            model_files = ['h_q1_tpxo9_atlas_30_v5','h_o1_tpxo9_atlas_30_v5',
+                'h_p1_tpxo9_atlas_30_v5','h_k1_tpxo9_atlas_30_v5',
+                'h_n2_tpxo9_atlas_30_v5','h_m2_tpxo9_atlas_30_v5',
+                'h_s1_tpxo9_atlas_30_v5','h_s2_tpxo9_atlas_30_v5',
+                'h_k2_tpxo9_atlas_30_v5','h_m4_tpxo9_atlas_30_v5',
+                'h_ms4_tpxo9_atlas_30_v5','h_mn4_tpxo9_atlas_30_v5',
+                'h_2n2_tpxo9_atlas_30_v5','h_mf_tpxo9_atlas_30_v5',
+                'h_mm_tpxo9_atlas_30_v5']
+            self.model_file = self.pathfinder(model_files)
+            self.projection = '4326'
+            self.scale = 1.0/1000.0
+            self.version = 'v5'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
             self.atl03 = 'tide_ocean'
@@ -802,6 +835,32 @@ class model:
             self.projection = '4326'
             self.scale = 1.0/100.0
             self.version = 'v4'
+            # model description and references
+            self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
+        elif (m == 'TPXO9-atlas-v5'):
+            self.model_directory = os.path.join(self.directory,'TPXO9_atlas_v5')
+            self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v5')
+            model_files = {}
+            model_files['u'] = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
+                'u_p1_tpxo9_atlas_30_v5','u_k1_tpxo9_atlas_30_v5',
+                'u_n2_tpxo9_atlas_30_v5','u_m2_tpxo9_atlas_30_v5',
+                'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
+                'u_k2_tpxo9_atlas_30_v5','u_m4_tpxo9_atlas_30_v5',
+                'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
+                'u_2n2_tpxo9_atlas_30_v5']
+            model_files['v'] = ['v_q1_tpxo9_atlas_30_v5','v_o1_tpxo9_atlas_30_v5',
+                'v_p1_tpxo9_atlas_30_v5','v_k1_tpxo9_atlas_30_v5',
+                'v_n2_tpxo9_atlas_30_v5','v_m2_tpxo9_atlas_30_v5',
+                'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
+                'u_k2_tpxo9_atlas_30_v5','u_m4_tpxo9_atlas_30_v5',
+                'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
+                'u_2n2_tpxo9_atlas_30_v5']
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
+            self.projection = '4326'
+            self.scale = 1.0/100.0
+            self.version = 'v5'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
         elif (m == 'TPXO9.1'):
