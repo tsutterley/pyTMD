@@ -480,7 +480,7 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
     fileID.attrs['featureType'] = 'trajectory'
     fileID.attrs['title'] = 'ATLAS/ICESat-2 L3A Land Ice Height'
     fileID.attrs['summary'] = ('Estimates of the ice-sheet tidal parameters '
-        'needed to interpret and assess the quality of land height estimates.')
+        'needed to interpret and assess the quality of the height estimates.')
     fileID.attrs['description'] = ('Land ice parameters for each beam.  All '
         'parameters are calculated for the same along-track increments for '
         'each beam and repeat.')

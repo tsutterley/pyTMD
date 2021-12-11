@@ -126,6 +126,7 @@ There are specific programs for correcting some publicly available elevation dat
 - `ICESat-2 ATL03 geolocated photon data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py>`_
 - `ICESat-2 ATL06 land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py>`_
 - `ICESat-2 ATL07 sea ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py>`_
+- `ICESat-2 ATL10 sea ice freeboard data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL10.py>`_
 - `ICESat-2 ATL11 annual land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py>`_
 - `ICESat-2 ATL12 ocean surface height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py>`_
 

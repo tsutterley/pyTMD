@@ -25,6 +25,10 @@ General Attributes and Methods
 
         HDF5 dataset string for output ATL07 tide heights
 
+    .. attribute:: model.atl10
+
+        HDF5 dataset string for output ATL10 tide heights
+
     .. attribute:: model.atl11
 
         HDF5 dataset string for output ATL11 tide heights
