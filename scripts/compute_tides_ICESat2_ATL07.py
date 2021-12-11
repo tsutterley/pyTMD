@@ -102,7 +102,7 @@ UPDATE HISTORY:
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
     Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
-    Forked 11/2019 from compute_tides_ICESat2_atl06.py
+    Forked 11/2019 from compute_tides_ICESat2_ATL06.py
     Updated 10/2019: external read functions.  adjust regex for processed files
         changing Y/N flags to True/False
     Updated 09/2019: using date functions paralleling public repository
@@ -510,7 +510,7 @@ def HDF5_ATL07_tide_write(IS2_atl07_tide, IS2_atl07_attrs, INPUT=None,
     fileID.attrs['featureType'] = 'trajectory'
     fileID.attrs['title'] = 'ATLAS/ICESat-2 L3A Sea Ice Height'
     fileID.attrs['summary'] = ('Estimates of the sea ice tidal parameters '
-        'needed to interpret and assess the quality of sea height estimates.')
+        'needed to interpret and assess the quality of the height estimates.')
     fileID.attrs['description'] = ('The data set (ATL07) contains along-track '
         'heights for sea ice and open water leads (at varying length scales) '
         'relative to the WGS84 ellipsoid (ITRF2014 reference frame) after '
