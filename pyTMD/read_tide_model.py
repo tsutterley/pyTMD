@@ -89,7 +89,6 @@ import scipy.interpolate
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
-import matplotlib.pyplot as plt
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
