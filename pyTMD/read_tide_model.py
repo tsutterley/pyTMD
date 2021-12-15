@@ -169,11 +169,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
     if (np.min(x) < np.min(xi)) & (EPSG == '4326'):
-        lt0, = np.nonzero(x < 0)
-        x[lt0] += 360.0
+        x[x < 0] += 360.0
     if (np.max(x) > np.max(xi)) & (EPSG == '4326'):
-        gt180, = np.nonzero(x > 180)
-        x[gt180] -= 360.0
+        x[x > 180] -= 360.0
     #-- determine if any input points are outside of the model bounds
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
 

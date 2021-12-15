@@ -1,7 +1,7 @@
 verify_box_tpxo.py
 ==================
 
-- Verifies TPXO9-atlas global tide models downloaded from the box file sharing service
+- Verifies TPXO9-atlas global tide models downloaded from the [box file sharing service](https://developer.box.com/guides/)
 - Compares `sha1` hashes to verify the binary or netCDF4 files
 
 #### Calling Sequence
@@ -20,5 +20,6 @@ python verify_box_tpxo.py --directory <path_to_tide_directory> \
    * `'TPXO9-atlas-v2'`
    * `'TPXO9-atlas-v3'`
    * `'TPXO9-atlas-v4'`
+   * `'TPXO9-atlas-v5'`
 - `--currents`:  verify tide model current outputs
 - `-M X`, `--mode X`: Permission mode of files downloaded

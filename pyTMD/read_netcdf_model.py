@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (09/2021)
+read_netcdf_model.py (12/2021)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2021: adjust longitude convention based on model longitude
     Updated 09/2021: fix cases where there is no mask on constituent files
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
@@ -134,8 +135,24 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
     #-- check that grid file is accessible
     if not os.access(os.path.expanduser(grid_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(grid_file))
+
     #-- read the tide grid file for bathymetry and spatial coordinates
     lon,lat,bathymetry = read_netcdf_grid(grid_file, TYPE, GZIP=GZIP)
+
+    #-- adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(ilon)
+    ilat = np.atleast_1d(ilat)
+    #-- adjust longitudinal convention of input latitude and longitude
+    #-- to fit tide model convention
+    if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+        #-- input points convention (-180:180)
+        #-- tide model convention (0:360)
+        ilon[ilon<0.0] += 360.0
+    elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
+        #-- input points convention (0:360)
+        #-- tide model convention (-180:180)
+        ilon[ilon>180.0] -= 360.0
+
     #-- grid step size of tide model
     dlon = lon[1] - lon[0]
     dlat = lat[1] - lat[0]
@@ -145,16 +162,8 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
     #-- create masks
     bathymetry.mask = (bathymetry.data == 0)
 
-    #-- adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
-    #-- adjust longitudinal convention of input latitude and longitude
-    #-- to fit tide model convention
-    lt0, = np.nonzero(ilon < 0)
-    ilon[lt0] += 360.0
     #-- number of points
     npts = len(ilon)
-
     #-- interpolate bathymetry and mask to output points
     D = np.ma.zeros((npts))
     D.mask = np.zeros((npts),dtype=bool)

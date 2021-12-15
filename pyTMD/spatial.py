@@ -179,7 +179,6 @@ def from_netCDF4(filename, **kwargs):
     kwargs.setdefault('timename','time')
     kwargs.setdefault('xname','lon')
     kwargs.setdefault('yname','lat')
-    kwargs.setdefault('yname','lat')
     kwargs.setdefault('varname','data')
     #-- read data from netCDF4 file
     #-- Open the NetCDF4 file for reading
@@ -262,7 +261,6 @@ def from_HDF5(filename, **kwargs):
     kwargs.setdefault('compression',None)
     kwargs.setdefault('timename','time')
     kwargs.setdefault('xname','lon')
-    kwargs.setdefault('yname','lat')
     kwargs.setdefault('yname','lat')
     kwargs.setdefault('varname','data')
     #-- read data from HDF5 file
@@ -809,10 +807,7 @@ def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
     lon = np.atleast_1d(lon)
     lat = np.atleast_1d(lat)
     #-- fix coordinates to be 0:360
-    count = np.count_nonzero(lon < 0)
-    if (count != 0):
-        lt0, = np.nonzero(lon < 0)
-        lon[lt0] += 360.0
+    lon[lon < 0] += 360.0
     #-- Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
     ecc1 = lin_ecc/a_axis

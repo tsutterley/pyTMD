@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (12/2021)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
 CALLING SEQUENCE:
-    python verify_box_tpxo.py --token <token> --tide TPXO9-atlas-v4
+    python verify_box_tpxo.py --token <token> --tide TPXO9-atlas-v5
     where <username> is your box api access token
 
 COMMAND LINE OPTIONS:
@@ -19,6 +19,7 @@ COMMAND LINE OPTIONS:
         TPXO9-atlas-v2
         TPXO9-atlas-v3
         TPXO9-atlas-v4
+        TPXO9-atlas-v5
     --currents: verify tide model current outputs
     -M X, --mode X: Local permissions mode of the files downloaded
 
@@ -26,7 +27,11 @@ PYTHON DEPENDENCIES:
     future: Compatibility layer between Python 2 and Python 3
         https://python-future.org/
 
+REFERENCE:
+    https://developer.box.com/guides/
+
 UPDATE HISTORY:
+    Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Written 03/2021
@@ -71,6 +76,7 @@ def build_opener(token, context=ssl.SSLContext(), redirect=True):
     opener.addheaders = [("Authorization","Bearer {0}".format(token))]
     #-- Now all calls to urllib2.urlopen use our opener.
     pyTMD.utilities.urllib2.install_opener(opener)
+    return opener
 
 #-- PURPOSE: verify downloaded TPXO9-atlas files with box server
 def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
@@ -88,6 +94,8 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         localpath = os.path.join(tide_dir,'TPXO9_atlas_v3')
     elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
         localpath = os.path.join(tide_dir,'TPXO9_atlas_v4')
+    elif (TIDE_MODEL == 'TPXO9-atlas-v5'):
+        localpath = os.path.join(tide_dir,'TPXO9_atlas_v5')
 
     #-- create output directory if non-existent
     os.makedirs(localpath,MODE) if not os.path.exists(localpath) else None
@@ -111,8 +119,9 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         (entry['type'] == 'file') and rx.match(entry['name'])]
     #-- for each file in the folder
     for entry in file_entries:
-        #-- print remote path
+        #-- have insufficient permissions for downloading content
         file_url = posixpath.join(HOST,'files',entry['id'])
+        #-- print remote path
         logger.info('{0} -->'.format(file_url))
         #-- get last modified time for file
         request = pyTMD.utilities.urllib2.Request(file_url)
@@ -161,7 +170,7 @@ def main():
         help='box folder id for model')
     #-- TPXO9-atlas tide models
     parser.add_argument('--tide','-T',
-        type=str, default='TPXO9-atlas-v4',
+        type=str, default='TPXO9-atlas-v5',
         help='TPXO9-atlas tide model to verify')
     #-- download tidal currents
     parser.add_argument('--currents',
@@ -174,7 +183,7 @@ def main():
     args,_ = parser.parse_known_args()
 
     #-- build an opener for accessing box folders
-    build_opener(args.token)
+    opener = build_opener(args.token)
     #-- check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://app.box.com/'):
         verify_box_tpxo(args.directory, args.folder, TIDE_MODEL=args.tide,

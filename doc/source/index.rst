@@ -73,6 +73,7 @@ conventions for calculating radial pole tide displacements.
     user_guide/compute_LPET_ICESat2_ATL03.md
     user_guide/compute_LPET_ICESat2_ATL06.md
     user_guide/compute_LPET_ICESat2_ATL07.md
+    user_guide/compute_LPET_ICESat2_ATL10.md
     user_guide/compute_LPET_ICESat2_ATL11.md
     user_guide/compute_LPET_ICESat2_ATL12.md
     user_guide/compute_LPT_displacements.md
@@ -88,5 +89,6 @@ conventions for calculating radial pole tide displacements.
     user_guide/compute_tides_ICESat2_ATL03.md
     user_guide/compute_tides_ICESat2_ATL06.md
     user_guide/compute_tides_ICESat2_ATL07.md
+    user_guide/compute_tides_ICESat2_ATL10.md
     user_guide/compute_tides_ICESat2_ATL11.md
     user_guide/compute_tides_ICESat2_ATL12.md

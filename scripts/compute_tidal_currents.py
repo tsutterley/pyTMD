@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (12/2021)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -25,6 +25,7 @@ COMMAND LINE OPTIONS:
         TPXO9-atlas-v2
         TPXO9-atlas-v3
         TPXO9-atlas-v4
+        TPXO9-atlas-v5
         TPXO9.1
         TPXO8-atlas
         TPXO7.2
@@ -102,6 +103,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: added tide model reference to output attributes
@@ -373,8 +375,9 @@ def main():
         help='Working data directory')
     #-- tide model to use
     model_choices = ('CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
-        'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9.1','TPXO8-atlas','TPXO7.2',
-        'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2','FES2014')
+        'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1',
+        'TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018',
+        'Gr1km-v2','FES2014')
     group.add_argument('--tide','-T',
         metavar='TIDE', type=str,
         choices=model_choices,

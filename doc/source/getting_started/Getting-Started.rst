@@ -58,6 +58,7 @@ Presently, the following models and their directories parameterized within ``pyT
     * `TPXO9-atlas-v2 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v2/``
     * `TPXO9-atlas-v3 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v3/``
     * `TPXO9-atlas-v4 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v4/``
+    * `TPXO9-atlas-v5 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v5/``
     * `TPXO9.1 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9.1/DATA/``
     * `TPXO8-atlas <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/tpxo8_atlas/``
     * TPXO7.2: ``<path_to_tide_models>/TPXO7.2_tmd/``
@@ -125,6 +126,7 @@ There are specific programs for correcting some publicly available elevation dat
 - `ICESat-2 ATL03 geolocated photon data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py>`_
 - `ICESat-2 ATL06 land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py>`_
 - `ICESat-2 ATL07 sea ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py>`_
+- `ICESat-2 ATL10 sea ice freeboard data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL10.py>`_
 - `ICESat-2 ATL11 annual land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py>`_
 - `ICESat-2 ATL12 ocean surface height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py>`_
 

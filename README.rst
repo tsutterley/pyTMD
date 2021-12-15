@@ -10,6 +10,7 @@ pyTMD
 |codecov|
 |Binder|
 |Pangeo|
+|zenodo|
 
 .. |Language| image:: https://img.shields.io/pypi/pyversions/pyTMD?color=green
    :target: https://www.python.org/
@@ -35,6 +36,8 @@ pyTMD
 .. |Pangeo| image:: https://binder.pangeo.io/badge.svg
    :target: https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/main
 
+.. |zenodo| image:: https://zenodo.org/badge/107997403.svg
+   :target: https://zenodo.org/badge/latestdoi/107997403
 
 Python-based tidal prediction software that reads OTIS, GOT and FES formatted tidal solutions for calculating ocean and load tides
 

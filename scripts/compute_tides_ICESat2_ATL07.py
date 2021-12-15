@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL07.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (12/2021)
 Calculates tidal elevations for correcting ICESat-2 sea ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -21,6 +21,7 @@ COMMAND LINE OPTIONS:
         TPXO9-atlas-v2
         TPXO9-atlas-v3
         TPXO9-atlas-v4
+        TPXO9-atlas-v5
         TPXO9.1
         TPXO8-atlas
         TPXO7.2
@@ -79,6 +80,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
@@ -100,7 +102,7 @@ UPDATE HISTORY:
     Updated 02/2020: changed CATS2008 grid to match version on U.S. Antarctic
         Program Data Center http://www.usap-dc.org/view/dataset/601235
     Updated 11/2019: added AOTIM-5-2018 tide model (2018 update to 2004 model)
-    Forked 11/2019 from compute_tides_ICESat2_atl06.py
+    Forked 11/2019 from compute_tides_ICESat2_ATL06.py
     Updated 10/2019: external read functions.  adjust regex for processed files
         changing Y/N flags to True/False
     Updated 09/2019: using date functions paralleling public repository
@@ -508,7 +510,7 @@ def HDF5_ATL07_tide_write(IS2_atl07_tide, IS2_atl07_attrs, INPUT=None,
     fileID.attrs['featureType'] = 'trajectory'
     fileID.attrs['title'] = 'ATLAS/ICESat-2 L3A Sea Ice Height'
     fileID.attrs['summary'] = ('Estimates of the sea ice tidal parameters '
-        'needed to interpret and assess the quality of sea height estimates.')
+        'needed to interpret and assess the quality of the height estimates.')
     fileID.attrs['description'] = ('The data set (ATL07) contains along-track '
         'heights for sea ice and open water leads (at varying length scales) '
         'relative to the WGS84 ellipsoid (ITRF2014 reference frame) after '
@@ -596,7 +598,7 @@ def main():
     #-- tide model to use
     model_choices = ('CATS0201','CATS2008','CATS2008_load',
         'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
-        'TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
+        'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
         'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
         'FES2014','FES2014_load')

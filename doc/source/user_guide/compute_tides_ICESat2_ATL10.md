@@ -1,21 +1,19 @@
-compute_tides_ICESat2_ATL03.py
+compute_tides_ICESat2_ATL10.py
 ==============================
 
-- Calculates tidal elevations for correcting ICESat-2 photon height data
-- Calculated at ATL03 segment level using reference photon geolocation and time
-- Segment level corrections can be applied to the individual photon events (PEs)
+- Calculates tidal elevations for correcting ICESat-2 sea ice freeboard data
 - Can use OTIS format tidal solutions provided by Ohio State University and ESR
 - Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
 - Can use Finite Element Solution (FES) models provided by AVISO
 
 #### Calling Sequence
 ```bash
-python compute_tides_ICESat2_ATL03.py --directory <path_to_directory> --tide <model> input_file
+python compute_tides_ICESat2_ATL10.py --directory <path_to_directory> --tide <model> input_file
 ```
-[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py)
+[Source code](https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL10.py)
 
 #### Inputs
-1. `input_file`: input ICESat-2 ATL03 file
+1. `input_file`: input ICESat-2 ATL10 file
 
 #### Command Line Options
 - `-D X`, `--directory X`: Working data directory
