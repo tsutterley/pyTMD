@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (12/2021)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -28,6 +28,7 @@ OPTIONS:
         None: determined from input variable dimensions
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time for all data points)
+        time series: time series at a single point (multiple times)
     TIME: input time standard or input type
         GPS: leap seconds needed
         TAI: leap seconds needed (TAI = GPS + 19 seconds)
@@ -67,6 +68,7 @@ PROGRAM DEPENDENCIES:
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
     predict_tide.py: predict tides at single times using harmonic constants
+    predict_tidal_ts.py: predict tidal time series using harmonic constants
     predict_tide_drift.py: predict tidal elevations using harmonic constants
     read_tide_model.py: extract tidal harmonic constants from OTIS tide models
     read_netcdf_model.py: extract tidal harmonic constants from netcdf models
@@ -76,6 +78,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2021: added function to calculate a tidal time series
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use numpy datetime arrays as input time variable
         added function for determining the input spatial variable type
@@ -108,6 +111,7 @@ import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide import predict_tide
+from pyTMD.predict_tidal_ts import predict_tidal_ts
 from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
@@ -141,6 +145,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         None: determined from input variable dimensions
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time per image)
+        time series: time series at a single point (multiple times)
     TIME: time type if need to compute leap seconds to convert to UTC
         GPS: leap seconds needed
         TAI: leap seconds needed (TAI = GPS + 19 seconds)
@@ -181,6 +186,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     #-- reform coordinate dimensions for input grids
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
         x,y = np.meshgrid(np.copy(x),np.copy(y))
+    elif (TYPE.lower() == 'time series'):
+        x = np.atleast_1d(x)
+        y = np.atleast_1d(y)
 
     #-- converting x,y from EPSG to latitude/longitude
     try:
@@ -281,6 +289,15 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = predict_tide_drift(t, hc, c,
+            DELTAT=deltat, CORRECTIONS=model.format)
+        minor = infer_minor_corrections(t, hc, c,
+            DELTAT=deltat, CORRECTIONS=model.format)
+        tide.data[:] += minor.data[:]
+    elif (TYPE.lower() == 'time series'):
+        npts = len(t)
+        tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
+        tide.mask = np.any(hc.mask,axis=1)
+        tide.data[:] = predict_tidal_ts(t, hc, c,
             DELTAT=deltat, CORRECTIONS=model.format)
         minor = infer_minor_corrections(t, hc, c,
             DELTAT=deltat, CORRECTIONS=model.format)
