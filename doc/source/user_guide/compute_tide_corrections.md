@@ -33,6 +33,7 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
     * `None`: determined from input variable dimensions
     * `'drift'`: drift buoys or satellite/airborne altimetry (time per data point)
     * `'grid'`: spatial grids or images (single time per image)
+    * `'time series'`: time series at a single point (multiple times)
 - `TIME`: input time standard or input type
     * `'GPS'`: leap seconds needed
     * `'TAI'`: leap seconds needed (TAI = GPS + 19 seconds)
