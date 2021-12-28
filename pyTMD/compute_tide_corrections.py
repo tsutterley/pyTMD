@@ -79,6 +79,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2021: added function to calculate a tidal time series
+        verify coordinate dimensions for each input data type
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use numpy datetime arrays as input time variable
         added function for determining the input spatial variable type
@@ -184,9 +185,13 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
     #-- reform coordinate dimensions for input grids
+    #-- or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
         x,y = np.meshgrid(np.copy(x),np.copy(y))
-    elif (TYPE.lower() == 'time series'):
+    elif (TYPE.lower() == 'grid'):
+        x = np.atleast_2d(x)
+        y = np.atleast_2d(y)
+    elif TYPE.lower() in ('time series', 'drift'):
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
 
