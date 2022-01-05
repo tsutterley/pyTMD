@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (11/2021)
+Written by Tyler Sutterley (01/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 01/2022: use iteration breaks in convert ellipsoid function
     Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
         try to get grid mapping attributes from netCDF4 and HDF5
     Updated 10/2021: add pole case in stereographic area scale calculation
@@ -693,12 +694,12 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
                 fu2 = k0 * np.sin(u2) + k1 * np.tan(u2) - k2
                 fu2p = k0 * cosu2 + k1 / (cosu2 * cosu2)
                 if (np.abs(fu2p) < eps):
-                    i = np.copy(itmax)
+                    break
                 else:
                     delta = fu2 / fu2p
                     u2 -= delta
                     if (np.abs(delta) < eps):
-                        i = np.copy(itmax)
+                        break
             #-- convert latitude to degrees and verify values between +/- 90
             phi2r = np.arctan(a2 / b2 * np.tan(u2))
             phi2[N] = phi2r*180.0/np.pi
@@ -732,12 +733,12 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
                 fu2 = k0 * np.cos(u2) + k1 / np.tan(u2) - k2
                 fu2p =  -1 * (k0 * sinu2 + k1 / (sinu2 * sinu2))
                 if (np.abs(fu2p) < eps):
-                    i = np.copy(itmax)
+                    break
                 else:
                     delta = fu2 / fu2p
                     u2 -= delta
                     if (np.abs(delta) < eps):
-                        i = np.copy(itmax)
+                        break
             #-- convert latitude to degrees and verify values between +/- 90
             phi2r = np.arctan(a2 / b2 * np.tan(u2))
             phi2[N] = phi2r*180.0/np.pi
@@ -845,12 +846,12 @@ def to_sphere(x,y,z):
     th = np.arccos(z/rad)
     #-- convert to degrees and fix to 0:360
     lon = 180.0*phi/np.pi
-    count = np.count_nonzero(lon < 0)
-    if (count != 0):
+    if np.any(lon < 0):
         lt0 = np.nonzero(lon < 0)
-        lon[lt0] = lon[lt0]+360.0
+        lon[lt0] += 360.0
     #-- convert to degrees and fix to -90:90
     lat = 90.0 - (180.0*th/np.pi)
+    np.clip(lat, -90, 90, out=lat)
     #-- return latitude, longitude and radius
     return (lon,lat,rad)
 

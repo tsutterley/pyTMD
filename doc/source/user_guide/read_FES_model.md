@@ -29,6 +29,7 @@ amp,ph = read_FES_model(ilon, ilat, model_files, TYPE='z',
    * `'FES2004'`
    * `'FES2012'`
    * `'FES2014'`
+   * `'EOT20'`
 - `METHOD`: interpolation method
    * `'bilinear'`: quick bilinear interpolation
    * `'spline'`: scipy bivariate spline interpolation

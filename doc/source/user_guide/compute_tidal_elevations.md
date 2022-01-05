@@ -44,6 +44,8 @@ python compute_tidal_elevations.py --directory <path_to_directory> --tide <model
     * `'GOT4.10_load'`
     * `'FES2014'`
     * `'FES2014_load'`
+    * `'EOT20'`
+    * `'EOT20_load'`
 - `--atlas-format X`: ATLAS tide model format (`'OTIS'`, `'netcdf'`)
 - `--gzip`, `-G`: Tide model files are gzip compressed
 - `--definition-file X`: Model definition file for use as correction
