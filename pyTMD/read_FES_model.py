@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (12/2021)
+read_FES_model.py (01/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -23,6 +23,7 @@ INPUTS:
         FES2004
         FES2012
         FES2014
+        EOT20
 
 OPTIONS:
     METHOD: interpolation method
@@ -53,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
@@ -106,6 +108,7 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
         FES2004
         FES2012
         FES2014
+        EOT20
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -150,7 +153,7 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
             #-- FES ascii constituent files
             hc,lon,lat = read_ascii_file(os.path.expanduser(fi),
                 GZIP=GZIP, TYPE=TYPE, VERSION=VERSION)
-        elif VERSION in ('FES2012','FES2014'):
+        elif VERSION in ('FES2012','FES2014','EOT20'):
             #-- FES netCDF4 constituent files
             hc,lon,lat = read_netcdf_file(os.path.expanduser(fi),
                 GZIP=GZIP, TYPE=TYPE, VERSION=VERSION)
@@ -329,10 +332,10 @@ def read_netcdf_file(input_file,GZIP=False,TYPE=None,VERSION=None):
     else:
         fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- variable dimensions for each model
-    if (VERSION == 'FES2012'):
+    if VERSION in ('FES2012',):
         lon = fileID.variables['longitude'][:]
         lat = fileID.variables['latitude'][:]
-    elif (VERSION == 'FES2014'):
+    elif VERSION in ('FES2014','EOT20'):
         lon = fileID.variables['lon'][:]
         lat = fileID.variables['lat'][:]
     #-- amplitude and phase components for each type

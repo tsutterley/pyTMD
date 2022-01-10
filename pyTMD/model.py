@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (12/2021)
+Written by Tyler Sutterley (01/2022)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
         added atl10 attributes for tidal elevation files
     Written 09/2021
@@ -727,6 +728,71 @@ class model:
             self.reference = ('https://www.aviso.altimetry.fr/'
                 'en/data/products/auxiliary-products/'
                 'global-tide-fes.html')
+            self.atl03 = 'tide_load'
+            self.atl06 = 'tide_load'
+            self.atl07 = 'height_segment_load'
+            self.atl10 = 'height_segment_load'
+            self.atl11 = 'tide_load'
+            self.atl12 = 'tide_load_seg'
+            self.gla12 = 'd_ldElv'
+            self.variable = 'tide_load'
+            self.long_name = "Load Tide"
+            self.description = ("Local displacement due to Ocean "
+                "Loading (-6 to 0 cm)")
+        elif (m == 'EOT20'):
+            self.format = 'FES'
+            self.model_directory = os.path.join(self.directory,
+                'EOT20','ocean_tides')
+            model_files = ['2N2_ocean_eot20.nc','J1_ocean_eot20.nc',
+                'K1_ocean_eot20.nc','K2_ocean_eot20.nc',
+                'M2_ocean_eot20.nc','M4_ocean_eot20.nc',
+                'MF_ocean_eot20.nc','MM_ocean_eot20.nc',
+                'N2_ocean_eot20.nc','O1_ocean_eot20.nc',
+                'P1_ocean_eot20.nc','Q1_ocean_eot20.nc',
+                'S1_ocean_eot20.nc','S2_ocean_eot20.nc',
+                'SA_ocean_eot20.nc','SSA_ocean_eot20.nc',
+                'T2_ocean_eot20.nc']
+            self.model_file = self.pathfinder(model_files)
+            self.constituents = ['2n2','j1','k1','k2','m2','m4',
+                'mf','mm','n2','o1','p1','q1','s1','s2','sa',
+                'ssa','t2']
+            self.scale = 1.0/100.0
+            self.version = 'EOT20'
+            # model description and references
+            self.reference = 'https://doi.org/10.17882/79489'
+            self.atl03 = 'tide_ocean'
+            self.atl06 = 'tide_ocean'
+            self.atl07 = 'height_segment_ocean'
+            self.atl10 = 'height_segment_ocean'
+            self.atl11 = 'tide_ocean'
+            self.atl12 = 'tide_ocean_seg'
+            self.gla12 = 'd_ocElv'
+            self.variable = 'tide_ocean'
+            self.long_name = "Ocean Tide"
+            self.description = ("Ocean Tides including diurnal and "
+                "semi-diurnal (harmonic analysis), and longer period "
+                "tides (dynamic and self-consistent equilibrium).")
+        elif (m == 'EOT20_load'):
+            self.format = 'FES'
+            self.model_directory = os.path.join(self.directory,
+                'EOT20','load_tides')
+            model_files = ['2N2_load_eot20.nc','J1_load_eot20.nc',
+                'K1_load_eot20.nc','K2_load_eot20.nc',
+                'M2_load_eot20.nc','M4_load_eot20.nc',
+                'MF_load_eot20.nc','MM_load_eot20.nc',
+                'N2_load_eot20.nc','O1_load_eot20.nc',
+                'P1_load_eot20.nc','Q1_load_eot20.nc',
+                'S1_load_eot20.nc','S2_load_eot20.nc',
+                'SA_load_eot20.nc','SSA_load_eot20.nc',
+                'T2_load_eot20.nc']
+            self.model_file = self.pathfinder(model_files)
+            self.constituents = ['2n2','j1','k1','k2','m2','m4',
+                'mf','mm','n2','o1','p1','q1','s1','s2','sa',
+                'ssa','t2']
+            self.scale = 1.0/100.0
+            self.version = 'EOT20'
+            # model description and references
+            self.reference = 'https://doi.org/10.17882/79489'
             self.atl03 = 'tide_load'
             self.atl06 = 'tide_load'
             self.atl07 = 'height_segment_load'

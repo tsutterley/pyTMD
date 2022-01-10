@@ -78,6 +78,10 @@ Presently, the following models and their directories parameterized within ``pyT
     * `FES2014 <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/ocean_tide/``
     * `FES2014_load <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/load_tide/``
 
+- Empirical Ocean Tide models [HartDavis2020]_
+
+    * `EOT20 <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/ocean_tides/``
+    * `EOT20_load <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/load_tides/``
 
 For other tide models, the model parameters can be set with a `model definition file <./Getting-Started.html#definition-files>`_.
 
@@ -225,6 +229,8 @@ References
 ##########
 
 .. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of Barotropic Ocean Tides", *Journal of Atmospheric and Oceanic Technology*, 19(2), 183--204, (2002). `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+.. [HartDavis2020] M. G. Hart-Davis, G. Piccioni, D. Dettmering, C. Schwatke, M. Passaro, and F. Seitz, "EOT20: a global ocean tide model from multi-mission satellite altimetry", *Earth System Science Data*, 13(8), 3869--3884, (2020). `doi: 10.5194/essd-13-3869-2021 <https://doi.org/10.5194/essd-13-3869-2021>`_
 
 .. [Lyard2020] F. H. Lyard, D. J. Allain, M. Cancet, L. Carr\ |egrave|\ re, and N. Picot, "FES2014 global ocean tides atlas: design and performances", *Ocean Science Discussions*, in review, (2020). `doi: 10.5194/os-2020-96 <https://doi.org/10.5194/os-2020-96>`_
 

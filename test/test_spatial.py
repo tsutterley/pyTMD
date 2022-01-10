@@ -267,10 +267,12 @@ def test_convert_ellipsoid():
     #-- ftp://ftp.nsidc.org/DATASETS/icesat/tools/idl/ellipsoid/test_ce.pro
     minlat = np.min(lat_TPX-lat_WGS84)
     maxlat = np.max(lat_TPX-lat_WGS84)
+    explat = [-1.2305653e-7,1.2305653e-7]
     minelev = 100.0*np.min(elev_TPX-elev_WGS84)
     maxelev = 100.0*np.max(elev_TPX-elev_WGS84)
-    assert np.isclose([minlat,maxlat],[-1.2305653e-7,1.2305653e-7]).all()
-    assert np.isclose([minelev,maxelev],[70.000000,71.368200]).all()
+    expelev = [70.000000,71.368200]
+    assert np.isclose([minlat,maxlat],explat).all()
+    assert np.isclose([minelev,maxelev],expelev).all()
     #-- convert back from Topex/Poseidon to WGS84 Ellipsoids
     phi_WGS84,h_WGS84 = pyTMD.spatial.convert_ellipsoid(lat_TPX, elev_TPX,
         atop, ftop, awgs, fwgs, eps=1e-12, itmax=10)
@@ -278,10 +280,12 @@ def test_convert_ellipsoid():
     #-- ftp://ftp.nsidc.org/DATASETS/icesat/tools/idl/ellipsoid/test_ce.pro
     minlatdel = np.min(phi_WGS84-lat_WGS84)
     maxlatdel = np.max(phi_WGS84-lat_WGS84)
+    explatdel = [-2.1316282e-14,2.1316282e-14]
     minelevdel = 100.0*np.min(h_WGS84-elev_WGS84)
     maxelevdel = 100.0*np.max(h_WGS84-elev_WGS84)
-    assert np.isclose([minlatdel,maxlatdel],[-2.1316282e-14,2.1316282e-14]).all()
-    assert np.isclose([minelevdel,maxelevdel],[-1.3287718e-7,1.6830199e-7]).all()
+    expelevdel = [-1.3287718e-7,1.6830199e-7]
+    assert np.isclose([minlatdel,maxlatdel],explatdel).all()
+    assert np.isclose([minelevdel,maxelevdel],expelevdel,atol=1e-5).all()
 
 #-- PURPOSE: test wrap longitudes
 def test_wrap_longitudes():
