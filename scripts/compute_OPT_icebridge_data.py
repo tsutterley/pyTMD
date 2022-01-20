@@ -91,7 +91,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
-            i = [i for i in f.read().splitlines() if re.match(r'^(?!\#)',i)]
+            i = [i for i in f.readlines() if re.match(r'^(?!\#|\n)',i)]
         file_lines = len(i)
     #-- return the number of lines
     return file_lines
@@ -99,7 +99,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
 #-- PURPOSE: read the ATM Level-1b data file for variables of interest
 def read_ATM_qfit_file(input_file, input_subsetter):
     #-- regular expression pattern for extracting parameters
-    mission_flag = '(BLATM1B|ILATM1B|ILNSA1B)'
+    mission_flag = r'(BLATM1B|ILATM1B|ILNSA1B)'
     regex_pattern = r'{0}_(\d+)_(\d+)(.*?).(qi|TXT|h5)'.format(mission_flag)
     #-- extract mission and other parameters from filename
     MISSION,YYMMDD,HHMMSS,AUX,SFX = re.findall(regex_pattern,input_file).pop()
@@ -121,7 +121,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file,'r') as f:
             file_contents = [i for i in f.read().splitlines() if
-                re.match(r'^(?!\#)',i)]
+                re.match(r'^(?!\#|\n)',i)]
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter)
         #-- create output variables with length equal to the number of lines
@@ -231,7 +231,7 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     #-- read the input file, split at lines and remove all commented lines
     with open(input_file,'r') as f:
         file_contents = [i for i in f.read().splitlines()
-            if re.match(r'^(?!\#)',i)]
+            if re.match(r'^(?!\#|\n)',i)]
     #-- number of lines of data within file
     file_lines = file_length(input_file,input_subsetter)
     #-- output python dictionary with variables
