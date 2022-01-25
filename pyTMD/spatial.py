@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2022: use iteration breaks in convert ellipsoid function
+        remove fill_value attribute after creating netCDF4 and HDF5 variables
     Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
         try to get grid mapping attributes from netCDF4 and HDF5
     Updated 10/2021: add pole case in stereographic area scale calculation
@@ -486,9 +487,9 @@ def to_netCDF4(output, attributes, filename, **kwargs):
         if '_FillValue' in attributes[key].keys():
             nc[key] = fileID.createVariable(key, val.dtype, ('time',),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
+            attributes[key].pop('_FillValue')
         elif val.shape:
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
-
         else:
             nc[key] = fileID.createVariable(key, val.dtype, ())
         #-- filling NetCDF variables
@@ -526,6 +527,7 @@ def to_HDF5(output, attributes, filename, **kwargs):
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, fillvalue=attributes[key]['_FillValue'],
                 compression='gzip')
+            attributes[key].pop('_FillValue')
         elif val.shape:
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, compression='gzip')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (12/2021)
+Written by Tyler Sutterley (01/2022)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -54,6 +54,11 @@ COMMAND LINE OPTIONS:
         days since 1858-11-17T00:00:00
     -d X, --deltatime X: Input delta time for files without date information
         can be set to 0 to use exact calendar date from epoch
+    -s X, --standard X: Input time standard for delta times
+        UTC: Coordinate Universal Time
+        GPS: GPS Time
+        LORAN: Long Range Navigator Time
+        TAI: International Atomic Time
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -I X, --interpolate X: Interpolation method
@@ -103,6 +108,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 01/2022: added option for changing the time standard
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
@@ -153,7 +159,7 @@ def get_projection(attributes, PROJECTION):
     #-- coordinate reference system string from file
     try:
         crs = pyproj.CRS.from_string(attributes['projection'])
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
@@ -179,9 +185,9 @@ def get_projection(attributes, PROJECTION):
 def compute_tidal_currents(tide_dir, input_file, output_file,
     TIDE_MODEL=None, ATLAS_FORMAT='netcdf', GZIP=True,
     DEFINITION_FILE=None, FORMAT='csv', VARIABLES=[], HEADER=0,
-    TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
-    PROJECTION='4326', METHOD='spline', EXTRAPOLATE=False,
-    CUTOFF=None, VERBOSE=False, MODE=0o775):
+    TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
+    TIME=None, TIME_STANDARD='UTC', PROJECTION='4326', METHOD='spline',
+    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -264,12 +270,44 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
-    except (TypeError, KeyError):
-        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    else:
         epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
+    except (TypeError, KeyError, ValueError):
+        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+    #-- convert time to seconds
+    delta_time = to_secs*dinput['time'].flatten()
+
+    #-- calculate leap seconds if specified
+    if (TIME_STANDARD.upper() == 'GPS'):
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME_STANDARD.upper() == 'LORAN'):
+        #-- LORAN time is ahead of GPS time by 9 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME_STANDARD.upper() == 'TAI'):
+        #-- TAI time is ahead of GPS time by 19 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    else:
+        leap_seconds = 0.0
+
     #-- convert time from units to days since 1992-01-01T00:00:00
-    tide_time = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
+    tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
         epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
     #-- number of time points
     nt = len(tide_time)
@@ -420,6 +458,10 @@ def main():
     parser.add_argument('--deltatime','-d',
         type=float, nargs='+',
         help='Input delta time for files without date variables')
+    #-- input time standard definition
+    parser.add_argument('--standard','-s',
+        type=str, choices=('UTC','GPS','TAI','LORAN'), default='UTC',
+        help='Input time standard definition')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
@@ -461,9 +503,10 @@ def main():
         GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
         FORMAT=args.format, VARIABLES=args.variables,
         HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
-        TIME=args.deltatime, PROJECTION=args.projection,
-        METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-        CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
+        TIME=args.deltatime, TIME_STANDARD=args.standard,
+        PROJECTION=args.projection, METHOD=args.interpolate,
+        EXTRAPOLATE=args.extrapolate, CUTOFF=args.cutoff,
+        VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

@@ -36,6 +36,7 @@ tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
     * `'time series'`: time series at a single point (multiple times)
 - `TIME`: input time standard or input type
     * `'GPS'`: leap seconds needed
+    * `'LORAN'`: leap seconds needed (LORAN = GPS + 9 seconds)
     * `'TAI'`: leap seconds needed (TAI = GPS + 19 seconds)
     * `'UTC'`: no leap seconds needed
     * `'datetime'`: numpy datatime array in UTC

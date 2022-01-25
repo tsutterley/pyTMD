@@ -65,6 +65,11 @@ python compute_tidal_elevations.py --directory <path_to_directory> --tide <model
     * `'days since 1858-11-17T00:00:00'` (default Modified Julian Days)
 - `-d X`, `--deltatime X`: input delta time for files without date information
     * can be set to 0 to use exact calendar date from epoch
+- `-s X`, `--standard X`: Input time standard for delta times
+    * `'UTC'`: Coordinate Universal Time
+    * `'GPS'`: GPS Time
+    * `'LORAN'`: Long Range Navigator Time
+    * `'TAI'`: International Atomic Time
 - `--projection X`: spatial projection as EPSG code or PROJ4 string
     * `4326`: latitude and longitude coordinates on WGS84 reference ellipsoid
 - `-I X`, `--interpolate X`: Interpolation method
