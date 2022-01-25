@@ -18,8 +18,8 @@ from icesat2_toolkit.read_ICESat2_ATL07 import read_HDF5_ATL07
 #-- PURPOSE: Download an ATL03 file from NSIDC and compare equilibrium tides
 def test_ATL03_equilibrium_tides(username,password):
     #-- path to an ATL03 file from NSIDC
-    HOST = ['https://n5eil01u.ecs.nsidc.org','ATLAS','ATL03.003','2018.10.14',
-        'ATL03_20181014000347_02350101_003_01.h5']
+    HOST = ['https://n5eil01u.ecs.nsidc.org','ATLAS','ATL03.005','2018.10.14',
+        'ATL03_20181014000347_02350101_005_01.h5']
     #-- only download ATL03 file if not currently existing
     if not os.access(HOST[-1], os.F_OK):
         #-- download an ATL03 file from NSIDC
@@ -64,8 +64,8 @@ def test_ATL03_equilibrium_tides(username,password):
 #-- PURPOSE: Download an ATL07 file from NSIDC and compare equilibrium tides
 def test_ATL07_equilibrium_tides(username,password):
     #-- path to an ATL07 file from NSIDC
-    HOST = ['https://n5eil01u.ecs.nsidc.org','ATLAS','ATL07.003','2018.10.14',
-        'ATL07-01_20181014000347_02350101_003_02.h5']
+    HOST = ['https://n5eil01u.ecs.nsidc.org','ATLAS','ATL07.005','2018.10.14',
+        'ATL07-01_20181014000347_02350101_005_03.h5']
     #-- only download ATL07 file if not currently existing
     if not os.access(HOST[-1], os.F_OK):
         #-- download an ATL07 file from NSIDC

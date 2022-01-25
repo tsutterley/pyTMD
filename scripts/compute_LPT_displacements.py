@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (11/2021)
+Written by Tyler Sutterley (01/2022)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -30,6 +30,11 @@ COMMAND LINE OPTIONS:
         days since 1858-11-17T00:00:00
     -d X, --deltatime X: Input delta time for files without date information
         can be set to 0 to use exact calendar date from epoch
+    -s X, --standard X: Input time standard for delta times
+        UTC: Coordinate Universal Time
+        GPS: GPS Time
+        LORAN: Long Range Navigator Time
+        TAI: International Atomic Time
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -V, --verbose: Verbose output of processing run
@@ -60,6 +65,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 01/2022: added option for changing the time standard
     Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -93,7 +99,7 @@ def get_projection(attributes, PROJECTION):
     #-- coordinate reference system string from file
     try:
         crs = pyproj.CRS.from_string(attributes['projection'])
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
@@ -118,8 +124,8 @@ def get_projection(attributes, PROJECTION):
 #-- IERS conventions (2010)
 def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
-    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None, PROJECTION='4326',
-    VERBOSE=False, MODE=0o775):
+    TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
+    TIME_STANDARD='UTC', PROJECTION='4326', VERBOSE=False, MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -188,12 +194,44 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
-    except (TypeError, KeyError):
-        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    else:
         epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
+    except (TypeError, KeyError, ValueError):
+        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+    #-- convert time to seconds
+    delta_time = to_secs*dinput['time'].flatten()
+
+    #-- calculate leap seconds if specified
+    if (TIME_STANDARD.upper() == 'GPS'):
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME_STANDARD.upper() == 'LORAN'):
+        #-- LORAN time is ahead of GPS time by 9 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME_STANDARD.upper() == 'TAI'):
+        #-- TAI time is ahead of GPS time by 19 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    else:
+        leap_seconds = 0.0
+
     #-- convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
-    MJD = pyTMD.time.convert_delta_time(to_secs*dinput['time'].flatten(),
+    MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
         epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- add offset to convert to Julian days and then convert to calendar dates
     Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, FORMAT='tuple')
@@ -349,6 +387,10 @@ def main():
     parser.add_argument('--deltatime','-d',
         type=float, nargs='+',
         help='Input delta time for files without date variables')
+    #-- input time standard definition
+    parser.add_argument('--standard','-s',
+        type=str, choices=('UTC','GPS','TAI','LORAN'), default='UTC',
+        help='Input time standard for delta times')
     #-- spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
@@ -373,7 +415,8 @@ def main():
     #-- run load pole tide program for input file
     compute_LPT_displacements(args.infile, args.outfile, FORMAT=args.format,
         VARIABLES=args.variables, HEADER=args.header, TYPE=args.type,
-        TIME_UNITS=args.epoch, TIME=args.deltatime, PROJECTION=args.projection,
+        TIME_UNITS=args.epoch, TIME=args.deltatime,
+        TIME_STANDARD=args.standard, PROJECTION=args.projection,
         VERBOSE=args.verbose, MODE=args.mode)
 
 #-- run main program

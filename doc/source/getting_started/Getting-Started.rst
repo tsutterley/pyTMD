@@ -190,7 +190,7 @@ For ocean, load and equilibrium tide programs, the epoch is 1992-01-01T00:00:00.
 For pole tide programs, the epoch is 1858-11-17T00:00:00 (Modified Julian Days).
 The `time module <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_ within ``pyTMD`` can convert different time formats to the necessary time format of a given program.
 The `time module <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_ can also parse date strings describing the units and epoch of relative times, or the calendar date of measurement for geotiff formats.
-``pyTMD`` keeps updated `tables of leap seconds <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list>`_ for converting from GPS and TAI times.
+``pyTMD`` keeps updated `tables of leap seconds <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list>`_ for converting from GPS, LORAN and TAI times.
 ``pyTMD`` keeps updated `tables of delta times <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data>`_ for converting between dynamic (TT) and universal (UT1) times.
 
 Spatial Coordinates

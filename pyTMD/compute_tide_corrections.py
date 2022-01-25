@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (12/2021)
+Written by Tyler Sutterley (01/2022)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -31,6 +31,7 @@ OPTIONS:
         time series: time series at a single point (multiple times)
     TIME: input time standard or input type
         GPS: leap seconds needed
+        LORAN: leap seconds needed (LORAN = GPS + 9 seconds)
         TAI: leap seconds needed (TAI = GPS + 19 seconds)
         UTC: no leap seconds needed
         datetime: numpy datatime array in UTC
@@ -80,6 +81,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 12/2021: added function to calculate a tidal time series
         verify coordinate dimensions for each input data type
+        added option for converting from LORAN times to UTC
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use numpy datetime arrays as input time variable
         added function for determining the input spatial variable type
@@ -149,6 +151,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         time series: time series at a single point (multiple times)
     TIME: time type if need to compute leap seconds to convert to UTC
         GPS: leap seconds needed
+        LORAN: leap seconds needed (LORAN = GPS + 9 seconds)
         TAI: leap seconds needed (TAI = GPS + 19 seconds)
         UTC: no leap seconds needed
         datetime: numpy datatime array in UTC
@@ -213,6 +216,15 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        #-- calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME.upper() == 'LORAN'):
+        #-- LORAN time is ahead of GPS time by 9 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
+            epoch2=(1980,1,6,0,0,0), scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         #-- calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
