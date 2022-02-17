@@ -240,7 +240,7 @@ def from_netCDF4(filename, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         for att_name in fileID[grid_mapping].ncattrs():
             dinput['attributes']['crs'][att_name] = \
-                fileID.variables[nc].getncattr(ncattr)
+                fileID.variables[grid_mapping].getncattr(att_name)
         #-- get the spatial projection reference information from wkt
         #-- and overwrite the file-level projection attribute (if existing)
         srs = osgeo.osr.SpatialReference()

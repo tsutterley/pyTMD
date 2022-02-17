@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_ICESat_GLA12.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (02/2022)
 Calculates radial ocean pole tide displacements for correcting ICESat/GLAS
     L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following
     IERS Convention (2010) guidelines
@@ -41,6 +41,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 02/2022: save ICESat campaign attribute to output file
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
     Updated 04/2021: can use a generically named GLA12 file as input
@@ -244,6 +245,8 @@ def compute_OPT_ICESat(FILE, METHOD=None, VERBOSE=False, MODE=0o775):
         'identifier_product_doi_authority']
     for att in global_attribute_list:
         IS_gla12_tide_attrs[att] = fileID.attrs[att]
+    #-- copy ICESat campaign name from ancillary data
+    IS_gla12_tide_attrs['Campaign'] = fileID['ANCILLARY_DATA'].attrs['Campaign']
 
     #-- add attributes for input GLA12 file
     IS_gla12_tide_attrs['input_files'] = os.path.basename(FILE)

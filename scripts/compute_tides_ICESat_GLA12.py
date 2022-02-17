@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat_GLA12.py
-Written by Tyler Sutterley (12/2021)
+Written by Tyler Sutterley (02/2022)
 Calculates tidal elevations for correcting ICESat/GLAS L2 GLA12
     Antarctic and Greenland Ice Sheet elevation data
 
@@ -84,6 +84,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 02/2022: save ICESat campaign attribute to output file
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
@@ -287,6 +288,8 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
         'identifier_product_doi_authority']
     for att in global_attribute_list:
         IS_gla12_tide_attrs[att] = fileID.attrs[att]
+    #-- copy ICESat campaign name from ancillary data
+    IS_gla12_tide_attrs['Campaign'] = fileID['ANCILLARY_DATA'].attrs['Campaign']
 
     #-- add attributes for input GLA12 file
     IS_gla12_tide_attrs['input_files'] = os.path.basename(INPUT_FILE)
