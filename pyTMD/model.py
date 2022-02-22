@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (01/2022)
+Written by Tyler Sutterley (02/2022)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
         added atl10 attributes for tidal elevation files
@@ -123,6 +124,10 @@ class model:
             self.model_directory = os.path.join(self.directory,'Arc5km2018')
             self.grid_file = self.pathfinder('grid_Arc5km2018')
             self.version = '2018'
+        elif (m == 'Arc2kmTM'):
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Arc2kmTM')
+            self.grid_file = self.pathfinder('grid_Arc2kmTM_v1')
         elif (m == 'Gr1km-v2'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
@@ -486,6 +491,27 @@ class model:
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/'
                 'aotim-5/')
+            self.atl03 = 'tide_ocean'
+            self.atl06 = 'tide_ocean'
+            self.atl07 = 'height_segment_ocean'
+            self.atl10 = 'height_segment_ocean'
+            self.atl11 = 'tide_ocean'
+            self.atl12 = 'tide_ocean_seg'
+            self.gla12 = 'd_ocElv'
+            self.variable = 'tide_ocean'
+            self.long_name = "Ocean Tide"
+            self.description = ("Ocean Tides including diurnal and "
+                "semi-diurnal (harmonic analysis), and longer period "
+                "tides (dynamic and self-consistent equilibrium).")
+        elif (m == 'Arc2kmTM'):
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Arc2kmTM')
+            self.grid_file = self.pathfinder('grid_Arc2kmTM_v1')
+            self.model_file = self.pathfinder('h_Arc2kmTM_v1')
+            self.projection = '3413'
+            self.version = 'v1'
+            # model description and references
+            self.reference = 'https://doi.org/10.18739/A2PV6B79W'
             self.atl03 = 'tide_ocean'
             self.atl06 = 'tide_ocean'
             self.atl07 = 'height_segment_ocean'
@@ -1016,6 +1042,15 @@ class model:
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/'
                 'aotim-5/')
+        elif (m == 'Arc2kmTM'):
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Arc2kmTM')
+            self.grid_file = self.pathfinder('grid_Arc2kmTM_v1')
+            self.model_file = dict(u=self.pathfinder('UV_Arc2kmTM_v1'))
+            self.projection = '3413'
+            self.version = 'v1'
+            # model description and references
+            self.reference = 'https://doi.org/10.18739/A2PV6B79W'
         elif (m == 'Gr1km-v2'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')

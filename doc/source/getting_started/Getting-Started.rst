@@ -50,6 +50,7 @@ Presently, the following models and their directories parameterized within ``pyT
     * `AODTM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N>`_: ``<path_to_tide_models>/aodtm5_tmd/``
     * `AOTIM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80>`_: ``<path_to_tide_models>/aotim5_tmd/``
     * `AOTIM-5-2018 <https://arcticdata.io/catalog/view/doi:10.18739/A21R6N14K>`_: ``<path_to_tide_models>/Arc5km2018/``
+    * `Arc2kmTM <https://arcticdata.io/catalog/view/doi:10.18739/A2PV6B79W>`_: ``<path_to_tide_models>/Arc2kmTM/``
     * Gr1km-v2: ``<path_to_tide_models>/greenlandTMD_v2/``
 
 - TOPEX/POSEIDON global tide models [Egbert2002]_

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL03.py
-Written by Tyler Sutterley (12/2021)
+Written by Tyler Sutterley (02/2022)
 Calculates tidal elevations for correcting ICESat-2 photon height data
 Calculated at ATL03 segment level using reference photon geolocation and time
 Segment level corrections can be applied to the individual photon events (PEs)
@@ -31,6 +31,7 @@ COMMAND LINE OPTIONS:
         AODTM-5
         AOTIM-5
         AOTIM-5-2018
+        Arc2kmTM
         Gr1km-v2
         GOT4.7
         GOT4.7_load
@@ -85,6 +86,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
@@ -566,7 +568,7 @@ def main():
     model_choices = ('CATS0201','CATS2008','CATS2008_load',
         'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
         'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
-        'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2',
+        'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
         'FES2014','FES2014_load')
     group.add_argument('--tide','-T',

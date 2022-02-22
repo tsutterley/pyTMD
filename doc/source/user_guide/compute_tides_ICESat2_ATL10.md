@@ -33,6 +33,7 @@ python compute_tides_ICESat2_ATL10.py --directory <path_to_directory> --tide <mo
     * `'AODTM-5'`
     * `'AOTIM-5'`
     * `'AOTIM-5-2018'`
+    * `'Arc2kmTM'`
     * `'Gr1km-v2'`
     * `'GOT4.7'`
     * `'GOT4.7_load'`

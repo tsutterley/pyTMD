@@ -30,6 +30,7 @@ COMMAND LINE OPTIONS:
         AODTM-5
         AOTIM-5
         AOTIM-5-2018
+        Arc2kmTM
         Gr1km-v2
         GOT4.7
         GOT4.7_load
@@ -85,6 +86,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 02/2022: save ICESat campaign attribute to output file
+        added Arctic 2km model (Arc2kmTM) to list of available tide models
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: refactor to use model class for files and attributes
@@ -472,7 +474,7 @@ def main():
     model_choices = ('CATS0201','CATS2008','CATS2008_load',
         'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
         'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2','TPXO7.2_load',
-        'AODTM-5','AOTIM-5','AOTIM-5-2018','Gr1km-v2',
+        'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2',
         'GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load','GOT4.10','GOT4.10_load',
         'FES2014','FES2014_load')
     group.add_argument('--tide','-T',
