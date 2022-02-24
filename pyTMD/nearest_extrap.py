@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 u"""
-nearest_extrap.py (05/2021)
-Uses kd-trees for nearest-neighbor extrapolation of valid model data
+nearest_extrap.py (02/2022)
+Uses kd-trees for nearest-neighbor extrapolation of tide model data
 
 CALLING SEQUENCE:
     data = nearest_extrap(ilon,ilat,idata,lon,lat)
 
 INPUTS:
-    ilon: longitude of tidal model
-    ilat: latitude of tidal model
-    idata: tide model data
-    lat: output latitude
-    lon: output longitude
+    x: x-coordinates of tidal model
+    y: y-coordinates of tidal model
+    data: tide model data
+    XI: output x-coordinates
+    YI: output y-coordinates
 
 OPTIONS:
     fill_value: invalid value
@@ -20,7 +20,7 @@ OPTIONS:
     EPSG: projection of tide model data
 
 OUTPUT:
-    data: extrapolated data
+    DATA: extrapolated data
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -33,6 +33,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for reading and writing spatial data
 
 UPDATE HISTORY:
+    Updated 02/2022: fix equirectangular case for cutoffs near poles
     Updated 05/2021: set ellipsoidal major axis to WGS84 in kilometers
     Updated 03/2021: add checks to prevent runtime exception
         where there are no valid points within the input bounds
@@ -46,92 +47,123 @@ import scipy.spatial
 import pyTMD.spatial
 
 #-- PURPOSE: Nearest-neighbor extrapolation of valid data to output data
-def nearest_extrap(ilon,ilat,idata,lon,lat,fill_value=np.nan,
-    dtype=np.float64,cutoff=np.inf,EPSG='4326'):
+def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
+    dtype=np.float64, cutoff=np.inf, EPSG='4326'):
     """
     Nearest-neighbor extrapolation of valid model data
 
     Arguments
     ---------
-    ilon: longitude of tidal model
-    ilat: latitude of tidal model
-    idata: tide model data
-    lat: output latitude
-    lon: output longitude
+    x: x-coordinates of tidal model
+    y: y-coordinates of tidal model
+    data: tide model data
+    XI: output x-coordinates
+    YI: output y-coordinates
 
     Keyword arguments
     -----------------
     fill_value: invalid value
     dtype: output data type
     cutoff: return only neighbors within distance [km]
+    k: number of nearest-neighbor points to use
+    power: inverse distance weighting power
     EPSG: projection of tide model data
 
     Returns
     -------
-    data: interpolated data
+    DATA: interpolated data
     """
-    #-- grid step size of tide model
-    dlon = np.abs(ilon[1] - ilon[0])
-    dlat = np.abs(ilat[1] - ilat[0])
-    #-- verify dimensions
-    lon = np.atleast_1d(lon)
-    lat = np.atleast_1d(lat)
+    #-- verify output dimensions
+    XI = np.atleast_1d(XI)
+    YI = np.atleast_1d(YI)
     #-- extrapolate valid data values to data
-    npts = len(lon)
+    npts = len(XI)
     #-- return none if no invalid points
     if (npts == 0):
         return
-    #-- allocate to output extrapolate data array
-    data = np.ma.zeros((npts),dtype=dtype,fill_value=fill_value)
-    data.mask = np.ones((npts),dtype=bool)
-    #-- initially set all data to fill value
-    data.data[:] = data.fill_value
-    #-- range of output points
-    xmin,xmax = (np.min(lon),np.max(lon))
-    ymin,ymax = (np.min(lat),np.max(lat))
 
-    #-- calculate meshgrid of model coordinates
-    gridlon,gridlat = np.meshgrid(ilon,ilat)
+    #-- allocate to output extrapolate data array
+    DATA = np.ma.zeros((npts),dtype=dtype,fill_value=fill_value)
+    DATA.mask = np.ones((npts),dtype=bool)
+    #-- initially set all data to fill value
+    DATA.data[:] = data.fill_value
+
     #-- create combined valid mask
-    valid_bounds = (~idata.mask) & np.isfinite(idata.data)
+    valid_mask = (~data.mask) & np.isfinite(data.data)
     #-- reduce to model points within bounds of input points
-    valid_bounds &= (gridlon >= (xmin-2.0*dlon))
-    valid_bounds &= (gridlon <= (xmax+2.0*dlon))
-    valid_bounds &= (gridlat >= (ymin-2.0*dlat))
-    valid_bounds &= (gridlat <= (ymax+2.0*dlat))
-    #-- check if there are any valid points within the input bounds
-    if not np.any(valid_bounds):
-        #-- return filled masked array
-        return data
-    #-- find where input grid is valid and close to output points
-    indy,indx = np.nonzero(valid_bounds)
-    #-- flattened valid data array
-    iflat = idata.data[indy,indx]
+    valid_bounds = np.ones_like(data.mask, dtype=bool)
 
     #-- calculate coordinates for nearest-neighbors
     if (EPSG == '4326'):
+        #-- global or regional equirectangular model
+        #-- calculate meshgrid of model coordinates
+        gridlon,gridlat = np.meshgrid(x,y)
         #-- calculate Cartesian coordinates of input grid
-        xflat,yflat,zflat = pyTMD.spatial.to_cartesian(gridlon[indy,indx],
-            gridlat[indy,indx],a_axis=6378.137)
-        tree = scipy.spatial.cKDTree(np.c_[xflat,yflat,zflat])
+        gridx,gridy,gridz = pyTMD.spatial.to_cartesian(gridlon,
+            gridlat, a_axis=6378.137)
         #-- calculate Cartesian coordinates of output coordinates
         #-- set ellipsoidal major axis to kilometers
-        xs,ys,zs = pyTMD.spatial.to_cartesian(lon,lat,a_axis=6378.137)
+        xs,ys,zs = pyTMD.spatial.to_cartesian(XI,YI,a_axis=6378.137)
+        #-- range of output points in cartesian coordinates
+        xmin,xmax = (np.min(xs),np.max(xs))
+        ymin,ymax = (np.min(ys),np.max(ys))
+        zmin,zmax = (np.min(zs),np.max(zs))
+        #-- reduce to model points within bounds of input points
+        valid_bounds = np.ones_like(data.mask, dtype=bool)
+        valid_bounds &= (gridx >= (xmin-2.0*cutoff))
+        valid_bounds &= (gridx <= (xmax+2.0*cutoff))
+        valid_bounds &= (gridy >= (ymin-2.0*cutoff))
+        valid_bounds &= (gridy <= (ymax+2.0*cutoff))
+        valid_bounds &= (gridz >= (zmin-2.0*cutoff))
+        valid_bounds &= (gridz <= (zmax+2.0*cutoff))
+        #-- check if there are any valid points within the input bounds
+        if not np.any(valid_mask & valid_bounds):
+            #-- return filled masked array
+            return DATA
+        #-- find where input grid is valid and close to output points
+        indy,indx = np.nonzero(valid_bounds)
+        #-- create KD-tree of valid points
+        tree = scipy.spatial.cKDTree(np.c_[gridx[indy,indx],
+            gridy[indy,indx],gridz[indy,indx]])
+        #-- flattened valid data array
+        flattened = data.data[indy,indx]
+        #-- output coordinates
         points = np.c_[xs,ys,zs]
     else:
+        #-- projected model
+        #-- calculate meshgrid of model coordinates
+        gridx,gridy = np.meshgrid(x,y)
+        #-- range of output points
+        xmin,xmax = (np.min(XI),np.max(XI))
+        ymin,ymax = (np.min(YI),np.max(YI))
+        #-- reduce to model points within bounds of input points
+        valid_bounds = np.ones_like(data.mask, dtype=bool)
+        valid_bounds &= (gridx >= (xmin-2.0*cutoff))
+        valid_bounds &= (gridx <= (xmax+2.0*cutoff))
+        valid_bounds &= (gridy >= (ymin-2.0*cutoff))
+        valid_bounds &= (gridy <= (ymax+2.0*cutoff))
+        #-- check if there are any valid points within the input bounds
+        if not np.any(valid_mask & valid_bounds):
+            #-- return filled masked array
+            return data
+        #-- find where input grid is valid and close to output points
+        indy,indx = np.nonzero(valid_bounds)
         #-- flattened model coordinates
-        tree = scipy.spatial.cKDTree(np.c_[gridlon[indy,indx],
-            gridlat[indy,indx]])
+        tree = scipy.spatial.cKDTree(np.c_[gridx[indy,indx],
+            gridy[indy,indx]])
+        #-- flattened valid data array
+        flattened = data.data[indy,indx]
         #-- output coordinates
-        points = np.c_[lon,lat]
+        points = np.c_[XI,YI]
 
     #-- query output data points and find nearest neighbor within cutoff
     dd,ii = tree.query(points,k=1,distance_upper_bound=cutoff)
+    #-- spatially extrapolate using nearest neighbors
     ind, = np.nonzero(np.isfinite(dd))
-    data.data[ind] = iflat[ii[ind]]
-    data.mask[ind] = False
+    DATA.data[ind] = flattened[ii[ind]]
+    DATA.mask[ind] = False
     #-- return extrapolated values
-    return data
+    return DATA
 
 #-- PURPOSE: calculate Euclidean distances between points
 def distance_matrix(c1,c2):
