@@ -65,8 +65,6 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
     fill_value: invalid value
     dtype: output data type
     cutoff: return only neighbors within distance [km]
-    k: number of nearest-neighbor points to use
-    power: inverse distance weighting power
     EPSG: projection of tide model data
 
     Returns

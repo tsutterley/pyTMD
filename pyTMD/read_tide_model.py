@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (07/2021)
+read_tide_model.py (02/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 02/2022: use ceiling of masks for interpolation
     Updated 07/2021: added checks that tide model files are accessible
     Updated 06/2021: fix tidal currents for bilinear interpolation
         check for nan points when reading elevation and transport files
@@ -192,23 +193,23 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         #-- use quick bilinear to interpolate values
         D = bilinear_interp(xi,yi,hz,x,y)
         mz1 = bilinear_interp(xi,yi,mz,x,y)
-        mz1 = np.floor(mz1).astype(mz.dtype)
+        mz1 = np.ceil(mz1).astype(mz.dtype)
         if (TYPE != 'z'):
             mu1 = bilinear_interp(xi,yi,mu,x,y)
-            mu1 = np.floor(mu1).astype(mu.dtype)
+            mu1 = np.ceil(mu1).astype(mu.dtype)
             mv1 = bilinear_interp(xi,yi,mv,x,y)
-            mv1 = np.floor(mv1).astype(mz.dtype)
+            mv1 = np.ceil(mv1).astype(mz.dtype)
     elif (METHOD == 'spline'):
         #-- use scipy bivariate splines to interpolate values
         f1=scipy.interpolate.RectBivariateSpline(xi,yi,hz.T,kx=1,ky=1)
         f2=scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)
         D = f1.ev(x,y)
-        mz1 = np.floor(f2.ev(x,y)).astype(mz.dtype)
+        mz1 = np.ceil(f2.ev(x,y)).astype(mz.dtype)
         if (TYPE != 'z'):
             f3=scipy.interpolate.RectBivariateSpline(xi,yi,mu.T,kx=1,ky=1)
             f4=scipy.interpolate.RectBivariateSpline(xi,yi,mv.T,kx=1,ky=1)
-            mu1 = np.floor(f3.ev(x,y)).astype(mu.dtype)
-            mv1 = np.floor(f4.ev(x,y)).astype(mv.dtype)
+            mu1 = np.ceil(f3.ev(x,y)).astype(mu.dtype)
+            mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),hz,
@@ -216,14 +217,14 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         r2 = scipy.interpolate.RegularGridInterpolator((yi,xi),mz,
             method=METHOD,bounds_error=False,fill_value=0)
         D = r1.__call__(np.c_[y,x])
-        mz1 = np.floor(r2.__call__(np.c_[y,x])).astype(mz.dtype)
+        mz1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mz.dtype)
         if (TYPE != 'z'):
             r3 = scipy.interpolate.RegularGridInterpolator((yi,xi),mu,
                 method=METHOD,bounds_error=False,fill_value=0)
             r4 = scipy.interpolate.RegularGridInterpolator((yi,xi),mv,
                 method=METHOD,bounds_error=False,fill_value=0)
-            mu1 = np.floor(r3.__call__(np.c_[y,x])).astype(mu.dtype)
-            mv1 = np.floor(r4.__call__(np.c_[y,x])).astype(mv.dtype)
+            mu1 = np.ceil(r3.__call__(np.c_[y,x])).astype(mu.dtype)
+            mv1 = np.ceil(r4.__call__(np.c_[y,x])).astype(mv.dtype)
 
     #-- u and v are velocities in cm/s
     if TYPE in ('v','u'):
