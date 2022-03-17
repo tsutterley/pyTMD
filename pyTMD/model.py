@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (02/2022)
+Written by Tyler Sutterley (03/2022)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 03/2022: added static decorators to define model lists
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
@@ -1101,6 +1102,68 @@ class model:
     def suffix(self):
         """format suffix flag"""
         return '.nc' if (self.format == 'netcdf') else ''
+
+    @staticmethod
+    def global_ocean():
+        return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+            'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas',
+            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
+
+    @staticmethod
+    def global_load():
+        return ['TPXO7.2_load','GOT4.7_load','GOT4.8_load',
+            'GOT4.10_load','FES2014_load','EOT20_load']
+
+    @staticmethod
+    def global_current():
+        return ['TPXO9-atlas','TPXO9-atlas-v2',
+            'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5',
+            'TPXO9.1','TPXO8-atlas','TPXO7.2','FES2014']
+
+    @staticmethod
+    def antarctic_ocean():
+        return ['CATS0201','CATS2008']
+
+    @staticmethod
+    def antarctic_load():
+        return ['CATS2008_load']
+
+    @staticmethod
+    def antarctic_current():
+        return ['CATS0201','CATS2008']
+
+    @staticmethod
+    def arctic_ocean():
+        return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2']
+
+    @staticmethod
+    def arctic_load():
+        return []
+
+    @staticmethod
+    def arctic_current():
+        return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2']
+
+    @staticmethod
+    def ocean_elevation():
+        return ['CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
+            'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1',
+            'TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018',
+            'Arc2kmTM','Gr1km-v2','GOT4.7','GOT4.8','GOT4.10',
+            'FES2014','EOT20']
+
+    @staticmethod
+    def load_elevation():
+        return ['CATS2008_load','TPXO7.2_load','GOT4.7_load',
+            'GOT4.8_load','GOT4.10_load','FES2014_load','EOT20_load']
+
+    @staticmethod
+    def ocean_current():
+        return ['CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
+            'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5',
+            'TPXO9.1','TPXO8-atlas','TPXO7.2',
+            'AODTM-5','AOTIM-5','AOTIM-5-2018',
+            'Arc2kmTM','Gr1km-v2','FES2014']
 
     def pathfinder(self,model_file):
         """Completes file paths and appends file and gzip suffixes

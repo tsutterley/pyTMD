@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (02/2022)
+read_tide_model.py (03/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 03/2022: invert tide mask to be True for invalid points
     Updated 02/2022: use ceiling of masks for interpolation
     Updated 07/2021: added checks that tide model files are accessible
     Updated 06/2021: fix tidal currents for bilinear interpolation
@@ -145,6 +146,8 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     else:
         #-- if reading a single OTIS solution
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
+    #-- invert tide mask to be True for invalid points
+    mz = np.logical_not(mz).astype(mz.dtype)
     #-- adjust dimensions of input coordinates to be iterable
     #-- run wrapper function to convert coordinate systems of input lat/lon
     x,y = convert_ll_xy(np.atleast_1d(ilon),np.atleast_1d(ilat),EPSG,'F')
@@ -266,7 +269,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- use quick bilinear to interpolate values
                 z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
-                z1.mask = (np.isnan(z1.data) | (~mz1.astype(bool)))
+                z1.mask = (np.isnan(z1.data) | (mz1.astype(bool)))
                 z1.data[z1.mask] = z1.fill_value
             elif (METHOD == 'spline'):
                 #-- use scipy bivariate splines to interpolate values
@@ -277,7 +280,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z1.data.real = f1.ev(x,y)
                 z1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
-                z1.mask = (~mz1.astype(bool))
+                z1.mask = (mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
@@ -286,7 +289,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
-                z1.mask = (z1.data == z1.fill_value) | (~mz1.astype(bool))
+                z1.mask = (z1.data == z1.fill_value) | (mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             #-- extrapolate data using nearest-neighbors
             if EXTRAPOLATE and np.any(z1.mask):
@@ -327,7 +330,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- use quick bilinear to interpolate values
                 u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
-                u1.mask = (np.isnan(u1.data) | (~mu1.astype(bool)))
+                u1.mask = (np.isnan(u1.data) | (mu1.astype(bool)))
                 u1.data[u1.mask] = u1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(xu,yi,
@@ -337,7 +340,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u1.data.real = f1.ev(x,y)
                 u1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
-                u1.mask = (~mu1.astype(bool))
+                u1.mask = (mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
@@ -345,7 +348,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                     method=METHOD,bounds_error=False,fill_value=u1.fill_value)
                 u1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
-                u1.mask = (u1.data == u1.fill_value) | (~mu1.astype(bool))
+                u1.mask = (u1.data == u1.fill_value) | (mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             #-- extrapolate data using nearest-neighbors
             if EXTRAPOLATE and np.any(u1.mask):
@@ -387,7 +390,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- use quick bilinear to interpolate values
                 v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
                 #-- replace nan values with fill_value
-                v1.mask = (np.isnan(v1.data) | (~mv1.astype(bool)))
+                v1.mask = (np.isnan(v1.data) | (mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value
             elif (METHOD == 'spline'):
                 f1 = scipy.interpolate.RectBivariateSpline(xi,yv,
@@ -397,7 +400,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v1.data.real = f1.ev(x,y)
                 v1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
-                v1.mask = (~mv1.astype(bool))
+                v1.mask = (mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
@@ -405,7 +408,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                     method=METHOD,bounds_error=False,fill_value=v1.fill_value)
                 v1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
-                v1.mask = (v1.data == v1.fill_value) | (~mv1.astype(bool))
+                v1.mask = (v1.data == v1.fill_value) | (mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             #-- extrapolate data using nearest-neighbors
             if EXTRAPOLATE and np.any(v1.mask):
@@ -983,7 +986,7 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
         ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
         X,Y = np.meshgrid(ilon,ilat)
         #-- local model output
-        validy,validx = np.nonzero(~val[VARIABLE].mask)
+        validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
         for indy,indx in zip(validy,validx):
             #-- check if model is -180:180
             lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
@@ -1043,7 +1046,7 @@ def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
     for key,val in local.items():
         #-- local model output
         zlocal = val[VARIABLE][:]
-        validy,validx = np.nonzero(~zlocal.mask)
+        validy,validx = np.nonzero(np.logical_not(zlocal.mask))
         #-- create latitude and longitude for local model
         ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
         ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
