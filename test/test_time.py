@@ -38,7 +38,7 @@ def test_julian(YEAR,MONTH):
     assert (DD == DAY)
     assert (HH == HOUR)
     assert (MN == MINUTE)
-    assert np.isclose(SS, SECOND, atol=1e-5)
+    assert np.isclose(SS, SECOND, atol=1e-2)
 
 #-- parameterize calendar dates
 @pytest.mark.parametrize("YEAR", np.random.randint(1992,2020,size=2))
