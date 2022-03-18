@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (02/2022)
+Written by Tyler Sutterley (03/2022)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -109,6 +109,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 01/2022: added option for changing the time standard
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
@@ -414,13 +415,10 @@ def main():
         default=os.getcwd(),
         help='Working data directory')
     #-- tide model to use
-    model_choices = ('CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
-        'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1',
-        'TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018',
-        'Arc2kmTM','Gr1km-v2','FES2014')
+    choices = sorted(pyTMD.model.ocean_current())
     group.add_argument('--tide','-T',
         metavar='TIDE', type=str,
-        choices=model_choices,
+        choices=choices,
         help='Tide model to use in calculating currents')
     parser.add_argument('--atlas-format',
         type=str, choices=('OTIS','netcdf'), default='netcdf',

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (01/2022)
+Written by Tyler Sutterley (03/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 03/2022: add option to specify output GDAL driver
     Updated 01/2022: use iteration breaks in convert ellipsoid function
         remove fill_value attribute after creating netCDF4 and HDF5 variables
     Updated 11/2021: added empty cases to netCDF4 and HDF5 output for crs
@@ -559,11 +560,13 @@ def to_geotiff(output, attributes, filename, **kwargs):
         full path of output geotiff file
     Options:
         output variable name
+        GDAL driver
         GDAL data type
         GDAL driver creation options
     """
     #-- set default keyword arguments
     kwargs.setdefault('varname','data')
+    kwargs.setdefault('driver',"GTiff")
     kwargs.setdefault('dtype',osgeo.gdal.GDT_Float64)
     kwargs.setdefault('options',['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
@@ -571,8 +574,8 @@ def to_geotiff(output, attributes, filename, **kwargs):
     output = expand_dims(output, varname=varname)
     #-- grid shape
     ny,nx,nband = np.shape(output[varname])
-    #-- output as geotiff
-    driver = osgeo.gdal.GetDriverByName("GTiff")
+    #-- output as geotiff or specified driver
+    driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     #-- set up the dataset with creation options
     ds = driver.Create(filename, nx, ny, nband,
         kwargs['dtype'], kwargs['options'])
