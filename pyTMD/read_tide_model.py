@@ -55,6 +55,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 03/2022: invert tide mask to be True for invalid points
+        add separate function for resampling ATLAS compact global model
+        decode ATLAS compact constituents for Python3 compatibility
     Updated 02/2022: use ceiling of masks for interpolation
     Updated 07/2021: added checks that tide model files are accessible
     Updated 06/2021: fix tidal currents for bilinear interpolation
@@ -755,7 +757,7 @@ def read_atlas_elevation(input_file,ic,constituent):
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         #-- extract constituents for localized solution
-        cons = fid.read(nc1*4).strip().split()
+        cons = fid.read(nc1*4).strip().decode("utf-8").split()
         #-- check if constituent is in list of localized solutions
         if (constituent in cons):
             ic1, = [i for i,c in enumerate(cons) if (c == constituent)]
@@ -901,7 +903,7 @@ def read_atlas_transport(input_file,ic,constituent):
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         #-- extract constituents for localized solution
-        cons = fid.read(nc1*4).strip().split()
+        cons = fid.read(nc1*4).strip().decode("utf-8").split()
         #-- check if constituent is in list of localized solutions
         if (constituent in cons):
             ic1, = [i for i,c in enumerate(cons) if (c == constituent)]
@@ -998,8 +1000,48 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     m30.mask = (m30.data == m30.fill_value)
     return m30
 
+#-- PURPOSE: resample global solution to higher-resolution
+def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
+    """
+    Interpolates global ATLAS tidal solutions into a
+    higher-resolution sampling
+
+    Arguments
+    ---------
+    xi: input x-coordinates of global tide model
+    yi: input y-coordinates of global tide model
+    zi: global tide model data
+
+    Keyword arguments
+    -----------------
+    spacing: output grid spacing
+
+    Returns
+    -------
+    xs: x-coordinates of high-resolution tide model
+    ys: y-coordinates of high-resolution tide model
+    zs: high-resolution tidal solution for variable
+    """
+    #-- create resampled grid dimensions
+    xs = np.arange(spacing/2.0, 360.0+spacing/2.0, spacing)
+    ys = np.arange(-90.0+spacing/2.0, 90.0+spacing/2.0, spacing)
+    #-- interpolate global solution
+    zs = np.ma.zeros((len(ys),len(xs)),dtype=zi.dtype)
+    zs.mask = np.zeros((len(ys),len(xs)),dtype=bool)
+    #-- test if combining elevation/transport variables with complex components
+    if np.iscomplexobj(zs):
+        f1 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.real.T, kx=1,ky=1)
+        f2 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.imag.T, kx=1,ky=1)
+        zs.data.real[:,:] = f1(xs,ys).T
+        zs.data.imag[:,:] = f2(xs,ys).T
+    else:
+        f = scipy.interpolate.RectBivariateSpline(xi, yi, zi.T, kx=1,ky=1)
+        zs.data[:,:] = f(xs,ys).T
+    #-- return resampled solution and coordinates
+    return (xs,ys,zs)
+
 #-- PURPOSE: combines global and local atlas solutions
-def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
+def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
     """
     Combines global and local ATLAS tidal solutions into a single
     high-resolution solution
@@ -1028,20 +1070,8 @@ def combine_atlas_model(xi,yi,zi,pmask,local,VARIABLE=None):
     """
     #-- create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
-    x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)
-    y30 = np.arange(-90.0+d30/2.0, 90.0+d30/2.0, d30)
     #-- interpolate global solution to 2 arc-minute solution
-    z30 = np.ma.zeros((len(y30),len(x30)),dtype=zi.dtype)
-    z30.mask = np.zeros((len(y30),len(x30)),dtype=bool)
-    #-- test if combining elevation/transport variables with complex components
-    if np.iscomplexobj(z30):
-        f1 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.real.T, kx=1,ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.imag.T, kx=1,ky=1)
-        z30.data.real[:,:] = f1(x30,y30).T
-        z30.data.imag[:,:] = f2(x30,y30).T
-    else:
-        f = scipy.interpolate.RectBivariateSpline(xi, yi, zi.T, kx=1,ky=1)
-        z30.data[:,:] = f(x30,y30).T
+    x30,y30,z30 = interpolate_atlas_model(xi,yi,zi,spacing=d30)
     #-- iterate over localized solutions
     for key,val in local.items():
         #-- local model output
