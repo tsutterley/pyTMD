@@ -1165,6 +1165,30 @@ class model:
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
             'Arc2kmTM','Gr1km-v2','FES2014']
 
+    @staticmethod
+    def OTIS():
+        return ['CATS0201','CATS2008','CATS2008_load','TPXO9.1',
+            'TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
+            'AOTIM-5-2018','Arc2kmTM','Gr1km-v2',]
+
+    @staticmethod
+    def ATLAS_compact():
+        return ['TPXO8-atlas']
+
+    @staticmethod
+    def ATLAS():
+        return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+            'TPXO9-atlas-v4','TPXO9-atlas-v5']
+
+    @staticmethod
+    def GOT():
+        return ['GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load',
+            'GOT4.10','GOT4.10_load']
+
+    @staticmethod
+    def FES():
+        return ['FES2014','FES2014_load','EOT20','EOT20_load']
+
     def pathfinder(self,model_file):
         """Completes file paths and appends file and gzip suffixes
         """
