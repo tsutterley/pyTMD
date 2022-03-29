@@ -57,6 +57,7 @@ UPDATE HISTORY:
     Updated 03/2022: invert tide mask to be True for invalid points
         add separate function for resampling ATLAS compact global model
         decode ATLAS compact constituents for Python3 compatibility
+        reduce iterative steps when combining ATLAS local models
     Updated 02/2022: use ceiling of masks for interpolation
     Updated 07/2021: added checks that tide model files are accessible
     Updated 06/2021: fix tidal currents for bilinear interpolation
@@ -983,19 +984,25 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     m30.data[:,:] = mz[gridy.astype(np.int32),gridx.astype(np.int32)]
     #-- iterate over localized solutions to fill in high-resolution coastlines
     for key,val in local.items():
+        #-- shape of local variable
+        ny,nx = np.shape(val[VARIABLE])
+        #-- correct limits for local grid
+        lon0 = np.floor(val['lon'][0]/d30)*d30
+        lat0 = np.floor(val['lat'][0]/d30)*d30
         #-- create latitude and longitude for local model
-        ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
-        ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
-        X,Y = np.meshgrid(ilon,ilat)
+        xi = lon0 + np.arange(nx)*d30
+        yi = lat0 + np.arange(ny)*d30
+        gridx,gridy = np.meshgrid(xi,yi)
         #-- local model output
         validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
-        for indy,indx in zip(validy,validx):
-            #-- check if model is -180:180
-            lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
-            ii = int((lon30 - x30[0])/d30)
-            jj = int((Y[indy,indx] - y30[0])/d30)
-            #-- fill global mask with regional solution
-            m30[jj,ii] = 1
+        #-- check if any model longitudes are -180:180
+        X = np.where(gridx[validy,validx] <= 0.0,
+            gridx[validy,validx] + 360.0, gridx[validy,validx])
+        #-- grid indices of local model
+        ii = ((X - x30[0])//d30).astype('i')
+        jj = ((gridy[validy,validx] - y30[0])//d30).astype('i')
+        #-- fill global mask with regional solution
+        m30[jj,ii] = 1
     #-- return the 2 arc-minute mask
     m30.mask = (m30.data == m30.fill_value)
     return m30
@@ -1074,20 +1081,25 @@ def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
     x30,y30,z30 = interpolate_atlas_model(xi,yi,zi,spacing=d30)
     #-- iterate over localized solutions
     for key,val in local.items():
-        #-- local model output
-        zlocal = val[VARIABLE][:]
-        validy,validx = np.nonzero(np.logical_not(zlocal.mask))
+        #-- shape of local variable
+        ny,nx = np.shape(val[VARIABLE])
+        #-- correct limits for local grid
+        lon0 = np.floor(val['lon'][0]/d30)*d30
+        lat0 = np.floor(val['lat'][0]/d30)*d30
         #-- create latitude and longitude for local model
-        ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
-        ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
-        X,Y = np.meshgrid(ilon,ilat)
-        for indy,indx in zip(validy,validx):
-            #-- check if model is -180:180
-            lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
-            ii = int((lon30 - x30[0])/d30)
-            jj = int((Y[indy,indx] - y30[0])/d30)
-            #-- fill global model with regional solution
-            z30.data[jj,ii] = zlocal[indy,indx]
+        xi = lon0 + np.arange(nx)*d30
+        yi = lat0 + np.arange(ny)*d30
+        gridx,gridy = np.meshgrid(xi,yi)
+        #-- local model output
+        validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
+        #-- check if any model longitudes are -180:180
+        X = np.where(gridx[validy,validx] <= 0.0,
+            gridx[validy,validx] + 360.0, gridx[validy,validx])
+        #-- grid indices of local model
+        ii = ((X - x30[0])//d30).astype('i')
+        jj = ((gridy[validy,validx] - y30[0])//d30).astype('i')
+        #-- fill global mask with regional solution
+        z30.data[jj,ii] = val[VARIABLE][validy,validx]
     #-- return 2 arc-minute solution and coordinates
     return (x30,y30,z30)
 

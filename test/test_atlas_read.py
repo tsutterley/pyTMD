@@ -159,7 +159,85 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
         assert np.all(np.abs(ph_diff) <= ph_eps)
 
 #-- parameterize interpolation method
-@pytest.mark.parametrize("METHOD", ['spline','nearest'])
+@pytest.mark.parametrize("METHOD", ['bilinear'])
+@pytest.mark.parametrize("EXTRAPOLATE", [False])
+#-- PURPOSE: Tests that interpolated results are comparable to OTPS2 program
+def test_verify_TPXO8(METHOD, EXTRAPOLATE):
+    #-- model parameters for TPXO8-atlas
+    model = pyTMD.model(filepath,compressed=False).elevation('TPXO8-atlas')
+    #-- constituents for test
+    constituents = ['m2','s2']
+
+    #-- compile numerical expression operator
+    rx = re.compile(r'[-+]?(?:(?:\d+\.\d+\.\d+)|(?:\d+\:\d+\:\d+)'
+        r'|(?:\d*\.\d+)|(?:\d+\.?))')
+    #-- read validation dataset (m2, s2)
+    #-- Lat  Lon  mm.dd.yyyy hh:mm:ss  z(m)  Depth(m)
+    with gzip.open(os.path.join(filepath,'predict_tide.out.gz'),'r') as f:
+        file_contents = f.read().decode('ISO-8859-1').splitlines()
+    #-- number of validation data points
+    nval = len(file_contents) - 14
+    #-- allocate for validation dataset
+    val = dict(latitude=np.zeros((nval)),longitude=np.zeros((nval)),
+        time=np.zeros((nval)),height=np.zeros((nval)))
+    #-- counter for filling variables
+    j = 0
+    #-- for each line in the validation file
+    for i,line in enumerate(file_contents):
+        #-- extract numerical values
+        line_contents = rx.findall(line)
+        #-- skip line if not a data line
+        if (len(line_contents) != 6):
+            continue
+        #-- skip grounded point
+        if (line_contents[0] == '-1.1830') and (line_contents[1] == '311.5330'):
+            #-- Predicted from local solution :AmS
+            continue
+        #-- save longitude, latitude and tide height
+        val['latitude'][i] = np.float64(line_contents[0])
+        val['longitude'][i] = np.float64(line_contents[1])
+        val['height'][i] = np.float64(line_contents[4])
+        #-- extract dates
+        MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
+        hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
+        #-- convert from calendar dates into days since 1992-01-01T00:00:00
+        val['time'][i] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
+            hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
+        #-- add to counter
+        j += 1
+
+    #-- extract amplitude and phase from tide model
+    amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(
+        val['longitude'], val['latitude'], model.grid_file,
+        model.model_file, model.projection, TYPE=model.type,
+        METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, GRID=model.format)
+    #-- delta time
+    deltat = np.zeros_like(val['time'])
+    #-- calculate complex phase in radians for Euler's
+    #-- calculate constituent oscillations
+    hc = amp*np.exp(-1j*ph*np.pi/180.0)
+    #-- find index to reduce to list of wanted constituents
+    i = [c.index(cons) for cons in constituents]
+
+    #-- allocate for out tides at point
+    tide = np.ma.zeros((nval))
+    tide.mask = np.zeros((nval),dtype=bool)
+    #-- predict tidal elevations at time
+    tide.mask[:] = np.any(hc.mask, axis=1)
+    tide.data[:] = pyTMD.predict_tide_drift(val['time'], hc[:,i],
+        constituents, DELTAT=deltat, CORRECTIONS=model.format)
+
+    #-- will verify differences between model outputs are within tolerance
+    eps = 0.03
+    #-- calculate differences between OTPS2 and python version
+    difference = np.ma.zeros((nval))
+    difference.data[:] = tide.data - val['height']
+    difference.mask = np.copy(tide.mask)
+    if not np.all(difference.mask):
+        assert np.all(np.abs(difference) <= eps)
+
+#-- parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
 #-- PURPOSE: Tests that interpolated results are comparable to OTPSnc program
 def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
@@ -190,6 +268,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     val = dict(latitude=np.zeros((nval)),longitude=np.zeros((nval)),
         time=np.zeros((nval)),height=np.zeros((nval)))
     for i,line in enumerate(file_contents[6:]):
+        #-- extract numerical values
         line_contents = rx.findall(line)
         val['latitude'][i] = np.float64(line_contents[0])
         val['longitude'][i] = np.float64(line_contents[1])
@@ -206,6 +285,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         val['longitude'], val['latitude'], grid_file, model_file,
         TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
         SCALE=SCALE, GZIP=GZIP)
+    #-- delta time
     deltat = np.zeros_like(val['time'])
     #-- verify constituents
     assert (c == constituents)

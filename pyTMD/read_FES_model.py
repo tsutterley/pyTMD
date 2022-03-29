@@ -13,7 +13,9 @@ Reads ascii and netCDF4 FES tidal solutions provided by AVISO
 INPUTS:
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    model_files: list of model files for each constituent (can be gzipped)
+    model_files: list of model files for each constituent
+
+OPTIONS:
     TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
@@ -24,8 +26,6 @@ INPUTS:
         FES2012
         FES2014
         EOT20
-
-OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
