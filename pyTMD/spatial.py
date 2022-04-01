@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (03/2022)
+Written by Tyler Sutterley (04/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 04/2022: add option to reduce input GDAL raster datasets
     Updated 03/2022: add option to specify output GDAL driver
     Updated 01/2022: use iteration breaks in convert ellipsoid function
         remove fill_value attribute after creating netCDF4 and HDF5 variables
@@ -52,7 +53,7 @@ import datetime
 import warnings
 import numpy as np
 try:
-    import osgeo.gdal, osgeo.osr
+    import osgeo.gdal, osgeo.osr, osgeo.gdalconst
 except ModuleNotFoundError:
     warnings.filterwarnings("always")
     warnings.warn("GDAL not available")
@@ -347,9 +348,11 @@ def from_geotiff(filename, **kwargs):
     Inputs: full path of input geotiff file
     Options:
         geotiff file is compressed or streamed from memory
+        extent of the file to read: [xmin, xmax, ymin, ymax]
     """
     #-- set default keyword arguments
     kwargs.setdefault('compression',None)
+    kwargs.setdefault('bounds',None)
     #-- Open the geotiff file for reading
     if (kwargs['compression'] == 'gzip'):
         #-- read gzip compressed file and extract into memory-mapped object
@@ -365,7 +368,8 @@ def from_geotiff(filename, **kwargs):
         ds = osgeo.gdal.Open(mmap_name)
     else:
         #-- read geotiff dataset
-        ds = osgeo.gdal.Open(case_insensitive_filename(filename))
+        ds = osgeo.gdal.Open(case_insensitive_filename(filename),
+            osgeo.gdalconst.GA_ReadOnly)
     #-- print geotiff file if verbose
     logging.info(filename)
     #-- create python dictionary for output variables and attributes
@@ -387,12 +391,38 @@ def from_geotiff(filename, **kwargs):
     ymax = info_geotiff[3]
     xmax = xmin + (xsize-1)*info_geotiff[1]
     ymin = ymax + (ysize-1)*info_geotiff[5]
-    dinput['attributes']['extent'] = (xmin,xmax,ymin,ymax)
     #-- x and y pixel center coordinates (converted from upper left)
-    dinput['x'] = xmin + info_geotiff[1]/2.0 + np.arange(xsize)*info_geotiff[1]
-    dinput['y'] = ymax + info_geotiff[5]/2.0 + np.arange(ysize)*info_geotiff[5]
-    #-- read full image with GDAL
-    dinput['data'] = ds.ReadAsArray()
+    x = xmin + info_geotiff[1]/2.0 + np.arange(xsize)*info_geotiff[1]
+    y = ymax + info_geotiff[5]/2.0 + np.arange(ysize)*info_geotiff[5]
+    #-- if reducing to specified bounds
+    if kwargs['bounds'] is not None:
+        #-- reduced x and y limits
+        xlimits = (kwargs['bounds'][0],kwargs['bounds'][1])
+        ylimits = (kwargs['bounds'][2],kwargs['bounds'][3])
+        #-- Specify offset and rows and columns to read
+        xoffset = int((xlimits[0] - xmin)/info_geotiff[1])
+        yoffset = int((ymax - ylimits[1])/np.abs(info_geotiff[5]))
+        xcount = int((xlimits[1] - xlimits[0])/info_geotiff[1]) + 1
+        ycount = int((ylimits[1] - ylimits[0])/np.abs(info_geotiff[5])) + 1
+        #-- reduced x and y pixel center coordinates
+        dinput['x'] = x[slice(xoffset, xoffset + xcount, None)]
+        dinput['y'] = y[slice(yoffset, yoffset + ycount, None)]
+        #-- read reduced image with GDAL
+        dinput['data'] = ds.ReadAsArray(xoff=xoffset, yoff=yoffset,
+            xsize=xcount, ysize=ycount)
+        #-- reduced image extent (converted back to upper left)
+        xmin = np.min(dinput['x']) - info_geotiff[1]/2.0
+        xmax = np.max(dinput['x']) - info_geotiff[1]/2.0
+        ymin = np.min(dinput['y']) - info_geotiff[5]/2.0
+        ymax = np.max(dinput['y']) - info_geotiff[5]/2.0
+    else:
+        #-- x and y pixel center coordinates
+        dinput['x'] = np.copy(x)
+        dinput['y'] = np.copy(y)
+        #-- read full image with GDAL
+        dinput['data'] = ds.ReadAsArray()
+    #-- image extent
+    dinput['attributes']['extent'] = (xmin, xmax, ymin, ymax)
     #-- set default time to zero for each band
     dinput.setdefault('time', np.zeros((bsize)))
     #-- check if image has fill values
