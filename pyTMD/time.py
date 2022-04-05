@@ -40,8 +40,10 @@ import pyTMD.utilities
 #-- PURPOSE: parse a date string into epoch and units scale
 def parse_date_string(date_string):
     """
-    parse a date string of the form time-units since ``yyyy-mm-dd hh:mm:ss``
-    or ``yyyy-mm-dd hh:mm:ss`` for exact calendar dates
+    parse a date string of the form
+
+    - time-units since ``yyyy-mm-dd hh:mm:ss``
+    - ``yyyy-mm-dd hh:mm:ss`` for exact calendar dates
 
     Parameters
     ----------

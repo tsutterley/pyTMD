@@ -12,9 +12,9 @@ Calling Sequence
     import pyTMD.output_otis_grid
     import pyTMD.output_otis_elevation
     import pyTMD.output_otis_transport
-    output_otis_grid(grid_file,xlim,ylim,hz,mz,iob,dt)
-    output_otis_elevation(elevation_file,h,xlim,ylim,constituents)
-    output_otis_transport(transport_file,u,v,xlim,ylim,constituents)
+    pyTMD.output_otis_grid(grid_file,xlim,ylim,hz,mz,iob,dt)
+    pyTMD.output_otis_elevation(elevation_file,h,xlim,ylim,constituents)
+    pyTMD.output_otis_transport(transport_file,u,v,xlim,ylim,constituents)
 
 `Source code`__
 
