@@ -56,7 +56,7 @@ conventions for calculating radial pole tide displacements.
     :hidden:
     :caption: Utilities
 
-    user_guide/arcticdata_tides.rst
+    user_guide/arcticdata_tides.md
     user_guide/aviso_fes_tides.md
     user_guide/reduce_OTIS_files.md
     user_guide/usap_cats_tides.md
