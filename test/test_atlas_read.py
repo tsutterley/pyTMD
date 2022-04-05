@@ -44,7 +44,7 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
 #-- PURPOSE: Download TPXO8 ATLAS compact constituents from AWS S3 bucket
-# @pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
     #-- get aws session object
     session = boto3.Session(

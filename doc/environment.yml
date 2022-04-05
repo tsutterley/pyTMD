@@ -4,6 +4,7 @@ channels:
 dependencies:
   - docutils<0.18
   - fontconfig
+  - freetype
   - gdal
   - graphviz
   - h5py
@@ -23,5 +24,6 @@ dependencies:
   - sphinx
   - sphinx-markdown-tables
   - sphinx_rtd_theme
+  - texlive-core
   - pip:
     - ..
