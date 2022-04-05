@@ -4,6 +4,7 @@ channels:
 dependencies:
   - docutils<0.18
   - gdal
+  - graphviz
   - h5py
   - lxml
   - netCDF4
