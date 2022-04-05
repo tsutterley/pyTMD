@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 read_iers_EOP.py
-Written by Tyler Sutterley (07/2021)
+Written by Tyler Sutterley (04/2022)
 Provides the daily earth orientation parameters (EOP) from IERS
     http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly
 Data format: http://maia.usno.navy.mil/ser7/readme.finals
@@ -13,7 +13,6 @@ OUTPUTS:
     MJD: modified julian date of EOP measurements
     x: Angular coordinate x [arcsec]
     y: Angular coordinate y [arcsec]
-    flag: IERS (I) or Prediction (P) flag for polar motion values
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -25,6 +24,7 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 07/2021: added check that IERS finals file is accessible
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 07/2020: added function docstrings
@@ -39,16 +39,19 @@ def read_iers_EOP(input_file):
     """
     Calculates the daily earth orientation parameters (EOP) from IERS
 
-    Arguments
-    ---------
-    input_file: full path to IERS EOP "finals" file
+    Parameters
+    ----------
+    input_file: str
+        full path to IERS EOP "finals" file
 
     Returns
     -------
-    MJD: modified Julian date of EOP measurements
-    x: Angular coordinate x [arcsec]
-    y: Angular coordinate y [arcsec]
-    flag: IERS (I) or Prediction (P) flag for polar motion values
+    MJD: float
+        modified Julian date of EOP measurements
+    x: float
+        Angular coordinate x [arcsec]
+    y: float
+        Angular coordinate y [arcsec]
     """
     #-- check that IERS finals file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):

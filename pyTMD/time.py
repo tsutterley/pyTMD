@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (04/2021)
+Written by Tyler Sutterley (04/2022)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 04/2021: updated NIST ftp server url for leap-seconds.list
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 02/2021: NASA CDDIS anonymous ftp access discontinued
@@ -30,6 +31,7 @@ UPDATE HISTORY:
 """
 import os
 import re
+import logging
 import datetime
 import numpy as np
 import dateutil.parser
@@ -38,17 +40,20 @@ import pyTMD.utilities
 #-- PURPOSE: parse a date string into epoch and units scale
 def parse_date_string(date_string):
     """
-    parse a date string of the form time-units since yyyy-mm-dd hh:mm:ss
-    or yyyy-mm-dd hh:mm:ss for exact calendar dates
+    parse a date string of the form time-units since ``yyyy-mm-dd hh:mm:ss``
+    or ``yyyy-mm-dd hh:mm:ss`` for exact calendar dates
 
-    Arguments
-    ---------
-    date_string: time-units since yyyy-mm-dd hh:mm:ss
+    Parameters
+    ----------
+    date_string: str
+        time-units since yyyy-mm-dd hh:mm:ss
 
     Returns
     -------
-    epoch of delta time
-    multiplication factor to convert to seconds
+    epoch: list
+        epoch of delta time
+    conversion_factor: float
+        multiplication factor to convert to seconds
     """
     #-- try parsing the original date string as a date
     try:
@@ -79,9 +84,10 @@ def split_date_string(date_string):
     """
     split a date string into units and epoch
 
-    Arguments
-    ---------
-    date_string: time-units since yyyy-mm-dd hh:mm:ss
+    Parameters
+    ----------
+    date_string: str
+        time-units since yyyy-mm-dd hh:mm:ss
     """
     try:
         units,_,epoch = date_string.split(None,2)
@@ -93,11 +99,16 @@ def split_date_string(date_string):
 #-- PURPOSE: convert a datetime object into a list
 def datetime_to_list(date):
     """
-    convert a datetime object into a list [year,month,day,hour,minute,second]
+    convert a datetime object into a list
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     date: datetime object
+
+    Returns
+    -------
+    date: list
+        [year,month,day,hour,minute,second]
     """
     return [date.year,date.month,date.day,date.hour,date.minute,date.second]
 
@@ -106,13 +117,15 @@ def calendar_days(year):
     """
     Calculates the number of days per month for a given year
 
-    Arguments
-    ---------
-    year: calendar year
+    Parameters
+    ----------
+    year: int or float
+        calendar year
 
     Returns
     -------
-    dpm: number of days for each month
+    dpm: list
+        number of days for each month
     """
     #-- days per month in a leap and a standard year
     #-- only difference is February (29 vs. 28)
@@ -138,19 +151,19 @@ def calendar_days(year):
 #-- PURPOSE: convert a numpy datetime array to delta times from the UNIX epoch
 def convert_datetime(date, epoch=(1970,1,1,0,0,0)):
     """
-    Convert a numpy datetime array to seconds since an epoch
+    Convert a numpy datetime array to seconds since ``epoch``
 
-    Arguments
-    ---------
-    date: numpy datetime array
-
-    Keyword arguments
-    -----------------
-    epoch: epoch for output delta_time
+    Parameters
+    ----------
+    date: obj
+        numpy datetime array
+    epoch: tuple, default (1970,1,1,0,0,0)
+        epoch for output delta_time
 
     Returns
     -------
-    delta_time: seconds since epoch
+    delta_time: float
+        seconds since epoch
     """
     epoch = datetime.datetime(*epoch)
     return (date - np.datetime64(epoch)) / np.timedelta64(1, 's')
@@ -158,17 +171,18 @@ def convert_datetime(date, epoch=(1970,1,1,0,0,0)):
 #-- PURPOSE: convert times from seconds since epoch1 to time since epoch2
 def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
     """
-    Convert delta time from seconds since epoch1 to time since epoch2
+    Convert delta time from seconds since ``epoch1`` to time since ``epoch2``
 
-    Arguments
-    ---------
-    delta_time: seconds since epoch1
-
-    Keyword arguments
-    -----------------
-    epoch1: epoch for input delta_time
-    epoch2: epoch for output delta_time
-    scale: scaling factor for converting time to output units
+    Parameters
+    ----------
+    delta_time: float
+        seconds since epoch1
+    epoch1: tuple or NoneType, default None
+        epoch for input delta_time
+    epoch2: tuple or NoneType, default None
+        epoch for output delta_time
+    scale: float, default 1.0
+        scaling factor for converting time to output units
     """
     epoch1 = datetime.datetime(*epoch1)
     epoch2 = datetime.datetime(*epoch2)
@@ -181,25 +195,31 @@ def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
 def convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0,
     epoch=(1992,1,1,0,0,0), scale=1.0):
     """
-    Calculate the time in time units since epoch from calendar dates
+    Calculate the time in time units since ``epoch`` from calendar dates
 
-    Arguments
-    ---------
-    year: calendar month
-    month: month of the year
-    day: day of the month
-
-    Keyword arguments
-    -----------------
-    hour: hour of the day
-    minute: minute of the hour
-    second: second of the minute
-    epoch: epoch for output delta_time
-    scale: scaling factor for converting time to output units
+    Parameters
+    ----------
+    year: float
+        calendar year
+    month: float
+        month of the year
+    day: float
+        day of the month
+    hour: float, default 0.0
+        hour of the day
+    minute: float, default 0.0
+        minute of the hour
+    second: float, default 0.0
+        second of the minute
+    epoch: tuple, default (1992,1,1,0,0,0)
+        epoch for output delta_time
+    scale: float, default 1.0
+        scaling factor for converting time to output units
 
     Returns
     -------
-    delta_time: days since epoch
+    delta_time: float
+        days since epoch
     """
     #-- calculate date in Modified Julian Days (MJD) from calendar date
     #-- MJD: days since November 17, 1858 (1858-11-17T00:00:00)
@@ -220,25 +240,33 @@ def convert_calendar_decimal(year, month, day=None, hour=None, minute=None,
     Converts from calendar date into decimal years taking into
     account leap years
 
-    Dershowitz, N. and E.M. Reingold. 2008.  Calendrical Calculations.
-        Cambridge: Cambridge University Press.
-
-    Arguments
-    ---------
-    year: calendar year
-    month: calendar month
-
-    Keyword arguments
-    -----------------
-    day: day of the month
-    hour: hour of the day
-    minute: minute of the hour
-    second: second of the minute
-    DofY: day of the year (January 1 = 1)
+    Parameters
+    ----------
+    year: float
+        calendar year
+    month: float
+        calendar month
+    day: float or NoneType, default None
+        day of the month
+    hour: float or NoneType, default None
+        hour of the day
+    minute: float or NoneType, default None
+        minute of the hour
+    second: float or NoneType, default None
+        second of the minute
+    DofY: float or NoneType, default None
+        day of the year (January 1 = 1)
 
     Returns
     -------
-    t_date: date in decimal-year format
+    t_date: float
+        date in decimal-year format
+
+    References
+    ----------
+    .. [1] Dershowitz, N. and E.M. Reingold. 2008.
+        Calendrical Calculations.
+        Cambridge: Cambridge University Press.
     """
 
     #-- number of dates
@@ -359,33 +387,42 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
     """
     Converts from Julian day to calendar date and time
 
-    Translated from caldat in "Numerical Recipes in C", by William H. Press,
-        Brian P. Flannery, Saul A. Teukolsky, and William T. Vetterling.
-        Cambridge University Press, 1988 (second printing).
-    Hatcher, D. A., "Simple Formulae for Julian Day Numbers and Calendar Dates",
-        Quarterly Journal of the Royal Astronomical Society, 25(1), 1984.
+    Parameters
+    ----------
+    JD: float
+        Julian Day (days since 01-01-4713 BCE at 12:00:00)
+    ASTYPE: str or NoneType, default None
+        convert output to variable type
+    FORMAT: str, default 'dict'
+        format of output variables
 
-
-    Arguments
-    ---------
-    JD: Julian Day (days since 01-01-4713 BCE at 12:00:00)
-
-    Keyword arguments
-    -----------------
-    ASTYPE: convert output to variable type
-    FORMAT: format of output variables
-        'dict': dictionary with variable keys
-        'tuple': tuple with variable order YEAR,MONTH,DAY,HOUR,MINUTE,SECOND
-        'zip': aggregated variable sets
+            - ``'dict'``: dictionary with variable keys
+            - ``'tuple'``: tuple in most-to-least-significant order
+            - ``'zip'``: aggregated variable sets
 
     Returns
     -------
-    year: calendar year
-    month: calendar month
-    day: day of the month
-    hour: hour of the day
-    minute: minute of the hour
-    second: second of the minute
+    year: float
+        calendar year
+    month: float
+        calendar month
+    day: float
+        day of the month
+    hour: float
+        hour of the day
+    minute: float
+        minute of the hour
+    second: float
+        second of the minute
+
+    References
+    ----------
+    .. [1] "Numerical Recipes in C", by William H. Press,
+        Brian P. Flannery, Saul A. Teukolsky, and William T. Vetterling.
+        Cambridge University Press, 1988 (second printing).
+    .. [2] Hatcher, D. A., "Simple Formulae for Julian Day Numbers and
+        Calendar Dates", Quarterly Journal of the Royal Astronomical
+        Society, 25(1), 1984.
     """
 
     #-- convert to array if only a single value was imported
@@ -450,17 +487,17 @@ def count_leap_seconds(GPS_Time, truncate=True):
     """
     Counts the number of leap seconds between a given GPS time and UTC
 
-    Arguments
-    ---------
-    GPS_Time: seconds since January 6, 1980 at 00:00:00
-
-    Keyword arguments
-    -----------------
-    truncate: Reduce list of leap seconds to positive GPS times
+    Parameters
+    ----------
+    GPS_Time: float
+        seconds since January 6, 1980 at 00:00:00
+    truncate: bool, default True
+        Reduce list of leap seconds to positive GPS times
 
     Returns
     -------
-    n_leaps: number of elapsed leap seconds
+    n_leaps: float
+        number of elapsed leap seconds
     """
     #-- get the valid leap seconds
     leaps = get_leap_seconds(truncate=truncate)
@@ -479,13 +516,15 @@ def get_leap_seconds(truncate=True):
     """
     Gets a list of GPS times for when leap seconds occurred
 
-    Keyword arguments
-    -----------------
-    truncate: Reduce list of leap seconds to positive GPS times
+    Parameters
+    ----------
+    truncate: bool, default True
+        Reduce list of leap seconds to positive GPS times
 
     Returns
     -------
-    GPS time (seconds since 1980-01-06T00:00:00) of leap seconds
+    GPS time: float
+        GPS seconds when leap seconds occurred
     """
     leap_secs = pyTMD.utilities.get_data_path(['data','leap-seconds.list'])
     #-- find line with file expiration as delta time
@@ -514,18 +553,22 @@ def get_leap_seconds(truncate=True):
 def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
     """
     Connects to servers to download leap-seconds.list files from NIST servers
-    https://www.nist.gov/pml/time-and-frequency-division/leap-seconds-faqs
+
+    - https://www.nist.gov/pml/time-and-frequency-division/leap-seconds-faqs
 
     Servers and Mirrors
-    ===================
-    ftp://ftp.nist.gov/pub/time/leap-seconds.list
-    https://www.ietf.org/timezones/data/leap-seconds.list
 
-    Keyword arguments
-    -----------------
-    timeout: timeout in seconds for blocking operations
-    verbose: print file information about output file
-    mode: permissions mode of output file
+    - ftp://ftp.nist.gov/pub/time/leap-seconds.list
+    - https://www.ietf.org/timezones/data/leap-seconds.list
+
+    Parameters
+    ----------
+    timeout: int, default 20
+        timeout in seconds for blocking operations
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
     """
     #-- local version of file
     FILE = 'leap-seconds.list'
@@ -557,18 +600,29 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
 def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
     """
     Connects to servers to download historic_deltat.data and deltat.data files
+
     Reads IERS Bulletin-A produced iers_deltat.data files
+
     Creates a merged file combining the historic, monthly and daily files
 
-    Long-term Delta T:
-    https://www.usno.navy.mil/USNO/earth-orientation/eo-products/long-term
+    Long-term Delta T
 
-    Keyword arguments
-    -----------------
-    username: NASA Earthdata username
-    password: NASA Earthdata password
-    verbose: print file information about output file
-    mode: permissions mode of output file
+    - https://www.usno.navy.mil/USNO/earth-orientation/eo-products/long-term
+
+    Parameters
+    ----------
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
     """
     #-- retrieve history delta time files
     pull_deltat_file('historic_deltat.data',username=username,password=password,
@@ -598,7 +652,7 @@ def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
     #-- write to new merged file
     merged_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     fid = open(merged_file,'w')
-    print(merged_file) if verbose else None
+    logging.info(merged_file)
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     #-- use historical values for times prior to monthly
     ind1, = np.nonzero(historic[:,0] < monthly_time[0])
@@ -623,21 +677,29 @@ def merge_bulletin_a_files(username=None,password=None,
     verbose=False,mode=0o775):
     """
     Attempt to connects to the IERS server and the CDDIS Earthdata server
-        to download and merge Bulletin-A files
+    to download and merge Bulletin-A files
+
     Reads the IERS Bulletin-A files and calculates the daily delta times
-    Delta times are the difference between universal time and dynamical time
 
     Servers and Mirrors
-    -------------------
-    ftp://ftp.iers.org/products/eop/rapid/bulletina/
-    https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
 
-    Keyword arguments
-    -----------------
-    username: NASA Earthdata username
-    password: NASA Earthdata password
-    verbose: print file information about output file
-    mode: permissions mode of output file
+    - ftp://ftp.iers.org/products/eop/rapid/bulletina/
+    - https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
+
+    Parameters
+    ----------
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
     """
     #-- if complete: replace previous version of file
     LOCAL = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
@@ -667,23 +729,29 @@ def merge_bulletin_a_files(username=None,password=None,
 def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     """
     Connects to the IERS server to download Bulletin-A files
-        https://datacenter.iers.org/productMetadata.php?id=6
+
+    - https://datacenter.iers.org/productMetadata.php?id=6
+
     Reads the IERS Bulletin-A files and calculates the daily delta times
-    Delta times are the difference between universal time and dynamical time
 
     Servers and Mirrors
-    -------------------
-    ftp://ftp.iers.org/products/eop/rapid/bulletina/
 
-    Arguments
-    ---------
-    daily_file: output daily delta time file from merged Bulletin-A files
+    - ftp://ftp.iers.org/products/eop/rapid/bulletina/
 
-    Keyword arguments
-    -----------------
-    timeout: timeout in seconds for blocking operations
-    verbose: print file information about output file
-    mode: permissions mode of output file
+    Parameters
+    ----------
+    daily_file: str
+        output daily delta time file from merged Bulletin-A files
+    timeout: int, default 120
+        timeout in seconds for blocking operations
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
     """
     #-- connect to ftp host for IERS bulletins
     HOST = ['ftp.iers.org','products','eop','rapid','bulletina']
@@ -701,12 +769,12 @@ def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     for SUB in subdirectory:
         #-- find Bulletin-A files in ftp subdirectory
         HOST.append(SUB)
-        print(SUB) if verbose else None
+        logging.info(SUB)
         bulletin_files,_ = pyTMD.utilities.ftp_list(HOST,
             timeout=timeout,basename=True,sort=True,pattern=rx)
         #-- for each Bulletin-A file
         for f in sorted(bulletin_files):
-            print(f) if verbose else None
+            logging.info(f)
             #-- copy remote file contents to BytesIO object
             HOST.append(f)
             remote_buffer = pyTMD.utilities.from_ftp(HOST,timeout=timeout)
@@ -731,23 +799,29 @@ def cddis_delta_time(daily_file, username=None, password=None,
     verbose=False, mode=0o775):
     """
     Connects to the CDDIS Earthdata server to download Bulletin-A files
+
     Reads the IERS Bulletin-A files and calculates the daily delta times
-    Delta times are the difference between universal time and dynamical time
 
     Servers and Mirrors
-    -------------------
-    https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
 
-    Arguments
-    ---------
-    daily_file: output daily delta time file from merged Bulletin-A files
+    - https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
 
-    Keyword arguments
-    -----------------
-    username: NASA Earthdata username
-    password: NASA Earthdata password
-    verbose: print file information about output file
-    mode: permissions mode of output file
+    Parameters
+    ----------
+    daily_file: str
+        output daily delta time file from merged Bulletin-A files
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
     """
     #-- connect to CDDIS Earthdata host for IERS bulletins
     HOST = ['https://cddis.nasa.gov','archive','products','iers',
@@ -777,7 +851,7 @@ def cddis_delta_time(daily_file, username=None, password=None,
             sort=True,pattern=R2)
         #-- for each Bulletin-A file
         for f in sorted(bulletin_files):
-            print(f) if verbose else None
+            logging.info(f)
             #-- copy remote file contents to BytesIO object
             HOST.append(f)
             remote_buffer = pyTMD.utilities.from_cddis(HOST,
@@ -801,18 +875,28 @@ def cddis_delta_time(daily_file, username=None, password=None,
 #-- PURPOSE: reads IERS Bulletin-A and calculates the delta times
 def read_iers_bulletin_a(fileID):
     """
-    Read a weekly IERS Bulletin-A file and calculate the delta times (TT - UT1)
+    Read a weekly IERS Bulletin-A file and calculate the
+    delta times (TT - UT1)
 
-    Arguments
-    ---------
-    fileID: open file object for Bulletin-A file
+    Parameters
+    ----------
+    fileID: obj
+        open file object for Bulletin-A file
 
     Returns
     -------
-    Y: calendar year
-    M: calendar month
-    D: day of the month
-    DELTAT: difference between universal time and dynamical time
+    Y: float,
+        calendar year
+    M: float
+        calendar month
+    D: float
+        day of the month
+    DELTAT: float
+        difference between universal time and dynamical time
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
     """
     #-- read contents from input file object
     file_contents = fileID.read().decode('utf-8').splitlines()
@@ -883,24 +967,31 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     Connects to servers and downloads delta time files
 
     Servers and Mirrors
-    ===================
-    http://maia.usno.navy.mil/ser7/
-    https://cddis.nasa.gov/archive/products/iers/
-    ftp://cddis.nasa.gov/products/iers/
-    ftp://cddis.gsfc.nasa.gov/pub/products/iers/
 
-    Arguments
-    ---------
-    FILE: delta time file to download from remote servers
-        deltat.data: monthly deltat file
-        historic_deltat.data: historic deltat file
+    - http://maia.usno.navy.mil/ser7/
+    - https://cddis.nasa.gov/archive/products/iers/
+    - ftp://cddis.nasa.gov/products/iers/
+    - ftp://cddis.gsfc.nasa.gov/pub/products/iers/
 
-    Keyword arguments
-    -----------------
-    username: NASA Earthdata username
-    password: NASA Earthdata password
-    verbose: print file information about output file
-    mode: permissions mode of output file
+    Parameters
+    ----------
+    FILE: str
+        delta time file to download from remote servers
+
+            - deltat.data: monthly deltat file
+            - historic_deltat.data: historic deltat file
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
     """
     #-- local version of file
     LOCAL = pyTMD.utilities.get_data_path(['data',FILE])

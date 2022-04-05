@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_ocean_pole_tide.py (07/2021)
+read_ocean_pole_tide.py (04/2022)
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
 http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/icc7.pdf
@@ -29,6 +29,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 07/2021: added check that ocean pole tide file is accessible
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 08/2020: output north load and east load deformation components
@@ -46,17 +47,31 @@ def read_ocean_pole_tide(input_file):
     """
     Read real and imaginary ocean pole tide coefficients
 
-    Arguments
-    ---------
-    input_file: IERS 0.5x0.5 map of ocean pole tide coefficients
+    Parameters
+    ----------
+    input_file: str
+        IERS 0.5x0.5 map of ocean pole tide coefficients
 
     Returns
     -------
-    ur: radial ocean pole tide coefficients
-    un: north ocean pole tide coefficients
-    ue: east ocean pole tide coefficients
-    glon: ocean grid longitude
-    glat: ocean grid latitude
+    ur: float
+        radial ocean pole tide coefficients
+    un: float
+        north ocean pole tide coefficients
+    ue: float
+        east ocean pole tide coefficients
+    glon: float
+        ocean grid longitude
+    glat: float
+        ocean grid latitude
+
+    References
+    ----------
+    .. [1] S Desai, "Observing the pole tide with satellite altimetry", Journal of
+        Geophysical Research: Oceans, 107(C11), 2002. doi: 10.1029/2001JC001224
+    .. [2] S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from
+        satellite altimetry", Journal of Geodesy, 89(12), p1233-1243, 2015.
+        doi: 10.1007/s00190-015-0848-7
     """
     #-- check that ocean pole tide file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):
@@ -110,8 +125,8 @@ def extend_array(input_array,step_size):
     """
     Wrapper function to extend an array
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     input_array: array to extend
     step_size: step size between elements of array
 
@@ -132,8 +147,8 @@ def extend_matrix(input_matrix):
     """
     Wrapper function to extend a matrix
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     input_matrix: matrix to extend
 
     Returns

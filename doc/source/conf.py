@@ -37,6 +37,7 @@ release = "v{0}".format(version)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "numpydoc",
     "sphinx.ext.graphviz",
     "sphinx.ext.viewcode",
     "recommonmark",
@@ -56,6 +57,8 @@ master_doc = 'index'
 
 # -- Configuration options ---------------------------------------------------
 autosummary_generate = True
+autodoc_member_order = 'bysource'
+numpydoc_show_class_members = False
 
 # -- Options for HTML output -------------------------------------------------
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (12/2020)
+load_nodal_corrections.py (04/2022)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -33,8 +33,11 @@ REFERENCES:
         US Coast and Geodetic Survey, Special Publication, 98, (1958).
     M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
         time series", Advances in Water Resources, 12, (1989).
+    G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
+        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2020: fix k1 for FES models
     Updated 08/2020: change time variable names to not overwrite functions
         update nodal corrections for FES models
@@ -53,20 +56,35 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     """
     Calculates the nodal corrections for tidal constituents
 
-    Arguments
-    ---------
-    MJD: modified julian day of input date
-    constituents: tidal constituent IDs
-
-    Keyword arguments
-    -----------------
-    DELTAT: time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+    Parameters
+    ----------
+    MJD: float
+        modified julian day of input date
+    constituents: list
+        tidal constituent IDs
+    DELTAT: float, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    CORRECTIONS: str, default 'OTIS'
+        use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
     -------
-    pu,pf: nodal corrections for the constituents
-    G: phase correction in degrees
+    pu: float
+        nodal correction for the constituent amplitude
+    pf: float
+        nodal correction for the constituent phase
+    G: float
+        phase correction in degrees
+
+    References
+    ----------
+    .. [1] Doodson and Warburg, "Admiralty Manual of Tides", HMSO, (1941).
+    .. [2] Schureman, "Manual of Harmonic Analysis and Prediction of Tides"
+        US Coast and Geodetic Survey, Special Publication, 98, (1958).
+    .. [3] Foreman and Henry, "The harmonic analysis of tidal model time
+        series", Advances in Water Resources, 12, (1989).
+    .. [4] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
+        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
     """
 
     #-- constituents array (not all are included in tidal program)

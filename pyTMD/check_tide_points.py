@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (09/2021)
+Written by Tyler Sutterley (04/2022)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: added check that tide model directory is accessible
     Updated 06/2021: add try/except for input projection strings
@@ -78,28 +79,38 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     """
     Check if points are within a tide model domain
 
-    Arguments
-    ---------
-    x: x-coordinates in projection EPSG
-    y: y-coordinates in projection EPSG
+    Parameters
+    ----------
+    x: float
+        x-coordinates in projection EPSG
+    y: float
+        y-coordinates in projection EPSG
+    DIRECTORY: str or NoneType, default None
+        working data directory for tide models
+    MODEL:  str or NoneType, default None
+        Tide model to use
+    ATLAS_FORMAT: str, default 'netcdf'
+        ATLAS tide model format
 
-    Keyword arguments
-    -----------------
-    DIRECTORY: working data directory for tide models
-    MODEL: Tide model to use
-    ATLAS_FORMAT: ATLAS tide model format (OTIS, netcdf)
-    GZIP: Tide model files are gzip compressed
-    DEFINITION_FILE: Tide model definition file for use
-    EPSG: input coordinate system
-        default: 3031 Polar Stereographic South, WGS84
-    METHOD: interpolation method
-        bilinear: quick bilinear interpolation
-        spline: scipy bivariate spline interpolation
-        linear, nearest: scipy regular grid interpolations
+            - ``'OTIS'``
+            - ``'netcdf'``
+    GZIP: bool, default False
+        Tide model files are gzip compressed
+    DEFINITION_FILE: str or NoneType, default None
+        Tide model definition file for use
+    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+        Input coordinate system
+    METHOD: str
+        interpolation method
+
+            - ```bilinear```: quick bilinear interpolation
+            - ```spline```: scipy bivariate spline interpolation
+            - ```linear```, ```nearest```: scipy regular grid interpolations
 
     Returns
     -------
-    valid: array describing if input coordinate is within model domain
+    valid: bool
+        array describing if input coordinate is within model domain
     """
 
     #-- check that tide directory is accessible

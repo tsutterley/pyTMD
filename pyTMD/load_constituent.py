@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_constituent.py (07/2020)
+load_constituent.py (04/2022)
 Loads parameters for a given tidal constituent
 
 CALLING SEQUENCE:
@@ -16,12 +16,17 @@ OUTPUT:
     alpha: load love number of tidal constituent
     species: spherical harmonic dependence of quadrupole potential
 
+REFERENCES:
+    G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
+        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
+
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 07/2020: add more constituents from OTPSnc and function docstrings
     Updated 09/2017: Rewritten in Python
 """
@@ -31,17 +36,28 @@ def load_constituent(c):
     """
     Loads parameters for a given tidal constituent
 
-    Arguments
-    ---------
-    c: tidal constituent ID
+    Parameters
+    ----------
+    c: list
+        tidal constituent ID
 
     Returns
     -------
-    amplitude: amplitude of equilibrium tide in m for tidal constituent
-    phase: phase of tidal constituent
-    omega: angular frequency of constituent in radians
-    alpha: load love number of tidal constituent
-    species: spherical harmonic dependence of quadrupole potential
+    amplitude: float
+        amplitude of equilibrium tide in m for tidal constituent
+    phase: float
+        phase of tidal constituent
+    omega: float
+        angular frequency of constituent in radians
+    alpha: float
+        load love number of tidal constituent
+    species: float
+        spherical harmonic dependence of quadrupole potential
+
+    References
+    ----------
+    .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
+        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
     """
     #-- constituents array that are included in tidal program
     cindex = ['m2','s2','k1','o1','n2','p1','k2','q1','2n2','mu2','nu2','l2',

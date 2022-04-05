@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 iers_mean_pole.py
-Written by Tyler Sutterley (02/2021)
+Written by Tyler Sutterley (04/2022)
 Provides the angular coordinates of the IERS Conventional Mean Pole (CMP)
 Coordinates are based on the table of values from
     ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab
@@ -34,39 +34,51 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 07/2020: added function docstrings
     Updated 12/2018: using future division for python3 compatibility
     Written 09/2017
 """
 from __future__ import division
+import os
 import numpy as np
 
 #-- read table of mean pole values, calculate angular coordinates at epoch
-def iers_mean_pole(input_file,input_epoch,version,FILL_VALUE=np.nan):
+def iers_mean_pole(input_file, input_epoch, version, FILL_VALUE=np.nan):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
 
-    Arguments
-    ---------
-    input_file: full path to mean-pole.tab file provided by IERS
-    input_epoch: dates for the angular coordinates of the Conventional Mean Pole
-    version: Year of the conventional model.
-
-    Keyword arguments
-    -----------------
-    FILL_VALUE: value for invalid flags
+    Parameters
+    ----------
+    input_file: str
+        Full path to mean-pole.tab file provided by IERS
+    input_epoch: float
+        Dates for the angular coordinates of the Conventional Mean Pole
+        in decimal years
+    version: str
+        Year of the conventional model
+    FILL_VALUE: float, default np.nan
+        Value for invalid flags
 
     Returns
     -------
-    x: Angular coordinate x of conventional mean pole
-    y: Angular coordinate y of conventional mean pole
-    flag: epoch is valid for version and version number is valid
+    x: float
+        Angular coordinate x of conventional mean pole
+    y: float
+        Angular coordinate y of conventional mean pole
+    flag: bool
+        epoch is valid for version and version number is valid
+
+    References
+    ----------
+    .. [1] Petit, G. and Luzum, B. (eds.), IERS Conventions (2010),
+        IERS Technical Note No. 36, BKG (2010)
     """
     #-- verify IERS model version
     assert version in ('2003','2010','2015'), "Incorrect IERS model version"
     #-- read mean pole file
-    table = np.loadtxt(input_file)
+    table = np.loadtxt(os.path.expanduser(input_file))
     #-- reduce to 1971 to end date
     ii, = np.nonzero(table[:,0] >= 1971)
     table = np.copy(table[ii,:])
@@ -75,7 +87,7 @@ def iers_mean_pole(input_file,input_epoch,version,FILL_VALUE=np.nan):
     table = np.copy(table[jj,:])
     end_time = table[-1,0] + 0.2
     #-- final shape of the table
-    nrows,ncols = np.shape(table)
+    nrows, ncols = np.shape(table)
     #-- allocate for output arrays
     x = np.full_like(input_epoch,FILL_VALUE)
     y = np.full_like(input_epoch,FILL_VALUE)
