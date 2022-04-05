@@ -1,0 +1,25 @@
+name: pytmd-docs
+channels:
+  - conda-forge
+dependencies:
+  - docutils<0.18
+  - gdal
+  - h5py
+  - lxml
+  - netCDF4
+  - notebook
+  - numpy
+  - numpydoc
+  - pip
+  - pyproj
+  - python>=3.6
+  - python-dateutil
+  - pyyaml
+  - recommonmark
+  - scipy
+  - setuptools_scm
+  - sphinx
+  - sphinx_markdown_tables
+  - sphinx_rtd_theme
+  - pip:
+    - ..
