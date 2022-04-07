@@ -5,7 +5,8 @@ Written by Tyler Sutterley (04/2022)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
-    lxml: processing XML and HTML in Python (https://pypi.python.org/pypi/lxml)
+    lxml: processing XML and HTML in Python
+        https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -135,7 +136,7 @@ def url_split(s):
         url string
     """
     head, tail = posixpath.split(s)
-    if head in ('http:','https:'):
+    if head in ('http:','https:','ftp:','s3:'):
         return s,
     elif head in ('', posixpath.sep):
         return tail,
@@ -151,7 +152,7 @@ def convert_arg_line_to_args(arg_line):
     arg_line: str
         line string containing a single argument and/or comments
     """
-    # remove commented lines and after argument comments
+    #-- remove commented lines and after argument comments
     for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
         if not arg.strip():
             continue
@@ -251,7 +252,8 @@ def isoformat(time_string):
 
     Parameters
     ----------
-    time_string: formatted time string to parse
+    time_string: str
+        formatted time string to parse
     """
     #-- try parsing with dateutil
     try:
@@ -286,7 +288,7 @@ def ceil(value):
     return -int(-value//1)
 
 #-- PURPOSE: make a copy of a file with all system information
-def copy(source, destination, verbose=False, move=False):
+def copy(source, destination, move=False, **kwargs):
     """
     Copy or move a file with all system information
 
@@ -296,14 +298,13 @@ def copy(source, destination, verbose=False, move=False):
         source file
     destination: str
         copied destination file
-    verbose: bool, default False
-        print file transfer information
     move: bool, default False
         remove the source file
     """
     source = os.path.abspath(os.path.expanduser(source))
     destination = os.path.abspath(os.path.expanduser(destination))
-    print('{0} -->\n\t{1}'.format(source,destination)) if verbose else None
+    #-- log source and destination
+    logging.info('{0} -->\n\t{1}'.format(source,destination))
     shutil.copyfile(source, destination)
     shutil.copystat(source, destination)
     if move:
@@ -361,10 +362,13 @@ def ftp_list(HOST, username=None, password=None, timeout=None,
     Returns
     -------
     output: list
-        list of items in a directory
+        items in a directory
     mtimes: list
-        list of last modification times for items in the directory
+        last modification times for items in the directory
     """
+    #-- verify inputs for remote ftp host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try to connect to ftp host
     try:
         ftp = ftplib.FTP(HOST[0],timeout=timeout)
@@ -442,6 +446,12 @@ def from_ftp(HOST, username=None, password=None, timeout=None,
     remote_buffer: obj
         BytesIO representation of file
     """
+    #-- create logger
+    loglevel = logging.INFO if verbose else logging.CRITICAL
+    logging.basicConfig(stream=fid, level=loglevel)
+    #-- verify inputs for remote ftp host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try downloading from ftp
     try:
         #-- try to connect to ftp host
@@ -472,9 +482,8 @@ def from_ftp(HOST, username=None, password=None, timeout=None,
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
             #-- print file information
-            if verbose:
-                args = (posixpath.join(*HOST),local)
-                print('{0} -->\n\t{1}'.format(*args), file=fid)
+            args = (posixpath.join(*HOST),local)
+            logging.info('{0} -->\n\t{1}'.format(*args))
             #-- store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
             with open(os.path.expanduser(local), 'wb') as f:
@@ -533,11 +542,14 @@ def http_list(HOST, timeout=None, context=ssl.SSLContext(),
 
     Returns
     -------
-    output: list
-        list of items in a directory
-    mtimes: list
-        list of last modification times for items in the directory
+    colnames: list
+        column names in a directory
+    collastmod: list
+        last modification times for items in the directory
     """
+    #-- verify inputs for remote http host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try listing from http
     try:
         #-- Create and submit request.
@@ -550,22 +562,22 @@ def http_list(HOST, timeout=None, context=ssl.SSLContext(),
         tree = lxml.etree.parse(response, parser)
         colnames = tree.xpath('//tr/td[not(@*)]//a/@href')
         #-- get the Unix timestamp value for a modification time
-        lastmod = [get_unix_time(i,format=format)
+        collastmod = [get_unix_time(i,format=format)
             for i in tree.xpath('//tr/td[@align="right"][1]/text()')]
         #-- reduce using regular expression pattern
         if pattern:
             i = [i for i,f in enumerate(colnames) if re.search(pattern, f)]
             #-- reduce list of column names and last modified times
             colnames = [colnames[indice] for indice in i]
-            lastmod = [lastmod[indice] for indice in i]
+            collastmod = [collastmod[indice] for indice in i]
         #-- sort the list
         if sort:
             i = [i for i,j in sorted(enumerate(colnames), key=lambda i: i[1])]
             #-- sort list of column names and last modified times
             colnames = [colnames[indice] for indice in i]
-            lastmod = [lastmod[indice] for indice in i]
+            collastmod = [collastmod[indice] for indice in i]
         #-- return the list of column names and last modified times
-        return (colnames, lastmod)
+        return (colnames, collastmod)
 
 #-- PURPOSE: download a file from a http host
 def from_http(HOST, timeout=None, context=ssl.SSLContext(),
@@ -602,6 +614,12 @@ def from_http(HOST, timeout=None, context=ssl.SSLContext(),
     remote_buffer: obj
         BytesIO representation of file
     """
+    #-- create logger
+    loglevel = logging.INFO if verbose else logging.CRITICAL
+    logging.basicConfig(stream=fid, level=loglevel)
+    #-- verify inputs for remote http host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- try downloading from http
     try:
         #-- Create and submit request.
@@ -626,9 +644,8 @@ def from_http(HOST, timeout=None, context=ssl.SSLContext(),
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
             #-- print file information
-            if verbose:
-                args = (posixpath.join(*HOST),local)
-                print('{0} -->\n\t{1}'.format(*args), file=fid)
+            args = (posixpath.join(*HOST),local)
+            logging.info('{0} -->\n\t{1}'.format(*args))
             #-- store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
             with open(os.path.expanduser(local), 'wb') as f:
@@ -725,7 +742,7 @@ def cddis_list(HOST, username=None, password=None, build=True,
     Parameters
     ----------
     HOST: str or list
-        remote https host path split as list
+        remote https host
     username: str or NoneType, default None
         NASA Earthdata username
     password: str or NoneType, default None
@@ -744,9 +761,9 @@ def cddis_list(HOST, username=None, password=None, build=True,
     Returns
     -------
     colnames: list
-        list of column names in a directory
+        column names in a directory
     collastmod: list
-        list of last modification times for items in the directory
+        last modification times for items in the directory
     """
     #-- use netrc credentials
     if build and not (username or password):
@@ -758,6 +775,9 @@ def cddis_list(HOST, username=None, password=None, build=True,
         build_opener(username, password)
         #-- check credentials
         check_credentials()
+    #-- verify inputs for remote https host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- Encode username/password for request authorization headers
     base64_string = base64.b64encode('{0}:{1}'.format(username, password).encode())
     authorization_header = "Basic {0}".format(base64_string.decode())
@@ -831,6 +851,9 @@ def from_cddis(HOST, username=None, password=None, build=True,
     remote_buffer: obj
         BytesIO representation of file
     """
+    #-- create logger
+    loglevel = logging.INFO if verbose else logging.CRITICAL
+    logging.basicConfig(stream=fid, level=loglevel)
     #-- use netrc credentials
     if build and not (username or password):
         urs = 'urs.earthdata.nasa.gov'
@@ -841,6 +864,9 @@ def from_cddis(HOST, username=None, password=None, build=True,
         build_opener(username, password)
         #-- check credentials
         check_credentials()
+    #-- verify inputs for remote https host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
     #-- Encode username/password for request authorization headers
     base64_string = base64.b64encode('{0}:{1}'.format(username, password).encode())
     authorization_header = "Basic {0}".format(base64_string.decode())
@@ -869,9 +895,8 @@ def from_cddis(HOST, username=None, password=None, build=True,
             if not os.access(os.path.dirname(local), os.F_OK):
                 os.makedirs(os.path.dirname(local), mode)
             #-- print file information
-            if verbose:
-                args = (posixpath.join(*HOST),local)
-                print('{0} -->\n\t{1}'.format(*args), file=fid)
+            args = (posixpath.join(*HOST),local)
+            logging.info('{0} -->\n\t{1}'.format(*args))
             #-- store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
             with open(os.path.expanduser(local), 'wb') as f:
