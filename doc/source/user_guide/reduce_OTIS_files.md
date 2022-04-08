@@ -26,5 +26,5 @@ python reduce_OTIS_files.py --directory <path_to_directory> --tide <model> \
     * `'AOTIM-5'`
     * `'AOTIM-5-2018'`
 - `--projection X`: spatial projection of bounds as EPSG code or PROJ4 string
-* `'4326'`: latitude and longitude coordinates on WGS84 reference ellipsoid
+    * `'4326'`: latitude and longitude coordinates on WGS84 reference ellipsoid
 - `-M X`, `--mode X`: Permission mode of output file

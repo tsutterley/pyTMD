@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-calc_astrol_longitudes.py (08/2020)
+calc_astrol_longitudes.py (04/2022)
 Modification of ASTROL fortran subroutine by Richard Ray 03/1999
 
 Computes the basic astronomical mean longitudes: s, h, p, N and PP
@@ -35,6 +35,7 @@ REFERENCES:
     Jean Meeus, Astronomical Algorithms, 2nd edition, 1998.
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
     Updated 07/2018: added option ASTRO5 to use coefficients from Richard Ray
@@ -53,10 +54,12 @@ def polynomial_sum(coefficients, t):
     """
     Calculates the sum of a polynomial function of time
 
-    Arguments
-    ---------
-    coefficients: leading coefficient of polynomials of increasing order
-    t: delta time in units for a given astronomical longitudes calculation
+    Parameters
+    ----------
+    coefficients: list
+        leading coefficient of polynomials of increasing order
+    t: float
+        delta time in units for a given astronomical longitudes calculation
     """
     #-- convert time to array if importing a single value
     t = np.atleast_1d(t)
@@ -67,22 +70,27 @@ def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
     """
     Computes the basic astronomical mean longitudes: s, h, p, N and PP
 
-    Arguments
-    ---------
-    MJD: Modified Julian Day (MJD) of input date
-
-    Keyword arguments
-    -----------------
-    MEEUS: use additional coefficients from Meeus Astronomical Algorithms
-    ASTRO5: use Meeus Astronomical coefficients as implemented in ASTRO5
+    Parameters
+    ----------
+    MJD: float
+        Modified Julian Day (MJD) of input date
+    MEEUS: bool, default False
+        use additional coefficients from Meeus Astronomical Algorithms
+    ASTRO5: bool, default False
+        use Meeus Astronomical coefficients as implemented in ASTRO5
 
     Returns
     -------
-    s: mean longitude of moon (degrees)
-    h: mean longitude of sun (degrees)
-    p: mean longitude of lunar perigee (degrees)
-    N: mean longitude of ascending lunar node (degrees)
-    PP: longitude of solar perigee (degrees)
+    s: float
+        mean longitude of moon (degrees)
+    h: float
+        mean longitude of sun (degrees)
+    p: float
+        mean longitude of lunar perigee (degrees)
+    N: float
+        mean longitude of ascending lunar node (degrees)
+    PP: float
+        longitude of solar perigee (degrees)
     """
     circle = 360.0
     if MEEUS:
@@ -148,4 +156,4 @@ def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
     N = np.mod(N, circle)
 
     #-- return as tuple
-    return (s,h,p,N,PP)
+    return (s, h, p, N, PP)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (01/2022)
+read_FES_model.py (04/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -13,7 +13,9 @@ Reads ascii and netCDF4 FES tidal solutions provided by AVISO
 INPUTS:
     ilon: longitude to interpolate
     ilat: latitude to interpolate
-    model_files: list of model files for each constituent (can be gzipped)
+    model_files: list of model files for each constituent
+
+OPTIONS:
     TYPE: tidal variable to run
         z: heights
         u: horizontal transport velocities
@@ -24,8 +26,6 @@ INPUTS:
         FES2012
         FES2014
         EOT20
-
-OPTIONS:
     METHOD: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
@@ -87,42 +88,58 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
     METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
     """
     Reads files for an ascii or netCDF4 tidal model
+
     Makes initial calculations to run the tide program
+
     Spatially interpolates tidal constituents to input coordinates
 
-    Arguments
-    ---------
-    ilon: longitude to interpolate
-    ilat: latitude to interpolate
-    grid_file: grid file for model (can be gzipped)
-    model_files: list of model files for each constituent (can be gzipped)
+    Parameters
+    ----------
+    ilon: float
+        longitude to interpolate
+    ilat: float
+        latitude to interpolate
+    grid_file: str
+        grid file for model
+    model_files: list
+        list of model files for each constituent
+    TYPE: str, default 'z'
+        Tidal variable to read
 
-    Keyword arguments
-    -----------------
-    TYPE: tidal variable to read
-        z: heights
-        u: horizontal transport velocities
-        v: vertical transport velocities
-    VERSION: model version to read
-        FES1999
-        FES2004
-        FES2012
-        FES2014
-        EOT20
-    METHOD: interpolation method
-        bilinear: quick bilinear interpolation
-        spline: scipy bivariate spline interpolation
-        linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate model using nearest-neighbors
-    CUTOFF: extrapolation cutoff in kilometers
-        set to np.inf to extrapolate for all points
-    GZIP: input files are compressed
-    SCALE: scaling factor for converting to output units
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'v'``: vertical transport velocities
+    VERSION: str or NoneType, default None
+        Model version to read
+
+            - ``'FES1999'``
+            - ``'FES2004'``
+            - ``'FES2012'``
+            - ``'FES2014'``
+            - ``'EOT20'``
+    METHOD: str, default 'spline'
+        Interpolation method
+
+            - ``'bilinear'``: quick bilinear interpolation
+            - ``'spline'``: scipy bivariate spline interpolation
+            - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
+    EXTRAPOLATE: bool, default False
+        Extrapolate model using nearest-neighbors
+    CUTOFF: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to np.inf to extrapolate for all points
+    GZIP: bool, default False
+        Input files are compressed
+    SCALE: float, default 1.0
+        Scaling factor for converting to output units
 
     Returns
     -------
-    amplitude: amplitudes of tidal constituents
-    phase: phases of tidal constituents
+    amplitude: float
+        amplitudes of tidal constituents
+    phase: float
+        phases of tidal constituents
     """
 
     #-- raise warning if model files are entered as a string
@@ -233,18 +250,16 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
     return (amplitude,phase)
 
 #-- PURPOSE: read FES ascii tide model grid files
-def read_ascii_file(input_file,GZIP=False,TYPE=None,VERSION=None):
+def read_ascii_file(input_file, GZIP=False, **kwargs):
     """
     Read FES (Finite Element Solution) tide model file
 
-    Arguments
-    ---------
-    input_file: model file
-
-    Keyword arguments
-    -----------------
-    GZIP: input files are compressed
-    VERSION: model version
+    Parameters
+    ----------
+    input_file: str
+        model file
+    GZIP: bool, default False
+        input file is compressed
 
     Returns
     -------
@@ -302,28 +317,33 @@ def read_ascii_file(input_file,GZIP=False,TYPE=None,VERSION=None):
     return (hc,lon,lat)
 
 #-- PURPOSE: read FES netCDF4 tide model files
-def read_netcdf_file(input_file,GZIP=False,TYPE=None,VERSION=None):
+def read_netcdf_file(input_file, GZIP=False, TYPE=None, VERSION=None):
     """
     Read FES (Finite Element Solution) tide model netCDF4 file
 
-    Arguments
-    ---------
-    input_file: model file
+    Parameters
+    ----------
+    input_file: str
+        model file
+    GZIP: bool, default False
+        Input file is compressed
+    VERSION: str or NoneType
+        model version
+    TYPE: str or NoneType
+        Tidal variable to read
 
-    Keyword arguments
-    -----------------
-    GZIP: input files are compressed
-    VERSION: model version
-    TYPE: tidal variable to run
-        z: heights
-        u: horizontal transport velocities
-        v: vertical transport velocities
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'v'``: vertical transport velocities
 
     Returns
     -------
-    hc: complex form of tidal constituent oscillation
-    lon: longitude of tidal model
-    lat: latitude of tidal model
+    hc: complex
+        complex form of tidal constituent oscillation
+    lon: float
+        longitude of tidal model
+    lat: float
+        latitude of tidal model
     """
     #-- read the netcdf format tide elevation file
     if GZIP:

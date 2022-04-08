@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide.py (02/2021)
+predict_tide.py (04/2022)
 Predict tides at a single time using harmonic constants
 
 CALLING SEQUENCE:
@@ -18,6 +18,10 @@ OPTIONS:
     DELTAT: time correction for converting to Ephemeris Time (days)
     CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
 
+REFERENCES:
+    G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
+        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
+
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
@@ -28,6 +32,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 09/2020: append output mask over each constituent
     Updated 08/2020: change time variable names to not overwrite functions
@@ -43,24 +48,32 @@ import numpy as np
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
-def predict_tide(t,hc,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+def predict_tide(t, hc, constituents, DELTAT=0.0, CORRECTIONS='OTIS'):
     """
     Predict tides at a single time using harmonic constants
 
-    Arguments
-    ---------
-    t: days relative to 1992-01-01T00:00:00
-    hc: harmonic constant vector (complex)
-    constituents: tidal constituent IDs
-
-    Keyword arguments
-    -----------------
-    DELTAT: time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+    Parameters
+    ----------
+    t: float
+        days relative to 1992-01-01T00:00:00
+    hc: complex
+        harmonic constant vector
+    constituents: list
+        tidal constituent IDs
+    DELTAT: float, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    CORRECTIONS: str, default 'OTIS'
+        use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
     -------
-    ht: tide values reconstructed using the nodal corrections
+    ht: float
+        tide values reconstructed using the nodal corrections
+
+    References
+    ----------
+    .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
+        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
     """
 
     #-- number of points and number of constituents

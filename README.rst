@@ -33,8 +33,8 @@ pyTMD
 .. |Binder| image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/tsutterley/pyTMD/main
 
-.. |Pangeo| image:: https://binder.pangeo.io/badge.svg
-   :target: https://binder.pangeo.io/v2/gh/tsutterley/pyTMD/main
+.. |Pangeo| image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=PangeoBinderAWS&message=us-west-2&color=orange
+   :target: https://aws-uswest2-binder.pangeo.io/v2/gh/tsutterley/pyTMD/main?urlpath=lab
 
 .. |zenodo| image:: https://zenodo.org/badge/107997403.svg
    :target: https://zenodo.org/badge/latestdoi/107997403

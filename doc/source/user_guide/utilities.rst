@@ -17,324 +17,40 @@ Download and management utilities for syncing time and auxiliary files
 General Methods
 ===============
 
+.. autofunction:: pyTMD.utilities.get_data_path
 
-.. method:: pyTMD.utilities.get_data_path(relpath)
+.. autofunction:: pyTMD.utilities.file_opener
 
-    Get the absolute path within a package from a relative path
+.. autofunction:: pyTMD.utilities.get_hash
 
-    Arguments:
+.. autofunction:: pyTMD.utilities.url_split(s)
 
-        ``relpath``: local relative path as list or string
+.. autofunction:: pyTMD.utilities.roman_to_int
 
+.. autofunction:: pyTMD.utilities.get_unix_time
 
-.. method:: pyTMD.utilities.file_opener(filename)
+.. autofunction:: pyTMD.utilities.isoformat
 
-    Platform independent file opener
+.. autofunction:: pyTMD.utilities.even
 
-    Arguments:
+.. autofunction:: pyTMD.utilities.ceil
 
-        ``filename``: path to file
+.. autofunction:: pyTMD.utilities.copy
 
+.. autofunction:: pyTMD.utilities.check_ftp_connection
 
-.. method:: pyTMD.utilities.get_hash(local, algorithm='MD5')
+.. autofunction:: pyTMD.utilities.ftp_list
 
-    Get the hash value from a local file or BytesIO object
+.. autofunction:: pyTMD.utilities.from_ftp
 
-    Arguments:
+.. autofunction:: pyTMD.utilities.http_list
 
-        ``local``: BytesIO object or path to file
+.. autofunction:: pyTMD.utilities.from_http
 
-    Keyword arguments:
+.. autofunction:: pyTMD.utilities.build_opener
 
-        ``algorithm``: hashing algorithm for checksum validation
+.. autofunction:: pyTMD.utilities.check_credentials
 
-            ``'MD5'``: Message Digest
+.. autofunction:: pyTMD.utilities.cddis_list
 
-            ``'sha1'``: Secure Hash Algorithm
-
-
-.. method:: pyTMD.utilities.url_split(s)
-
-    Recursively split a url path into a list
-
-    Arguments:
-
-        ``s``: url string
-
-
-.. method:: pyTMD.utilities.roman_to_int(local)
-
-    Converts a string from Roman numerals into an integer (Arabic)
-
-    Arguments:
-
-        ``roman``: Roman numeral string
-
-
-.. method:: pyTMD.utilities.get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S')
-
-    Get the Unix timestamp value for a formatted date string
-
-    Arguments:
-
-        ``time_string``: formatted time string to parse
-
-    Keyword arguments:
-
-        ``format``: format for input time string
-
-
-.. method:: gravity_toolkit.utilities.even(value)
-
-    Rounds a number to an even number less than or equal to original
-
-    Arguments:
-
-        ``value``: number to be rounded
-
-
-.. method:: pyTMD.utilities.copy(source, destination, verbose=False, move=False)
-
-    Copy or move a file with all system information
-
-    Arguments:
-
-        ``source``: source file
-
-        ``destination``: copied destination file
-
-    Keyword arguments:
-
-        ``verbose``: print file transfer information
-
-        ``move``: remove the source file
-
-
-.. method:: pyTMD.utilities.check_ftp_connection(HOST,username=None,password=None)
-
-    Check internet connection with ftp host
-
-    Arguments:
-
-        ``HOST``: remote ftp host
-
-    Keyword arguments:
-
-        ``username``: ftp username
-
-        ``password``: ftp password
-
-
-.. method:: pyTMD.utilities.ftp_list(HOST,username=None,password=None,timeout=None,basename=False,pattern=None,sort=False)
-
-    List a directory on a ftp host
-
-    Arguments:
-
-        ``HOST``: remote ftp host path split as list
-
-    Keyword arguments:
-
-        ``username``: ftp username
-
-        ``password``: ftp password
-
-        ``timeout``: timeout in seconds for blocking operations
-
-        ``basename``: return the file or directory basename instead of the full path
-
-        ``pattern``: regular expression pattern for reducing list
-
-        ``sort``: sort output list
-
-    Returns:
-
-        ``output``: list of items in a directory
-
-        ``mtimes``: list of last modification times for items in the directory
-
-
-.. method:: pyTMD.utilities.from_ftp(HOST,username=None,password=None,timeout=None,local=None,hash='',chunk=8192,verbose=False,fid=sys.stdout,mode=0o775)
-
-    Download a file from a ftp host
-
-    Arguments:
-
-        ``HOST``: remote ftp host path split as list
-
-    Keyword arguments:
-
-        ``username``: ftp username
-
-        ``password``: ftp password
-
-        ``timeout``: timeout in seconds for blocking operations
-
-        ``local``: path to local file
-
-        ``hash``: MD5 hash of local file
-
-        ``chunk``: chunk size for transfer encoding
-
-        ``verbose``: print file transfer information
-
-        ``fid``: open file object to print if verbose
-
-        ``mode``: permissions mode of output local file
-
-
-.. method:: pyTMD.utilities.check_connection(HOST)
-
-    Check internet connection
-
-    Arguments:
-
-        ``HOST``: remote http host
-
-
-.. method:: pyTMD.utilities.http_list(HOST,timeout=None,context=ssl.SSLContext(),parser=lxml.etree.HTMLParser(),format='%Y-%m-%d %H:%M',pattern='',sort=False)
-
-    List a directory on an Apache http Server
-
-    Arguments:
-
-        ``HOST``: remote http host path split as list
-
-    Keyword arguments:
-
-        ``timeout``: timeout in seconds for blocking operations
-
-        ``context``: SSL context for url opener object
-
-        ``parser``: HTML parser for lxml
-
-        ``format``: format for input time string
-
-        ``pattern``: regular expression pattern for reducing list
-
-        ``sort``: sort output list
-
-    Returns:
-
-        ``output``: list of items in a directory
-
-        ``mtimes``: list of last modification times for items in the directory
-
-
-.. method:: pyTMD.utilities.from_http(HOST,timeout=None,context=ssl.SSLContext(),local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
-
-    Download a file from a http host
-
-    Arguments:
-
-        ``HOST``: remote http host path split as list
-
-    Keyword arguments:
-
-        ``timeout``: timeout in seconds for blocking operations
-
-        ``context``: SSL context for url opener object
-
-        ``local``: path to local file
-
-        ``hash``: MD5 hash of local file
-
-        ``chunk``: chunk size for transfer encoding
-
-        ``verbose``: print file transfer information
-
-        ``fid``: open file object to print if verbose
-
-        ``mode``: permissions mode of output local file
-
-
-.. method:: pyTMD.utilities.build_opener(username, password, context=ssl.SSLContext(ssl.PROTOCOL_TLS), password_manager=True, get_ca_certs=True, redirect=True, authorization_header=False, urs='https://urs.earthdata.nasa.gov')
-
-    build urllib opener for NASA Earthdata with supplied credentials
-
-    Arguments:
-
-        ``username``: NASA Earthdata username
-
-        ``password``: NASA Earthdata password
-
-    Keyword arguments:
-
-        ``context``: SSL context for opener object
-
-        ``password_manager``: create password manager context using default realm
-
-        ``get_ca_certs``: get list of loaded “certification authority” certificates
-
-        ``redirect``: create redirect handler object
-
-        ``authorization_header``: add base64 encoded authorization header to opener
-
-        ``urs``: Earthdata login URS 3 host
-
-
-.. method:: pyTMD.utilities.check_credentials()
-
-    Check that entered NASA Earthdata credentials are valid
-
-
-.. method:: pyTMD.utilities.cddis_list(HOST,username=None,password=None,build=True,timeout=None,parser=None,pattern='',sort=False)
-
-    Download a file from a NASA GSFC CDDIS https server
-
-    Arguments:
-
-        ``HOST``: remote http host path split as list
-
-    Keyword arguments:
-
-        ``username``: NASA Earthdata username
-
-        ``password``: NASA Earthdata password
-
-        ``build``: Build opener and check NASA Earthdata password
-
-        ``timeout``: timeout in seconds for blocking operations
-
-        ``parser``: HTML parser for lxml
-
-        ``pattern``: regular expression pattern for reducing list
-
-        ``sort``: sort output list
-
-    Returns:
-
-        ``colnames``: list of column names in a directory
-
-        ``collastmod``: list of last modification times for items in the directory
-
-
-.. method:: pyTMD.utilities.from_cddis(HOST,username=None,password=None,build=True,timeout=None,local=None,hash='',chunk=16384,verbose=False,fid=sys.stdout,mode=0o775)
-
-    Download a file from a NASA GSFC CDDIS https server
-
-    Arguments:
-
-        ``HOST``: remote http host path split as list
-
-    Keyword arguments:
-
-        ``username``: NASA Earthdata username
-
-        ``password``: NASA Earthdata password
-
-        ``build``: Build opener and check NASA Earthdata password
-
-        ``timeout``: timeout in seconds for blocking operations
-
-        ``local``: path to local file
-
-        ``hash``: MD5 hash of local file
-
-        ``chunk``: chunk size for transfer encoding
-
-        ``verbose``: print file transfer information
-
-        ``fid``: open file object to print if verbose
-
-        ``mode``: permissions mode of output local file
+.. autofunction:: pyTMD.utilities.from_cddis

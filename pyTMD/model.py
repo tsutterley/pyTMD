@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (03/2022)
+Written by Tyler Sutterley (04/2022)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 03/2022: added static decorators to define model lists
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
@@ -22,6 +23,67 @@ class model:
     """Retrieves tide model parameters for named models or
     from a model definition file for use in the pyTMD tide
     prediction programs
+
+    Attributes
+    ----------
+    atl03: str
+        HDF5 dataset string for output ATL03 tide heights
+    atl06: str
+        HDF5 dataset string for output ATL06 tide heights
+    atl07: str
+        HDF5 dataset string for output ATL07 tide heights
+    atl10: str
+        HDF5 dataset string for output ATL10 tide heights
+    atl11: str
+        HDF5 dataset string for output ATL11 tide heights
+    atl12: str
+        HDF5 dataset string for output ATL12 tide heights
+    compressed: bool
+        Model files are gzip compressed
+    constituents: list
+        Model constituents for ``FES`` models
+    description: str
+        HDF5 ``description`` attribute string for output tide heights
+    directory: str
+        Working data directory for tide models
+    format: str
+        Model format
+
+            - ``OTIS``
+            - ``ATLAS``
+            - ``netcdf``
+            - ``GOT``
+            - ``FES``
+    gla12: str
+        HDF5 dataset string for output GLA12 tide heights
+    grid_file: str
+        Model grid file for ``OTIS`` and ``ATLAS`` models
+    gzip: bool
+        Suffix if model is compressed
+    long_name: str
+        HDF5 ``long_name`` attribute string for output tide heights
+    model_directory: str
+        Full path to model directory
+    model_file: str
+        Model constituent file or list of files
+    name: str
+        Model name
+    projection: str
+        Model projection for ``OTIS`` and ``ATLAS`` models
+    scale: float
+        Model scaling factor for converting to output units
+    suffix: str
+        Suffix if ATLAS model is ``'netcdf'`` format
+    type: str
+        Model type
+
+            - ``z``
+            - ``u``
+            - ``v``
+    verify: bool
+        Verify that all model files exist
+    version: str
+        Tide model version
     """
     def __init__(self, directory=os.getcwd(), **kwargs):
         # set default keyword arguments
@@ -53,8 +115,14 @@ class model:
         self.verify = copy.copy(kwargs['verify'])
         self.version = None
 
-    def grid(self,m):
-        """Create a model object from known tide grid files
+    def grid(self, m):
+        """
+        Create a model object from known tide grid files
+
+        Parameters
+        ----------
+        m: str
+            model name
         """
         # model name
         self.name = m
@@ -139,8 +207,14 @@ class model:
         # return the model parameters
         return self
 
-    def elevation(self,m):
-        """Create a model object from known tidal elevation models
+    def elevation(self, m):
+        """
+        Create a model object from known tidal elevation models
+
+        Parameters
+        ----------
+        m: str
+            model name
         """
         # model name
         self.name = m
@@ -836,8 +910,14 @@ class model:
         # return the model parameters
         return self
 
-    def current(self,m):
-        """Create a model object from known tidal current models
+    def current(self, m):
+        """
+        Create a model object from known tidal current models
+
+        Parameters
+        ----------
+        m: str
+            model name
         """
         # model name
         self.name = m
@@ -1095,57 +1175,91 @@ class model:
 
     @property
     def gzip(self):
-        """compression flag"""
+        """
+        Returns suffix for gzip compression
+        """
         return '.gz' if self.compressed else ''
 
     @property
     def suffix(self):
-        """format suffix flag"""
+        """
+        Returns format suffix for netCDF4 ATLAS files
+        """
         return '.nc' if (self.format == 'netcdf') else ''
 
     @staticmethod
     def global_ocean():
+        """
+        Returns list of global ocean tide elevation models
+        """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
             'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas',
             'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
 
     @staticmethod
     def global_load():
+        """
+        Returns list of global load tide elevation models
+        """
         return ['TPXO7.2_load','GOT4.7_load','GOT4.8_load',
             'GOT4.10_load','FES2014_load','EOT20_load']
 
     @staticmethod
     def global_current():
+        """
+        Returns list of global tidal current models
+        """
         return ['TPXO9-atlas','TPXO9-atlas-v2',
             'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5',
             'TPXO9.1','TPXO8-atlas','TPXO7.2','FES2014']
 
     @staticmethod
     def antarctic_ocean():
+        """
+        Returns list of Antarctic ocean tide elevation models
+        """
         return ['CATS0201','CATS2008']
 
     @staticmethod
     def antarctic_load():
+        """
+        Returns list of Antarctic load tide elevation models
+        """
         return ['CATS2008_load']
 
     @staticmethod
     def antarctic_current():
+        """
+        Returns list of Antarctic tidal current models
+        """
         return ['CATS0201','CATS2008']
 
     @staticmethod
     def arctic_ocean():
+        """
+        Returns list of Arctic ocean tide elevation models
+        """
         return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2']
 
     @staticmethod
     def arctic_load():
+        """
+        Returns list of Arctic load tide elevation models
+        """
         return []
 
     @staticmethod
     def arctic_current():
+        """
+        Returns list of Arctic tidal current models
+        """
         return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2']
 
     @staticmethod
     def ocean_elevation():
+        """
+        Returns list of ocean tide elevation models
+        """
         return ['CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
             'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1',
             'TPXO8-atlas','TPXO7.2','AODTM-5','AOTIM-5','AOTIM-5-2018',
@@ -1154,11 +1268,17 @@ class model:
 
     @staticmethod
     def load_elevation():
+        """
+        Returns list of load tide elevation models
+        """
         return ['CATS2008_load','TPXO7.2_load','GOT4.7_load',
             'GOT4.8_load','GOT4.10_load','FES2014_load','EOT20_load']
 
     @staticmethod
     def ocean_current():
+        """
+        Returns list of tidal current models
+        """
         return ['CATS0201','CATS2008','TPXO9-atlas','TPXO9-atlas-v2',
             'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5',
             'TPXO9.1','TPXO8-atlas','TPXO7.2',
@@ -1167,30 +1287,51 @@ class model:
 
     @staticmethod
     def OTIS():
+        """
+        Returns list of OTIS format models
+        """
         return ['CATS0201','CATS2008','CATS2008_load','TPXO9.1',
             'TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
             'AOTIM-5-2018','Arc2kmTM','Gr1km-v2',]
 
     @staticmethod
     def ATLAS_compact():
+        """
+        Returns list of ATLAS compact format models
+        """
         return ['TPXO8-atlas']
 
     @staticmethod
     def ATLAS():
+        """
+        Returns list of ATLAS format models
+        """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
             'TPXO9-atlas-v4','TPXO9-atlas-v5']
 
     @staticmethod
     def GOT():
+        """
+        Returns list of GOT format models
+        """
         return ['GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load',
             'GOT4.10','GOT4.10_load']
 
     @staticmethod
     def FES():
+        """
+        Returns list of FES format models
+        """
         return ['FES2014','FES2014_load','EOT20','EOT20_load']
 
-    def pathfinder(self,model_file):
-        """Completes file paths and appends file and gzip suffixes
+    def pathfinder(self, model_file):
+        """
+        Completes file paths and appends file and gzip suffixes
+
+        Parameters
+        ----------
+        model_file: str or list
+            model file(s) to complete
         """
         if isinstance(model_file,list):
             output_file = [os.path.join(self.model_directory,
@@ -1207,7 +1348,13 @@ class model:
         return output_file
 
     def from_file(self, definition_file):
-        """Create a model object from an input definition file
+        """
+        Create a model object from an input definition file
+
+        Parameters
+        ----------
+        definition_file: str
+            model definition file for creating model object
         """
         # variable with parameter definitions
         parameters = {}
@@ -1263,16 +1410,28 @@ class model:
         # return the model parameters
         return temp
 
-    def from_dict(self,d):
-        """Create a model object from a python dictionary
+    def from_dict(self, d):
+        """
+        Create a model object from a python dictionary
+
+        Parameters
+        ----------
+        d: dict
+            Python dictionary for creating model object
         """
         for key,val in d.items():
             setattr(self,key,copy.copy(val))
         # return the model parameters
         return self
 
-    def to_bool(self,val):
-        """Converts strings of True/False to a boolean values
+    def to_bool(self, val):
+        """
+        Converts strings of True/False to a boolean values
+
+        Parameters
+        ----------
+        val: str
+            string for converting to True/False
         """
         if val.lower() in ('y','yes','t','true','1'):
             return True

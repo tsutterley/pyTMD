@@ -16,18 +16,12 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 long_description_content_type = "text/x-rst"
 
-# install requirements and dependencies
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
-if on_rtd:
-    install_requires = []
-    dependency_links = []
-else:
-    # get install requirements
-    with open('requirements.txt') as fh:
-        install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
-    # dependency links (data readers)
-    dependency_links = ['https://github.com/tsutterley/read-ICESat-2/tarball/main',
-        'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main']
+# get install requirements
+with open('requirements.txt') as fh:
+    install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
+# dependency links (data readers)
+dependency_links = ['https://github.com/tsutterley/read-ICESat-2/tarball/main',
+    'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main']
 
 # get version
 with open('version.txt') as fh:

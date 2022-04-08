@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 output_otis_tides.py
-Written by Tyler Sutterley (09/2020)
+Written by Tyler Sutterley (04/2022)
 Writes OTIS-format tide files for use in the tide program
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
@@ -13,6 +13,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 09/2020: python3 compatibility updates for struct and utf-8 encoding
     Updated 07/2020: added function docstrings
     Written 08/2018
@@ -22,22 +23,29 @@ import struct
 import numpy as np
 
 #-- PURPOSE: output grid file in OTIS format
-def output_otis_grid(grid_file,xlim,ylim,hz,mz,iob,dt):
+def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
     """
     Writes OTIS-format grid files
 
-    Arguments
-    ---------
-    grid_file: output OTIS grid file name
-    xlim: x-coordinate grid-cell edges of output grid
-    ylim: y-coordinate grid-cell edges of output grid
-    hz: bathymetry
-    mz: land/water mask
-    iob: open boundary index
-    dt: time step
+    Parameters
+    ----------
+    FILE: str
+        output OTIS grid file name
+    xlim: float
+        x-coordinate grid-cell edges of output grid
+    ylim: float
+        y-coordinate grid-cell edges of output grid
+    hz:float
+        bathymetry
+    mz: int
+        land/water mask
+    iob: int
+        open boundary index
+    dt: float
+        time step
     """
     #-- open this way for files
-    fid = open(grid_file,'wb')
+    fid = open(os.path.expanduser(FILE), 'wb')
     nob = len(iob)
     ny,nx = np.shape(hz)
     reclen = 32
@@ -73,19 +81,24 @@ def output_otis_grid(grid_file,xlim,ylim,hz,mz,iob,dt):
     fid.close()
 
 #-- PURPOSE: output elevation file in OTIS format
-def output_otis_elevation(elevation_file,h,xlim,ylim,constituents):
+def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     """
     Writes OTIS-format elevation files
 
-    Arguments
-    ---------
-    elevation_file: output OTIS elevation file name
-    h: Eulerian form of tidal height oscillation
-    xlim: x-coordinate grid-cell edges of output grid
-    ylim: y-coordinate grid-cell edges of output grid
-    constituents: tidal constituent IDs
+    Parameters
+    ----------
+    FILE: str
+        output OTIS elevation file name
+    h: complex
+        Eulerian form of tidal height oscillation
+    xlim: float
+        x-coordinate grid-cell edges of output grid
+    ylim: float
+        y-coordinate grid-cell edges of output grid
+    constituents: list
+        tidal constituent IDs
     """
-    fid = open(elevation_file,'wb')
+    fid = open(os.path.expanduser(FILE), 'wb')
     ny,nx,nc = np.shape(h)
     #-- length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)
@@ -112,20 +125,26 @@ def output_otis_elevation(elevation_file,h,xlim,ylim,constituents):
     fid.close()
 
 #-- PURPOSE: output transport file in OTIS format
-def output_otis_transport(transport_file,u,v,xlim,ylim,constituents):
+def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
     """
-    Writes OTIS-format elevation files
+    Writes OTIS-format transport files
 
-    Arguments
-    ---------
-    transport_file: output OTIS transport file name
-    u: Eulerian form of tidal zonal transport oscillation
-    v: Eulerian form of tidal meridional transport oscillation
-    xlim: x-coordinate grid-cell edges of output grid
-    ylim: y-coordinate grid-cell edges of output grid
-    constituents: tidal constituent IDs
+    Parameters
+    ----------
+    FILE: str
+        output OTIS transport file name
+    u: complex
+        Eulerian form of tidal zonal transport oscillation
+    v: complex
+        Eulerian form of tidal meridional transport oscillation
+    xlim: float
+        x-coordinate grid-cell edges of output grid
+    ylim: float
+        y-coordinate grid-cell edges of output grid
+    constituents: list
+        tidal constituent IDs
     """
-    fid = open(transport_file,'wb')
+    fid = open(os.path.expanduser(FILE), 'wb')
     ny,nx,nc = np.shape(u)
     #-- length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)

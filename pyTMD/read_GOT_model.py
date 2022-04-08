@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (12/2021)
+read_GOT_model.py (04/2022)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
@@ -80,32 +81,44 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
     EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
     """
     Reads files for Richard Ray's Global Ocean Tide (GOT) models
+
     Makes initial calculations to run the tide program
+
     Spatially interpolates tidal constituents to input coordinates
 
-    Arguments
-    ---------
-    ilon: longitude to interpolate
-    ilat: latitude to interpolate
-    model_files: list of model files for each constituent
+    Parameters
+    ----------
+    ilon: float
+        longitude to interpolate
+    ilat: float
+        latitude to interpolate
+    model_files: list
+        list of model files for each constituent
+    METHOD: str, default 'spline'
+        Interpolation method
 
-    Keyword arguments
-    -----------------
-    METHOD: interpolation method
-        bilinear: quick bilinear interpolation
-        spline: scipy bivariate spline interpolation
-        linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate model using nearest-neighbors
-    CUTOFF: extrapolation cutoff in kilometers
-        set to np.inf to extrapolate for all points
-    GZIP: input files are compressed
-    SCALE: scaling factor for converting to output units
+            - ``'bilinear'``: quick bilinear interpolation
+            - ``'spline'``: scipy bivariate spline interpolation
+            - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
+    EXTRAPOLATE: bool, default False
+        Extrapolate model using nearest-neighbors
+    CUTOFF: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to np.inf to extrapolate for all points
+    GZIP: bool, default False
+        Input files are compressed
+    SCALE: float, default 1.0
+        Scaling factor for converting to output units
 
     Returns
     -------
-    amplitude: amplitudes of tidal constituents
-    phase: phases of tidal constituents
-    constituents: list of model constituents
+    amplitude: float
+        amplitudes of tidal constituents
+    phase: float
+        phases of tidal constituents
+    constituents: list
+        list of model constituents
     """
 
     #-- raise warning if model files are entered as a string
@@ -216,21 +229,24 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value
     #-- return the interpolated values
-    return (amplitude,phase,constituents)
+    return (amplitude, phase, constituents)
 
 #-- PURPOSE: wrapper function to extend an array
-def extend_array(input_array,step_size):
+def extend_array(input_array, step_size):
     """
     Wrapper function to extend an array
 
-    Arguments
-    ---------
-    input_array: array to extend
-    step_size: step size between elements of array
+    Parameters
+    ----------
+    input_array: float
+        array to extend
+    step_size: float
+        step size between elements of array
 
     Returns
     -------
-    temp: extended array
+    temp: float
+        extended array
     """
     n = len(input_array)
     temp = np.zeros((n+3),dtype=input_array.dtype)
@@ -246,13 +262,15 @@ def extend_matrix(input_matrix):
     """
     Wrapper function to extend a matrix
 
-    Arguments
-    ---------
-    input_matrix: matrix to extend
+    Parameters
+    ----------
+    input_matrix: float
+        matrix to extend
 
     Returns
     -------
-    temp: extended matrix
+    temp: float
+        extended matrix
     """
     ny,nx = np.shape(input_matrix)
     temp = np.ma.zeros((ny,nx+3),dtype=input_matrix.dtype)
@@ -267,16 +285,23 @@ def read_GOT_grid(input_file, GZIP=False):
     """
     Read Richard Ray's Global Ocean Tide (GOT) model file
 
-    Arguments
-    ---------
-    input_file: model file
+    Parameters
+    ----------
+    input_file: str
+        Model file
+    GZIP: bool
+        Input file is compressed
 
     Returns
     -------
-    hc: complex form of tidal constituent oscillation
-    lon: longitude of tidal model
-    lat: latitude of tidal model
-    cons: tidal constituent ID
+    hc: complex
+        complex form of tidal constituent oscillation
+    lon: float
+        longitude of tidal model
+    lat: float
+        latitude of tidal model
+    cons: str
+        tidal constituent ID
     """
     #-- read input tide model file
     if GZIP:

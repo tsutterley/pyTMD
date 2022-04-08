@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-infer_minor_corrections.py (08/2020)
+infer_minor_corrections.py (04/2022)
 Return correction for minor constituents based on Richard Ray's PERTH3 code
     PERTH: PREdict Tidal Heights
 
@@ -35,6 +35,7 @@ REFERENCES:
         time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 08/2020: change time variable names to not overwrite functions
         update nodal corrections for FES models
     Updated 07/2020: added function docstrings
@@ -53,20 +54,31 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     Calculate the tidal corrections for minor constituents inferred using
     major constituents
 
-    Arguments
-    ---------
-    t: days relative to 1992-01-01T00:00:00
-    zmajor: Complex HC for given constituents/points
-    constituents: tidal constituent IDs
-
-    Keyword arguments
-    -----------------
-    DELTAT: time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+    Parameters
+    ----------
+    t: float
+        days relative to 1992-01-01T00:00:00
+    zmajor: complex
+        Complex HC for given constituents/points
+    constituents: list
+        tidal constituent IDs
+    DELTAT: float, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    CORRECTIONS: str, default ''
+        use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
     -------
-    dh: height from minor constituents
+    dh: float
+        Height from minor constituents
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
+    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides"
+        US Coast and Geodetic Survey, Special Publication, 98, (1958).
+    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
+        time series", Advances in Water Resources, 12, (1989).
     """
     #-- degrees to radians
     dtr = np.pi/180.0

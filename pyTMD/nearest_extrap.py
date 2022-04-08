@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 u"""
-nearest_extrap.py (02/2022)
+nearest_extrap.py
+Written by Tyler Sutterley (04/2022)
 Uses kd-trees for nearest-neighbor extrapolation of tide model data
 
 CALLING SEQUENCE:
@@ -33,6 +34,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for reading and writing spatial data
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2022: fix equirectangular case for cutoffs near poles
     Updated 05/2021: set ellipsoidal major axis to WGS84 in kilometers
     Updated 03/2021: add checks to prevent runtime exception
@@ -52,24 +54,31 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
     """
     Nearest-neighbor extrapolation of valid model data
 
-    Arguments
-    ---------
-    x: x-coordinates of tidal model
-    y: y-coordinates of tidal model
-    data: tide model data
-    XI: output x-coordinates
-    YI: output y-coordinates
-
-    Keyword arguments
-    -----------------
-    fill_value: invalid value
-    dtype: output data type
-    cutoff: return only neighbors within distance [km]
-    EPSG: projection of tide model data
+    Parameters
+    ----------
+    x: float
+        x-coordinates of tidal model
+    y: float
+        y-coordinates of tidal model
+    data: float
+        Tide model data
+    XI: float
+        Output x-coordinates
+    YI: float
+        Output y-coordinates
+    fill_value: float, default np.nan
+        Invalid value
+    dtype: obj, default np.float64
+        Output data type
+    cutoff: float, default np.inf
+        return only neighbors within distance [km]
+    EPSG: str, default '4326'
+        projection of tide model data
 
     Returns
     -------
-    DATA: interpolated data
+    DATA: float
+        interpolated data
     """
     #-- verify output dimensions
     XI = np.atleast_1d(XI)
@@ -164,18 +173,21 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
     return DATA
 
 #-- PURPOSE: calculate Euclidean distances between points
-def distance_matrix(c1,c2):
+def distance_matrix(c1, c2):
     """
     Calculate Euclidean distances between points
 
-    Arguments
-    ---------
-    c1: first set of coordinates
-    c2: second set of coordinates
+    Parameters
+    ----------
+    c1: float
+        first set of coordinates
+    c2: float
+        second set of coordinates
 
     Returns
     -------
-    c: Euclidean distance
+    c: float
+        Euclidean distance
     """
     #-- decompose Euclidean distance: (x-y)^2 = x^2 - 2xy + y^2
     dx2 = np.sum(c1**2)

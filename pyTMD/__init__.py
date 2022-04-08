@@ -28,7 +28,7 @@ from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 from pyTMD.model import model
 from pyTMD.nearest_extrap import nearest_extrap
-from pyTMD.output_otis_tides import output_otis_grid
+from pyTMD.output_otis_tides import output_otis_grid, output_otis_elevation, output_otis_transport
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants

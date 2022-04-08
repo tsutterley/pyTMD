@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-tidal_ellipse.py (07/2020)
+tidal_ellipse.py (04/2022)
 Expresses the amplitudes and phases for the u and v components in terms of
     four ellipse parameters using Foreman's formula
 
@@ -24,6 +24,7 @@ REFERENCE:
         https://doi.org/10.1016/0309-1708(89)90017-1
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Written 07/2020
 """
 import numpy as np
@@ -33,18 +34,31 @@ def tidal_ellipse(u,v):
     Expresses the amplitudes and phases for the u and v components in terms of
     four ellipse parameters using Foreman's formula
 
-    Arguments
-    ---------
-    u: zonal current (EW)
-    v: meridional current (NS)
+    Parameters
+    ----------
+    u: float
+        zonal current (EW)
+    v: float
+        meridional current (NS)
 
     Returns
     -------
-    umajor: amplitude of the semimajor semi-axis
-    uminor: amplitude of the semiminor semi-axis
-    uincl: angle of inclination of the northern semimajor semi-axis
-    uphase: phase lag of the maximum current behind the maximum tidal potential
+    umajor: float
+        amplitude of the semimajor semi-axis
+    uminor: float
+        amplitude of the semiminor semi-axis
+    uincl: float
+        angle of inclination of the northern semimajor semi-axis
+    uphase: float
+        phase lag of the maximum current behind the maximum tidal potential
         of the individual constituent
+
+    References
+    ----------
+    .. [1] Foreman and Henry, "The harmonic analysis of tidal model time
+        series", Advances in Water Resources, 12(3), 109-120, (1989).
+        https://doi.org/10.1016/0309-1708(89)90017-1
+
     """
     #-- change to polar coordinates
     t1p = u.real - v.imag
@@ -70,4 +84,4 @@ def tidal_ellipse(u,v):
     uphase[uphase < 0.0] += 360.0
     uphase[uphase >= 360.0] -= 360.0
     #-- return values
-    return (umajor,uminor,uincl,uphase)
+    return (umajor, uminor, uincl, uphase)

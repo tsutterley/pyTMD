@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (03/2022)
+read_tide_model.py (04/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,9 +54,11 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 03/2022: invert tide mask to be True for invalid points
         add separate function for resampling ATLAS compact global model
         decode ATLAS compact constituents for Python3 compatibility
+        reduce iterative steps when combining ATLAS local models
     Updated 02/2022: use ceiling of masks for interpolation
     Updated 07/2021: added checks that tide model files are accessible
     Updated 06/2021: fix tidal currents for bilinear interpolation
@@ -99,42 +101,58 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
     METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GRID='OTIS'):
     """
     Reads files for an OTIS-formatted tidal model
+
     Makes initial calculations to run the tide program
+
     Spatially interpolates tidal constituents to input coordinates
 
-    Arguments
-    ---------
-    ilon: longitude to interpolate
-    ilat: latitude to interpolate
-    grid_file: grid file for model
-    model_file: model file containing each constituent
+    Parameters
+    ----------
+    ilon: float
+        longitude to interpolate
+    ilat: float
+        latitude to interpolate
+    grid_file: str
+        grid file for model
+    model_file: str or list
+        model file containing each constituent
     EPSG: projection of tide model data
+    TYPE: str, default 'z'
+        Tidal variable to read
 
-    Keyword arguments
-    -----------------
-    TYPE: tidal variable to read
-        z: heights
-        u: horizontal transport velocities
-        U: horizontal depth-averaged transport
-        v: vertical transport velocities
-        V: vertical depth-averaged transport
-    METHOD: interpolation method
-        bilinear: quick bilinear interpolation
-        spline: scipy bivariate spline interpolation
-        linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate model using nearest-neighbors
-    CUTOFF: extrapolation cutoff in kilometers
-        set to np.inf to extrapolate for all points
-    GRID: binary file type to read
-        ATLAS: reading a global solution with localized solutions
-        OTIS: combined global solution
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+    METHOD: str, default 'spline'
+        Interpolation method
+
+            - ``'bilinear'``: quick bilinear interpolation
+            - ``'spline'``: scipy bivariate spline interpolation
+            - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
+    EXTRAPOLATE: bool, default False
+        Extrapolate model using nearest-neighbors
+    CUTOFF: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to np.inf to extrapolate for all points
+    GRID: str, default 'OTIS'
+        Binary file type to read
+
+            - ``'ATLAS'``: reading a global solution with localized solutions
+            - ``'OTIS'``: combined global solution
 
     Returns
     -------
-    amplitude: amplitudes of tidal constituents
-    phase: phases of tidal constituents
-    D: bathymetry of tide model
-    constituents: list of model constituents
+    amplitude: float
+        amplitudes of tidal constituents
+    phase: float
+        phases of tidal constituents
+    D: float
+        bathymetry of tide model
+    constituents: list
+        list of model constituents
     """
     #-- check that grid file is accessible
     if not os.access(os.path.expanduser(grid_file), os.F_OK):
@@ -448,14 +466,17 @@ def extend_array(input_array,step_size):
     """
     Wrapper function to extend an array
 
-    Arguments
-    ---------
-    input_array: array to extend
-    step_size: step size between elements of array
+    Parameters
+    ----------
+    input_array: float
+        array to extend
+    step_size: float
+        step size between elements of array
 
     Returns
     -------
-    temp: extended array
+    temp: float
+        extended array
     """
     n = len(input_array)
     temp = np.zeros((n+2),dtype=input_array.dtype)
@@ -470,13 +491,15 @@ def extend_matrix(input_matrix):
     """
     Wrapper function to extend a matrix
 
-    Arguments
-    ---------
-    input_matrix: matrix to extend
+    Parameters
+    ----------
+    input_matrix: float
+        matrix to extend
 
     Returns
     -------
-    temp: extended matrix
+    temp: float
+        extended matrix
     """
     ny,nx = np.shape(input_matrix)
     temp = np.ma.zeros((ny,nx+2),dtype=input_matrix.dtype)
@@ -490,18 +513,25 @@ def read_tide_grid(input_file):
     """
     Read grid file to extract model coordinates, bathymetry, masks and indices
 
-    Arguments
-    ---------
-    input_file: input grid file
+    Parameters
+    ----------
+    input_file: str
+        input grid file
 
     Returns
     -------
-    x: x-coordinates of input grid
-    y: y-coordinates of input grid
-    hz: model bathymetry
-    mz: land/water mask
-    iob: open boundary index
-    dt: time step
+    x: float
+        x-coordinates of input grid
+    y: float
+        y-coordinates of input grid
+    hz: float
+        model bathymetry
+    mz: int
+        land/water mask
+    iob: int
+        open boundary index
+    dt: float
+        time step
     """
     #-- open the file
     fid = open(os.path.expanduser(input_file),'rb')
@@ -547,21 +577,31 @@ def read_atlas_grid(input_file):
     Read ATLAS grid file to extract model coordinates, bathymetry, masks and
     indices for both global and local solutions
 
-    Arguments
-    ---------
-    input_file: input ATLAS grid file
+    Parameters
+    ----------
+    input_file: str
+        input ATLAS grid file
 
     Returns
     -------
-    x: x-coordinates of input ATLAS grid
-    y: y-coordinates of input ATLAS grid
-    hz: model bathymetry
-    mz: land/water mask
-    iob: open boundary index
-    dt: time step
-    pmask: global mask
-    local: dictionary of local tidal solutions for grid variables
-        depth: model bathymetry
+    x: float
+        x-coordinates of input ATLAS grid
+    y: float
+        y-coordinates of input ATLAS grid
+    hz: float
+        model bathymetry
+    mz: int
+        land/water mask
+    iob: int
+        open boundary index
+    dt: float
+        time step
+    pmask: int
+        global mask
+    local: dict
+        dictionary of local tidal solutions for grid variables
+
+            - ``'depth'``: model bathymetry
     """
     #-- read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
@@ -637,14 +677,17 @@ def read_constituents(input_file):
     """
     Read the list of constituents from an elevation or transport file
 
-    Arguments
-    ---------
-    input_file: input tidal file
+    Parameters
+    ----------
+    input_file: str
+        input tidal file
 
     Returns
     -------
-    constituents: list of tidal constituent IDs
-    nc: number of constituents
+    constituents: list
+        list of tidal constituent IDs
+    nc: int
+        number of constituents
     """
     #-- check that model file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):
@@ -664,14 +707,17 @@ def read_elevation_file(input_file,ic):
     """
     Read elevation file to extract real and imaginary components for constituent
 
-    Arguments
-    ---------
-    input_file: input elevation file
-    ic: index of consituent
+    Parameters
+    ----------
+    input_file: str
+        input elevation file
+    ic: int
+        index of consituent
 
     Returns
     -------
-    h: tidal elevation
+    h: float
+        tidal elevation
     """
     #-- open the file
     fid = open(os.path.expanduser(input_file),'rb')
@@ -706,17 +752,23 @@ def read_atlas_elevation(input_file,ic,constituent):
     Read elevation file with localized solutions to extract real and imaginary
     components for constituent
 
-    Arguments
-    ---------
-    input_file: input ATLAS elevation file
-    ic: index of consituent
-    constituent: tidal constituent ID
+    Parameters
+    ----------
+    input_file: str
+        input ATLAS elevation file
+    ic: int
+        index of consituent
+    constituent: str
+        tidal constituent ID
 
     Returns
     -------
-    h: global tidal elevation
-    local: dictionary of local tidal solutions for elevation variables
-        z: tidal elevation
+    h: float
+        global tidal elevation
+    local: dict
+        dictionary of local tidal solutions for elevation variables
+
+            - ``'z'``: tidal elevation
     """
     #-- read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
@@ -796,15 +848,19 @@ def read_transport_file(input_file,ic):
     """
     Read transport file to extract real and imaginary components for constituent
 
-    Arguments
-    ---------
-    input_file: input transport file
-    ic: index of consituent
+    Parameters
+    ----------
+    input_file: str
+        input transport file
+    ic: int
+        index of consituent
 
     Returns
     -------
-    u: zonal tidal transport
-    v: meridional zonal transport
+    u: float
+        zonal tidal transport
+    v: float
+        meridional zonal transport
     """
     #-- open the file
     fid = open(os.path.expanduser(input_file),'rb')
@@ -845,19 +901,26 @@ def read_atlas_transport(input_file,ic,constituent):
     Read transport file with localized solutions to extract real and imaginary
     components for constituent
 
-    Arguments
-    ---------
-    input_file: input ATLAS transport file
-    ic: index of consituent
-    constituent: tidal constituent ID
+    Parameters
+    ----------
+    input_file: str
+        input ATLAS transport file
+    ic: int
+        index of consituent
+    constituent: str
+        tidal constituent ID
 
     Returns
     -------
-    u: global zonal tidal transport
-    v: global meridional zonal transport
-    local: dictionary of local tidal solutions for transport variables
-        u: zonal tidal transport
-        v: meridional zonal transport
+    u: float
+        global zonal tidal transport
+    v: float
+        global meridional zonal transport
+    local: dict
+        dictionary of local tidal solutions for transport variables
+
+            - ``'u'``: zonal tidal transport
+            - ``'v'``: meridional zonal transport
     """
     #-- read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
@@ -952,23 +1015,32 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     """
     Creates a high-resolution grid mask from model variables
 
-    Arguments
-    ---------
-    xi: input x-coordinates of global tide model
-    yi: input y-coordinates of global tide model
-    mz: global land/water mask
-    local: dictionary of local tidal solutions
+    Parameters
+    ----------
+    xi: float
+        input x-coordinates of global tide model
+    yi: float
+        input y-coordinates of global tide model
+    mz: int
+        global land/water mask
+    local: dict
+        dictionary of local tidal solutions
+    VARIABLE: str or NoneType, default None
+        key for variable within each local solution
 
-    Keyword arguments
-    -----------------
-    VARIABLE: key for variable within each local solution
-        depth: model bathymetry
+            - ``'depth'``: model bathymetry
+            - ``'z'``: tidal elevation
+            - ``'u'``: zonal tidal transport
+            - ``'v'``: meridional zonal transport
 
     Returns
     -------
-    x30: x-coordinates of high-resolution tide model
-    y30: y-coordinates of high-resolution tide model
-    m30: high-resolution land/water mask
+    x30: float
+        x-coordinates of high-resolution tide model
+    y30: float
+        y-coordinates of high-resolution tide model
+    m30: int
+        high-resolution land/water mask
     """
     #-- create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
@@ -983,19 +1055,25 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     m30.data[:,:] = mz[gridy.astype(np.int32),gridx.astype(np.int32)]
     #-- iterate over localized solutions to fill in high-resolution coastlines
     for key,val in local.items():
+        #-- shape of local variable
+        ny,nx = np.shape(val[VARIABLE])
+        #-- correct limits for local grid
+        lon0 = np.floor(val['lon'][0]/d30)*d30
+        lat0 = np.floor(val['lat'][0]/d30)*d30
         #-- create latitude and longitude for local model
-        ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
-        ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
-        X,Y = np.meshgrid(ilon,ilat)
+        xi = lon0 + np.arange(nx)*d30
+        yi = lat0 + np.arange(ny)*d30
+        gridx,gridy = np.meshgrid(xi,yi)
         #-- local model output
         validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
-        for indy,indx in zip(validy,validx):
-            #-- check if model is -180:180
-            lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
-            ii = int((lon30 - x30[0])/d30)
-            jj = int((Y[indy,indx] - y30[0])/d30)
-            #-- fill global mask with regional solution
-            m30[jj,ii] = 1
+        #-- check if any model longitudes are -180:180
+        X = np.where(gridx[validy,validx] <= 0.0,
+            gridx[validy,validx] + 360.0, gridx[validy,validx])
+        #-- grid indices of local model
+        ii = ((X - x30[0])//d30).astype('i')
+        jj = ((gridy[validy,validx] - y30[0])//d30).astype('i')
+        #-- fill global mask with regional solution
+        m30[jj,ii] = 1
     #-- return the 2 arc-minute mask
     m30.mask = (m30.data == m30.fill_value)
     return m30
@@ -1006,21 +1084,25 @@ def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
     Interpolates global ATLAS tidal solutions into a
     higher-resolution sampling
 
-    Arguments
-    ---------
-    xi: input x-coordinates of global tide model
-    yi: input y-coordinates of global tide model
-    zi: global tide model data
-
-    Keyword arguments
-    -----------------
-    spacing: output grid spacing
+    Parameters
+    ----------
+    xi: float
+        input x-coordinates of global tide model
+    yi: float
+        input y-coordinates of global tide model
+    zi: float
+        global tide model data
+    spacing: float
+        output grid spacing
 
     Returns
     -------
-    xs: x-coordinates of high-resolution tide model
-    ys: y-coordinates of high-resolution tide model
-    zs: high-resolution tidal solution for variable
+    xs: float
+        x-coordinates of high-resolution tide model
+    ys: float
+        y-coordinates of high-resolution tide model
+    zs: float
+        high-resolution tidal solution for variable
     """
     #-- create resampled grid dimensions
     xs = np.arange(spacing/2.0, 360.0+spacing/2.0, spacing)
@@ -1046,27 +1128,34 @@ def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
     Combines global and local ATLAS tidal solutions into a single
     high-resolution solution
 
-    Arguments
-    ---------
-    xi: input x-coordinates of global tide model
-    yi: input y-coordinates of global tide model
-    zi: global tide model data
-    pmask: global mask
-    local: dictionary of local tidal solutions
+    Parameters
+    ----------
+    xi: float
+        input x-coordinates of global tide model
+    yi: float
+        input y-coordinates of global tide model
+    zi: float
+        global tide model data
+    pmask: int
+        global mask
+    local: dict
+        dictionary of local tidal solutions
+    VARIABLE: str or NoneType, default None
+        key for variable within each local solution
 
-    Keyword arguments
-    -----------------
-    VARIABLE: key for variable within each local solution
-        depth: model bathymetry
-        z: tidal elevation
-        u: zonal tidal transport
-        v: meridional zonal transport
+            - ``'depth'``: model bathymetry
+            - ``'z'``: tidal elevation
+            - ``'u'``: zonal tidal transport
+            - ``'v'``: meridional zonal transport
 
     Returns
     -------
-    x30: x-coordinates of high-resolution tide model
-    y30: y-coordinates of high-resolution tide model
-    z30: combined high-resolution tidal solution for variable
+    x30: float
+        x-coordinates of high-resolution tide model
+    y30: float
+        y-coordinates of high-resolution tide model
+    z30: float
+        combined high-resolution tidal solution for variable
     """
     #-- create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
@@ -1074,20 +1163,25 @@ def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
     x30,y30,z30 = interpolate_atlas_model(xi,yi,zi,spacing=d30)
     #-- iterate over localized solutions
     for key,val in local.items():
-        #-- local model output
-        zlocal = val[VARIABLE][:]
-        validy,validx = np.nonzero(np.logical_not(zlocal.mask))
+        #-- shape of local variable
+        ny,nx = np.shape(val[VARIABLE])
+        #-- correct limits for local grid
+        lon0 = np.floor(val['lon'][0]/d30)*d30
+        lat0 = np.floor(val['lat'][0]/d30)*d30
         #-- create latitude and longitude for local model
-        ilon = np.arange(val['lon'][0]+d30/2.0,val['lon'][1]+d30/2.0,d30)
-        ilat = np.arange(val['lat'][0]+d30/2.0,val['lat'][1]+d30/2.0,d30)
-        X,Y = np.meshgrid(ilon,ilat)
-        for indy,indx in zip(validy,validx):
-            #-- check if model is -180:180
-            lon30 = (X[indy,indx]+360.) if (X[indy,indx]<=0.0) else X[indy,indx]
-            ii = int((lon30 - x30[0])/d30)
-            jj = int((Y[indy,indx] - y30[0])/d30)
-            #-- fill global model with regional solution
-            z30.data[jj,ii] = zlocal[indy,indx]
+        xi = lon0 + np.arange(nx)*d30
+        yi = lat0 + np.arange(ny)*d30
+        gridx,gridy = np.meshgrid(xi,yi)
+        #-- local model output
+        validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
+        #-- check if any model longitudes are -180:180
+        X = np.where(gridx[validy,validx] <= 0.0,
+            gridx[validy,validx] + 360.0, gridx[validy,validx])
+        #-- grid indices of local model
+        ii = ((X - x30[0])//d30).astype('i')
+        jj = ((gridy[validy,validx] - y30[0])//d30).astype('i')
+        #-- fill global mask with regional solution
+        z30.data[jj,ii] = val[VARIABLE][validy,validx]
     #-- return 2 arc-minute solution and coordinates
     return (x30,y30,z30)
 

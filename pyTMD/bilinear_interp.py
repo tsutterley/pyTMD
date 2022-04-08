@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-bilinear_interp.py (03/2021)
+bilinear_interp.py (04/2022)
 Bilinear interpolation of input data to output coordinates
 
 CALLING SEQUENCE:
@@ -26,6 +26,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 12/2020: using numpy isclose to check corner points
     Updated 08/2020: check that output coordinates are within bounds
@@ -42,22 +43,27 @@ def bilinear_interp(ilon,ilat,idata,lon,lat,fill_value=np.nan,
     """
     Bilinear interpolation of input data to output coordinates
 
-    Arguments
-    ---------
-    ilon: longitude of tidal model
-    ilat: latitude of tidal model
-    idata: tide model data
-    lat: output latitude
-    lon: output longitude
-
-    Keyword arguments
-    -----------------
-    fill_value: invalid value
-    dtype: output data type
+    Parameters
+    ----------
+    ilon: float
+        longitude of tidal model
+    ilat: float
+        latitude of tidal model
+    idata: float
+        tide model data
+    lat: float
+        output latitude
+    lon: float
+        output longitude
+    fill_value: float, default np.nan
+        invalid value
+    dtype: obj, default np.float64
+        output data type
 
     Returns
     -------
-    data: interpolated data
+    data: float
+        interpolated data
     """
     #-- find valid points (within bounds)
     valid, = np.nonzero((lon >= ilon.min()) & (lon <= ilon.max()) &

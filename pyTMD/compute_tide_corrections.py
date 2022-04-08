@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (01/2022)
+Written by Tyler Sutterley (04/2022)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -79,6 +79,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2021: added function to calculate a tidal time series
         verify coordinate dimensions for each input data type
         added option for converting from LORAN times to UTC
@@ -129,46 +130,67 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     """
     Compute tides at points and times using tidal harmonics
 
-    Arguments
-    ---------
-    x: x-coordinates in projection EPSG
-    y: y-coordinates in projection EPSG
-    delta_time: seconds since EPOCH or datetime array
+    Parameters
+    ----------
+    x: float
+        x-coordinates in projection EPSG
+    y: float
+        y-coordinates in projection EPSG
+    delta_time: float
+        seconds since EPOCH or datetime array
+    DIRECTORY: str or NoneType, default None
+        working data directory for tide models
+    MODEL: str or NoneType, default None
+        Tide model to use in correction
+    ATLAS_FORMAT: str, default 'netcdf'
+        ATLAS tide model format (OTIS, netcdf)
+        ATLAS tide model format
 
-    Keyword arguments
-    -----------------
-    DIRECTORY: working data directory for tide models
-    MODEL: Tide model to use in correction
-    ATLAS_FORMAT: ATLAS tide model format (OTIS, netcdf)
-    GZIP: Tide model files are gzip compressed
-    DEFINITION_FILE: Tide model definition file for use as correction
-    EPOCH: time period for calculating delta times
-        default: J2000 (seconds since 2000-01-01T00:00:00)
-    TYPE: input data type
-        None: determined from input variable dimensions
-        drift: drift buoys or satellite/airborne altimetry (time per data point)
-        grid: spatial grids or images (single time per image)
-        time series: time series at a single point (multiple times)
-    TIME: time type if need to compute leap seconds to convert to UTC
-        GPS: leap seconds needed
-        LORAN: leap seconds needed (LORAN = GPS + 9 seconds)
-        TAI: leap seconds needed (TAI = GPS + 19 seconds)
-        UTC: no leap seconds needed
-        datetime: numpy datatime array in UTC
-    EPSG: input coordinate system
-        default: 3031 Polar Stereographic South, WGS84
-    METHOD: interpolation method
-        bilinear: quick bilinear interpolation
-        spline: scipy bivariate spline interpolation
-        linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate with nearest-neighbors
-    CUTOFF: Extrapolation cutoff in kilometers
-        set to np.inf to extrapolate for all points
-    FILL_VALUE: output invalid value (default NaN)
+            - ``'OTIS'``
+            - ``'netcdf'``
+    GZIP: bool, default False
+        Tide model files are gzip compressed
+    DEFINITION_FILE: str or NoneType, default None
+        Tide model definition file for use
+    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+        Input coordinate system
+    EPOCH: tuple, default (2000,1,1,0,0,0)
+        Time period for calculating delta times
+    TYPE: str or NoneType, default 'drift'
+        Input data type
+
+            - ``None``: determined from input variable dimensions
+            - ``'drift'``: drift buoys or satellite/airborne altimetry
+            - ``'grid'``: spatial grids or images
+            - ``'time series'``: time series at a single point
+    TIME: str, default 'UTC'
+        Time type if need to compute leap seconds to convert to UTC
+
+            - ``'GPS'``: leap seconds needed
+            - ``'LORAN'``: leap seconds needed (LORAN = GPS + 9 seconds)
+            - ``'TAI'``: leap seconds needed (TAI = GPS + 19 seconds)
+            - ``'UTC'``: no leap seconds needed
+            - ``'datetime'``: numpy datatime array in UTC
+    METHOD: str
+        Interpolation method
+
+            - ```bilinear```: quick bilinear interpolation
+            - ```spline```: scipy bivariate spline interpolation
+            - ```linear```, ```nearest```: scipy regular grid interpolations
+
+    EXTRAPOLATE: bool, default False
+        Extrapolate with nearest-neighbors
+    CUTOFF: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to np.inf to extrapolate for all points
+    FILL_VALUE: float, default np.nan
+        Output invalid value
 
     Returns
     -------
-    tide: tidal elevation at coordinates and time in meters
+    tide: float
+        tidal elevation at coordinates and time in meters
     """
 
     #-- check that tide directory is accessible

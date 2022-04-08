@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (12/2021)
+read_netcdf_model.py (04/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 09/2021: fix cases where there is no mask on constituent files
     Updated 07/2021: added check that tide model files are accessible
@@ -90,41 +91,57 @@ from pyTMD.nearest_extrap import nearest_extrap
 def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
     METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
     """
-    Reads files for a netCDF4 tidal model
+    Reads files for ATLAS netCDF4 tidal models
+
     Makes initial calculations to run the tide program
+
     Spatially interpolates tidal constituents to input coordinates
 
-    Arguments
-    ---------
-    ilon: longitude to interpolate
-    ilat: latitude to interpolate
-    grid_file: grid file for model (can be gzipped)
-    model_files: list of model files for each constituent (can be gzipped)
+    Parameters
+    ----------
+    ilon: float
+        longitude to interpolate
+    ilat: float
+        latitude to interpolate
+    grid_file: str
+        grid file for model
+    model_files: list
+        list of model files for each constituent
+    TYPE: str, default 'z'
+        Tidal variable to read
 
-    Keyword arguments
-    -----------------
-    TYPE: tidal variable to read
-        z: heights
-        u: horizontal transport velocities
-        U: horizontal depth-averaged transport
-        v: vertical transport velocities
-        V: vertical depth-averaged transport
-    METHOD: interpolation method
-        bilinear: quick bilinear interpolation
-        spline: scipy bivariate spline interpolation
-        linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate model using nearest-neighbors
-    CUTOFF: extrapolation cutoff in kilometers
-        set to np.inf to extrapolate for all points
-    GZIP: input netCDF4 files are compressed
-    SCALE: scaling factor for converting to output units
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+    METHOD: str, default 'spline'
+        Interpolation method
+
+            - ``'bilinear'``: quick bilinear interpolation
+            - ``'spline'``: scipy bivariate spline interpolation
+            - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
+    EXTRAPOLATE: bool, default False
+        Extrapolate model using nearest-neighbors
+    CUTOFF: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to np.inf to extrapolate for all points
+    GZIP: bool, default False
+        Input files are compressed
+    SCALE: float, default 1.0
+        Scaling factor for converting to output units
 
     Returns
     -------
-    amplitude: amplitudes of tidal constituents
-    phase: phases of tidal constituents
-    D: bathymetry of tide model
-    constituents: list of model constituents
+    amplitude: float
+        amplitudes of tidal constituents
+    phase: float
+        phases of tidal constituents
+    D: float
+        bathymetry of tide model
+    constituents: list
+        list of model constituents
     """
 
     #-- raise warning if model files are entered as a string
@@ -336,14 +353,17 @@ def extend_array(input_array,step_size):
     """
     Wrapper function to extend an array
 
-    Arguments
-    ---------
-    input_array: array to extend
-    step_size: step size between elements of array
+    Parameters
+    ----------
+    input_array: float
+        array to extend
+    step_size: float
+        step size between elements of array
 
     Returns
     -------
-    temp: extended array
+    temp: float
+        extended array
     """
     n = len(input_array)
     temp = np.zeros((n+2),dtype=input_array.dtype)
@@ -358,13 +378,15 @@ def extend_matrix(input_matrix):
     """
     Wrapper function to extend a matrix
 
-    Arguments
-    ---------
-    input_matrix: matrix to extend
+    Parameters
+    ----------
+    input_matrix: float
+        matrix to extend
 
     Returns
     -------
-    temp: extended matrix
+    temp: float
+        extended matrix
     """
     ny,nx = np.shape(input_matrix)
     temp = np.ma.zeros((ny,nx+2),dtype=input_matrix.dtype)
@@ -378,25 +400,30 @@ def read_netcdf_grid(input_file, TYPE, GZIP=False):
     """
     Read grid file to extract model coordinates and bathymetry
 
-    Arguments
-    ---------
-    input_file: input grid file
-    TYPE: tidal variable to run
-        z: heights
-        u: horizontal transport velocities
-        U: horizontal depth-averaged transport
-        v: vertical transport velocities
-        V: vertical depth-averaged transport
+    Parameters
+    ----------
+    input_file: str
+        input grid file
+    TYPE: str
+        Tidal variable to read
 
-    Keyword Arguments
-    -----------------
-    GZIP: input netCDF4 file is compressed
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+
+    GZIP: bool, default False
+        input netCDF4 file is compressed
 
     Returns
     -------
-    lon: longitudinal coordinates of input grid
-    lat: latitudinal coordinates of input grid
-    bathymetry: model bathymetry
+    lon: float
+        longitudinal coordinates of input grid
+    lat: float
+        latitudinal coordinates of input grid
+    bathymetry: float
+        model bathymetry
     """
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
@@ -443,18 +470,19 @@ def read_elevation_file(input_file, GZIP=False):
     """
     Read elevation file to extract real and imaginary components for constituent
 
-    Arguments
-    ---------
-    input_file: input elevation file
-
-    Keyword arguments
-    -----------------
-    GZIP: input netCDF4 files are compressed
+    Parameters
+    ----------
+    input_file: str
+        input elevation file
+    GZIP: bool, default False
+        input netCDF4 files are compressed
 
     Returns
     -------
-    h: tidal elevation
-    con: tidal constituent ID
+    h: float
+        tidal elevation
+    con: str
+        tidal constituent ID
     """
     #-- read the netcdf format tide elevation file
     #-- reading a combined global solution with localized solutions
@@ -485,23 +513,27 @@ def read_transport_file(input_file, TYPE, GZIP=False):
     """
     Read transport file to extract real and imaginary components for constituent
 
-    Arguments
-    ---------
-    input_file: input transport file
-    TYPE: tidal variable to run
-        u: horizontal transport velocities
-        U: horizontal depth-averaged transport
-        v: vertical transport velocities
-        V: vertical depth-averaged transport
+    Parameters
+    ----------
+    input_file: str
+        input transport file
+    TYPE: str
+        Tidal variable to read
 
-    Keyword arguments
-    -----------------
-    GZIP: input netCDF4 files are compressed
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+
+    GZIP: bool, default False
+        input netCDF4 files are compressed
 
     Returns
     -------
-    tr: tidal transport
-    con: tidal constituent ID
+    tr: float
+        tidal transport
+    con: str
+        tidal constituent ID
     """
     #-- read the netcdf format tide grid file
     #-- reading a combined global solution with localized solutions
