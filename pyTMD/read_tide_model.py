@@ -282,11 +282,13 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             #-- replace original values with extend matrices
             if GLOBAL:
                 z = extend_matrix(z)
+            #-- copy mask to elevation
+            z.mask |= mz.astype(bool)
             #-- interpolate amplitude and phase of the constituent
             z1 = np.ma.zeros((npts),dtype=z.dtype)
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
-                z[z==0] = np.nan
+                z[(z==0) | z.mask] = np.nan
                 #-- use quick bilinear to interpolate values
                 z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.longcomplex)
                 #-- replace nan values with fill_value
@@ -317,13 +319,10 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- find invalid data points
                 inv, = np.nonzero(z1.mask)
                 #-- replace zero values with nan
-                z[z==0] = np.nan
+                z[(z==0) | z.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                z1.data[inv] = nearest_extrap(xi,yi,z,x[inv],y[inv],
+                z1[inv] = nearest_extrap(xi,yi,z,x[inv],y[inv],
                     dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
-                #-- replace nan values with fill_value
-                z1.mask[inv] = np.isnan(z1.data[inv])
-                z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
             amplitude.mask[:,i] = np.copy(z1.mask)
@@ -341,13 +340,15 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             #-- replace original values with extend matrices
             if GLOBAL:
                 u = extend_matrix(u)
+            #-- copy mask to u transports
+            u.mask |= mu.astype(bool)
             #-- x coordinates for u transports
             xu = xi - dx/2.0
             #-- interpolate amplitude and phase of the constituent
             u1 = np.ma.zeros((npts),dtype=u.dtype)
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
-                u[u==0] = np.nan
+                u[(u==0) | u.mask] = np.nan
                 #-- use quick bilinear to interpolate values
                 u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.longcomplex)
                 #-- replace nan values with fill_value
@@ -376,13 +377,10 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- find invalid data points
                 inv, = np.nonzero(u1.mask)
                 #-- replace zero values with nan
-                u[u==0] = np.nan
+                u[(u==0) | u.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                u1.data[inv] = nearest_extrap(xu,yi,u,x[inv],y[inv],
+                u1[inv] = nearest_extrap(xu,yi,u,x[inv],y[inv],
                     dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
-                #-- replace nan values with fill_value
-                u1.mask[inv] = np.isnan(u1.data[inv])
-                u1.data[u1.mask] = u1.fill_value
             #-- convert units
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(u1.data)/unit_conv
@@ -401,13 +399,15 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
             #-- replace original values with extend matrices
             if GLOBAL:
                 v = extend_matrix(v)
+            #-- copy mask to v transports
+            v.mask |= mv.astype(bool)
             #-- y coordinates for v transports
             yv = yi - dy/2.0
             #-- interpolate amplitude and phase of the constituent
             v1 = np.ma.zeros((npts),dtype=v.dtype)
             if (METHOD == 'bilinear'):
                 #-- replace zero values with nan
-                v[v==0] = np.nan
+                v[(v==0) | v.mask] = np.nan
                 #-- use quick bilinear to interpolate values
                 v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.longcomplex)
                 #-- replace nan values with fill_value
@@ -436,13 +436,10 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- find invalid data points
                 inv, = np.nonzero(v1.mask)
                 #-- replace zero values with nan
-                v[z==v] = np.nan
+                v[(v==0) | v.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                v1.data[inv] = nearest_extrap(x,yv,v,x[inv],y[inv],
+                v1[inv] = nearest_extrap(x,yv,v,x[inv],y[inv],
                     dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
-                #-- replace nan values with fill_value
-                v1.mask[inv] = np.isnan(v1.data[inv])
-                v1.data[v1.mask] = v1.fill_value
             #-- convert units
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(v1.data)/unit_conv

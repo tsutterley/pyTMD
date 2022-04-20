@@ -168,9 +168,10 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
     #-- query output data points and find nearest neighbor within cutoff
     dd,ii = tree.query(points, k=1, distance_upper_bound=cutoff)
     #-- spatially extrapolate using nearest neighbors
-    ind, = np.nonzero(np.isfinite(dd))
-    DATA.data[ind] = flattened[ii[ind]]
-    DATA.mask[ind] = False
+    if np.any(np.isfinite(dd)):
+        ind, = np.nonzero(np.isfinite(dd))
+        DATA.data[ind] = flattened[ii[ind]]
+        DATA.mask[ind] = False
     #-- return extrapolated values
     return DATA
 

@@ -275,11 +275,8 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
                 #-- replace invalid values with nan
                 z[z.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                z1.data[inv] = nearest_extrap(lon,lat,z,ilon[inv],ilat[inv],
+                z1[inv] = nearest_extrap(lon,lat,z,ilon[inv],ilat[inv],
                     dtype=z.dtype,cutoff=CUTOFF)
-                #-- replace nan values with fill_value
-                z1.mask[inv] = np.isnan(z1.data[inv])
-                z1.data[z1.mask] = z1.fill_value
             #-- amplitude and phase of the constituent
             ampl.data[:,i] = np.abs(z1.data)
             ampl.mask[:,i] = np.copy(z1.mask)
@@ -328,11 +325,8 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
                 #-- replace invalid values with nan
                 tr[tr.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                tr1.data[inv] = nearest_extrap(lon,lat,tr,ilon[inv],ilat[inv],
+                tr1[inv] = nearest_extrap(lon,lat,tr,ilon[inv],ilat[inv],
                     dtype=tr.dtype,cutoff=CUTOFF)
-                #-- replace nan values with fill_value
-                tr1.mask[inv] = np.isnan(tr1.data[inv])
-                tr1.data[tr1.mask] = tr1.fill_value
             #-- convert units
             #-- amplitude and phase of the constituent
             ampl.data[:,i] = np.abs(tr1.data)/unit_conv

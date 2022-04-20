@@ -211,11 +211,8 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
             #-- replace invalid values with nan
             hc[hc.mask] = np.nan
             #-- extrapolate points within cutoff of valid model points
-            hci.data[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
+            hci[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
                 dtype=hc.dtype,cutoff=CUTOFF)
-            #-- replace nan values with fill_value
-            hci.mask[inv] = np.isnan(hci.data[inv])
-            hci.data[hci.mask] = hci.fill_value
         #-- convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci.data)*SCALE
         amplitude.mask[:,i] = np.copy(hci.mask)
