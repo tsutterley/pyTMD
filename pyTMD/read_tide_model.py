@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        use longcomplex data format to be windows compliant
     Updated 03/2022: invert tide mask to be True for invalid points
         add separate function for resampling ATLAS compact global model
         decode ATLAS compact constituents for Python3 compatibility
@@ -287,7 +288,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- replace zero values with nan
                 z[z==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.complex128)
+                z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.longcomplex)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (mz1.astype(bool)))
                 z1.data[z1.mask] = z1.fill_value
@@ -319,7 +320,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 z[z==0] = np.nan
                 #-- extrapolate points within cutoff of valid model points
                 z1.data[inv] = nearest_extrap(xi,yi,z,x[inv],y[inv],
-                    dtype=np.complex128,cutoff=CUTOFF,EPSG=EPSG)
+                    dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
                 #-- replace nan values with fill_value
                 z1.mask[inv] = np.isnan(z1.data[inv])
                 z1.data[z1.mask] = z1.fill_value
@@ -348,7 +349,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- replace zero values with nan
                 u[u==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.complex128)
+                u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.longcomplex)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (mu1.astype(bool)))
                 u1.data[u1.mask] = u1.fill_value
@@ -378,7 +379,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 u[u==0] = np.nan
                 #-- extrapolate points within cutoff of valid model points
                 u1.data[inv] = nearest_extrap(xu,yi,u,x[inv],y[inv],
-                    dtype=np.complex128,cutoff=CUTOFF,EPSG=EPSG)
+                    dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
                 #-- replace nan values with fill_value
                 u1.mask[inv] = np.isnan(u1.data[inv])
                 u1.data[u1.mask] = u1.fill_value
@@ -408,7 +409,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 #-- replace zero values with nan
                 v[v==0] = np.nan
                 #-- use quick bilinear to interpolate values
-                v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.complex128)
+                v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.longcomplex)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value
@@ -438,7 +439,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
                 v[z==v] = np.nan
                 #-- extrapolate points within cutoff of valid model points
                 v1.data[inv] = nearest_extrap(x,yv,v,x[inv],y[inv],
-                    dtype=np.complex128,cutoff=CUTOFF,EPSG=EPSG)
+                    dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
                 #-- replace nan values with fill_value
                 v1.mask[inv] = np.isnan(v1.data[inv])
                 v1.data[v1.mask] = v1.fill_value
@@ -697,7 +698,7 @@ def read_constituents(input_file):
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
     fid.seek(16,1)
-    constituents = [c.decode("utf-8").rstrip() for c in fid.read(nc*4).split()]
+    constituents = [c.decode("utf8").rstrip() for c in fid.read(nc*4).split()]
     fid.close()
     return (constituents,nc)
 
@@ -809,7 +810,7 @@ def read_atlas_elevation(input_file,ic,constituent):
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         #-- extract constituents for localized solution
-        cons = fid.read(nc1*4).strip().decode("utf-8").split()
+        cons = fid.read(nc1*4).strip().decode("utf8").split()
         #-- check if constituent is in list of localized solutions
         if (constituent in cons):
             ic1, = [i for i,c in enumerate(cons) if (c == constituent)]
@@ -966,7 +967,7 @@ def read_atlas_transport(input_file,ic,constituent):
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         #-- extract constituents for localized solution
-        cons = fid.read(nc1*4).strip().decode("utf-8").split()
+        cons = fid.read(nc1*4).strip().decode("utf8").split()
         #-- check if constituent is in list of localized solutions
         if (constituent in cons):
             ic1, = [i for i,c in enumerate(cons) if (c == constituent)]

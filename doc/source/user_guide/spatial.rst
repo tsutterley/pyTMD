@@ -34,7 +34,7 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.case_insensitive_filename
 
-.. autofunction:: pyTMD.spatial.data_type(x, y, t)
+.. autofunction:: pyTMD.spatial.data_type
 
 .. autofunction:: pyTMD.spatial.from_ascii
 

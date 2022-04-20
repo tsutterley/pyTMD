@@ -55,6 +55,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        include utf-8 encoding in reads to be windows compliant
+        fix netCDF4 masks for nan values
     Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
@@ -267,12 +269,14 @@ def read_ascii_file(input_file, GZIP=False, **kwargs):
     lon: longitude of tidal model
     lat: latitude of tidal model
     """
+    #-- tilde-expand input file
+    input_file = os.path.expanduser(input_file)
     #-- read input tide model file
     if GZIP:
-        with gzip.open(os.path.expanduser(input_file),'rb') as f:
-            file_contents = f.read().splitlines()
+        with gzip.open(input_file, 'rb') as f:
+            file_contents = f.read(input_file).splitlines()
     else:
-        with open(os.path.expanduser(input_file),'r') as f:
+        with open(input_file, mode="r", encoding='utf8') as f:
             file_contents = f.read().splitlines()
     #-- parse header text
     #-- longitude range (lonmin, lonmax)
@@ -350,7 +354,7 @@ def read_netcdf_file(input_file, GZIP=False, TYPE=None, VERSION=None):
         f = gzip.open(os.path.expanduser(input_file),'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
     #-- variable dimensions for each model
     if VERSION in ('FES2012',):
         lon = fileID.variables['longitude'][:]
@@ -374,6 +378,8 @@ def read_netcdf_file(input_file, GZIP=False, TYPE=None, VERSION=None):
     #-- calculate complex form of constituent oscillation
     hc = amp*np.exp(-1j*ph*np.pi/180.0)
     #-- set masks
-    hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
+    hc.mask = (amp.data == amp.fill_value) | \
+        (ph.data == ph.fill_value) | \
+        np.isnan(amp.data) | np.isnan(ph.data)
     #-- return output variables
     return (hc,lon,lat)

@@ -492,7 +492,7 @@ def read_elevation_file(input_file, GZIP=False):
     else:
         fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- constituent name
-    con = fileID.variables['con'][:].tobytes().decode('utf-8')
+    con = fileID.variables['con'][:].tobytes().decode('utf8')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
@@ -543,7 +543,7 @@ def read_transport_file(input_file, TYPE, GZIP=False):
     else:
         fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
     #-- constituent name
-    con = fileID.variables['con'][:].tobytes().decode('utf-8')
+    con = fileID.variables['con'][:].tobytes().decode('utf8')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size

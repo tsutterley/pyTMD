@@ -35,6 +35,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        use valid tide model points when creating kd-trees
     Updated 02/2022: fix equirectangular case for cutoffs near poles
     Updated 05/2021: set ellipsoidal major axis to WGS84 in kilometers
     Updated 03/2021: add checks to prevent runtime exception
@@ -90,8 +91,8 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
         return
 
     #-- allocate to output extrapolate data array
-    DATA = np.ma.zeros((npts),dtype=dtype,fill_value=fill_value)
-    DATA.mask = np.ones((npts),dtype=bool)
+    DATA = np.ma.zeros((npts), dtype=dtype, fill_value=fill_value)
+    DATA.mask = np.ones((npts), dtype=bool)
     #-- initially set all data to fill value
     DATA.data[:] = data.fill_value
 
@@ -105,16 +106,17 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
         #-- global or regional equirectangular model
         #-- calculate meshgrid of model coordinates
         gridlon,gridlat = np.meshgrid(x,y)
+        #-- ellipsoidal major axis in kilometers
+        a_axis = 6378.137
         #-- calculate Cartesian coordinates of input grid
         gridx,gridy,gridz = pyTMD.spatial.to_cartesian(gridlon,
-            gridlat, a_axis=6378.137)
+            gridlat, a_axis=a_axis)
         #-- calculate Cartesian coordinates of output coordinates
-        #-- set ellipsoidal major axis to kilometers
-        xs,ys,zs = pyTMD.spatial.to_cartesian(XI,YI,a_axis=6378.137)
+        xs,ys,zs = pyTMD.spatial.to_cartesian(XI, YI, a_axis=a_axis)
         #-- range of output points in cartesian coordinates
-        xmin,xmax = (np.min(xs),np.max(xs))
-        ymin,ymax = (np.min(ys),np.max(ys))
-        zmin,zmax = (np.min(zs),np.max(zs))
+        xmin,xmax = (np.min(xs), np.max(xs))
+        ymin,ymax = (np.min(ys), np.max(ys))
+        zmin,zmax = (np.min(zs), np.max(zs))
         #-- reduce to model points within bounds of input points
         valid_bounds = np.ones_like(data.mask, dtype=bool)
         valid_bounds &= (gridx >= (xmin-2.0*cutoff))
@@ -128,10 +130,10 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
             #-- return filled masked array
             return DATA
         #-- find where input grid is valid and close to output points
-        indy,indx = np.nonzero(valid_bounds)
+        indy,indx = np.nonzero(valid_mask & valid_bounds)
         #-- create KD-tree of valid points
         tree = scipy.spatial.cKDTree(np.c_[gridx[indy,indx],
-            gridy[indy,indx],gridz[indy,indx]])
+            gridy[indy,indx], gridz[indy,indx]])
         #-- flattened valid data array
         flattened = data.data[indy,indx]
         #-- output coordinates
@@ -154,7 +156,7 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
             #-- return filled masked array
             return data
         #-- find where input grid is valid and close to output points
-        indy,indx = np.nonzero(valid_bounds)
+        indy,indx = np.nonzero(valid_mask & valid_bounds)
         #-- flattened model coordinates
         tree = scipy.spatial.cKDTree(np.c_[gridx[indy,indx],
             gridy[indy,indx]])
@@ -164,7 +166,7 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
         points = np.c_[XI,YI]
 
     #-- query output data points and find nearest neighbor within cutoff
-    dd,ii = tree.query(points,k=1,distance_upper_bound=cutoff)
+    dd,ii = tree.query(points, k=1, distance_upper_bound=cutoff)
     #-- spatially extrapolate using nearest neighbors
     ind, = np.nonzero(np.isfinite(dd))
     DATA.data[ind] = flattened[ii[ind]]

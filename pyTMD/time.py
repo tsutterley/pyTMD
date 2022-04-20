@@ -901,7 +901,7 @@ def read_iers_bulletin_a(fileID):
     Delta times are the difference between universal time and dynamical time
     """
     #-- read contents from input file object
-    file_contents = fileID.read().decode('utf-8').splitlines()
+    file_contents = fileID.read().decode('utf8').splitlines()
 
     #-- parse header text to find time offsets
     #-- TT-TAI

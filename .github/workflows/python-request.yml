@@ -15,89 +15,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.8]
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
+    defaults:
+      run:
+        shell: bash -l {0}
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - name: Set up conda ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
       with:
+        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies for Linux
-      if: matrix.os == 'ubuntu-20.04'
-      env:
-        JOBS: 2
-        PROJ_VERSION: 8.0.1
-        PROJ_DATUMGRID_VERSION: 1.8
-        PROJ_NETWORK: ON
-        SQLITE3_CFLAGS: "-I/usr/local/include"
-        SQLITE3_LIBS: "-L/usr/local/lib -lsqlite3"
+        activate-environment: pyTMD
+        environment-file: environment.yml
+    - name: Create conda Test Environment
       run: |
-        sudo apt-get update
-        sudo apt-get install gdal-bin libgdal-dev libgeos-dev
-        sudo apt-get install libhdf5-dev libnetcdf-dev octave
-        sudo apt-get install libstdc++6 libxml2-dev libxslt1-dev libsqlite3-dev
-        cd ${RUNNER_TEMP}
-        wget -q https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
-        wget -q http://download.osgeo.org/proj/proj-datumgrid-${PROJ_DATUMGRID_VERSION}.zip
-        tar -xzf proj-${PROJ_VERSION}.tar.gz
-        unzip proj-datumgrid-${PROJ_DATUMGRID_VERSION}.zip -d proj-${PROJ_VERSION}/data/
-        cd proj-${PROJ_VERSION}
-        mkdir build
-        cd build
-        sudo cmake \
-            -DPYTHON_EXECUTABLE=/usr/local/bin/python3 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=true \
-            -DCMAKE_INSTALL_PREFIX=/usr/local/ ..
-        sudo cmake --build .
-        sudo make --quiet --jobs=${JOBS}
-        sudo make --quiet install
-        make clean
-        cd ${GITHUB_WORKSPACE}
-        sudo ldconfig --verbose
-        sudo projsync --system-directory --all
-        pip install --upgrade pip
-        pip install numpy
-        pip install zarr
-        pip install pandas
-        pip install scikit-learn
-        export CPLUS_INCLUDE_PATH=/usr/include/gdal
-        export C_INCLUDE_PATH=/usr/include/gdal
-        pip install git+https://github.com/SciTools/cartopy.git
-        pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
-        pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
-        pip install .
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-    - name: Install dependencies for MacOS
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install proj
-        brew install geos
-        brew install gdal
-        brew install hdf5
-        brew install netcdf
-        brew install octave
-        brew install pkg-config
-        pip install --upgrade pip
-        pip install cython
-        pip install numpy
-        pip install zarr
-        pip install pandas
-        pip install scikit-learn
-        export LDFLAGS="-L/usr/local/opt/proj/lib"
-        export CPPFLAGS="-I/usr/local/opt/proj/include"
-        export ACCEPT_USE_OF_DEPRECATED_PROJ_API_H=1
-        export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/proj/lib/pkgconfig"
-        pip install git+https://github.com/SciTools/cartopy.git
-        pip install --no-deps git+https://github.com/tsutterley/read-ICESat-2.git
-        pip install --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
-        pip install .
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        conda install flake8 pytest pytest-cov cython
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

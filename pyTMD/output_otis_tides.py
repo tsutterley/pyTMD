@@ -14,7 +14,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
-    Updated 09/2020: python3 compatibility updates for struct and utf-8 encoding
+    Updated 09/2020: python3 compatibility updates for struct and utf8 encoding
     Updated 07/2020: added function docstrings
     Written 08/2018
 """
@@ -109,7 +109,7 @@ def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     ylim.tofile(fid,format='>f4')
     xlim.tofile(fid,format='>f4')
     for c in constituents:
-        fid.write(c.ljust(4).encode('utf-8'))
+        fid.write(c.ljust(4).encode('utf8'))
     fid.write(struct.pack('>i',header_length))
     #-- write each constituent to file
     constituent_header = 8*nx*ny
@@ -155,7 +155,7 @@ def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
     ylim.tofile(fid,format='>f4')
     xlim.tofile(fid,format='>f4')
     for c in constituents:
-        fid.write(c.ljust(4).encode('utf-8'))
+        fid.write(c.ljust(4).encode('utf8'))
     fid.write(struct.pack('>i',header_length))
     #-- write each constituent to file
     constituent_header = 2*8*nx*ny
