@@ -4,7 +4,7 @@ channels:
 dependencies:
   - cartopy
   - gdal
-  - h5py>=2.9=mpi*
+  - h5py
   - ipyleaflet
   - ipywidgets
   - lxml
