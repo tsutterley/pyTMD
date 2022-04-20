@@ -50,6 +50,7 @@ jobs:
         ref: inferminor
     - name: Test with pytest
       run: |
+        pip install --no-deps .
         pytest --verbose --capture=no --cov=./ --cov-report=xml \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \
