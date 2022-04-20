@@ -87,9 +87,8 @@ class model:
     version: str
         Tide model version
     """
-    def __init__(self, **kwargs):
+    def __init__(self, directory=None, **kwargs):
         # set default keyword arguments
-        kwargs.setdefault('directory',None)
         kwargs.setdefault('compressed',False)
         kwargs.setdefault('format','netcdf')
         kwargs.setdefault('verify',True)
@@ -104,8 +103,8 @@ class model:
         self.constituents = None
         self.description = None
         # set working data directory
-        if kwargs['directory'] is not None:
-            self.directory = os.path.expanduser(kwargs['directory'])
+        if directory is not None:
+            self.directory = os.path.expanduser(directory)
         else:
             self.directory = os.getcwd()
         # set tide model format
