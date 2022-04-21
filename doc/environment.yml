@@ -9,6 +9,7 @@ dependencies:
   - graphviz
   - h5py
   - lxml
+  - matplotlib
   - netCDF4
   - notebook
   - numpy

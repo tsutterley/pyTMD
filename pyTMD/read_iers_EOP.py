@@ -25,6 +25,7 @@ REFERENCE:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        include utf-8 encoding in reads to be windows compliant
     Updated 07/2021: added check that IERS finals file is accessible
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 07/2020: added function docstrings
@@ -52,12 +53,19 @@ def read_iers_EOP(input_file):
         Angular coordinate x [arcsec]
     y: float
         Angular coordinate y [arcsec]
+
+    References
+    ----------
+    [Petit2010] G. Petit, and B. Luzum, (eds.), IERS Conventions (2010),
+        IERS Technical Note No. 36, BKG (2010)
     """
+    #-- tilde-expansion of input file
+    input_file = os.path.expanduser(input_file)
     #-- check that IERS finals file is accessible
-    if not os.access(os.path.expanduser(input_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(input_file))
+    if not os.access(input_file, os.F_OK):
+        raise FileNotFoundError(input_file)
     #-- read data file splitting at line breaks
-    with open(os.path.expanduser(input_file),'r') as f:
+    with open(input_file, mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
     #-- number of data lines
     n_lines = len(file_contents)

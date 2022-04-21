@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_icebridge_data.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (04/2022)
 Calculates radial ocean pole tide displacements for correcting Operation
     IceBridge elevation data following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -37,6 +37,8 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 04/2022: include utf-8 encoding in reads to be windows compliant
+        use longcomplex data format to be windows compliant
     Updated 10/2021: using python logging for handling verbose output
         using collections to store attributes in order of creation
     Updated 07/2021: can use prefix files to define command line arguments
@@ -90,7 +92,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
         file_lines = ATM1b.ATM1b_QFIT_shape(input_file)
     else:
         #-- read the input file, split at lines and remove all commented lines
-        with open(input_file,'r') as f:
+        with open(input_file, mode='r', encoding='utf8') as f:
             i = [i for i in f.readlines() if re.match(r'^(?!\#|\n)',i)]
         file_lines = len(i)
     #-- return the number of lines
@@ -119,7 +121,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
         rx = re.compile(regex_pattern, re.VERBOSE)
         #-- read the input file, split at lines and remove all commented lines
-        with open(input_file,'r') as f:
+        with open(input_file, mode='r', encoding='utf8') as f:
             file_contents = [i for i in f.read().splitlines() if
                 re.match(r'^(?!\#|\n)',i)]
         #-- number of lines of data within file
@@ -229,7 +231,7 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
     rx = re.compile(regex_pattern, re.VERBOSE)
     #-- read the input file, split at lines and remove all commented lines
-    with open(input_file,'r') as f:
+    with open(input_file, mode='r', encoding='utf8') as f:
         file_contents = [i for i in f.read().splitlines()
             if re.match(r'^(?!\#|\n)',i)]
     #-- number of lines of data within file
@@ -551,7 +553,7 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((file_lines),dtype=np.complex128)
+        UR = np.zeros((file_lines),dtype=np.longcomplex)
         UR.real = f1.ev(lon,latitude_geocentric)
         UR.imag = f2.ev(lon,latitude_geocentric)
     else:

@@ -9,6 +9,7 @@ dependencies:
   - ipywidgets
   - lxml
   - matplotlib
+  - mpi4py
   - netCDF4
   - notebook
   - numpy

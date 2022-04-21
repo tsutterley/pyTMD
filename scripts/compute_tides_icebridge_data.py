@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (03/2022)
+Written by Tyler Sutterley (04/2022)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -64,6 +64,7 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 04/2022: include utf-8 encoding in reads to be windows compliant
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
@@ -133,7 +134,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
         file_lines = ATM1b.ATM1b_QFIT_shape(input_file)
     else:
         #-- read the input file, split at lines and remove all commented lines
-        with open(input_file,'r') as f:
+        with open(input_file, mode='r', encoding='utf8') as f:
             i = [i for i in f.readlines() if re.match(r'^(?!\#|\n)',i)]
         file_lines = len(i)
     #-- return the number of lines
@@ -162,7 +163,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
         regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
         rx = re.compile(regex_pattern, re.VERBOSE)
         #-- read the input file, split at lines and remove all commented lines
-        with open(input_file,'r') as f:
+        with open(input_file, mode='r', encoding='utf8') as f:
             file_contents = [i for i in f.read().splitlines() if
                 re.match(r'^(?!\#|\n)',i)]
         #-- number of lines of data within file
@@ -272,7 +273,7 @@ def read_ATM_icessn_file(input_file, input_subsetter):
     regex_pattern = r'[-+]?(?:(?:\d*\.\d+)|(?:\d+\.?))(?:[Ee][+-]?\d+)?'
     rx = re.compile(regex_pattern, re.VERBOSE)
     #-- read the input file, split at lines and remove all commented lines
-    with open(input_file,'r') as f:
+    with open(input_file, mode='r', encoding='utf8') as f:
         file_contents = [i for i in f.read().splitlines() if
             re.match(r'^(?!\#|\n)',i)]
     #-- number of lines of data within file

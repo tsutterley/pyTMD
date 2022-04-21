@@ -30,6 +30,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        use longcomplex data format to be windows compliant
     Updated 07/2021: added check that ocean pole tide file is accessible
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Updated 08/2020: output north load and east load deformation components
@@ -100,9 +101,9 @@ def read_ocean_pole_tide(input_file):
     nlon = len(glon)
     nlat = len(glat)
     #-- allocate for output grid maps
-    ur = np.zeros((nlon,nlat),dtype=np.complex128)
-    un = np.zeros((nlon,nlat),dtype=np.complex128)
-    ue = np.zeros((nlon,nlat),dtype=np.complex128)
+    ur = np.zeros((nlon,nlat),dtype=np.longcomplex)
+    un = np.zeros((nlon,nlat),dtype=np.longcomplex)
+    ue = np.zeros((nlon,nlat),dtype=np.longcomplex)
     #-- read lines of file and add to output variables
     for i,line in enumerate(file_contents[count:]):
         ln,lt,urr,uri,unr,uni,uer,uei = np.array(line.split(), dtype='f8')

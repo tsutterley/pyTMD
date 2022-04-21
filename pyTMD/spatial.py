@@ -21,6 +21,8 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 04/2022: add option to reduce input GDAL raster datasets
         updated docstrings to numpy documentation format
+        use gzip virtual filesystem for reading compressed geotiffs
+        include utf-8 encoding in reads to be windows compliant
     Updated 03/2022: add option to specify output GDAL driver
     Updated 01/2022: use iteration breaks in convert ellipsoid function
         remove fill_value attribute after creating netCDF4 and HDF5 variables
@@ -46,18 +48,26 @@ import io
 import copy
 import gzip
 import uuid
-import h5py
 import yaml
 import logging
 import netCDF4
 import datetime
 import warnings
 import numpy as np
+
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
 except ModuleNotFoundError:
     warnings.filterwarnings("always")
     warnings.warn("GDAL not available")
+    warnings.warn("Some functions will throw an exception if called")
+
+try:
+    import h5py
+except ModuleNotFoundError:
+    warnings.filterwarnings("always")
+    warnings.warn("h5py not available")
+    warnings.warn("Some functions will throw an exception if called")
 
 def case_insensitive_filename(filename):
     """
@@ -140,14 +150,16 @@ def from_ascii(filename, **kwargs):
     #-- open the ascii file and extract contents
     if (kwargs['compression'] == 'gzip'):
         #-- read input ascii data from gzip compressed file and split lines
-        with gzip.open(case_insensitive_filename(filename),'r') as f:
+        filename = case_insensitive_filename(filename)
+        with gzip.open(filename, 'r') as f:
             file_contents = f.read().decode('ISO-8859-1').splitlines()
     elif (kwargs['compression'] == 'bytes'):
         #-- read input file object and split lines
         file_contents = filename.read().splitlines()
     else:
         #-- read input ascii file (.txt, .asc) and split lines
-        with open(case_insensitive_filename(filename),'r') as f:
+        filename = case_insensitive_filename(filename)
+        with open(filename, mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
     #-- number of lines in the file
     file_lines = len(file_contents)
@@ -410,11 +422,8 @@ def from_geotiff(filename, **kwargs):
     kwargs.setdefault('bounds',None)
     #-- Open the geotiff file for reading
     if (kwargs['compression'] == 'gzip'):
-        #-- read gzip compressed file and extract into memory-mapped object
-        mmap_name = "/vsimem/{0}".format(uuid.uuid4().hex)
-        with gzip.open(case_insensitive_filename(filename),'r') as f:
-            osgeo.gdal.FileFromMemBuffer(mmap_name, f.read())
-        #-- read as GDAL memory-mapped (diskless) geotiff dataset
+        #-- read as GDAL gzip virtual geotiff dataset
+        mmap_name = "/vsigzip/{0}".format(case_insensitive_filename(filename))
         ds = osgeo.gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         #-- read as GDAL memory-mapped (diskless) geotiff dataset

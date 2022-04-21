@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (01/2022)
+Written by Tyler Sutterley (04/2022)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -77,6 +77,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 04/2022: use longcomplex data format to be windows compliant
     Updated 01/2022: added option for changing the time standard
     Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
@@ -316,7 +317,7 @@ def compute_OPT_displacements(input_file, output_file, FORMAT='csv',
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((len(latitude_geocentric)),dtype=np.complex128)
+        UR = np.zeros((len(latitude_geocentric)),dtype=np.longcomplex)
         UR.real = f1.ev(lon,latitude_geocentric)
         UR.imag = f2.ev(lon,latitude_geocentric)
     else:

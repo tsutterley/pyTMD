@@ -74,7 +74,7 @@ def test_ocean_pole_tide(METHOD):
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((file_lines),dtype=np.complex128)
+        UR = np.zeros((file_lines),dtype=np.longcomplex)
         UR.real = f1.ev(lon,lat)
         UR.imag = f2.ev(lon,lat)
     else:

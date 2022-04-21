@@ -99,7 +99,7 @@ def calculate_mean_pole(verbose=False, mode=0o775):
         return
 
     #-- read contents from input file object
-    file_contents = remote_buffer.read().decode('utf-8').splitlines()
+    file_contents = remote_buffer.read().decode('utf8').splitlines()
     header = file_contents[0][1:].split()
     nlines = len(file_contents) - 1
     data = {h:np.zeros((nlines)) for h in header}

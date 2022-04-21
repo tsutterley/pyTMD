@@ -103,7 +103,7 @@ def test_ascii():
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     #-- read test ascii file as bytes
-    fid = open(output_file,'r')
+    fid = open(output_file, mode='r', encoding='utf8')
     test = pyTMD.spatial.from_ascii(fid, compression='bytes', header='YAML',
         columns=['time','y','x','data'])
     #-- check that data is valid

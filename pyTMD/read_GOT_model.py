@@ -40,6 +40,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        include utf-8 encoding in reads to be windows compliant
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
@@ -210,11 +211,8 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
             #-- replace invalid values with nan
             hc[hc.mask] = np.nan
             #-- extrapolate points within cutoff of valid model points
-            hci.data[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
+            hci[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
                 dtype=hc.dtype,cutoff=CUTOFF)
-            #-- replace nan values with fill_value
-            hci.mask[inv] = np.isnan(hci.data[inv])
-            hci.data[hci.mask] = hci.fill_value
         #-- convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci.data)*SCALE
         amplitude.mask[:,i] = np.copy(hci.mask)
@@ -303,12 +301,14 @@ def read_GOT_grid(input_file, GZIP=False):
     cons: str
         tidal constituent ID
     """
+    #-- tilde-expand input file
+    input_file = os.path.expanduser(input_file)
     #-- read input tide model file
     if GZIP:
-        with gzip.open(os.path.expanduser(input_file),'rb') as f:
-            file_contents = f.read().decode('utf-8').splitlines()
+        with gzip.open(input_file, 'rb') as f:
+            file_contents = f.read().decode('utf8').splitlines()
     else:
-        with open(os.path.expanduser(input_file),'r') as f:
+        with open(input_file, mode="r", encoding='utf8') as f:
             file_contents = f.read().splitlines()
     #-- parse header text
     constituent_list = ['Q1','O1','P1','K1','N2','M2','S2','K2','S1','M4']

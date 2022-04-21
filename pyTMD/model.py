@@ -7,6 +7,8 @@ Retrieves tide model parameters for named tide models and
 
 UPDATE HISTORY:
     Updated 04/2022: updated docstrings to numpy documentation format
+        include utf-8 encoding in reads to be windows compliant
+        set default directory to None for documentation
     Updated 03/2022: added static decorators to define model lists
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
@@ -44,7 +46,7 @@ class model:
         Model constituents for ``FES`` models
     description: str
         HDF5 ``description`` attribute string for output tide heights
-    directory: str
+    directory: str or None, default None
         Working data directory for tide models
     format: str
         Model format
@@ -85,7 +87,7 @@ class model:
     version: str
         Tide model version
     """
-    def __init__(self, directory=os.getcwd(), **kwargs):
+    def __init__(self, directory=None, **kwargs):
         # set default keyword arguments
         kwargs.setdefault('compressed',False)
         kwargs.setdefault('format','netcdf')
@@ -100,7 +102,12 @@ class model:
         self.compressed = copy.copy(kwargs['compressed'])
         self.constituents = None
         self.description = None
-        self.directory = os.path.expanduser(directory)
+        # set working data directory
+        if directory is not None:
+            self.directory = os.path.expanduser(directory)
+        else:
+            self.directory = os.getcwd()
+        # set tide model format
         self.format = copy.copy(kwargs['format'])
         self.gla12 = None
         self.grid_file = None
@@ -1362,7 +1369,8 @@ class model:
         if isinstance(definition_file,io.IOBase):
             fid = copy.copy(definition_file)
         else:
-            fid = open(os.path.expanduser(definition_file), 'r')
+            fid = open(os.path.expanduser(definition_file),
+                mode="r", encoding='utf8')
         # for each line in the file will extract the parameter (name and value)
         for fileline in fid:
             # Splitting the input line between parameter name and value
