@@ -65,6 +65,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
+        use argparse descriptions within sphinx documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
@@ -650,9 +651,8 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     #-- change the permissions level to MODE
     os.chmod(os.path.join(DIRECTORY,FILENAME), MODE)
 
-#-- Main program that calls compute_tides_icebridge_data()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates tidal elevations for correcting Operation
             IceBridge elevation data
@@ -665,7 +665,7 @@ def main():
     #-- input operation icebridge files
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
-        help='Input Operation IceBridge file')
+        help='Input Operation IceBridge file to run')
     #-- directory with tide data
     parser.add_argument('--directory','-D',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
@@ -710,6 +710,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of directories and files created')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- run for each input Operation IceBridge file

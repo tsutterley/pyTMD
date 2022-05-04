@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (01/2022)
+Written by Tyler Sutterley (04/2022)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -62,6 +62,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 04/2022: use argparse descriptions within documentation
     Updated 01/2022: added option for changing the time standard
     Updated 11/2021: add function for attempting to extract projection
     Updated 10/2021: using python logging for handling verbose output
@@ -249,9 +250,8 @@ def compute_LPET_elevations(input_file, output_file,
     #-- change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- Main program that calls compute_LPET_elevations()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates long-period equilibrium tidal elevations for
             an input file
@@ -263,10 +263,10 @@ def main():
     #-- input and output file
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
-        help='Input file')
+        help='Input file to run')
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
-        help='Output file')
+        help='Computed output file')
     #-- input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
@@ -312,6 +312,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- set output file from input filename if not entered

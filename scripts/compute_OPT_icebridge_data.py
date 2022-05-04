@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         use longcomplex data format to be windows compliant
+        use argparse descriptions within sphinx documentation
     Updated 10/2021: using python logging for handling verbose output
         using collections to store attributes in order of creation
     Updated 07/2021: can use prefix files to define command line arguments
@@ -638,9 +639,8 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     #-- change the permissions level to MODE
     os.chmod(os.path.join(DIRECTORY,FILENAME), MODE)
 
-#-- Main program that calls compute_OPT_icebridge_data()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates radial ocean pole tide displacements for
             correcting Operation IceBridge elevation data following IERS
@@ -652,7 +652,7 @@ def main():
     #-- command line options
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',
-        help='Input Operation IceBridge file')
+        help='Input Operation IceBridge file to run')
     #-- interpolation method
     parser.add_argument('--interpolate','-I',
         metavar='METHOD', type=str, default='spline',
@@ -666,6 +666,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- run for each input file
