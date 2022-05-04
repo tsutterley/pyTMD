@@ -26,4 +26,6 @@ dependencies:
   - sphinx_rtd_theme
   - texlive-core
   - pip:
+     - git+https://github.com/tsutterley/read-ICESat-2.git
+     - git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
     - ..
