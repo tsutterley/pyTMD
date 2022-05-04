@@ -10,6 +10,7 @@ dependencies:
   - h5py
   - lxml
   - matplotlib
+  - mpi4py
   - netCDF4
   - notebook
   - numpy
