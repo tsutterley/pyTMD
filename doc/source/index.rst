@@ -56,39 +56,39 @@ conventions for calculating radial pole tide displacements.
     :hidden:
     :caption: Utilities
 
-    user_guide/arcticdata_tides.md
-    user_guide/aviso_fes_tides.md
-    user_guide/reduce_OTIS_files.md
-    user_guide/usap_cats_tides.md
-    user_guide/verify_box_tpxo.md
+    user_guide/arcticdata_tides.rst
+    user_guide/aviso_fes_tides.rst
+    user_guide/reduce_OTIS_files.rst
+    user_guide/usap_cats_tides.rst
+    user_guide/verify_box_tpxo.rst
 
 .. toctree::
     :maxdepth: 1
     :hidden:
     :caption: Use Cases
 
-    user_guide/compute_LPET_elevations.md
-    user_guide/compute_LPET_icebridge_data.md
-    user_guide/compute_LPET_ICESat_GLA12.md
-    user_guide/compute_LPET_ICESat2_ATL03.md
-    user_guide/compute_LPET_ICESat2_ATL06.md
-    user_guide/compute_LPET_ICESat2_ATL07.md
-    user_guide/compute_LPET_ICESat2_ATL10.md
-    user_guide/compute_LPET_ICESat2_ATL11.md
-    user_guide/compute_LPET_ICESat2_ATL12.md
-    user_guide/compute_LPT_displacements.md
-    user_guide/compute_LPT_icebridge_data.md
-    user_guide/compute_LPT_ICESat_GLA12.md
-    user_guide/compute_OPT_displacements.md
-    user_guide/compute_OPT_icebridge_data.md
-    user_guide/compute_OPT_ICESat_GLA12.md
-    user_guide/compute_tidal_currents.md
-    user_guide/compute_tidal_elevations.md
-    user_guide/compute_tides_icebridge_data.md
-    user_guide/compute_tides_ICESat_GLA12.md
-    user_guide/compute_tides_ICESat2_ATL03.md
-    user_guide/compute_tides_ICESat2_ATL06.md
-    user_guide/compute_tides_ICESat2_ATL07.md
-    user_guide/compute_tides_ICESat2_ATL10.md
-    user_guide/compute_tides_ICESat2_ATL11.md
-    user_guide/compute_tides_ICESat2_ATL12.md
+    user_guide/compute_LPET_elevations.rst
+    user_guide/compute_LPET_icebridge_data.rst
+    user_guide/compute_LPET_ICESat_GLA12.rst
+    user_guide/compute_LPET_ICESat2_ATL03.rst
+    user_guide/compute_LPET_ICESat2_ATL06.rst
+    user_guide/compute_LPET_ICESat2_ATL07.rst
+    user_guide/compute_LPET_ICESat2_ATL10.rst
+    user_guide/compute_LPET_ICESat2_ATL11.rst
+    user_guide/compute_LPET_ICESat2_ATL12.rst
+    user_guide/compute_LPT_displacements.rst
+    user_guide/compute_LPT_icebridge_data.rst
+    user_guide/compute_LPT_ICESat_GLA12.rst
+    user_guide/compute_OPT_displacements.rst
+    user_guide/compute_OPT_icebridge_data.rst
+    user_guide/compute_OPT_ICESat_GLA12.rst
+    user_guide/compute_tidal_currents.rst
+    user_guide/compute_tidal_elevations.rst
+    user_guide/compute_tides_icebridge_data.rst
+    user_guide/compute_tides_ICESat_GLA12.rst
+    user_guide/compute_tides_ICESat2_ATL03.rst
+    user_guide/compute_tides_ICESat2_ATL06.rst
+    user_guide/compute_tides_ICESat2_ATL07.rst
+    user_guide/compute_tides_ICESat2_ATL10.rst
+    user_guide/compute_tides_ICESat2_ATL11.rst
+    user_guide/compute_tides_ICESat2_ATL12.rst

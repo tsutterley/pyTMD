@@ -191,14 +191,14 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
         if (len(line_contents) != 6):
             continue
         #-- save longitude, latitude and tide height
-        val['latitude'][i] = np.float64(line_contents[0])
-        val['longitude'][i] = np.float64(line_contents[1])
-        val['height'][i] = np.float64(line_contents[4])
+        val['latitude'][j] = np.float64(line_contents[0])
+        val['longitude'][j] = np.float64(line_contents[1])
+        val['height'][j] = np.float64(line_contents[4])
         #-- extract dates
         MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         #-- convert from calendar dates into days since 1992-01-01T00:00:00
-        val['time'][i] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
+        val['time'][j] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
             hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
         #-- add to counter
         j += 1

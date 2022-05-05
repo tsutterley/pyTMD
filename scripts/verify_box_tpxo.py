@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (12/2021)
+Written by Tyler Sutterley (04/2022)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -31,6 +31,7 @@ REFERENCE:
     https://developer.box.com/guides/
 
 UPDATE HISTORY:
+    Updated 04/2022: use argparse descriptions within documentation
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -144,9 +145,8 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         #-- change the permissions mode of the local file
         os.chmod(local, MODE)
 
-#-- Main program that calls verify_box_tpxo()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Verifies downloaded TPXO9-atlas global
             tide models from the box file sharing service
@@ -180,6 +180,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of directories and files downloaded')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- build an opener for accessing box folders

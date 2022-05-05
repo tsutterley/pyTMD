@@ -10,6 +10,7 @@ dependencies:
   - h5py
   - lxml
   - matplotlib
+  - mpi4py
   - netCDF4
   - notebook
   - numpy
@@ -19,12 +20,13 @@ dependencies:
   - python>=3.6
   - python-dateutil
   - pyyaml
-  - recommonmark
   - scipy
   - setuptools_scm
   - sphinx
-  - sphinx-markdown-tables
+  - sphinx-argparse
   - sphinx_rtd_theme
   - texlive-core
   - pip:
+    - git+https://github.com/tsutterley/read-ICESat-2.git
+    - git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
     - ..

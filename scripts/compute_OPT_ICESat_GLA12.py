@@ -42,6 +42,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 04/2022: use longcomplex data format to be windows compliant
+        use argparse descriptions within sphinx documentation
     Updated 02/2022: save ICESat campaign attribute to output file
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -401,9 +402,8 @@ def HDF5_GLA12_tide_write(IS_gla12_tide, IS_gla12_attrs,
     #-- Closing the HDF5 file
     fileID.close()
 
-#-- Main program that calls compute_OPT_ICESat()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates radial ocean pole tide displacements for
             correcting ICESat/GLAS L2 GLA12 Antarctic and Greenland Ice Sheet
@@ -430,6 +430,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of directories and files created')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- run for each input GLA12 file

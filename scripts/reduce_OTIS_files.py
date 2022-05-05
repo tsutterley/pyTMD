@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (11/2021)
+Written by Tyler Sutterley (04/2022)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 04/2022: use argparse descriptions within documentation
     Updated 11/2021: add function for attempting to extract projection
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: can use prefix files to define command line arguments
@@ -204,9 +205,8 @@ def create_unique_filename(filename):
         filename = '{0}{1}{2}_{3:d}'.format(*args)
         counter += 1
 
-#-- This is the main part of the program that calls the individual modules
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Read OTIS-format tidal files and reduce to a regional
             subset
@@ -240,6 +240,13 @@ def main():
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of the output files')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- run program

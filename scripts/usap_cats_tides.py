@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (10/2021)
+Written by Tyler Sutterley (04/2022)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
 
@@ -25,6 +25,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
     Updated 08/2021: USAP now requires captchas for dataset downloads
     Updated 07/2021: can use prefix files to define command line arguments
@@ -89,9 +90,8 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     #-- close the zipfile object
     zfile.close()
 
-#-- Main program that calls usap_cats_tides()
-def main():
-    #-- Read the system arguments listed after the program
+#-- PURPOSE: create argument parser
+def arguments():
     parser = argparse.ArgumentParser(
         description="""Download Circum-Antarctic Tidal Simulations from the
             US Antarctic Program
@@ -108,12 +108,19 @@ def main():
     #-- Antarctic Ocean tide model to download
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, nargs='+', default=['CATS2008'],
-        choices=('CATS2008'),
+        choices=('CATS2008',),
         help='Circum-Antarctic tide model to download')
     #-- permissions mode of the local directories and files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permissions mode of the files downloaded')
+    #-- return the parser
+    return parser
+
+#-- This is the main part of the program that calls the individual functions
+def main():
+    #-- Read the system arguments listed after the program
+    parser = arguments()
     args,_ = parser.parse_known_args()
 
     #-- warn user that USAP requires a reCAPTCHA check
