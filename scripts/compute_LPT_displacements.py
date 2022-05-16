@@ -235,7 +235,7 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
         epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, FORMAT='tuple')
+    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
     #-- calculate time in year-decimal format
     time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
         hour=h,minute=m,second=s)

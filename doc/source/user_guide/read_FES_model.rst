@@ -12,8 +12,12 @@ Calling Sequence
 .. code-block:: python
 
     from pyTMD.read_FES_model import extract_FES_constants
-    amp,ph = extract_FES_constants(ilon, ilat, model_files, TYPE='z',
-       VERSION=version,METHOD='spline',GZIP=True,SCALE=1.0/100.0)
+    amp,ph = extract_FES_constants(ilon, ilat, model_files,
+       type='z',
+       version=version,
+       method='spline',
+       compressed=True,
+       scale=1.0/100.0)
 
 `Source code`__
 

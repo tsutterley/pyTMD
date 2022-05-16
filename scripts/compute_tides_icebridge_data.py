@@ -65,6 +65,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         use argparse descriptions within sphinx documentation
     Updated 03/2022: using static decorators to define available models
@@ -530,26 +531,26 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
             model.grid_file, model.model_file, model.projection,
-            TYPE=model.type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, GRID=model.format)
+            type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, grid=model.format)
         deltat = np.zeros_like(t)
     elif model.format in ('netcdf'):
         amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
-            model.grid_file, model.model_file, TYPE=model.type, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            model.grid_file, model.model_file, type=model.type, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+            compressed=model.compressed)
         deltat = np.zeros_like(t)
     elif (model.format == 'GOT'):
         amp,ph,c = extract_GOT_constants(dinput['lon'], dinput['lat'],
-            model.model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
-            model.model_file, TYPE=model.type, VERSION=model.version,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-            SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, type=model.type, version=model.version,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         #-- available model constituents
         c = model.constituents
         #-- interpolate delta times from calendar dates to tide time
@@ -584,9 +585,9 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     tide = np.ma.empty((file_lines),fill_value=fill_value)
     tide.mask = np.any(hc.mask,axis=1)
     tide.data[:] = predict_tide_drift(t, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     minor = infer_minor_corrections(t, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     tide.data[:] += minor.data[:]
     #-- replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
@@ -635,7 +636,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(time_range,
         epoch1=(1992,1,1,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0)
     #-- convert to calendar date
-    cal = pyTMD.time.convert_julian(time_julian,ASTYPE=int)
+    cal = pyTMD.time.convert_julian(time_julian,astype=int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

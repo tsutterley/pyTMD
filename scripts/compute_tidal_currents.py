@@ -110,6 +110,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -327,20 +328,20 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         if model.format in ('OTIS','ATLAS','ESR'):
             amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
                 model.grid_file, model.model_file['u'], model.projection,
-                TYPE=t, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-                GRID=model.format)
+                type=t, method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                grid=model.format)
             deltat = np.zeros((nt))
         elif (model.format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
-                model.grid_file, model.model_file[t], TYPE=t, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-                GZIP=model.compressed)
+                model.grid_file, model.model_file[t], type=t, method=METHOD,
+                extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+                compressed=model.compressed)
             deltat = np.zeros((nt))
         elif (model.format == 'FES'):
             amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
-                model.model_file[t], TYPE=t, VERSION=model.version,
-                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-                SCALE=model.scale, GZIP=model.compressed)
+                model.model_file[t], type=t, version=model.version,
+                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                scale=model.scale, compressed=model.compressed)
             #-- available model constituents
             c = model.constituents
             #-- interpolate delta times from calendar dates to tide time
@@ -357,9 +358,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             output[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
                 TIDE = predict_tide(tide_time[i], hc, c,
-                    DELTAT=deltat[i], CORRECTIONS=model.format)
+                    deltat=deltat[i], corrections=model.format)
                 MINOR = infer_minor_corrections(tide_time[i], hc, c,
-                    DELTAT=deltat[i], CORRECTIONS=model.format)
+                    deltat=deltat[i], corrections=model.format)
                 #-- add major and minor components and reform grid
                 output[t][:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
                 output[t].mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask),
@@ -368,9 +369,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             output[t] = np.ma.zeros((nt), fill_value=fill_value)
             output[t].mask = np.any(hc.mask,axis=1)
             output[t].data[:] = predict_tide_drift(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=model.format)
+                deltat=deltat, corrections=model.format)
             minor = infer_minor_corrections(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=model.format)
+                deltat=deltat, corrections=model.format)
             output[t].data[:] += minor.data[:]
         #-- replace invalid values with fill value
         output[t].data[output[t].mask] = output[t].fill_value

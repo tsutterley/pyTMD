@@ -14,7 +14,7 @@ Calling Sequence
 
     from pyTMD.read_tide_model import extract_tidal_constants
     amp,ph,D,c = extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG,
-        TYPE='z', METHOD='spline', GRID='OTIS')
+        type='z', method='spline', grid='OTIS')
 
 `Source code`__
 

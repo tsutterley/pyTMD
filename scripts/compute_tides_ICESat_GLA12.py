@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: save ICESat campaign attribute to output file
@@ -195,27 +196,27 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     #-- read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(lon_40HZ, lat_40HZ,
-            model.grid_file, model.model_file, model.projection, TYPE=TYPE,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, GRID=model.format)
+            model.grid_file, model.model_file, model.projection,
+            type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, grid=model.format)
         deltat = np.zeros_like(tide_time)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon_40HZ, lat_40HZ,
-            model.grid_file, model.model_file, TYPE=TYPE, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            model.grid_file, model.model_file, type=model.type,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         deltat = np.zeros_like(tide_time)
     elif (model.format == 'GOT'):
         amp,ph,c = extract_GOT_constants(lon_40HZ, lat_40HZ,
-            model.model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, tide_time)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon_40HZ, lat_40HZ,
-            model.model_file, TYPE=TYPE, VERSION=model.version,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-            SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, type=model.type, version=model.version,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         #-- available model constituents
         c = model.constituents
         #-- interpolate delta times from calendar dates to tide time
@@ -230,9 +231,9 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     tide = np.ma.empty((n_40HZ),fill_value=fv)
     tide.mask = np.any(hc.mask,axis=1)
     tide.data[:] = predict_tide_drift(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     minor = infer_minor_corrections(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     tide.data[:] += minor.data[:]
     #-- replace masked and nan values with fill value
     invalid, = np.nonzero(np.isnan(tide.data) | tide.mask)

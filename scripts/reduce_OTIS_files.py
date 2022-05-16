@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 05/2022: updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 11/2021: add function for attempting to extract projection
     Updated 09/2021: refactor to use model class for files and attributes
@@ -87,8 +88,8 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     if (model.format == 'ATLAS'):
         #-- if reading a global solution with localized solutions
         x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(model.grid_file)
-        xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
-        mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
+        xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,variable='depth')
+        mz = create_atlas_mask(x0,y0,mz0,local,variable='depth')
     else:
         #-- if reading a pure global solution
         xi,yi,hz,mz,iob,dt = read_tide_grid(model.grid_file)
@@ -141,7 +142,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
             #-- read constituent from elevation file
             if (model.format == 'ATLAS'):
                 z0,zlocal=read_atlas_elevation(model_file['z'],i,c)
-                xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,VARIABLE='z')
+                xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,variable='z')
             else:
                 z=read_elevation_file(model_file['z'],i)
             #-- reduce elevation to new bounds
@@ -168,8 +169,8 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
             #-- read constituent from transport file
             if (model.format == 'ATLAS'):
                 u0,v0,uvlocal=read_atlas_transport(model_file['u'],i,c)
-                xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,VARIABLE='u')
-                xi,yi,v=combine_atlas_model(x0,y0,v0,pmask,uvlocal,VARIABLE='v')
+                xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,variable='u')
+                xi,yi,v=combine_atlas_model(x0,y0,v0,pmask,uvlocal,variable='v')
             else:
                 u,v=read_transport_file(model_file['u'],i)
             #-- reduce transport components to new bounds

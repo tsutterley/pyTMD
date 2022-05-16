@@ -15,8 +15,8 @@ OUTPUT:
     ht: tidal time series reconstructed using the nodal corrections
 
 OPTIONS:
-    DELTAT: time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+    deltat: time correction for converting to Ephemeris Time (days)
+    corrections: use nodal corrections from OTIS/ATLAS or GOT models
 
 REFERENCES:
     G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
@@ -48,7 +48,7 @@ import numpy as np
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
-def predict_tide_drift(t, hc, constituents, DELTAT=0.0, CORRECTIONS='OTIS'):
+def predict_tide_drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     """
     Predict tides at multiple times and locations using harmonic constants
 
@@ -60,9 +60,9 @@ def predict_tide_drift(t, hc, constituents, DELTAT=0.0, CORRECTIONS='OTIS'):
         harmonic constant vector
     constituents: list
         tidal constituent IDs
-    DELTAT: float, default 0.0
+    deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: str, default 'OTIS'
+    corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
@@ -80,18 +80,18 @@ def predict_tide_drift(t, hc, constituents, DELTAT=0.0, CORRECTIONS='OTIS'):
     #-- load the nodal corrections
     #-- convert time to Modified Julian Days (MJD)
     pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
-        DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
+        deltat=deltat, corrections=corrections)
     #-- allocate for output time series
     ht = np.ma.zeros((nt))
     ht.mask = np.zeros((nt),dtype=bool)
     #-- for each constituent
     for k,c in enumerate(constituents):
-        if CORRECTIONS in ('OTIS','ATLAS','ESR','netcdf'):
+        if corrections in ('OTIS','ATLAS','ESR','netcdf'):
             #-- load parameters for each constituent
-            amp,ph,omega,alpha,species = load_constituent(c)
+            amp, ph, omega, alpha, species = load_constituent(c)
             #-- add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[:,k]
-        elif CORRECTIONS in ('GOT','FES'):
+        elif corrections in ('GOT','FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         #-- sum over all tides
         ht.data[:] += pf[:,k]*hc.real[:,k]*np.cos(th) - \

@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 09/2021: refactor to use model class for files and attributes
     Updated 07/2021: added check that tide model directory is accessible
@@ -153,7 +154,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     elif (model.format == 'netcdf'):
         # if reading a netCDF OTIS atlas solution
         xi,yi,hz = pyTMD.read_netcdf_model.read_netcdf_grid(model.grid_file,
-            GZIP=model.compressed, TYPE=model.type)
+            compressed=model.compressed, type=model.type)
         # copy bathymetry mask
         mz = np.copy(hz.mask)
         # copy latitude and longitude and adjust longitudes
@@ -163,7 +164,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     elif (model.format == 'GOT'):
         # if reading a NASA GOT solution
         hc,xi,yi,c = pyTMD.read_GOT_model.read_GOT_grid(model.model_file[0],
-            GZIP=model.compressed)
+            compressed=model.compressed)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
         # copy latitude and longitude and adjust longitudes
@@ -173,7 +174,8 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     elif (model.format == 'FES'):
         # if reading a FES netCDF solution
         hc,xi,yi = pyTMD.read_FES_model.read_netcdf_file(model.model_file[0],
-            GZIP=model.compressed, TYPE=model.type, VERSION=model.version)
+            compressed=model.compressed, type=model.type,
+            version=model.version)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
         # copy latitude and longitude and adjust longitudes

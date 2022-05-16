@@ -16,8 +16,8 @@ OUTPUTS:
     G: phase correction in degrees
 
 OPTIONS:
-    DELTAT: time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+    deltat: time correction for converting to Ephemeris Time (days)
+    corrections: use nodal corrections from OTIS/ATLAS or GOT models
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -38,22 +38,25 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
+        changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2020: fix k1 for FES models
     Updated 08/2020: change time variable names to not overwrite functions
         update nodal corrections for FES models
     Updated 07/2020: added function docstrings.  add shallow water constituents
-    Updated 09/2019: added netcdf option to CORRECTIONS option
+    Updated 09/2019: added netcdf option to corrections option
     Updated 08/2018: added correction option ATLAS for localized OTIS solutions
     Updated 07/2018: added option to use GSFC GOT nodal corrections
     Updated 09/2017: Rewritten in Python
     Rewritten in Matlab by Lana Erofeeva 01/2003
     Written by Richard Ray 03/1999
 """
+import copy
+import warnings
 import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
-def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
+def load_nodal_corrections(MJD, constituents, **kwargs):
     """
     Calculates the nodal corrections for tidal constituents
 
@@ -63,9 +66,9 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         modified julian day of input date
     constituents: list
         tidal constituent IDs
-    DELTAT: float, default 0.0
+    deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: str, default 'OTIS'
+    corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
@@ -87,6 +90,18 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     .. [4] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
+    #-- raise warnings for deprecated keyword arguments
+    deprecated_keywords = dict(DELTAT='deltat',CORRECTIONS='corrections')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn("""Deprecated keyword argument {0}.
+                Changed to '{1}'""".format(old,new),
+                DeprecationWarning)
+            #-- set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
 
     #-- constituents array (not all are included in tidal program)
     cindex = ['sa','ssa','mm','msf','mf','mt','alpha1','2q1','sigma1','q1',
@@ -100,9 +115,10 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     dtr = np.pi/180.0
 
     #-- set function for astronomical longitudes
-    ASTRO5 = True if CORRECTIONS in ('GOT','FES') else False
+    ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
     #-- convert from Modified Julian Dates into Ephemeris Time
-    s,h,p,omega,pp = calc_astrol_longitudes(MJD+DELTAT, ASTRO5=ASTRO5)
+    s,h,p,omega,pp = calc_astrol_longitudes(MJD + kwargs['deltat'],
+        ASTRO5=ASTRO5)
     hour = (MJD % 1)*24.0
     t1 = 15.0*hour
     t2 = 30.0*hour
@@ -127,9 +143,9 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     arg[:,14] = t1 - s + 3.0*h - p + 90.0 #-- chi1
     arg[:,15] = t1 - 2.0*h + pp - 90.0 #-- pi1
     arg[:,16] = t1 - h - 90.0 #-- p1
-    if CORRECTIONS in ('OTIS','ATLAS','ESR','netcdf'):
+    if kwargs['corrections'] in ('OTIS','ATLAS','ESR','netcdf'):
         arg[:,17] = t1 + 90.0 #-- s1
-    elif CORRECTIONS in ('GOT','FES'):
+    elif kwargs['corrections'] in ('GOT','FES'):
         arg[:,17] = t1 + 180.0 #-- s1 (Doodson's phase)
     arg[:,18] = t1 + h + 90.0 #-- k1
     arg[:,19] = t1 + 2.0*h - pp + 90.0 #-- psi1
@@ -187,7 +203,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     f = np.zeros((nt,60))
     u = np.zeros((nt,60))
     #-- determine nodal corrections f and u for each model type
-    if CORRECTIONS in ('OTIS','ATLAS','ESR','netcdf'):
+    if kwargs['corrections'] in ('OTIS','ATLAS','ESR','netcdf'):
         f[:,0] = 1.0 #-- Sa
         f[:,1] = 1.0 #-- Ssa
         f[:,2] = 1.0 - 0.130*cosn #-- Mm
@@ -337,7 +353,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         #-- mean sea level
         u[:,59] = 0.0 #-- Z0
 
-    elif CORRECTIONS in ('FES',):
+    elif kwargs['corrections'] in ('FES',):
         #-- additional astronomical terms for FES models
         II = np.arccos(0.913694997 - 0.035692561*np.cos(omega*dtr))
         at1 = np.arctan(1.01883*np.tan(omega*dtr/2.0))
@@ -482,7 +498,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
         #-- mean sea level
         u[:,59] = 0.0 #-- Z0
 
-    elif CORRECTIONS in ('GOT',):
+    elif kwargs['corrections'] in ('GOT',):
         f[:,9] = 1.009 + 0.187*cosn - 0.015*cos2n#-- Q1
         f[:,11] = f[:,9]#-- O1
         f[:,16] = 1.0 #-- P1

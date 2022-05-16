@@ -12,7 +12,7 @@ Calling Sequence
 .. code-block:: python
 
     from pyTMD.iers_mean_pole import iers_mean_pole
-    x,y,flag = iers_mean_pole(input_file,input_epoch,version,FILL_VALUE=FILL_VALUE)
+    x,y,flag = iers_mean_pole(input_file,input_epoch,version,fill_value=FILL_VALUE)
 
 `Source code`__
 

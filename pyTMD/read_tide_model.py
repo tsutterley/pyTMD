@@ -18,23 +18,24 @@ INPUTS:
     EPSG: projection of tide model data
 
 OPTIONS:
-    TYPE: tidal variable to run
+    type: tidal variable to run
         z: heights
         u: horizontal transport velocities
         U: horizontal depth-averaged transport
         v: vertical transport velocities
         V: vertical depth-averaged transport
-    METHOD: interpolation method
+    method: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate model using nearest-neighbors
-    CUTOFF: extrapolation cutoff in kilometers
+    extrapolate: extrapolate model using nearest-neighbors
+    cutoff: extrapolation cutoff in kilometers
         set to np.inf to extrapolate for all points
-    GRID: binary file type to read
+    grid: binary file type to read
         ATLAS: reading a global solution with localized solutions
         ESR: combined global or local netCDF4 solution
         OTIS: combined global or local solution
+    apply_flexure: apply flexure scaling factor
 
 OUTPUTS:
     amplitude: amplitudes of tidal constituents
@@ -58,6 +59,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2022: add functions for using ESR netCDF4 format models
+        changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
         use longcomplex data format to be windows compliant
     Updated 03/2022: invert tide mask to be True for invalid points
@@ -82,20 +84,22 @@ UPDATE HISTORY:
     Updated 08/2020: check that interpolated points are within range of model
         replaced griddata interpolation with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
-        update griddata interpolation. changed TYPE variable to keyword argument
+        update griddata interpolation. changed type variable to keyword argument
     Updated 06/2020: output currents as numpy masked arrays
         use argmin and argmax in bilinear interpolation
     Updated 11/2019: interpolate heights and fluxes to numpy masked arrays
     Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
     Updated 01/2019: decode constituents for Python3 compatibility
-    Updated 08/2018: added option GRID for using ATLAS outputs that
+    Updated 08/2018: added option grid for using ATLAS outputs that
         combine both global and localized tidal solutions
         added multivariate spline interpolation option
     Updated 07/2018: added different interpolation methods
     Updated 09/2017: Adapted for Python
 """
 import os
+import copy
 import netCDF4
+import warnings
 import numpy as np
 import scipy.interpolate
 from pyTMD.convert_ll_xy import convert_ll_xy
@@ -107,11 +111,7 @@ def extract_tidal_constants(ilon, ilat,
     grid_file=None,
     model_file=None,
     EPSG=None,
-    TYPE='z',
-    METHOD='spline',
-    EXTRAPOLATE=False,
-    CUTOFF=10.0,
-    GRID='OTIS'):
+    **kwargs):
     """
     Reads files for an OTIS-formatted tidal model
 
@@ -131,7 +131,7 @@ def extract_tidal_constants(ilon, ilat,
         model file containing each constituent
     EPSG: str or NoneType, default None,
         projection of tide model data
-    TYPE: str, default 'z'
+    type: str, default 'z'
         Tidal variable to read
 
             - ``'z'``: heights
@@ -139,24 +139,26 @@ def extract_tidal_constants(ilon, ilat,
             - ``'U'``: horizontal depth-averaged transport
             - ``'v'``: vertical transport velocities
             - ``'V'``: vertical depth-averaged transport
-    METHOD: str, default 'spline'
+    method: str, default 'spline'
         Interpolation method
 
             - ``'bilinear'``: quick bilinear interpolation
             - ``'spline'``: scipy bivariate spline interpolation
             - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
-    EXTRAPOLATE: bool, default False
+    extrapolate: bool, default False
         Extrapolate model using nearest-neighbors
-    CUTOFF: float, default 10.0
+    cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
         Set to np.inf to extrapolate for all points
-    GRID: str, default 'OTIS'
+    grid: str, default 'OTIS'
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
             - ``'ESR'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
+    apply_flexure: bool, default False
+        apply flexure scaling factor
 
     Returns
     -------
@@ -169,16 +171,34 @@ def extract_tidal_constants(ilon, ilat,
     constituents: list
         list of model constituents
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('type', 'z')
+    kwargs.setdefault('method', 'spline')
+    kwargs.setdefault('extrapolate', False)
+    kwargs.setdefault('cutoff', 10.0)
+    kwargs.setdefault('grid', 'OTIS')
+    kwargs.setdefault('apply_flexure', False)
+    #-- raise warnings for deprecated keyword arguments
+    deprecated_keywords = dict(TYPE='type',METHOD='method',
+        EXTRAPOLATE='extrapolate',CUTOFF='cutoff',GRID='grid')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn("""Deprecated keyword argument {0}.
+                Changed to '{1}'""".format(old,new),
+                DeprecationWarning)
+            #-- set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
+
     #-- check that grid file is accessible
     if not os.access(os.path.expanduser(grid_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(grid_file))
     #-- read the OTIS-format tide grid file
-    if (GRID == 'ATLAS'):
+    if (kwargs['grid'] == 'ATLAS'):
         #-- if reading a global solution with localized solutions
         x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
-    elif (GRID == 'ESR'):
+    elif (kwargs['grid'] == 'ESR'):
         #-- if reading a single ESR netCDF4 solution
         xi,yi,hz,mz,sf = read_netcdf_grid(grid_file)
     else:
@@ -193,19 +213,19 @@ def extract_tidal_constants(ilon, ilat,
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
 
-    if (TYPE != 'z'):
+    if (kwargs['type'] != 'z'):
         mz,mu,mv = Muv(hz)
         hu,hv = Huv(hz)
 
     #-- if global: extend limits
-    GLOBAL = False
+    global_grid = False
     #-- replace original values with extend arrays/matrices
     if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
         xi = extend_array(xi, dx)
         hz = extend_matrix(hz)
         mz = extend_matrix(mz)
-        #-- set global flag
-        GLOBAL = True
+        #-- set global grid flag
+        global_grid = True
 
     #-- adjust longitudinal convention of input latitude and longitude
     #-- to fit tide model convention
@@ -218,9 +238,9 @@ def extract_tidal_constants(ilon, ilat,
 
     #-- masks zero values
     hz = np.ma.array(hz,mask=(hz==0))
-    if (TYPE != 'z'):
+    if (kwargs['type'] != 'z'):
         #-- replace original values with extend matrices
-        if GLOBAL:
+        if global_grid:
             hu = extend_matrix(hu)
             hv = extend_matrix(hv)
             mu = extend_matrix(mu)
@@ -230,48 +250,48 @@ def extract_tidal_constants(ilon, ilat,
         hv = np.ma.array(hv,mask=(hv==0))
 
     #-- interpolate depth and mask to output points
-    if (METHOD == 'bilinear'):
+    if (kwargs['method'] == 'bilinear'):
         #-- use quick bilinear to interpolate values
-        D = bilinear_interp(xi,yi,hz,x,y)
-        mz1 = bilinear_interp(xi,yi,mz,x,y)
+        D = bilinear_interp(xi, yi, hz, x, y)
+        mz1 = bilinear_interp(xi, yi, mz, x, y)
         mz1 = np.ceil(mz1).astype(mz.dtype)
-        if (TYPE != 'z'):
-            mu1 = bilinear_interp(xi,yi,mu,x,y)
+        if (kwargs['type'] != 'z'):
+            mu1 = bilinear_interp(xi, yi, mu, x, y)
             mu1 = np.ceil(mu1).astype(mu.dtype)
-            mv1 = bilinear_interp(xi,yi,mv,x,y)
+            mv1 = bilinear_interp(xi, yi, mv, x, y)
             mv1 = np.ceil(mv1).astype(mz.dtype)
-    elif (METHOD == 'spline'):
+    elif (kwargs['method'] == 'spline'):
         #-- use scipy bivariate splines to interpolate values
-        f1=scipy.interpolate.RectBivariateSpline(xi,yi,hz.T,kx=1,ky=1)
-        f2=scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)
+        f1=scipy.interpolate.RectBivariateSpline(xi, yi, hz.T, kx=1, ky=1)
+        f2=scipy.interpolate.RectBivariateSpline(xi, yi, mz.T, kx=1, ky=1)
         D = f1.ev(x,y)
         mz1 = np.ceil(f2.ev(x,y)).astype(mz.dtype)
-        if (TYPE != 'z'):
-            f3=scipy.interpolate.RectBivariateSpline(xi,yi,mu.T,kx=1,ky=1)
-            f4=scipy.interpolate.RectBivariateSpline(xi,yi,mv.T,kx=1,ky=1)
+        if (kwargs['type'] != 'z'):
+            f3=scipy.interpolate.RectBivariateSpline(xi, yi, mu.T, kx=1, ky=1)
+            f4=scipy.interpolate.RectBivariateSpline(xi, yi, mv.T, kx=1, ky=1)
             mu1 = np.ceil(f3.ev(x,y)).astype(mu.dtype)
             mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
         #-- use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),hz,
-            method=METHOD,bounds_error=False)
-        r2 = scipy.interpolate.RegularGridInterpolator((yi,xi),mz,
-            method=METHOD,bounds_error=False,fill_value=0)
+        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), hz,
+            method=kwargs['method'], bounds_error=False)
+        r2 = scipy.interpolate.RegularGridInterpolator((yi,xi), mz,
+            method=kwargs['method'], bounds_error=False, fill_value=0)
         D = r1.__call__(np.c_[y,x])
         mz1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mz.dtype)
-        if (TYPE != 'z'):
-            r3 = scipy.interpolate.RegularGridInterpolator((yi,xi),mu,
-                method=METHOD,bounds_error=False,fill_value=0)
-            r4 = scipy.interpolate.RegularGridInterpolator((yi,xi),mv,
-                method=METHOD,bounds_error=False,fill_value=0)
+        if (kwargs['type'] != 'z'):
+            r3 = scipy.interpolate.RegularGridInterpolator((yi,xi), mu,
+                method=kwargs['method'], bounds_error=False, fill_value=0)
+            r4 = scipy.interpolate.RegularGridInterpolator((yi,xi), mv,
+                method=kwargs['method'], bounds_error=False, fill_value=0)
             mu1 = np.ceil(r3.__call__(np.c_[y,x])).astype(mu.dtype)
             mv1 = np.ceil(r4.__call__(np.c_[y,x])).astype(mv.dtype)
 
-    #-- u and v are velocities in cm/s
-    if TYPE in ('v','u'):
+    #-- u and v: velocities in cm/s
+    if kwargs['type'] in ('v','u'):
         unit_conv = (D/100.0)
-    #-- U and V are transports in m^2/s
-    elif TYPE in ('V','U'):
+    #-- U and V: transports in m^2/s
+    elif kwargs['type'] in ('V','U'):
         unit_conv = 1.0
 
     #-- read and interpolate each constituent
@@ -279,7 +299,7 @@ def extract_tidal_constants(ilon, ilat,
         constituents = [read_constituents(m)[0].pop() for m in model_file]
         nc = len(constituents)
     else:
-        constituents,nc = read_constituents(model_file, GRID=GRID)
+        constituents,nc = read_constituents(model_file, grid=kwargs['grid'])
     #-- number of output data points
     npts = len(D)
     amplitude = np.ma.zeros((npts,nc))
@@ -287,39 +307,43 @@ def extract_tidal_constants(ilon, ilat,
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=bool)
     for i,c in enumerate(constituents):
-        if (TYPE == 'z'):
+        if (kwargs['type'] == 'z'):
             #-- read constituent from elevation file
-            if (GRID == 'ATLAS'):
+            if (kwargs['grid'] == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
                 xi,yi,z = combine_atlas_model(x0, y0, z0, pmask, zlocal,
-                    VARIABLE='z')
-            elif (GRID == 'ESR'):
-                z = read_netcdf_file(model_file, i, TYPE=TYPE)
+                    variable='z')
+            elif (kwargs['grid'] == 'ESR'):
+                z = read_netcdf_file(model_file, i, variable='z')
+                #-- apply flexure scaling
+                if kwargs['apply_flexure']:
+                    z *= sf
             elif isinstance(model_file,list):
                 z = read_elevation_file(model_file[i], 0)
             else:
                 z = read_elevation_file(model_file, i)
             #-- replace original values with extend matrices
-            if GLOBAL:
+            if global_grid:
                 z = extend_matrix(z)
             #-- copy mask to elevation
             z.mask |= mz.astype(bool)
             #-- interpolate amplitude and phase of the constituent
             z1 = np.ma.zeros((npts),dtype=z.dtype)
-            if (METHOD == 'bilinear'):
+            if (kwargs['method'] == 'bilinear'):
                 #-- replace zero values with nan
                 z[(z==0) | z.mask] = np.nan
                 #-- use quick bilinear to interpolate values
-                z1.data[:] = bilinear_interp(xi,yi,z,x,y,dtype=np.longcomplex)
+                z1.data[:] = bilinear_interp(xi, yi, z, x, y,
+                    dtype=np.longcomplex)
                 #-- replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (mz1.astype(bool)))
                 z1.data[z1.mask] = z1.fill_value
-            elif (METHOD == 'spline'):
+            elif (kwargs['method'] == 'spline'):
                 #-- use scipy bivariate splines to interpolate values
                 f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
-                    z.real.T,kx=1,ky=1)
+                    z.real.T, kx=1, ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
-                    z.imag.T,kx=1,ky=1)
+                    z.imag.T, kx=1, ky=1)
                 z1.data.real = f1.ev(x,y)
                 z1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
@@ -327,41 +351,45 @@ def extract_tidal_constants(ilon, ilat,
                 z1.data[z1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),z,
-                    method=METHOD,bounds_error=False,fill_value=z1.fill_value)
+                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), z,
+                    method=kwargs['method'],
+                    bounds_error=False,
+                    fill_value=z1.fill_value)
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
                 z1.mask = (z1.data == z1.fill_value) | (mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE and np.any(z1.mask):
+            if kwargs['extrapolate'] and np.any(z1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(z1.mask)
                 #-- replace zero values with nan
                 z[(z==0) | z.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                z1[inv] = nearest_extrap(xi,yi,z,x[inv],y[inv],
-                    dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
+                z1[inv] = nearest_extrap(xi, yi, z, x[inv], y[inv],
+                    dtype=np.longcomplex,
+                    cutoff=kwargs['cutoff'],
+                    EPSG=EPSG)
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
             amplitude.mask[:,i] = np.copy(z1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(z1.data),np.real(z1.data))
             ph.mask[:,i] = np.copy(z1.mask)
-        elif TYPE in ('U','u'):
+        elif kwargs['type'] in ('U','u'):
             #-- read constituent from transport file
-            if (GRID == 'ATLAS'):
+            if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,u = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
-                    VARIABLE='u')
-            elif (GRID == 'ESR'):
-                u = read_netcdf_file(model_file, i, TYPE=TYPE)
+                    variable='u')
+            elif (kwargs['grid'] == 'ESR'):
+                u = read_netcdf_file(model_file, i, variable='u')
             elif isinstance(model_file,list):
                 u,v = read_transport_file(model_file[i], 0)
             else:
                 u,v = read_transport_file(model_file, i)
             #-- replace original values with extend matrices
-            if GLOBAL:
+            if global_grid:
                 u = extend_matrix(u)
             #-- copy mask to u transports
             u.mask |= mu.astype(bool)
@@ -369,19 +397,20 @@ def extract_tidal_constants(ilon, ilat,
             xu = xi - dx/2.0
             #-- interpolate amplitude and phase of the constituent
             u1 = np.ma.zeros((npts),dtype=u.dtype)
-            if (METHOD == 'bilinear'):
+            if (kwargs['method'] == 'bilinear'):
                 #-- replace zero values with nan
                 u[(u==0) | u.mask] = np.nan
                 #-- use quick bilinear to interpolate values
-                u1.data[:] = bilinear_interp(xu,yi,u,x,y,dtype=np.longcomplex)
+                u1.data[:] = bilinear_interp(xu, yi, u, x, y,
+                    dtype=np.longcomplex)
                 #-- replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (mu1.astype(bool)))
                 u1.data[u1.mask] = u1.fill_value
-            elif (METHOD == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(xu,yi,
-                    u.real.T,kx=1,ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xu,yi,
-                    u.imag.T,kx=1,ky=1)
+            elif (kwargs['method'] == 'spline'):
+                f1 = scipy.interpolate.RectBivariateSpline(xu, yi,
+                    u.real.T, kx=1, ky=1)
+                f2 = scipy.interpolate.RectBivariateSpline(xu, yi,
+                    u.imag.T, kx=1, ky=1)
                 u1.data.real = f1.ev(x,y)
                 u1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
@@ -389,41 +418,44 @@ def extract_tidal_constants(ilon, ilat,
                 u1.data[u1.mask] = u1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yi,xu),u,
-                    method=METHOD,bounds_error=False,fill_value=u1.fill_value)
+                r1 = scipy.interpolate.RegularGridInterpolator((yi,xu), u,
+                    method=kwargs['method'], bounds_error=False,
+                    fill_value=u1.fill_value)
                 u1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
                 u1.mask = (u1.data == u1.fill_value) | (mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE and np.any(u1.mask):
+            if kwargs['extrapolate'] and np.any(u1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(u1.mask)
                 #-- replace zero values with nan
                 u[(u==0) | u.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                u1[inv] = nearest_extrap(xu,yi,u,x[inv],y[inv],
-                    dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
+                u1[inv] = nearest_extrap(xu, yi, u, x[inv], y[inv],
+                    dtype=np.longcomplex,
+                    cutoff=kwargs['cutoff'],
+                    EPSG=EPSG)
             #-- convert units
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(u1.data)/unit_conv
             amplitude.mask[:,i] = np.copy(u1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(u1),np.real(u1))
             ph.mask[:,i] = np.copy(u1.mask)
-        elif TYPE in ('V','v'):
+        elif kwargs['type'] in ('V','v'):
             #-- read constituent from transport file
-            if (GRID == 'ATLAS'):
+            if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,v = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
-                    VARIABLE='v')
-            elif (GRID == 'ESR'):
-                v = read_netcdf_file(model_file, i, TYPE=TYPE)
+                    variable='v')
+            elif (kwargs['grid'] == 'ESR'):
+                v = read_netcdf_file(model_file, i, type='v')
             elif isinstance(model_file,list):
                 u,v = read_transport_file(model_file[i], 0)
             else:
                 u,v = read_transport_file(model_file, i)
             #-- replace original values with extend matrices
-            if GLOBAL:
+            if global_grid:
                 v = extend_matrix(v)
             #-- copy mask to v transports
             v.mask |= mv.astype(bool)
@@ -431,19 +463,20 @@ def extract_tidal_constants(ilon, ilat,
             yv = yi - dy/2.0
             #-- interpolate amplitude and phase of the constituent
             v1 = np.ma.zeros((npts),dtype=v.dtype)
-            if (METHOD == 'bilinear'):
+            if (kwargs['method'] == 'bilinear'):
                 #-- replace zero values with nan
                 v[(v==0) | v.mask] = np.nan
                 #-- use quick bilinear to interpolate values
-                v1.data[:] = bilinear_interp(xi,yv,v,x,y,dtype=np.longcomplex)
+                v1.data[:] = bilinear_interp(xi, yv, v, x, y,
+                    dtype=np.longcomplex)
                 #-- replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value
-            elif (METHOD == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(xi,yv,
-                    v.real.T,kx=1,ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xi,yv,
-                    v.imag.T,kx=1,ky=1)
+            elif (kwargs['method'] == 'spline'):
+                f1 = scipy.interpolate.RectBivariateSpline(xi, yv,
+                    v.real.T, kx=1, ky=1)
+                f2 = scipy.interpolate.RectBivariateSpline(xi, yv,
+                    v.imag.T, kx=1, ky=1)
                 v1.data.real = f1.ev(x,y)
                 v1.data.imag = f2.ev(x,y)
                 #-- replace zero values with fill_value
@@ -451,21 +484,25 @@ def extract_tidal_constants(ilon, ilat,
                 v1.data[v1.mask] = v1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yv,xi),v,
-                    method=METHOD,bounds_error=False,fill_value=v1.fill_value)
+                r1 = scipy.interpolate.RegularGridInterpolator((yv,xi), v,
+                    method=kwargs['method'],
+                    bounds_error=False,
+                    fill_value=v1.fill_value)
                 v1.data[:] = r1.__call__(np.c_[y,x])
                 #-- replace invalid values with fill_value
                 v1.mask = (v1.data == v1.fill_value) | (mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             #-- extrapolate data using nearest-neighbors
-            if EXTRAPOLATE and np.any(v1.mask):
+            if kwargs['extrapolate'] and np.any(v1.mask):
                 #-- find invalid data points
                 inv, = np.nonzero(v1.mask)
                 #-- replace zero values with nan
                 v[(v==0) | v.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
-                v1[inv] = nearest_extrap(x,yv,v,x[inv],y[inv],
-                    dtype=np.longcomplex,cutoff=CUTOFF,EPSG=EPSG)
+                v1[inv] = nearest_extrap(xi, yv, v, x[inv], y[inv],
+                    dtype=np.longcomplex,
+                    cutoff=kwargs['cutoff'],
+                    EPSG=EPSG)
             #-- convert units
             #-- amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(v1.data)/unit_conv
@@ -731,15 +768,16 @@ def read_netcdf_grid(input_file):
     mz = fileID.variables['mask'][::-1,:].copy()
     #-- read flexure and convert from percent to scale factor
     sf = fileID.variables['flexure'][::-1,:]/100.0
-    #-- update bathymetry mask
+    #-- update bathymetry and scale factor masks
     hz.mask = (hz.data == 0.0)
+    sf.mask = (sf.data == 0.0)
     #-- close the grid file
     fileID.close()
     #-- return values
     return (x,y,hz,mz,sf)
 
 #-- PURPOSE: read list of constituents from an elevation or transport file
-def read_constituents(input_file, GRID='OTIS'):
+def read_constituents(input_file, grid='OTIS'):
     """
     Read the list of constituents from an elevation or transport file
 
@@ -747,7 +785,7 @@ def read_constituents(input_file, GRID='OTIS'):
     ----------
     input_file: str
         input tidal file
-    GRID: str, default 'OTIS'
+    grid: str, default 'OTIS'
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
@@ -764,7 +802,7 @@ def read_constituents(input_file, GRID='OTIS'):
     #-- check that model file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(input_file))
-    if (GRID == 'ESR'):
+    if (grid == 'ESR'):
         #-- open the netCDF4 file
         fid = netCDF4.Dataset(os.path.expanduser(input_file),'r')
         constituents = fid.variables['cons'].long_name.split()
@@ -1266,7 +1304,7 @@ def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
 
 #-- PURPOSE: read netCDF4 file to extract real and imaginary components for
 #-- constituent
-def read_netcdf_file(input_file, ic, TYPE=None):
+def read_netcdf_file(input_file, ic, variable=None):
     """
     Read netCDF4 file to extract real and imaginary components for constituent
 
@@ -1276,7 +1314,7 @@ def read_netcdf_file(input_file, ic, TYPE=None):
         input transport file
     ic: int
         index of consituent
-    TYPE: str or NoneType, default None
+    variable: str or NoneType, default None
         Tidal variable to read
 
             - ``'z'``: heights
@@ -1299,15 +1337,15 @@ def read_netcdf_file(input_file, ic, TYPE=None):
     hc = np.ma.zeros((ny,nx),dtype=np.complex64)
     hc.mask = np.zeros((ny,nx),dtype=bool)
     #-- extract constituent
-    if (TYPE == 'z'):
+    if (variable == 'z'):
         #-- convert elevations from mm to m
         hc.data.real[:,:] = fileID.variables['hRe'][ic,::-1,:]/1e3
         hc.data.imag[:,:] = -fileID.variables['hIm'][ic,::-1,:]/1e3
-    elif TYPE in ('U','u'):
+    elif variable in ('U','u'):
         #-- convert transports from cm^2/s to m^2/s
         hc.data.real[:,:] = fileID.variables['uRe'][ic,::-1,:]/1e4
         hc.data.imag[:,:] = -fileID.variables['uIm'][ic,::-1,:]/1e4
-    elif TYPE in ('V','v'):
+    elif variable in ('V','v'):
         #-- convert transports from cm^2/s to m^2/s
         hc.data.real[:,:] = fileID.variables['vRe'][ic,::-1,:]/1e4
         hc.data.imag[:,:] = -fileID.variables['vIm'][ic,::-1,:]/1e4

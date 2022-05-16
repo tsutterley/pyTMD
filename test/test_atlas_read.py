@@ -140,8 +140,9 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
 
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
-        val['Lon'], val['Lat'], grid_file, model_file, TYPE=TYPE,
-        METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, SCALE=SCALE, GZIP=GZIP)
+        val['Lon'], val['Lat'], grid_file, model_file, type=TYPE,
+        method=METHOD, extrapolate=EXTRAPOLATE, scale=SCALE,
+        compressed=GZIP)
     #-- convert phase from 0:360 to -180:180
     ph[ph > 180] -= 360.0
 
@@ -206,8 +207,8 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(
         val['longitude'], val['latitude'], model.grid_file,
-        model.model_file, model.projection, TYPE=model.type,
-        METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, GRID=model.format)
+        model.model_file, model.projection, type=model.type,
+        method=METHOD, extrapolate=EXTRAPOLATE, grid=model.format)
     #-- delta time
     deltat = np.zeros_like(val['time'])
     #-- calculate complex phase in radians for Euler's
@@ -222,7 +223,7 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
     #-- predict tidal elevations at time
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(val['time'], hc[:,i],
-        constituents, DELTAT=deltat, CORRECTIONS=model.format)
+        constituents, deltat=deltat, corrections=model.format)
 
     #-- will verify differences between model outputs are within tolerance
     eps = 0.03
@@ -280,8 +281,8 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     #-- extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
         val['longitude'], val['latitude'], grid_file, model_file,
-        TYPE=TYPE, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-        SCALE=SCALE, GZIP=GZIP)
+        type=TYPE, method=METHOD, extrapolate=EXTRAPOLATE,
+        scale=SCALE, compressed=GZIP)
     #-- delta time
     deltat = np.zeros_like(val['time'])
     #-- verify constituents
@@ -296,7 +297,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     #-- predict tidal elevations at time
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(val['time'], hc, c,
-        DELTAT=deltat, CORRECTIONS=model_format)
+        deltat=deltat, corrections=model_format)
 
     #-- will verify differences between model outputs are within tolerance
     eps = 0.05

@@ -19,10 +19,10 @@ OUTPUTS:
     x: Angular coordinate x of conventional mean pole [arcsec]
     y: Angular coordinate y of conventional mean pole [arcsec]
     flag: epoch is valid for version and version number is valid
-        data will be set to FILL_VALUE if flag == False
+        data will be set to fill_value if flag == False
 
 OPTIONS:
-    FILL_VALUE: value for invalid flags
+    fill_value: value for invalid flags
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -34,6 +34,7 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 05/2022: changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 07/2020: added function docstrings
@@ -41,11 +42,14 @@ UPDATE HISTORY:
     Written 09/2017
 """
 from __future__ import division
+
 import os
+import copy
+import warnings
 import numpy as np
 
 #-- read table of mean pole values, calculate angular coordinates at epoch
-def iers_mean_pole(input_file, input_epoch, version, FILL_VALUE=np.nan):
+def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
 
@@ -58,7 +62,7 @@ def iers_mean_pole(input_file, input_epoch, version, FILL_VALUE=np.nan):
         in decimal years
     version: str
         Year of the conventional model
-    FILL_VALUE: float, default np.nan
+    fill_value: float, default np.nan
         Value for invalid flags
 
     Returns
@@ -75,6 +79,15 @@ def iers_mean_pole(input_file, input_epoch, version, FILL_VALUE=np.nan):
     .. [1] Petit, G. and Luzum, B. (eds.), IERS Conventions (2010),
         IERS Technical Note No. 36, BKG (2010)
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('fill_value', np.nan)
+    #-- raise warnings for deprecated keyword argument
+    if 'FILL_VALUE' in kwargs.keys():
+        warnings.warn("""Deprecated keyword argument {0}.
+            Changed to '{1}'""".format('FILL_VALUE','fill_value'),
+            DeprecationWarning)
+        #-- set renamed argument to not break workflows
+        kwargs['fill_value'] = copy.copy(kwargs['FILL_VALUE'])
     #-- verify IERS model version
     assert version in ('2003','2010','2015'), "Incorrect IERS model version"
     #-- read mean pole file
@@ -89,9 +102,9 @@ def iers_mean_pole(input_file, input_epoch, version, FILL_VALUE=np.nan):
     #-- final shape of the table
     nrows, ncols = np.shape(table)
     #-- allocate for output arrays
-    x = np.full_like(input_epoch,FILL_VALUE)
-    y = np.full_like(input_epoch,FILL_VALUE)
-    flag = np.zeros_like(input_epoch,dtype=bool)
+    x = np.full_like(input_epoch, kwargs['fill_value'])
+    y = np.full_like(input_epoch, kwargs['fill_value'])
+    flag = np.zeros_like(input_epoch, dtype=bool)
     for t,epoch in enumerate(input_epoch):
         #-- Conventional mean pole model in IERS Conventions 2003
         if (version == '2003') and (epoch >= 1975) and (epoch < 2004):

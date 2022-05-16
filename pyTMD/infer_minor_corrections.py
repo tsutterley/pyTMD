@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-infer_minor_corrections.py (04/2022)
+infer_minor_corrections.py (05/2022)
 Return correction for minor constituents based on Richard Ray's PERTH3 code
     PERTH: PREdict Tidal Heights
 
@@ -16,8 +16,8 @@ OUTPUT:
     dh: height from minor constituents
 
 OPTIONS:
-    DELTAT: time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: use nodal corrections from OTIS/ATLAS or GOT models
+    deltat: time correction for converting to Ephemeris Time (days)
+    corrections: use nodal corrections from OTIS/ATLAS or GOT models
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -35,6 +35,7 @@ REFERENCES:
         time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
+    Updated 05/2022: changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 08/2020: change time variable names to not overwrite functions
         update nodal corrections for FES models
@@ -46,10 +47,12 @@ UPDATE HISTORY:
         use the number of dates if calculating a tidal time series at a point
     Updated 09/2017: Rewritten in Python
 """
+import copy
+import warnings
 import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
-def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
+def infer_minor_corrections(t, zmajor, constituents, **kwargs):
     """
     Calculate the tidal corrections for minor constituents inferred using
     major constituents
@@ -62,9 +65,9 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
         Complex HC for given constituents/points
     constituents: list
         tidal constituent IDs
-    DELTAT: float, default 0.0
+    deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
-    CORRECTIONS: str, default ''
+    corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
@@ -80,6 +83,19 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
         time series", Advances in Water Resources, 12, (1989).
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
+    #-- raise warnings for deprecated keyword arguments
+    deprecated_keywords = dict(DELTAT='deltat',CORRECTIONS='corrections')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn("""Deprecated keyword argument {0}.
+                Changed to '{1}'""".format(old,new),
+                DeprecationWarning)
+            #-- set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
+
     #-- degrees to radians
     dtr = np.pi/180.0
     #-- number of constituents
@@ -92,7 +108,7 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     #-- convert time from days relative to Jan 1, 1992 to Modified Julian Days
     MJD = 48622.0 + t
     #-- major constituents used for inferring minor tides
-    cindex = ['q1','o1','p1','k1','n2','m2','s2','k2','2n2']
+    cindex = ['q1', 'o1', 'p1', 'k1', 'n2', 'm2', 's2', 'k2', '2n2']
     #-- re-order major tides to correspond to order of cindex
     z = np.ma.zeros((n,9),dtype=np.complex64)
     nz = 0
@@ -133,7 +149,7 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     zmin[:,16] = 0.0033*z[:,5] + 0.0082*z[:,6]#-- L2
     zmin[:,17] = 0.0585*z[:,6]#-- t2
     #-- additional coefficients for FES models
-    if CORRECTIONS in ('FES',):
+    if kwargs['corrections'] in ('FES',):
         #-- spline coefficients for admittances
         mu2 = [0.069439968323, 0.351535557706, -0.046278307672]
         nu2 = [-0.006104695053, 0.156878802427, 0.006755704028]
@@ -152,9 +168,10 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     t1 = 15.0*hour
     t2 = 30.0*hour
     #-- set function for astronomical longitudes
-    ASTRO5 = True if CORRECTIONS in ('GOT','FES') else False
+    ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
     #-- convert from Modified Julian Dates into Ephemeris Time
-    S,H,P,omega,pp = calc_astrol_longitudes(MJD+DELTAT, ASTRO5=ASTRO5)
+    S,H,P,omega,pp = calc_astrol_longitudes(MJD + kwargs['deltat'],
+        ASTRO5=ASTRO5)
 
     #-- determine equilibrium tidal arguments
     arg = np.zeros((n,20))
@@ -219,7 +236,7 @@ def infer_minor_corrections(t,zmajor,constituents,DELTAT=0.0,CORRECTIONS=''):
     u[:,15] = u[:,11]#-- L2
     u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr#-- L2
 
-    if CORRECTIONS in ('FES',):
+    if kwargs['corrections'] in ('FES',):
         #-- additional astronomical terms for FES models
         II = np.arccos(0.913694997 - 0.035692561*np.cos(omega*dtr))
         at1 = np.arctan(1.01883*np.tan(omega*dtr/2.0))

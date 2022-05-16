@@ -522,7 +522,7 @@ def compute_LPET_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(time_range,
         epoch1=(1992,1,1,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0)
     #-- convert to calendar date
-    cal = pyTMD.time.convert_julian(time_julian,ASTYPE=int)
+    cal = pyTMD.time.convert_julian(time_julian,astype=int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

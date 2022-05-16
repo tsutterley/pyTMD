@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -220,28 +221,28 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
             if model.format in ('OTIS','ATLAS','ESR'):
                 amp,ph,D,c = extract_tidal_constants(longitude[track],
                     latitude[track], model.grid_file, model.model_file,
-                    model.projection, TYPE=model.type, METHOD=METHOD,
-                    EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, GRID=model.format)
+                    model.projection, type=model.type, method=METHOD,
+                    extrapolate=EXTRAPOLATE, cutoff=CUTOFF, grid=model.format)
                 deltat = np.zeros_like(tide_time)
             elif (model.format == 'netcdf'):
                 amp,ph,D,c = extract_netcdf_constants(longitude[track],
                     latitude[track], model.grid_file, model.model_file,
-                    TYPE=model.type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-                    CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+                    type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+                    cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
                 deltat = np.zeros_like(tide_time)
             elif (model.format == 'GOT'):
                 amp,ph,c = extract_GOT_constants(longitude[track],
-                    latitude[track], model.model_file, METHOD=METHOD,
-                    EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-                    GZIP=model.compressed)
+                    latitude[track], model.model_file, method=METHOD,
+                    extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+                    compressed=model.compressed)
                 #-- interpolate delta times from calendar dates to tide time
                 deltat = calc_delta_time(delta_file, tide_time)
             elif (model.format == 'FES'):
                 amp,ph = extract_FES_constants(longitude[track],
                     latitude[track], model.model_file,
-                    TYPE=model.type, VERSION=model.version, METHOD=METHOD,
-                    EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-                    SCALE=model.scale, GZIP=model.compressed)
+                    type=model.type, version=model.version, method=METHOD,
+                    extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                    scale=model.scale, compressed=model.compressed)
                 #-- available model constituents
                 c = model.constituents
                 #-- interpolate delta times from calendar dates to tide time
@@ -262,9 +263,9 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
                     #-- predict tidal elevations and infer minor corrections
                     tide[track].data[valid,cycle] = predict_tide_drift(
                         tide_time[valid,cycle], hc[valid,:], c,
-                        DELTAT=deltat[valid,cycle], CORRECTIONS=model.format)
+                        deltat=deltat[valid,cycle], corrections=model.format)
                     minor = infer_minor_corrections(tide_time[valid,cycle], hc[valid,:],
-                        c, DELTAT=deltat[valid,cycle], CORRECTIONS=model.format)
+                        c, deltat=deltat[valid,cycle], corrections=model.format)
                     tide[track].data[valid,cycle] += minor.data[:]
             elif (track == 'XT'):
                 #-- find valid time and spatial points
@@ -272,10 +273,10 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
                 valid, = np.nonzero(~tide[track].mask[:])
                 #-- predict tidal elevations and infer minor corrections
                 tide[track].data[valid] = predict_tide_drift(tide_time[valid],
-                    hc[valid,:], c, DELTAT=deltat[valid],
-                    CORRECTIONS=model.format)
+                    hc[valid,:], c, deltat=deltat[valid],
+                    corrections=model.format)
                 minor = infer_minor_corrections(tide_time[valid], hc[valid,:],
-                    c, DELTAT=deltat[valid], CORRECTIONS=model.format)
+                    c, deltat=deltat[valid], corrections=model.format)
                 tide[track].data[valid] += minor.data[:]
 
             #-- replace masked and nan values with fill value
@@ -671,7 +672,7 @@ def HDF5_ATL11_tide_write(IS2_atl11_tide, IS2_atl11_attrs, INPUT=None,
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(gps_seconds - leaps,
         epoch1=(1980,1,6,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- convert to calendar date
-    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,format='tuple')
     #-- add attributes with measurement date start, end and duration
     tcs = datetime.datetime(int(YY[0]), int(MM[0]), int(DD[0]),
         int(HH[0]), int(MN[0]), int(SS[0]), int(1e6*(SS[0] % 1)))

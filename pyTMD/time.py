@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 05/2022: changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 04/2021: updated NIST ftp server url for leap-seconds.list
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
@@ -31,7 +32,9 @@ UPDATE HISTORY:
 """
 import os
 import re
+import copy
 import logging
+import warnings
 import datetime
 import numpy as np
 import dateutil.parser
@@ -385,7 +388,7 @@ def convert_calendar_decimal(year, month, day=None, hour=None, minute=None,
     return t_date
 
 #-- PURPOSE: Converts from Julian day to calendar date and time
-def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
+def convert_julian(JD, **kwargs):
     """
     Converts from Julian day to calendar date and time
 
@@ -393,9 +396,9 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
     ----------
     JD: float
         Julian Day (days since 01-01-4713 BCE at 12:00:00)
-    ASTYPE: str or NoneType, default None
+    astype: str or NoneType, default None
         convert output to variable type
-    FORMAT: str, default 'dict'
+    format: str, default 'dict'
         format of output variables
 
             - ``'dict'``: dictionary with variable keys
@@ -426,6 +429,18 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
         Calendar Dates", Quarterly Journal of the Royal Astronomical
         Society, 25(1), 1984.
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('astype', None)
+    kwargs.setdefault('format', 'dict')
+    #-- raise warnings for deprecated keyword arguments
+    deprecated_keywords = dict(ASTYPE='astype',FORMAT='format')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn("""Deprecated keyword argument {0}.
+                Changed to '{1}'""".format(old,new),
+                DeprecationWarning)
+            #-- set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
 
     #-- convert to array if only a single value was imported
     if (np.ndim(JD) == 0):
@@ -458,13 +473,13 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
     SECOND = (G - MINUTE/1440.0) * 86400.0
 
     #-- convert all variables to output type (from float)
-    if ASTYPE is not None:
-        YEAR = YEAR.astype(ASTYPE)
-        MONTH = MONTH.astype(ASTYPE)
-        DAY = DAY.astype(ASTYPE)
-        HOUR = HOUR.astype(ASTYPE)
-        MINUTE = MINUTE.astype(ASTYPE)
-        SECOND = SECOND.astype(ASTYPE)
+    if kwargs['astype'] is not None:
+        YEAR = YEAR.astype(kwargs['astype'])
+        MONTH = MONTH.astype(kwargs['astype'])
+        DAY = DAY.astype(kwargs['astype'])
+        HOUR = HOUR.astype(kwargs['astype'])
+        MINUTE = MINUTE.astype(kwargs['astype'])
+        SECOND = SECOND.astype(kwargs['astype'])
 
     #-- if only a single value was imported initially: remove singleton dims
     if SINGLE_VALUE:
@@ -476,12 +491,12 @@ def convert_julian(JD, ASTYPE=None, FORMAT='dict'):
         SECOND = SECOND.item(0)
 
     #-- return date variables in output format (default python dictionary)
-    if (FORMAT == 'dict'):
+    if (kwargs['format'] == 'dict'):
         return dict(year=YEAR, month=MONTH, day=DAY,
             hour=HOUR, minute=MINUTE, second=SECOND)
-    elif (FORMAT == 'tuple'):
+    elif (kwargs['format'] == 'tuple'):
         return (YEAR, MONTH, DAY, HOUR, MINUTE, SECOND)
-    elif (FORMAT == 'zip'):
+    elif (kwargs['format'] == 'zip'):
         return zip(YEAR, MONTH, DAY, HOUR, MINUTE, SECOND)
 
 #-- PURPOSE: Count number of leap seconds that have passed for each GPS time

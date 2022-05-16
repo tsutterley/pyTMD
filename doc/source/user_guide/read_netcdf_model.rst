@@ -10,7 +10,8 @@ Calling Sequence
 .. code-block:: python
 
     from pyTMD.read_netcdf_model import read_netcdf_model
-    amp,ph,D,c = read_netcdf_model(ilon,ilat,grid_file,model_files,TYPE='z',METHOD='spline')
+    amp,ph,D,c = read_netcdf_model(ilon, ilat, grid_file, model_files,
+       type='z', method='spline')
 
 `Source code`__
 

@@ -464,7 +464,7 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     #-- J2000: seconds since 2000-01-01 12:00:00 UTC
     t = dinput['time'][:]/86400.0 + 51544.5
     #-- convert from MJD to calendar dates
-    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(t + 2400000.5,FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(t + 2400000.5,format='tuple')
     #-- convert calendar dates into year decimal
     tdec = pyTMD.time.convert_calendar_decimal(YY,MM,day=DD,
         hour=HH,minute=MN,second=SS)
@@ -604,7 +604,7 @@ def compute_LPT_icebridge_data(arg, VERBOSE=False, MODE=0o775):
     JD_start = np.min(t) + 2400000.5
     JD_end = np.max(t) + 2400000.5
     #-- convert to calendar date
-    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),ASTYPE=int)
+    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),astype=int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

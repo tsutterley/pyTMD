@@ -40,7 +40,7 @@ def test_read_EOP(EPOCH):
     MJD = pyTMD.time.convert_delta_time(delta_time, epoch1=(2000,1,1,0,0,0),
         epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, FORMAT='tuple')
+    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
     #-- calculate time in year-decimal format
     time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
         hour=h,minute=m,second=s)
