@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (04/2022)
+read_netcdf_model.py (05/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2022: reformat arguments to extract_netcdf_constants definition
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 09/2021: fix cases where there is no mask on constituent files
@@ -88,8 +89,15 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
-    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
+def extract_netcdf_constants(ilon, ilat,
+    grid_file=None,
+    model_files=None,
+    TYPE='z',
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=10.0,
+    GZIP=True,
+    SCALE=1.0):
     """
     Reads files for ATLAS netCDF4 tidal models
 
@@ -103,9 +111,9 @@ def extract_netcdf_constants(ilon, ilat, grid_file, model_files, TYPE='z',
         longitude to interpolate
     ilat: float
         latitude to interpolate
-    grid_file: str
+    grid_file: str or NoneType, default None
         grid file for model
-    model_files: list
+    model_files: list or NoneType, default None
         list of model files for each constituent
     TYPE: str, default 'z'
         Tidal variable to read

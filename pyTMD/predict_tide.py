@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict_tide.py (04/2022)
+predict_tide.py (05/2022)
 Predict tides at a single time using harmonic constants
 
 CALLING SEQUENCE:
@@ -32,6 +32,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Updated 09/2020: append output mask over each constituent
@@ -87,7 +88,7 @@ def predict_tide(t, hc, constituents, DELTAT=0.0, CORRECTIONS='OTIS'):
     ht.mask = np.zeros((npts),dtype=bool)
     #-- for each constituent
     for k,c in enumerate(constituents):
-        if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
+        if CORRECTIONS in ('OTIS','ATLAS','ESR','netcdf'):
             #-- load parameters for each constituent
             amp,ph,omega,alpha,species = load_constituent(c)
             #-- add component for constituent to output tidal elevation

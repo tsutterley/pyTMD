@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -109,6 +109,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -323,7 +324,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     #-- iterate over u and v currents
     for t in model.type:
         #-- read tidal constants and interpolate to grid points
-        if model.format in ('OTIS','ATLAS'):
+        if model.format in ('OTIS','ATLAS','ESR'):
             amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
                 model.grid_file, model.model_file['u'], model.projection,
                 TYPE=t, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,

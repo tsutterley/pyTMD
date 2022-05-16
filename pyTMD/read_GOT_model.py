@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (04/2022)
+read_GOT_model.py (05/2022)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2022: reformat arguments to extract_GOT_constants definition
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
     Updated 12/2021: adjust longitude convention based on model longitude
@@ -78,8 +79,13 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
-def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
-    EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
+def extract_GOT_constants(ilon, ilat,
+    model_files=None,
+    METHOD=None,
+    EXTRAPOLATE=False,
+    CUTOFF=10.0,
+    GZIP=True,
+    SCALE=1.0):
     """
     Reads files for Richard Ray's Global Ocean Tide (GOT) models
 
@@ -93,7 +99,7 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
         longitude to interpolate
     ilat: float
         latitude to interpolate
-    model_files: list
+    model_files: list or NoneType, default None
         list of model files for each constituent
     METHOD: str, default 'spline'
         Interpolation method

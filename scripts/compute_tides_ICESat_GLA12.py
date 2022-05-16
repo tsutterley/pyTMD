@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat_GLA12.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates tidal elevations for correcting ICESat/GLAS L2 GLA12
     Antarctic and Greenland Ice Sheet elevation data
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: save ICESat campaign attribute to output file
@@ -192,7 +193,7 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     #-- delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     #-- read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS'):
+    if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(lon_40HZ, lat_40HZ,
             model.grid_file, model.model_file, model.projection, TYPE=TYPE,
             METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,

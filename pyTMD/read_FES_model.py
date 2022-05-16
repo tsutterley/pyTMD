@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (04/2022)
+read_FES_model.py (05/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2022: reformat arguments to extract_FES_constants definition
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
         fix netCDF4 masks for nan values
@@ -86,8 +87,15 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
-    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
+def extract_FES_constants(ilon, ilat,
+    model_files=None,
+    TYPE='z',
+    VERSION=None,
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=10.0,
+    GZIP=True,
+    SCALE=1.0):
     """
     Reads files for an ascii or netCDF4 tidal model
 
@@ -101,9 +109,7 @@ def extract_FES_constants(ilon, ilat, model_files, TYPE='z', VERSION=None,
         longitude to interpolate
     ilat: float
         latitude to interpolate
-    grid_file: str
-        grid file for model
-    model_files: list
+    model_files: list or NoneType, default None
         list of model files for each constituent
     TYPE: str, default 'z'
         Tidal variable to read
@@ -328,9 +334,9 @@ def read_netcdf_file(input_file, GZIP=False, TYPE=None, VERSION=None):
         model file
     GZIP: bool, default False
         Input file is compressed
-    VERSION: str or NoneType
+    VERSION: str or NoneType, default None
         model version
-    TYPE: str or NoneType
+    TYPE: str or NoneType, default None
         Tidal variable to read
 
             - ``'z'``: heights

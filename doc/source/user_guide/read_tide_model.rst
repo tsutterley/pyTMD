@@ -26,6 +26,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.read_tide_model.read_atlas_grid
 
+.. autofunction:: pyTMD.read_tide_model.read_netcdf_grid
+
 .. autofunction:: pyTMD.read_tide_model.read_constituents
 
 .. autofunction:: pyTMD.read_tide_model.read_elevation_file
@@ -41,6 +43,8 @@ Calling Sequence
 .. autofunction:: pyTMD.read_tide_model.interpolate_atlas_model
 
 .. autofunction:: pyTMD.read_tide_model.combine_atlas_model
+
+.. autofunction:: pyTMD.read_tide_model.read_netcdf_file
 
 .. autofunction:: pyTMD.read_tide_model.extend_array
 

@@ -30,7 +30,7 @@ WORKDIR /tmp
 ENV JOBS 2
 
 ENV CFLAGS="-fPIC"
-ENV ZLIB_VERSION=1.2.11
+ENV ZLIB_VERSION=1.2.12
 RUN wget -q http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz && \
     tar -xzf zlib-${ZLIB_VERSION}.tar.gz && \
     cd zlib-${ZLIB_VERSION} && \

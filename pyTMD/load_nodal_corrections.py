@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (04/2022)
+load_nodal_corrections.py (05/2022)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -37,6 +37,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2020: fix k1 for FES models
     Updated 08/2020: change time variable names to not overwrite functions
@@ -126,7 +127,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     arg[:,14] = t1 - s + 3.0*h - p + 90.0 #-- chi1
     arg[:,15] = t1 - 2.0*h + pp - 90.0 #-- pi1
     arg[:,16] = t1 - h - 90.0 #-- p1
-    if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
+    if CORRECTIONS in ('OTIS','ATLAS','ESR','netcdf'):
         arg[:,17] = t1 + 90.0 #-- s1
     elif CORRECTIONS in ('GOT','FES'):
         arg[:,17] = t1 + 180.0 #-- s1 (Doodson's phase)
@@ -186,7 +187,7 @@ def load_nodal_corrections(MJD,constituents,DELTAT=0.0,CORRECTIONS='OTIS'):
     f = np.zeros((nt,60))
     u = np.zeros((nt,60))
     #-- determine nodal corrections f and u for each model type
-    if CORRECTIONS in ('OTIS','ATLAS','netcdf'):
+    if CORRECTIONS in ('OTIS','ATLAS','ESR','netcdf'):
         f[:,0] = 1.0 #-- Sa
         f[:,1] = 1.0 #-- Ssa
         f[:,2] = 1.0 - 0.130*cosn #-- Mm

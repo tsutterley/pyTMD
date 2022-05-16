@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL10.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates tidal elevations for correcting ICESat-2 sea ice height data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -56,6 +56,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -215,7 +216,7 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
             tide_time = pyTMD.time.convert_delta_time(gps_seconds-leap_seconds,
                 epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
             #-- read tidal constants and interpolate to grid points
-            if model.format in ('OTIS','ATLAS'):
+            if model.format in ('OTIS','ATLAS','ESR'):
                 amp,ph,D,c = extract_tidal_constants(val['longitude'],
                     val['latitude'], model.grid_file, model.model_file,
                     model.projection, TYPE=model.type, METHOD=METHOD,

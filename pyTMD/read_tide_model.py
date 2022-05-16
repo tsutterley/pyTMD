@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (04/2022)
+read_tide_model.py (05/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -33,7 +33,8 @@ OPTIONS:
         set to np.inf to extrapolate for all points
     GRID: binary file type to read
         ATLAS: reading a global solution with localized solutions
-        OTIS: combined global solution
+        ESR: combined global or local netCDF4 solution
+        OTIS: combined global or local solution
 
 OUTPUTS:
     amplitude: amplitudes of tidal constituents
@@ -47,6 +48,8 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
+    netCDF4: Python interface to the netCDF C library
+         https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates
@@ -54,6 +57,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2022: add functions for using ESR netCDF4 format models
     Updated 04/2022: updated docstrings to numpy documentation format
         use longcomplex data format to be windows compliant
     Updated 03/2022: invert tide mask to be True for invalid points
@@ -91,6 +95,7 @@ UPDATE HISTORY:
     Updated 09/2017: Adapted for Python
 """
 import os
+import netCDF4
 import numpy as np
 import scipy.interpolate
 from pyTMD.convert_ll_xy import convert_ll_xy
@@ -98,8 +103,15 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
-    METHOD='spline', EXTRAPOLATE=False, CUTOFF=10.0, GRID='OTIS'):
+def extract_tidal_constants(ilon, ilat,
+    grid_file=None,
+    model_file=None,
+    EPSG=None,
+    TYPE='z',
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=10.0,
+    GRID='OTIS'):
     """
     Reads files for an OTIS-formatted tidal model
 
@@ -113,11 +125,12 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         longitude to interpolate
     ilat: float
         latitude to interpolate
-    grid_file: str
+    grid_file: str or NoneType, default None
         grid file for model
-    model_file: str or list
+    model_file: str, list or NoneType, default None
         model file containing each constituent
-    EPSG: projection of tide model data
+    EPSG: str or NoneType, default None,
+        projection of tide model data
     TYPE: str, default 'z'
         Tidal variable to read
 
@@ -139,10 +152,11 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
 
         Set to np.inf to extrapolate for all points
     GRID: str, default 'OTIS'
-        Binary file type to read
+        Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'OTIS'``: combined global solution
+            - ``'ESR'``: combined global or local netCDF4 solution
+            - ``'OTIS'``: combined global or local solution
 
     Returns
     -------
@@ -164,6 +178,9 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
+    elif (GRID == 'ESR'):
+        #-- if reading a single ESR netCDF4 solution
+        xi,yi,hz,mz,sf = read_netcdf_grid(grid_file)
     else:
         #-- if reading a single OTIS solution
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
@@ -262,7 +279,7 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         constituents = [read_constituents(m)[0].pop() for m in model_file]
         nc = len(constituents)
     else:
-        constituents,nc = read_constituents(model_file)
+        constituents,nc = read_constituents(model_file, GRID=GRID)
     #-- number of output data points
     npts = len(D)
     amplitude = np.ma.zeros((npts,nc))
@@ -273,12 +290,15 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         if (TYPE == 'z'):
             #-- read constituent from elevation file
             if (GRID == 'ATLAS'):
-                z0,zlocal = read_atlas_elevation(model_file,i,c)
-                xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,VARIABLE='z')
+                z0,zlocal = read_atlas_elevation(model_file, i, c)
+                xi,yi,z = combine_atlas_model(x0, y0, z0, pmask, zlocal,
+                    VARIABLE='z')
+            elif (GRID == 'ESR'):
+                z = read_netcdf_file(model_file, i, TYPE=TYPE)
             elif isinstance(model_file,list):
-                z = read_elevation_file(model_file[i],0)
+                z = read_elevation_file(model_file[i], 0)
             else:
-                z = read_elevation_file(model_file,i)
+                z = read_elevation_file(model_file, i)
             #-- replace original values with extend matrices
             if GLOBAL:
                 z = extend_matrix(z)
@@ -331,12 +351,15 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         elif TYPE in ('U','u'):
             #-- read constituent from transport file
             if (GRID == 'ATLAS'):
-                u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
-                xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,VARIABLE='u')
+                u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
+                xi,yi,u = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
+                    VARIABLE='u')
+            elif (GRID == 'ESR'):
+                u = read_netcdf_file(model_file, i, TYPE=TYPE)
             elif isinstance(model_file,list):
-                u,v = read_transport_file(model_file[i],0)
+                u,v = read_transport_file(model_file[i], 0)
             else:
-                u,v = read_transport_file(model_file,i)
+                u,v = read_transport_file(model_file, i)
             #-- replace original values with extend matrices
             if GLOBAL:
                 u = extend_matrix(u)
@@ -390,12 +413,15 @@ def extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG, TYPE='z',
         elif TYPE in ('V','v'):
             #-- read constituent from transport file
             if (GRID == 'ATLAS'):
-                u0,v0,uvlocal = read_atlas_transport(model_file,i,c)
-                xi,yi,v = combine_atlas_model(x0,y0,v0,pmask,local,VARIABLE='v')
+                u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
+                xi,yi,v = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
+                    VARIABLE='v')
+            elif (GRID == 'ESR'):
+                v = read_netcdf_file(model_file, i, TYPE=TYPE)
             elif isinstance(model_file,list):
-                u,v = read_transport_file(model_file[i],0)
+                u,v = read_transport_file(model_file[i], 0)
             else:
-                u,v = read_transport_file(model_file,i)
+                u,v = read_transport_file(model_file, i)
             #-- replace original values with extend matrices
             if GLOBAL:
                 v = extend_matrix(v)
@@ -670,8 +696,50 @@ def read_atlas_grid(input_file):
     #-- return values
     return (x,y,hz,mz,iob,dt,pmask,local)
 
+#-- PURPOSE: read grid file
+def read_netcdf_grid(input_file):
+    """
+    Read netCDF4 grid file to extract model coordinates, bathymetry,
+    masks and flexure scaling factors
+
+    Parameters
+    ----------
+    input_file: str
+        input grid file
+
+    Returns
+    -------
+    x: float
+        x-coordinates of input grid
+    y: float
+        y-coordinates of input grid
+    hz: float
+        model bathymetry
+    mz: int
+        land/water mask
+    sf: float
+        scaling factor for applying ice flexure
+    """
+    #-- read the netcdf format tide grid file
+    fileID=netCDF4.Dataset(os.path.expanduser(input_file),'r')
+    #-- read coordinates
+    x = fileID.variables['x'][:].copy()
+    y = fileID.variables['y'][::-1].copy()
+    #-- read water column thickness
+    hz = fileID.variables['wct'][::-1,:].copy()
+    #-- read mask
+    mz = fileID.variables['mask'][::-1,:].copy()
+    #-- read flexure and convert from percent to scale factor
+    sf = fileID.variables['flexure'][::-1,:]/100.0
+    #-- update bathymetry mask
+    hz.mask = (hz.data == 0.0)
+    #-- close the grid file
+    fileID.close()
+    #-- return values
+    return (x,y,hz,mz,sf)
+
 #-- PURPOSE: read list of constituents from an elevation or transport file
-def read_constituents(input_file):
+def read_constituents(input_file, GRID='OTIS'):
     """
     Read the list of constituents from an elevation or transport file
 
@@ -679,6 +747,12 @@ def read_constituents(input_file):
     ----------
     input_file: str
         input tidal file
+    GRID: str, default 'OTIS'
+        Tide model file type to read
+
+            - ``'ATLAS'``: reading a global solution with localized solutions
+            - ``'ESR'``: combined global or local netCDF4 solution
+            - ``'OTIS'``: combined global or local solution
 
     Returns
     -------
@@ -690,13 +764,20 @@ def read_constituents(input_file):
     #-- check that model file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(input_file))
-    #-- open the file
-    fid = open(os.path.expanduser(input_file),'rb')
-    ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
-    nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
-    fid.seek(16,1)
-    constituents = [c.decode("utf8").rstrip() for c in fid.read(nc*4).split()]
-    fid.close()
+    if (GRID == 'ESR'):
+        #-- open the netCDF4 file
+        fid = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+        constituents = fid.variables['cons'].long_name.split()
+        nc = len(constituents)
+        fid.close()
+    else:
+        #-- open the file
+        fid = open(os.path.expanduser(input_file),'rb')
+        ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
+        nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
+        fid.seek(16,1)
+        constituents = [c.decode("utf8").rstrip() for c in fid.read(nc*4).split()]
+        fid.close()
     return (constituents,nc)
 
 #-- PURPOSE: read elevation file to extract real and imaginary components for
@@ -1182,6 +1263,58 @@ def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
         z30.data[jj,ii] = val[VARIABLE][validy,validx]
     #-- return 2 arc-minute solution and coordinates
     return (x30,y30,z30)
+
+#-- PURPOSE: read netCDF4 file to extract real and imaginary components for
+#-- constituent
+def read_netcdf_file(input_file, ic, TYPE=None):
+    """
+    Read netCDF4 file to extract real and imaginary components for constituent
+
+    Parameters
+    ----------
+    input_file: str
+        input transport file
+    ic: int
+        index of consituent
+    TYPE: str or NoneType, default None
+        Tidal variable to read
+
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+
+    Returns
+    -------
+    hc: complex
+        complex form of tidal constituent oscillation
+    """
+    #-- read the netcdf format tide grid file
+    fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+    #-- variable dimensions
+    nx = fileID.dimensions['x'].size
+    ny = fileID.dimensions['y'].size
+    #-- real and imaginary components of tidal constituent
+    hc = np.ma.zeros((ny,nx),dtype=np.complex64)
+    hc.mask = np.zeros((ny,nx),dtype=bool)
+    #-- extract constituent
+    if (TYPE == 'z'):
+        #-- convert elevations from mm to m
+        hc.data.real[:,:] = fileID.variables['hRe'][ic,::-1,:]/1e3
+        hc.data.imag[:,:] = -fileID.variables['hIm'][ic,::-1,:]/1e3
+    elif TYPE in ('U','u'):
+        #-- convert transports from cm^2/s to m^2/s
+        hc.data.real[:,:] = fileID.variables['uRe'][ic,::-1,:]/1e4
+        hc.data.imag[:,:] = -fileID.variables['uIm'][ic,::-1,:]/1e4
+    elif TYPE in ('V','v'):
+        #-- convert transports from cm^2/s to m^2/s
+        hc.data.real[:,:] = fileID.variables['vRe'][ic,::-1,:]/1e4
+        hc.data.imag[:,:] = -fileID.variables['vIm'][ic,::-1,:]/1e4
+    #-- close the file
+    fileID.close()
+    #-- return output variables
+    return hc
 
 #-- For a rectangular bathymetry grid:
 #-- construct masks for zeta, u and v nodes on a C-grid
