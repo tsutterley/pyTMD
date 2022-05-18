@@ -69,6 +69,7 @@ def polynomial_sum(coefficients, t):
 def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
     """
     Computes the basic astronomical mean longitudes: s, h, p, N and PP
+    [Meeus1998]_
 
     Parameters
     ----------
@@ -91,6 +92,10 @@ def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
         mean longitude of ascending lunar node (degrees)
     PP: float
         longitude of solar perigee (degrees)
+
+    References
+    ----------
+    .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     circle = 360.0
     if MEEUS:

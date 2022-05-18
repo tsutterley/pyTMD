@@ -195,6 +195,13 @@ The `time module <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_
 ``pyTMD`` keeps updated `tables of leap seconds <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list>`_ for converting from GPS, LORAN and TAI times.
 ``pyTMD`` keeps updated `tables of delta times <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data>`_ for converting between dynamic (TT) and universal (UT1) times.
 
+Delta times (TT - UT1) are the differences between Dynamic Time (TT) and Universal Time (UT1) [Meeus1998]_.
+Universal Time (UT1) is based on the rotation of the Earth,
+which varies irregularly, and so UT1 is adjusted periodically.
+Dynamic Time (TT) is a uniform, monotonically increasing time standard based on atomic clocks that is
+used for the accurate calculation of celestial mechanics, orbits and ephemerides.
+Delta times can be added to Universal Time (UT1) values to convert to Dynamic Time (TT) values.
+
 Spatial Coordinates
 ###################
 
@@ -235,6 +242,8 @@ References
 .. [HartDavis2020] M. G. Hart-Davis, G. Piccioni, D. Dettmering, C. Schwatke, M. Passaro, and F. Seitz, "EOT20: a global ocean tide model from multi-mission satellite altimetry", *Earth System Science Data*, 13(8), 3869--3884, (2020). `doi: 10.5194/essd-13-3869-2021 <https://doi.org/10.5194/essd-13-3869-2021>`_
 
 .. [Lyard2020] F. H. Lyard, D. J. Allain, M. Cancet, L. Carr\ |egrave|\ re, and N. Picot, "FES2014 global ocean tides atlas: design and performances", *Ocean Science Discussions*, in review, (2020). `doi: 10.5194/os-2020-96 <https://doi.org/10.5194/os-2020-96>`_
+
+.. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
 
 .. [Padman2004] L. Padman and S. Y. Erofeeva, "A barotropic inverse tidal model for the Arctic Ocean", *Geophysical Research Letters*, 31(2), L02303. (2004). `doi: 10.1029/2003GL019003 <https://doi.org/10.1029/2003GL019003>`_
 
