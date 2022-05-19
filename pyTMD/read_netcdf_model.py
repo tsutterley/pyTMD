@@ -223,7 +223,7 @@ def extract_netcdf_constants(ilon, ilat,
         f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
             bathymetry.mask.T, kx=1, ky=1)
         D.data[:] = f1.ev(ilon,ilat)
-        D.mask[:] = np.ceil(f2.ev(ilon,ilat).astype(bool))
+        D.mask[:] = np.ceil(f2.ev(ilon,ilat)).astype(bool)
     else:
         #-- use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
