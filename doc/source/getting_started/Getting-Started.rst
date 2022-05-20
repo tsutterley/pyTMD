@@ -146,9 +146,9 @@ For parameters consisting of lists, the parameter values can be separated by spa
 Each definition file should have a ``name``, ``format`` and ``type`` parameters.
 Each model format also requires specific sets of parameters.
 
-- ``OTIS`` and ``ATLAS``
+- ``OTIS``, ``ATLAS`` and ``ESR``
 
-    * ``format``: ``'OTIS'`` or ``'ATLAS'``
+    * ``format``: ``'OTIS'``, ``'ATLAS'`` or ``ESR``
     * ``grid_file``: full path to model grid file
     * ``model_file``: full path to model constituent file(s)
     * ``name``: tide model name

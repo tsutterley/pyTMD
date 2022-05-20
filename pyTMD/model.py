@@ -54,13 +54,14 @@ class model:
 
             - ``OTIS``
             - ``ATLAS``
+            - ``ESR``
             - ``netcdf``
             - ``GOT``
             - ``FES``
     gla12: str
         HDF5 dataset string for output GLA12 tide heights
     grid_file: str
-        Model grid file for ``OTIS`` and ``ATLAS`` models
+        Model grid file for ``OTIS``, ``ATLAS`` and ``ESR`` models
     gzip: bool
         Suffix if model is compressed
     long_name: str
@@ -72,7 +73,7 @@ class model:
     name: str
         Model name
     projection: str
-        Model projection for ``OTIS`` and ``ATLAS`` models
+        Model projection for ``OTIS``, ``ATLAS`` and ``ESR`` models
     scale: float
         Model scaling factor for converting to output units
     suffix: str
@@ -149,7 +150,7 @@ class model:
                 'CATS2008a_SPOTL_Load')
             self.grid_file = self.pathfinder('grid_CATS2008a_opt')
         elif (m == 'CATS2022'):
-            self.format = 'OTIS'
+            self.format = 'ESR'
             self.model_directory = os.path.join(self.directory,'CATS2022')
             self.grid_file = self.pathfinder('CATS2022_test.nc')
         elif (m == 'TPXO9-atlas'):
