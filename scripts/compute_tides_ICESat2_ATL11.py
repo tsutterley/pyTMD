@@ -22,6 +22,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --apply-flexure: Apply ice flexure scaling factor to height constituents
+        Only valid for models containing flexure fields
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -58,6 +60,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
+        added command line option to apply flexure for applicable models
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -101,9 +104,17 @@ from icesat2_toolkit.read_ICESat2_ATL11 import read_HDF5_ATL11
 
 #-- PURPOSE: read ICESat-2 annual land ice height data (ATL11) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
-    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+def compute_tides_ICESat2(tide_dir, INPUT_FILE,
+    TIDE_MODEL=None,
+    ATLAS_FORMAT=None,
+    GZIP=True,
+    DEFINITION_FILE=None,
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=None,
+    APPLY_FLEXURE=False,
+    VERBOSE=False,
+    MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -121,6 +132,8 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     IS2_atl11_mds,IS2_atl11_attrs,IS2_atl11_pairs = read_HDF5_ATL11(INPUT_FILE,
         ATTRIBUTES=True, CROSSOVERS=True)
     DIRECTORY = os.path.dirname(INPUT_FILE)
+    #-- flexure flag if being applied
+    flexure_flag = '_FLEXURE' if APPLY_FLEXURE and model.flexure else ''
     #-- extract parameters from ICESat-2 ATLAS HDF5 file name
     rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})_(\d{2})(\d{2})_'
         r'(\d{3})_(\d{2})(.*?).h5$')
@@ -129,12 +142,12 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     except:
         #-- output tide HDF5 file (generic)
         fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
-        args = (fileBasename,model.name,fileExtension)
-        OUTPUT_FILE = '{0}_{1}_TIDES{2}'.format(*args)
+        args = (fileBasename,model.name,flexure_flag,fileExtension)
+        OUTPUT_FILE = '{0}_{1}{2}_TIDES{3}'.format(*args)
     else:
         #-- output tide HDF5 file for ASAS/NSIDC granules
-        args = (PRD,model.name,TRK,GRAN,SCYC,ECYC,RL,VERS,AUX)
-        file_format = '{0}_{1}_TIDES_{2}{3}_{4}{5}_{6}_{7}{8}.h5'
+        args = (PRD,model.name,flexure_flag,TRK,GRAN,SCYC,ECYC,RL,VERS,AUX)
+        file_format = '{0}_{1}{2}_TIDES_{3}{4}_{5}{6}_{7}_{8}{9}.h5'
         OUTPUT_FILE = file_format.format(*args)
 
     #-- number of GPS seconds between the GPS epoch
@@ -222,7 +235,8 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
                 amp,ph,D,c = extract_tidal_constants(longitude[track],
                     latitude[track], model.grid_file, model.model_file,
                     model.projection, type=model.type, method=METHOD,
-                    extrapolate=EXTRAPOLATE, cutoff=CUTOFF, grid=model.format)
+                    extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                    grid=model.format, apply_flexure=APPLY_FLEXURE)
                 deltat = np.zeros_like(tide_time)
             elif (model.format == 'netcdf'):
                 amp,ph,D,c = extract_netcdf_constants(longitude[track],
@@ -734,6 +748,10 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
+    #-- apply flexure scaling factors to height constituents
+    parser.add_argument('--apply-flexure',
+        default=False, action='store_true',
+        help='Apply ice flexure scaling factor to height constituents')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -754,11 +772,17 @@ def main():
 
     #-- run for each input ATL11 file
     for FILE in args.infile:
-        compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
-            ATLAS_FORMAT=args.atlas_format, GZIP=args.gzip,
-            DEFINITION_FILE=args.definition_file, METHOD=args.interpolate,
-            EXTRAPOLATE=args.extrapolate, CUTOFF=args.cutoff,
-            VERBOSE=args.verbose, MODE=args.mode)
+        compute_tides_ICESat2(args.directory, FILE,
+            TIDE_MODEL=args.tide,
+            ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file,
+            METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate,
+            CUTOFF=args.cutoff,
+            APPLY_FLEXURE=args.apply_flexure,
+            VERBOSE=args.verbose,
+            MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

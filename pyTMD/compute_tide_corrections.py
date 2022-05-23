@@ -81,6 +81,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
+        added option to apply flexure to heights for applicable models
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2021: added function to calculate a tidal time series
         verify coordinate dimensions for each input data type
@@ -128,7 +129,7 @@ from pyTMD.read_FES_model import extract_FES_constants
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     ATLAS_FORMAT='netcdf', GZIP=False, DEFINITION_FILE=None, EPSG=3031,
     EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC', METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=10.0, FILL_VALUE=np.nan):
+    EXTRAPOLATE=False, CUTOFF=10.0, APPLY_FLEXURE=False, FILL_VALUE=np.nan):
     """
     Compute tides at points and times using tidal harmonics
 
@@ -186,6 +187,10 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         Extrapolation cutoff in kilometers
 
         Set to np.inf to extrapolate for all points
+    APPLY_FLEXURE: bool, default False
+        Apply ice flexure scaling factor to height constituents
+
+        Only valid for models containing flexure fields
     FILL_VALUE: float, default np.nan
         Output invalid value
 
@@ -283,7 +288,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         amp,ph,D,c = extract_tidal_constants(lon, lat, model.grid_file,
             model.model_file, model.projection, type=model.type,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            grid=model.format)
+            grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros_like(t)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, model.grid_file,

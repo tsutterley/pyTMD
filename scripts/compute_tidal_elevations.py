@@ -54,6 +54,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --apply-flexure: Apply ice flexure scaling factor to height constituents
+        Only valid for models containing flexure fields
     -V, --verbose: Verbose output of processing run
     -M X, --mode X: Permission mode of output file
 
@@ -96,6 +98,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
+        added command line option to apply flexure for applicable models
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -176,11 +179,24 @@ def get_projection(attributes, PROJECTION):
 #-- PURPOSE: read csv, netCDF or HDF5 data
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tidal_elevations(tide_dir, input_file, output_file,
-    TIDE_MODEL=None, ATLAS_FORMAT='netcdf', GZIP=True,
-    DEFINITION_FILE=None, FORMAT='csv', VARIABLES=[], HEADER=0,
-    TYPE='drift', TIME_UNITS='days since 1858-11-17T00:00:00',
-    TIME_STANDARD='UTC', TIME=None, PROJECTION='4326', METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+    TIDE_MODEL=None,
+    ATLAS_FORMAT='netcdf',
+    GZIP=True,
+    DEFINITION_FILE=None,
+    FORMAT='csv',
+    VARIABLES=[],
+    HEADER=0,
+    TYPE='drift',
+    TIME_UNITS='days since 1858-11-17T00:00:00',
+    TIME_STANDARD='UTC',
+    TIME=None,
+    PROJECTION='4326',
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=None,
+    APPLY_FLEXURE=False,
+    VERBOSE=False,
+    MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -303,7 +319,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
             model.grid_file, model.model_file, model.projection,
             type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
-            cutoff=CUTOFF, grid=model.format)
+            cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros((nt))
     elif (model.format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon.flatten(), lat.flatten(),
@@ -458,6 +474,10 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
+    #-- apply flexure scaling factors to height constituents
+    parser.add_argument('--apply-flexure',
+        default=False, action='store_true',
+        help='Apply ice flexure scaling factor to height constituents')
     #-- verbose output of processing run
     #-- print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -479,19 +499,30 @@ def main():
     #-- set output file from input filename if not entered
     if not args.outfile:
         fileBasename,fileExtension = os.path.splitext(args.infile)
-        vars = (fileBasename,args.tide,fileExtension)
-        args.outfile = '{0}_{1}{2}'.format(*vars)
+        flexure_flag = '_FLEXURE' if args.apply_flexure else ''
+        vars = (fileBasename,args.tide,flexure_flag,fileExtension)
+        args.outfile = '{0}_{1}{2}{3}'.format(*vars)
 
     #-- run tidal elevation program for input file
     compute_tidal_elevations(args.directory, args.infile, args.outfile,
-        TIDE_MODEL=args.tide, ATLAS_FORMAT=args.atlas_format,
-        GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
-        FORMAT=args.format, VARIABLES=args.variables,
-        HEADER=args.header, TYPE=args.type, TIME_UNITS=args.epoch,
-        TIME=args.deltatime, TIME_STANDARD=args.standard,
-        PROJECTION=args.projection, METHOD=args.interpolate,
-        EXTRAPOLATE=args.extrapolate, CUTOFF=args.cutoff,
-        VERBOSE=args.verbose, MODE=args.mode)
+        TIDE_MODEL=args.tide,
+        ATLAS_FORMAT=args.atlas_format,
+        GZIP=args.gzip,
+        DEFINITION_FILE=args.definition_file,
+        FORMAT=args.format,
+        VARIABLES=args.variables,
+        HEADER=args.header,
+        TYPE=args.type,
+        TIME_UNITS=args.epoch,
+        TIME=args.deltatime,
+        TIME_STANDARD=args.standard,
+        PROJECTION=args.projection,
+        METHOD=args.interpolate,
+        EXTRAPOLATE=args.extrapolate,
+        CUTOFF=args.cutoff,
+        APPLY_FLEXURE=args.apply_flexure,
+        VERBOSE=args.verbose,
+        MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

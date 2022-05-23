@@ -35,7 +35,7 @@ OPTIONS:
         ATLAS: reading a global solution with localized solutions
         ESR: combined global or local netCDF4 solution
         OTIS: combined global or local solution
-    apply_flexure: apply flexure scaling factor
+    apply_flexure: apply ice flexure scaling factor to constituents
 
 OUTPUTS:
     amplitude: amplitudes of tidal constituents
@@ -158,7 +158,7 @@ def extract_tidal_constants(ilon, ilat,
             - ``'ESR'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
     apply_flexure: bool, default False
-        apply flexure scaling factor
+        Apply ice flexure scaling factor to height constituents
 
     Returns
     -------

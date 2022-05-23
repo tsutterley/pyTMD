@@ -20,3 +20,6 @@ compute_tides_ICESat_GLA12.py
 
     --cutoff -c : @after
         * set to ``'inf'`` to extrapolate for all points
+
+    --apply-flexure : @after
+        Only valid for models containing flexure fields

@@ -44,3 +44,6 @@ compute_tidal_elevations.py
 
     --cutoff -c : @after
         * set to ``'inf'`` to extrapolate for all points
+
+    --apply-flexure : @after
+        Only valid for models containing flexure fields

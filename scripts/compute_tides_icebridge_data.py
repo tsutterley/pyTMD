@@ -28,6 +28,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --apply-flexure: Apply ice flexure scaling factor to height constituents
+        Only valid for models containing flexure fields
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -66,6 +68,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
+        added command line option to apply flexure for applicable models
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         use argparse descriptions within sphinx documentation
     Updated 03/2022: using static decorators to define available models
@@ -419,8 +422,15 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
-    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+    ATLAS_FORMAT=None,
+    GZIP=True,
+    DEFINITION_FILE=None,
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=None,
+    APPLY_FLEXURE=False,
+    VERBOSE=False,
+    MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -532,7 +542,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
         amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
             model.grid_file, model.model_file, model.projection,
             type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
-            cutoff=CUTOFF, grid=model.format)
+            cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros_like(t)
     elif model.format in ('netcdf'):
         amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
@@ -571,9 +581,11 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     hem_flag = {'N':'GR','S':'AN'}
     #-- use starting second to distinguish between files for the day
     JJ1 = np.min(dinput['time']) % 86400
+    #-- flexure flag if being applied
+    flexure_flag = '_FLEXURE' if APPLY_FLEXURE and model.flexure else ''
     #-- output file format
-    args = (hem_flag[HEM],model.name,OIB,YY1,MM1,DD1,JJ1)
-    FILENAME = '{0}_NASA_{1}_TIDES_WGS84_{2}{3}{4}{5}{6:05.0f}.H5'.format(*args)
+    args = (hem_flag[HEM],model.name,flexure_flag,OIB,YY1,MM1,DD1,JJ1)
+    FILENAME = '{0}_NASA_{1}{2}_TIDES_WGS84_{3}{4}{5}{6}{7:05.0f}.H5'.format(*args)
     #-- print file information
     logger.info('\t{0}'.format(FILENAME))
 
@@ -703,6 +715,10 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
+    #-- apply flexure scaling factors to height constituents
+    parser.add_argument('--apply-flexure',
+        default=False, action='store_true',
+        help='Apply ice flexure scaling factor to height constituents')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -724,10 +740,16 @@ def main():
     #-- run for each input Operation IceBridge file
     for arg in args.infile:
         compute_tides_icebridge_data(args.directory, arg,
-            TIDE_MODEL=args.tide, ATLAS_FORMAT=args.atlas_format,
-            GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
-            METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-            CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
+            TIDE_MODEL=args.tide,
+            ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file,
+            METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate,
+            CUTOFF=args.cutoff,
+            APPLY_FLEXURE=args.apply_flexure,
+            VERBOSE=args.verbose,
+            MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

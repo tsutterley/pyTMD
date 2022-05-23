@@ -7,6 +7,7 @@ Retrieves tide model parameters for named tide models and
 
 UPDATE HISTORY:
     Updated 05/2022: added ESR CATS2022 to list of models
+        added attribute for flexure fields being available for model
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
         set default directory to None for documentation
@@ -49,6 +50,8 @@ class model:
         HDF5 ``description`` attribute string for output tide heights
     directory: str or None, default None
         Working data directory for tide models
+    flexure: bool
+        Flexure adjustment field for tide heights is available
     format: str
         Model format
 
@@ -109,6 +112,7 @@ class model:
             self.directory = os.path.expanduser(directory)
         else:
             self.directory = os.getcwd()
+        self.flexure = False
         # set tide model format
         self.format = copy.copy(kwargs['format'])
         self.gla12 = None
@@ -303,6 +307,8 @@ class model:
             self.grid_file = self.pathfinder('CATS2022_test.nc')
             self.model_file = self.pathfinder('CATS2022_test.nc')
             self.projection = 'CATS2008'
+            # internal flexure field is available
+            self.flexure = True
             # model description and references
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/cats2008/')
