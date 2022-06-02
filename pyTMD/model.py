@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (06/2022)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
     Updated 05/2022: added ESR CATS2022 to list of models
         added attribute for flexure fields being available for model
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -214,6 +215,10 @@ class model:
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'Arc2kmTM')
             self.grid_file = self.pathfinder('grid_Arc2kmTM_v1')
+        elif (m == 'Gr1kmTM'):
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Gr1kmTM')
+            self.grid_file = self.pathfinder('grid_Gr1kmTM_v1')
         elif (m == 'Gr1km-v2'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
@@ -626,7 +631,28 @@ class model:
             self.projection = '3413'
             self.version = 'v1'
             # model description and references
-            self.reference = 'https://doi.org/10.18739/A2PV6B79W'
+            self.reference = 'https://doi.org/10.18739/A2D21RK6K'
+            self.atl03 = 'tide_ocean'
+            self.atl06 = 'tide_ocean'
+            self.atl07 = 'height_segment_ocean'
+            self.atl10 = 'height_segment_ocean'
+            self.atl11 = 'tide_ocean'
+            self.atl12 = 'tide_ocean_seg'
+            self.gla12 = 'd_ocElv'
+            self.variable = 'tide_ocean'
+            self.long_name = "Ocean Tide"
+            self.description = ("Ocean Tides including diurnal and "
+                "semi-diurnal (harmonic analysis), and longer period "
+                "tides (dynamic and self-consistent equilibrium).")
+        elif (m == 'Gr1kmTM'):
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Gr1kmTM')
+            self.grid_file = self.pathfinder('grid_Gr1kmTM_v1')
+            self.model_file = self.pathfinder('h_Gr1kmTM_v1')
+            self.projection = '3413'
+            self.version = 'v1'
+            # model description and references
+            self.reference = 'https://doi.org/10.18739/A2B853K18'
             self.atl03 = 'tide_ocean'
             self.atl06 = 'tide_ocean'
             self.atl07 = 'height_segment_ocean'
@@ -1177,7 +1203,16 @@ class model:
             self.projection = '3413'
             self.version = 'v1'
             # model description and references
-            self.reference = 'https://doi.org/10.18739/A2PV6B79W'
+            self.reference = 'https://doi.org/10.18739/A2D21RK6K'
+        elif (m == 'Gr1kmTM'):
+            self.format = 'OTIS'
+            self.model_directory = os.path.join(self.directory,'Gr1kmTM')
+            self.grid_file = self.pathfinder('grid_Gr1kmTM_v1')
+            self.model_file = dict(u=self.pathfinder(self.pathfinder('UV_Gr1kmTM_v1')))
+            self.projection = '3413'
+            self.version = 'v1'
+            # model description and references
+            self.reference = 'https://doi.org/10.18739/A2B853K18'
         elif (m == 'Gr1km-v2'):
             self.format = 'OTIS'
             self.model_directory = os.path.join(self.directory,'greenlandTMD_v2')
@@ -1285,7 +1320,8 @@ class model:
         """
         Returns list of Arctic ocean tide elevation models
         """
-        return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2']
+        return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM',
+            'Gr1kmTM','Gr1km-v2']
 
     @staticmethod
     def arctic_load():
@@ -1299,7 +1335,8 @@ class model:
         """
         Returns list of Arctic tidal current models
         """
-        return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2']
+        return ['AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM',
+            'Gr1kmTM','Gr1km-v2']
 
     @staticmethod
     def ocean_elevation():
@@ -1309,8 +1346,8 @@ class model:
         return ['CATS0201','CATS2008','CATS2022','TPXO9-atlas',
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
-            'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1km-v2',
-            'GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
+            'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
+            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
 
     @staticmethod
     def load_elevation():
@@ -1329,7 +1366,7 @@ class model:
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
-            'Arc2kmTM','Gr1km-v2','FES2014']
+            'Arc2kmTM','Gr1kmTM','Gr1km-v2','FES2014']
 
     @staticmethod
     def OTIS():
@@ -1338,7 +1375,7 @@ class model:
         """
         return ['CATS0201','CATS2008','CATS2008_load','TPXO9.1',
             'TPXO7.2','TPXO7.2_load','AODTM-5','AOTIM-5',
-            'AOTIM-5-2018','Arc2kmTM','Gr1km-v2',]
+            'AOTIM-5-2018','Arc2kmTM','Gr1kmTM','Gr1km-v2']
 
     @staticmethod
     def ATLAS_compact():
