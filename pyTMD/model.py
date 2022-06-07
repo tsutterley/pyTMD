@@ -7,6 +7,7 @@ Retrieves tide model parameters for named tide models and
 
 UPDATE HISTORY:
     Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
+        updated citation url for Global Ocean Tide (GOT) models
     Updated 05/2022: added ESR CATS2022 to list of models
         added attribute for flexure fields being available for model
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -696,9 +697,7 @@ class model:
             self.scale = 1.0/100.0
             self.version = '4.7'
             # model description and references
-            self.reference = ('https://denali.gsfc.nasa.gov/'
-                'personal_pages/ray/MiscPubs/'
-                '19990089548_1999150788.pdf')
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.atl03 = 'tide_ocean'
             self.atl06 = 'tide_ocean'
             self.atl07 = 'height_segment_ocean'
@@ -723,9 +722,7 @@ class model:
             self.scale = 1.0/1000.0
             self.version = '4.7'
             # model description and references
-            self.reference = ('https://denali.gsfc.nasa.gov/'
-                'personal_pages/ray/MiscPubs/'
-                '19990089548_1999150788.pdf')
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.atl03 = 'tide_load'
             self.atl06 = 'tide_load'
             self.atl07 = 'height_segment_load'
@@ -747,9 +744,7 @@ class model:
             self.scale = 1.0/100.0
             self.version = '4.8'
             # model description and references
-            self.reference = ('https://denali.gsfc.nasa.gov/'
-                'personal_pages/ray/MiscPubs/'
-                '19990089548_1999150788.pdf')
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.atl03 = 'tide_ocean'
             self.atl06 = 'tide_ocean'
             self.atl07 = 'height_segment_ocean'
@@ -774,9 +769,7 @@ class model:
             self.scale = 1.0/1000.0
             self.version = '4.8'
             # model description and references
-            self.reference = ('https://denali.gsfc.nasa.gov/'
-                'personal_pages/ray/MiscPubs/'
-                '19990089548_1999150788.pdf')
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.atl03 = 'tide_load'
             self.atl06 = 'tide_load'
             self.atl07 = 'height_segment_load'
@@ -798,9 +791,7 @@ class model:
             self.scale = 1.0/100.0
             self.version = '4.10'
             # model description and references
-            self.reference = ('https://denali.gsfc.nasa.gov/'
-                'personal_pages/ray/MiscPubs/'
-                '19990089548_1999150788.pdf')
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.atl03 = 'tide_ocean'
             self.atl06 = 'tide_ocean'
             self.atl07 = 'height_segment_ocean'
@@ -825,9 +816,7 @@ class model:
             self.scale = 1.0/1000.0
             self.version = '4.10'
             # model description and references
-            self.reference = ('https://denali.gsfc.nasa.gov/'
-                'personal_pages/ray/MiscPubs/'
-                '19990089548_1999150788.pdf')
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.atl03 = 'tide_load'
             self.atl06 = 'tide_load'
             self.atl07 = 'height_segment_load'

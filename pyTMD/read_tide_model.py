@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (05/2022)
+read_tide_model.py (06/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 06/2022: unit updates in the ESR netCDF4 format
     Updated 05/2022: add functions for using ESR netCDF4 format models
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -759,12 +760,12 @@ def read_netcdf_grid(input_file):
     """
     #-- read the netcdf format tide grid file
     fileID=netCDF4.Dataset(os.path.expanduser(input_file),'r')
-    #-- read coordinates
+    #-- read coordinates and flip y orientation
     x = fileID.variables['x'][:].copy()
     y = fileID.variables['y'][::-1].copy()
-    #-- read water column thickness
+    #-- read water column thickness and flip y orientation
     hz = fileID.variables['wct'][::-1,:].copy()
-    #-- read mask
+    #-- read mask and flip y orientation
     mz = fileID.variables['mask'][::-1,:].copy()
     #-- read flexure and convert from percent to scale factor
     sf = fileID.variables['flexure'][::-1,:]/100.0
@@ -1336,19 +1337,16 @@ def read_netcdf_file(input_file, ic, variable=None):
     #-- real and imaginary components of tidal constituent
     hc = np.ma.zeros((ny,nx),dtype=np.complex64)
     hc.mask = np.zeros((ny,nx),dtype=bool)
-    #-- extract constituent
+    #-- extract constituent and flip y orientation
     if (variable == 'z'):
-        #-- convert elevations from mm to m
-        hc.data.real[:,:] = fileID.variables['hRe'][ic,::-1,:]/1e3
-        hc.data.imag[:,:] = -fileID.variables['hIm'][ic,::-1,:]/1e3
+        hc.data.real[:,:] = fileID.variables['hRe'][ic,::-1,:]
+        hc.data.imag[:,:] = -fileID.variables['hIm'][ic,::-1,:]
     elif variable in ('U','u'):
-        #-- convert transports from cm^2/s to m^2/s
-        hc.data.real[:,:] = fileID.variables['uRe'][ic,::-1,:]/1e4
-        hc.data.imag[:,:] = -fileID.variables['uIm'][ic,::-1,:]/1e4
+        hc.data.real[:,:] = fileID.variables['uRe'][ic,::-1,:]
+        hc.data.imag[:,:] = -fileID.variables['uIm'][ic,::-1,:]
     elif variable in ('V','v'):
-        #-- convert transports from cm^2/s to m^2/s
-        hc.data.real[:,:] = fileID.variables['vRe'][ic,::-1,:]/1e4
-        hc.data.imag[:,:] = -fileID.variables['vIm'][ic,::-1,:]/1e4
+        hc.data.real[:,:] = fileID.variables['vRe'][ic,::-1,:]
+        hc.data.imag[:,:] = -fileID.variables['vIm'][ic,::-1,:]
     #-- close the file
     fileID.close()
     #-- return output variables
