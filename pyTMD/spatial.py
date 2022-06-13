@@ -197,6 +197,7 @@ def from_ascii(filename, **kwargs):
         #-- output spatial data and attributes
         dinput = {c:np.zeros((file_lines-kwargs['header'])) for c in columns}
         dinput['attributes'] = {c:dict() for c in columns}
+        header = int(kwargs['header'])
     #-- extract spatial data array
     #-- for each line in the file
     for i,line in enumerate(file_contents[header:]):
