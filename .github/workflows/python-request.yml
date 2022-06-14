@@ -35,7 +35,7 @@ jobs:
         environment-file: environment.yml
     - name: Create conda Test Environment
       run: |
-        conda install flake8 pytest pytest-cov cython octave oct2py boto3
+        conda install openblas-devel flake8 pytest pytest-cov cython octave oct2py
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
