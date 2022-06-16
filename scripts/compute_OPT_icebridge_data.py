@@ -78,6 +78,7 @@ from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
 import ATM1b_QFIT.read_ATM1b_QFIT_binary
+
 #-- PURPOSE: reading the number of file lines removing commented lines
 def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
     #-- subset the data to indices if specified

@@ -36,6 +36,8 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.data_type
 
+.. autofunction:: pyTMD.spatial.from_file
+
 .. autofunction:: pyTMD.spatial.from_ascii
 
 .. autofunction:: pyTMD.spatial.from_netCDF4
