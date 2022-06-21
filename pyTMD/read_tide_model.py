@@ -806,7 +806,7 @@ def read_constituents(input_file, grid='OTIS'):
     if (grid == 'ESR'):
         #-- open the netCDF4 file
         fid = netCDF4.Dataset(os.path.expanduser(input_file),'r')
-        constituents = fid.variables['cons'].long_name.split()
+        constituents = fid.variables['constituents'].constituent_order.split()
         nc = len(constituents)
         fid.close()
     else:
