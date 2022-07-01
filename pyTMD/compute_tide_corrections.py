@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -79,6 +79,9 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
+        added option to apply flexure to heights for applicable models
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 12/2021: added function to calculate a tidal time series
         verify coordinate dimensions for each input data type
@@ -126,7 +129,7 @@ from pyTMD.read_FES_model import extract_FES_constants
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     ATLAS_FORMAT='netcdf', GZIP=False, DEFINITION_FILE=None, EPSG=3031,
     EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC', METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=10.0, FILL_VALUE=np.nan):
+    EXTRAPOLATE=False, CUTOFF=10.0, APPLY_FLEXURE=False, FILL_VALUE=np.nan):
     """
     Compute tides at points and times using tidal harmonics
 
@@ -184,6 +187,10 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         Extrapolation cutoff in kilometers
 
         Set to np.inf to extrapolate for all points
+    APPLY_FLEXURE: bool, default False
+        Apply ice flexure scaling factor to height constituents
+
+        Only valid for models containing flexure fields
     FILL_VALUE: float, default np.nan
         Output invalid value
 
@@ -277,29 +284,29 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     #-- read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS'):
+    if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(lon, lat, model.grid_file,
-            model.model_file, model.projection, TYPE=model.type,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-            GRID=model.format)
+            model.model_file, model.projection, type=model.type,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros_like(t)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon, lat, model.grid_file,
-            model.model_file, TYPE=model.type, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            model.model_file, type=model.type, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+            compressed=model.compressed)
         deltat = np.zeros_like(t)
     elif (model.format == 'GOT'):
         amp,ph,c = extract_GOT_constants(lon, lat, model.model_file,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-            SCALE=model.scale, GZIP=model.compressed)
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model.model_file,
-            TYPE=model.type, VERSION=model.version, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            type=model.type, version=model.version, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+            compressed=model.compressed)
         #-- available model constituents
         c = model.constituents
         #-- interpolate delta times from calendar dates to tide time
@@ -317,9 +324,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             TIDE = predict_tide(t[i], hc, c,
-                DELTAT=deltat[i], CORRECTIONS=model.format)
+                deltat=deltat[i], corrections=model.format)
             MINOR = infer_minor_corrections(t[i], hc, c,
-                DELTAT=deltat[i], CORRECTIONS=model.format)
+                deltat=deltat[i], corrections=model.format)
             #-- add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
@@ -328,18 +335,18 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = predict_tide_drift(t, hc, c,
-            DELTAT=deltat, CORRECTIONS=model.format)
+            deltat=deltat, corrections=model.format)
         minor = infer_minor_corrections(t, hc, c,
-            DELTAT=deltat, CORRECTIONS=model.format)
+            deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
         npts = len(t)
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = predict_tidal_ts(t, hc, c,
-            DELTAT=deltat, CORRECTIONS=model.format)
+            deltat=deltat, corrections=model.format)
         minor = infer_minor_corrections(t, hc, c,
-            DELTAT=deltat, CORRECTIONS=model.format)
+            deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     #-- replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value

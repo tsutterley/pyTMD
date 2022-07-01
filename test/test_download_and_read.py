@@ -280,8 +280,8 @@ class Test_CATS2008:
 
         #-- extract amplitude and phase from tide model
         amp,ph,D,cons = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, TYPE=TYPE, METHOD='spline',
-            GRID=GRID)
+            station_lat, grid_file, model_file, EPSG, type=TYPE, method='spline',
+            grid=GRID)
         #-- reorder constituents of model and convert amplitudes to cm
         model_amp = np.ma.zeros((antarctic_stations,len(constituents)))
         model_ph = np.ma.zeros((antarctic_stations,len(constituents)))
@@ -376,8 +376,8 @@ class Test_CATS2008:
 
         #-- extract amplitude and phase from tide model
         amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, TYPE=TYPE,
-            METHOD='spline', GRID=GRID)
+            station_lat, grid_file, model_file, EPSG, type=TYPE,
+            method='spline', grid=GRID)
         #-- calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
         #-- will verify differences between model outputs are within tolerance
@@ -420,9 +420,9 @@ class Test_CATS2008:
             #-- predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
             tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=GRID)
+                deltat=deltat, corrections=GRID)
             minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=GRID)
+                deltat=deltat, corrections=GRID)
             tide.data[:] += minor.data[:]
 
             #-- calculate differences between matlab and python version
@@ -492,8 +492,8 @@ class Test_CATS2008:
         for TYPE in TYPES:
             #-- extract amplitude and phase from tide model
             amp,ph,D,c=pyTMD.read_tide_model.extract_tidal_constants(station_lon[i],
-                station_lat[i], grid_file, model_file, EPSG, TYPE=TYPE,
-                METHOD='spline', GRID=GRID)
+                station_lat[i], grid_file, model_file, EPSG, type=TYPE,
+                method='spline', grid=GRID)
             #-- calculate complex phase in radians for Euler's
             cph = -1j*ph*np.pi/180.0
             #-- calculate constituent oscillation for station
@@ -685,8 +685,8 @@ class Test_AOTIM5_2018:
 
         #-- extract amplitude and phase from tide model
         amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, TYPE=TYPE,
-            METHOD='spline', GRID=GRID)
+            station_lat, grid_file, model_file, EPSG, type=TYPE,
+            method='spline', grid=GRID)
         #-- calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
         #-- will verify differences between model outputs are within tolerance
@@ -724,9 +724,9 @@ class Test_AOTIM5_2018:
             #-- predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
             tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=GRID)
+                deltat=deltat, corrections=GRID)
             minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
-                DELTAT=deltat, CORRECTIONS=GRID)
+                deltat=deltat, corrections=GRID)
             tide.data[:] += minor.data[:]
 
             #-- calculate differences between matlab and python version

@@ -118,7 +118,7 @@ def test_verify_GOT47(METHOD):
 
     #-- extract amplitude and phase from tide model
     amp,ph,cons = pyTMD.read_GOT_model.extract_GOT_constants(longitude,
-        latitude, model_file, METHOD=METHOD, GZIP=GZIP, SCALE=SCALE)
+        latitude, model_file, method=METHOD, compressed=GZIP, scale=SCALE)
     assert all(c in constituents for c in cons)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
@@ -134,9 +134,9 @@ def test_verify_GOT47(METHOD):
     #-- predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, cons,
-        DELTAT=deltat, CORRECTIONS=model_format)
+        deltat=deltat, corrections=model_format)
     minor = pyTMD.infer_minor_corrections(tide_time, hc, cons,
-        DELTAT=deltat, CORRECTIONS=model_format)
+        deltat=deltat, corrections=model_format)
     tide.data[:] += minor.data[:]
 
     #-- will verify differences between model outputs are within tolerance

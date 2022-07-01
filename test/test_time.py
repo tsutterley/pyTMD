@@ -31,7 +31,7 @@ def test_julian(YEAR,MONTH):
     #-- convert MJD to calendar date
     JD = np.squeeze(MJD) + 2400000.5
     YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(JD,
-        FORMAT='tuple', ASTYPE=np.float64)
+        format='tuple', astype=np.float64)
     #-- assert dates
     assert (YY == YEAR)
     assert (MM == MONTH)

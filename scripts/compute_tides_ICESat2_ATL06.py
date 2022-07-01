@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL06.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates tidal elevations for correcting ICESat-2 land ice elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -22,6 +22,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --apply-flexure: Apply ice flexure scaling factor to height constituents
+        Only valid for models containing flexure fields
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -56,6 +58,9 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
+        added command line option to apply flexure for applicable models
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: added Arctic 2km model (Arc2kmTM) to list of models
@@ -115,9 +120,17 @@ from icesat2_toolkit.read_ICESat2_ATL06 import read_HDF5_ATL06
 
 #-- PURPOSE: read ICESat-2 land ice data (ATL06) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
-    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+def compute_tides_ICESat2(tide_dir, INPUT_FILE,
+    TIDE_MODEL=None,
+    ATLAS_FORMAT=None,
+    GZIP=True,
+    DEFINITION_FILE=None,
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=None,
+    APPLY_FLEXURE=False,
+    VERBOSE=False,
+    MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -135,6 +148,8 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     IS2_atl06_mds,IS2_atl06_attrs,IS2_atl06_beams = read_HDF5_ATL06(INPUT_FILE,
         ATTRIBUTES=True)
     DIRECTORY = os.path.dirname(INPUT_FILE)
+    #-- flexure flag if being applied
+    flexure_flag = '_FLEXURE' if APPLY_FLEXURE and model.flexure else ''
     #-- extract parameters from ICESat-2 ATLAS HDF5 file name
     rx = re.compile(r'(processed_)?(ATL\d{2})_(\d{4})(\d{2})(\d{2})(\d{2})'
         r'(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
@@ -143,12 +158,12 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     except:
         #-- output tide HDF5 file (generic)
         fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
-        args = (fileBasename,model.name,fileExtension)
-        OUTPUT_FILE = '{0}_{1}_TIDES{2}'.format(*args)
+        args = (fileBasename,model.name,flexure_flag,fileExtension)
+        OUTPUT_FILE = '{0}_{1}{2}_TIDES{3}'.format(*args)
     else:
         #-- output tide HDF5 file for ASAS/NSIDC granules
-        args = (PRD,model.name,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
-        file_format = '{0}_{1}_TIDES_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
+        args = (PRD,model.name,flexure_flag,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
+        file_format = '{0}_{1}{2}_TIDES_{3}{4}{5}{6}{7}{8}_{9}{10}{11}_{12}_{13}{14}.h5'
         OUTPUT_FILE = file_format.format(*args)
 
     #-- number of GPS seconds between the GPS epoch
@@ -195,29 +210,30 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
         tide_time = pyTMD.time.convert_delta_time(gps_seconds-leap_seconds,
             epoch1=(1980,1,6,0,0,0), epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
         #-- read tidal constants and interpolate to grid points
-        if model.format in ('OTIS','ATLAS'):
+        if model.format in ('OTIS','ATLAS','ESR'):
             amp,ph,D,c = extract_tidal_constants(val['longitude'],
                 val['latitude'], model.grid_file, model.model_file,
-                model.projection, TYPE=model.type, METHOD=METHOD,
-                EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, GRID=model.format)
+                model.projection, type=model.type, method=METHOD,
+                extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                grid=model.format, apply_flexure=APPLY_FLEXURE)
             deltat = np.zeros_like(tide_time)
         elif (model.format == 'netcdf'):
             amp,ph,D,c = extract_netcdf_constants(val['longitude'],
                 val['latitude'], model.grid_file, model.model_file,
-                TYPE=model.type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-                CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+                type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+                cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
             deltat = np.zeros_like(tide_time)
         elif (model.format == 'GOT'):
             amp,ph,c = extract_GOT_constants(val['longitude'], val['latitude'],
-                model.model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-                CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+                model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
+                cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
             #-- interpolate delta times from calendar dates to tide time
             deltat = calc_delta_time(delta_file, tide_time)
         elif (model.format == 'FES'):
             amp,ph = extract_FES_constants(val['longitude'], val['latitude'],
-                model.model_file, TYPE=model.type, VERSION=model.version,
-                METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-                SCALE=model.scale, GZIP=model.compressed)
+                model.model_file, type=model.type, version=model.version,
+                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                scale=model.scale, compressed=model.compressed)
             #-- available model constituents
             c = model.constituents
             #-- interpolate delta times from calendar dates to tide time
@@ -232,9 +248,9 @@ def compute_tides_ICESat2(tide_dir, INPUT_FILE, TIDE_MODEL=None,
         tide = np.ma.empty((n_seg),fill_value=fv)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = predict_tide_drift(tide_time, hc, c,
-            DELTAT=deltat, CORRECTIONS=model.format)
+            deltat=deltat, corrections=model.format)
         minor = infer_minor_corrections(tide_time, hc, c,
-            DELTAT=deltat, CORRECTIONS=model.format)
+            deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
         #-- replace masked and nan values with fill value
         invalid, = np.nonzero(np.isnan(tide.data) | tide.mask)
@@ -509,7 +525,7 @@ def HDF5_ATL06_tide_write(IS2_atl06_tide, IS2_atl06_attrs, INPUT=None,
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(gps_seconds - leaps,
         epoch1=(1980,1,6,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
     #-- convert to calendar date
-    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(time_julian,format='tuple')
     #-- add attributes with measurement date start, end and duration
     tcs = datetime.datetime(int(YY[0]), int(MM[0]), int(DD[0]),
         int(HH[0]), int(MN[0]), int(SS[0]), int(1e6*(SS[0] % 1)))
@@ -571,6 +587,10 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
+    #-- apply flexure scaling factors to height constituents
+    parser.add_argument('--apply-flexure',
+        default=False, action='store_true',
+        help='Apply ice flexure scaling factor to height constituents')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -591,11 +611,17 @@ def main():
 
     #-- run for each input ATL06 file
     for FILE in args.infile:
-        compute_tides_ICESat2(args.directory, FILE, TIDE_MODEL=args.tide,
-            ATLAS_FORMAT=args.atlas_format, GZIP=args.gzip,
-            DEFINITION_FILE=args.definition_file, METHOD=args.interpolate,
-            EXTRAPOLATE=args.extrapolate, CUTOFF=args.cutoff,
-            VERBOSE=args.verbose, MODE=args.mode)
+        compute_tides_ICESat2(args.directory, FILE,
+            TIDE_MODEL=args.tide,
+            ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file,
+            METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate,
+            CUTOFF=args.cutoff,
+            APPLY_FLEXURE=args.apply_flexure,
+            VERBOSE=args.verbose,
+            MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

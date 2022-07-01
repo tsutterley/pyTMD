@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (04/2022)
+read_GOT_model.py (05/2022)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -12,15 +12,15 @@ INPUTS:
     model_files: list of model files for each constituent
 
 OPTIONS:
-    METHOD: interpolation method
+    method: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
         linear, nearest: scipy regular grid interpolations
-    EXTRAPOLATE: extrapolate model using nearest-neighbors
-    CUTOFF: extrapolation cutoff in kilometers
+    extrapolate: extrapolate model using nearest-neighbors
+    cutoff: extrapolation cutoff in kilometers
         set to np.inf to extrapolate for all points
-    GZIP: input files are compressed
-    SCALE: scaling factor for converting to output units
+    compressed: input files are gzip compressed
+    scale: scaling factor for converting to output units
 
 OUTPUTS:
     amplitude: amplitudes of tidal constituents
@@ -39,6 +39,8 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 05/2022: reformat arguments to extract_GOT_constants definition
+        changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
     Updated 12/2021: adjust longitude convention based on model longitude
@@ -56,13 +58,13 @@ UPDATE HISTORY:
         adjust dimensions of input coordinates to be iterable
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Updated 07/2020: added function docstrings. separate bilinear interpolation
-        update griddata interpolation. add option GZIP for compression
+        update griddata interpolation. add option for compression
     Updated 06/2020: use argmin and argmax in bilinear interpolation
     Updated 11/2019: find invalid mask points for each constituent
     Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
     Updated 07/2019: interpolate fill value mask with bivariate splines
     Updated 12/2018: python3 compatibility updates for division and zip
-    Updated 10/2018: added SCALE as load tides are in mm and ocean are in cm
+    Updated 10/2018: added scale as load tides are in mm and ocean are in cm
     Updated 08/2018: added multivariate spline interpolation option
     Written 07/2018
 """
@@ -70,6 +72,7 @@ from __future__ import division
 
 import os
 import re
+import copy
 import gzip
 import warnings
 import numpy as np
@@ -78,8 +81,7 @@ from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
 #-- PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
-def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
-    EXTRAPOLATE=False, CUTOFF=10.0, GZIP=True, SCALE=1.0):
+def extract_GOT_constants(ilon, ilat, model_files=None, **kwargs):
     """
     Reads files for Richard Ray's Global Ocean Tide (GOT) models
 
@@ -93,23 +95,23 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
         longitude to interpolate
     ilat: float
         latitude to interpolate
-    model_files: list
+    model_files: list or NoneType, default None
         list of model files for each constituent
-    METHOD: str, default 'spline'
+    method: str, default 'spline'
         Interpolation method
 
             - ``'bilinear'``: quick bilinear interpolation
             - ``'spline'``: scipy bivariate spline interpolation
             - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
-    EXTRAPOLATE: bool, default False
+    extrapolate: bool, default False
         Extrapolate model using nearest-neighbors
-    CUTOFF: float, default 10.0
+    cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
         Set to np.inf to extrapolate for all points
-    GZIP: bool, default False
-        Input files are compressed
-    SCALE: float, default 1.0
+    compressed: bool, default False
+        Input files are gzip compressed
+    scale: float, default 1.0
         Scaling factor for converting to output units
 
     Returns
@@ -121,6 +123,23 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
     constituents: list
         list of model constituents
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('method', 'spline')
+    kwargs.setdefault('extrapolate', False)
+    kwargs.setdefault('cutoff', 10.0)
+    kwargs.setdefault('compressed', False)
+    kwargs.setdefault('scale', 1.0)
+    #-- raise warnings for deprecated keyword arguments
+    deprecated_keywords = dict(METHOD='method',
+        EXTRAPOLATE='extrapolate',CUTOFF='cutoff',
+        GZIP='compressed',SCALE='scale')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn("""Deprecated keyword argument {0}.
+                Changed to '{1}'""".format(old,new),
+                DeprecationWarning)
+            #-- set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
 
     #-- raise warning if model files are entered as a string
     if isinstance(model_files,str):
@@ -148,7 +167,7 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
             raise FileNotFoundError(os.path.expanduser(model_file))
         #-- read constituent from elevation file
         hc,lon,lat,cons = read_GOT_grid(os.path.expanduser(model_file),
-            GZIP=GZIP)
+            compressed=kwargs['compressed'])
         #-- append to the list of constituents
         constituents.append(cons)
         #-- adjust longitudinal convention of input latitude and longitude
@@ -168,25 +187,26 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
         lon = extend_array(lon,dlon)
         hc = extend_matrix(hc)
         #-- interpolated complex form of constituent oscillation
-        hci = np.ma.zeros((npts),dtype=hc.dtype,fill_value=hc.fill_value)
+        hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
         hci.mask = np.zeros((npts),dtype=bool)
         #-- interpolate amplitude and phase of the constituent
-        if (METHOD == 'bilinear'):
+        if (kwargs['method'] == 'bilinear'):
             #-- replace invalid values with nan
             hc[hc.mask] = np.nan
             #-- use quick bilinear to interpolate values
-            hci.data[:] = bilinear_interp(lon,lat,hc,ilon,ilat,dtype=hc.dtype)
+            hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype)
             #-- replace nan values with fill_value
             hci.mask[:] |= np.isnan(hci.data)
             hci.data[hci.mask] = hci.fill_value
-        elif (METHOD == 'spline'):
+        elif (kwargs['method'] == 'spline'):
             #-- interpolate complex form of the constituent with scipy
-            f1=scipy.interpolate.RectBivariateSpline(lon,lat,
-                hc.data.real.T,kx=1,ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(lon,lat,
-                hc.data.imag.T,kx=1,ky=1)
-            f3=scipy.interpolate.RectBivariateSpline(lon,lat,
-                hc.mask.T,kx=1,ky=1)
+            f1=scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.data.real.T, kx=1, ky=1)
+            f2=scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.data.imag.T, kx=1, ky=1)
+            f3=scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.mask.T, kx=1, ky=1)
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
             hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
@@ -195,26 +215,27 @@ def extract_GOT_constants(ilon, ilat, model_files, METHOD=None,
         else:
             #-- use scipy regular grid to interpolate values for a given method
             r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.data, method=METHOD, bounds_error=False,
+                hc.data, method=kwargs['method'], bounds_error=False,
                 fill_value=hci.fill_value)
             r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.mask, method=METHOD, bounds_error=False, fill_value=1)
+                hc.mask, method=kwargs['method'], bounds_error=False,
+                fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
             #-- replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
         #-- extrapolate data using nearest-neighbors
-        if EXTRAPOLATE and np.any(hci.mask):
+        if kwargs['extrapolate'] and np.any(hci.mask):
             #-- find invalid data points
             inv, = np.nonzero(hci.mask)
             #-- replace invalid values with nan
             hc[hc.mask] = np.nan
             #-- extrapolate points within cutoff of valid model points
-            hci[inv] = nearest_extrap(lon,lat,hc,ilon[inv],ilat[inv],
-                dtype=hc.dtype,cutoff=CUTOFF)
+            hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
+                dtype=hc.dtype, cutoff=kwargs['cutoff'])
         #-- convert amplitude from input units to meters
-        amplitude.data[:,i] = np.abs(hci.data)*SCALE
+        amplitude.data[:,i] = np.abs(hci.data)*kwargs['scale']
         amplitude.mask[:,i] = np.copy(hci.mask)
         #-- phase of the constituent in radians
         ph.data[:,i] = np.arctan2(-np.imag(hci.data),np.real(hci.data))
@@ -279,7 +300,7 @@ def extend_matrix(input_matrix):
     return temp
 
 #-- PURPOSE: read GOT model grid files
-def read_GOT_grid(input_file, GZIP=False):
+def read_GOT_grid(input_file, **kwargs):
     """
     Read Richard Ray's Global Ocean Tide (GOT) model file
 
@@ -287,8 +308,8 @@ def read_GOT_grid(input_file, GZIP=False):
     ----------
     input_file: str
         Model file
-    GZIP: bool
-        Input file is compressed
+    compressed: bool, default False
+        Input file is gzip compressed
 
     Returns
     -------
@@ -301,10 +322,13 @@ def read_GOT_grid(input_file, GZIP=False):
     cons: str
         tidal constituent ID
     """
+    #-- set default keyword arguments
+    kwargs.setdefault('compressed', False)
     #-- tilde-expand input file
     input_file = os.path.expanduser(input_file)
     #-- read input tide model file
-    if GZIP:
+    if kwargs['compressed']:
+        #-- read gzipped ascii file
         with gzip.open(input_file, 'rb') as f:
             file_contents = f.read().decode('utf8').splitlines()
     else:

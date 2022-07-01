@@ -12,19 +12,16 @@ description = ('Tide Model Driver to read OTIS, GOT and FES formatted tidal '
     'solutions and make tidal predictions')
 keywords = 'Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT, FES'
 # get long_description from README.rst
-with open("README.rst", mode="r", encoding='utf8') as fh:
+with open('README.rst', mode='r', encoding='utf8') as fh:
     long_description = fh.read()
 long_description_content_type = "text/x-rst"
 
 # get install requirements
-with open('requirements.txt', mode="r", encoding='utf8') as fh:
+with open('requirements.txt', mode='r', encoding='utf8') as fh:
     install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
-# dependency links (data readers)
-dependency_links = ['https://github.com/tsutterley/read-ICESat-2/tarball/main',
-    'https://github.com/tsutterley/read-ATM1b-QFIT-binary/tarball/main']
 
 # get version
-with open('version.txt', mode="r", encoding='utf8') as fh:
+with open('version.txt', mode='r', encoding='utf8') as fh:
     fallback_version = fh.read()
 
 # list of all scripts to be included with package
@@ -101,7 +98,6 @@ setup(
     packages=find_packages(),
     install_requires=install_requires,
     setup_requires=setup_requires,
-    dependency_links=dependency_links,
     use_scm_version=use_scm_version,
     scripts=scripts,
     include_package_data=True,

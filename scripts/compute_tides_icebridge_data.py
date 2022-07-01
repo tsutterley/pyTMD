@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_icebridge_data.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates tidal elevations for correcting Operation IceBridge elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -28,6 +28,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --apply-flexure: Apply ice flexure scaling factor to height constituents
+        Only valid for models containing flexure fields
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -64,6 +66,9 @@ PROGRAM DEPENDENCIES:
     read_ATM1b_QFIT_binary.py: read ATM1b QFIT binary files (NSIDC version 1)
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
+        added command line option to apply flexure for applicable models
     Updated 04/2022: include utf-8 encoding in reads to be windows compliant
         use argparse descriptions within sphinx documentation
     Updated 03/2022: using static decorators to define available models
@@ -112,7 +117,7 @@ import numpy as np
 import pyTMD.time
 import pyTMD.model
 import pyTMD.utilities
-import read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary as ATM1b
+import ATM1b_QFIT.read_ATM1b_QFIT_binary
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
@@ -132,7 +137,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
             file_lines, = fileID[HDF5].shape
     elif QFIT:
         #-- read the size of a QFIT binary file
-        file_lines = ATM1b.ATM1b_QFIT_shape(input_file)
+        file_lines = ATM1b_QFIT.ATM1b_QFIT_shape(input_file)
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file, mode='r', encoding='utf8') as f:
@@ -189,7 +194,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
     #-- Version 1 of ATM QFIT files (binary)
     elif (SFX == 'qi'):
         #-- read input QFIT data file and subset if specified
-        fid,h = ATM1b.read_ATM1b_QFIT_binary(input_file)
+        fid,h = ATM1b_QFIT.read_ATM1b_QFIT_binary(input_file)
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter,QFIT=True)
         ATM_L1b_input['lat'] = fid['latitude'][:]
@@ -417,8 +422,15 @@ def read_LVIS_HDF5_file(input_file, input_subsetter):
 #-- PURPOSE: read Operation IceBridge data from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
 def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
-    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+    ATLAS_FORMAT=None,
+    GZIP=True,
+    DEFINITION_FILE=None,
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=None,
+    APPLY_FLEXURE=False,
+    VERBOSE=False,
+    MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -526,29 +538,29 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     #-- read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS'):
+    if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(dinput['lon'], dinput['lat'],
             model.grid_file, model.model_file, model.projection,
-            TYPE=model.type, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, GRID=model.format)
+            type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros_like(t)
     elif model.format in ('netcdf'):
         amp,ph,D,c = extract_netcdf_constants(dinput['lon'], dinput['lat'],
-            model.grid_file, model.model_file, TYPE=model.type, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            model.grid_file, model.model_file, type=model.type, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+            compressed=model.compressed)
         deltat = np.zeros_like(t)
     elif (model.format == 'GOT'):
         amp,ph,c = extract_GOT_constants(dinput['lon'], dinput['lat'],
-            model.model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(dinput['lon'], dinput['lat'],
-            model.model_file, TYPE=model.type, VERSION=model.version,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-            SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, type=model.type, version=model.version,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         #-- available model constituents
         c = model.constituents
         #-- interpolate delta times from calendar dates to tide time
@@ -569,9 +581,11 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     hem_flag = {'N':'GR','S':'AN'}
     #-- use starting second to distinguish between files for the day
     JJ1 = np.min(dinput['time']) % 86400
+    #-- flexure flag if being applied
+    flexure_flag = '_FLEXURE' if APPLY_FLEXURE and model.flexure else ''
     #-- output file format
-    args = (hem_flag[HEM],model.name,OIB,YY1,MM1,DD1,JJ1)
-    FILENAME = '{0}_NASA_{1}_TIDES_WGS84_{2}{3}{4}{5}{6:05.0f}.H5'.format(*args)
+    args = (hem_flag[HEM],model.name,flexure_flag,OIB,YY1,MM1,DD1,JJ1)
+    FILENAME = '{0}_NASA_{1}{2}_TIDES_WGS84_{3}{4}{5}{6}{7:05.0f}.H5'.format(*args)
     #-- print file information
     logger.info('\t{0}'.format(FILENAME))
 
@@ -583,9 +597,9 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     tide = np.ma.empty((file_lines),fill_value=fill_value)
     tide.mask = np.any(hc.mask,axis=1)
     tide.data[:] = predict_tide_drift(t, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     minor = infer_minor_corrections(t, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     tide.data[:] += minor.data[:]
     #-- replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
@@ -634,7 +648,7 @@ def compute_tides_icebridge_data(tide_dir, arg, TIDE_MODEL,
     time_julian = 2400000.5 + pyTMD.time.convert_delta_time(time_range,
         epoch1=(1992,1,1,0,0,0), epoch2=(1858,11,17,0,0,0), scale=1.0)
     #-- convert to calendar date
-    cal = pyTMD.time.convert_julian(time_julian,ASTYPE=int)
+    cal = pyTMD.time.convert_julian(time_julian,astype=int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)
@@ -701,6 +715,10 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
+    #-- apply flexure scaling factors to height constituents
+    parser.add_argument('--apply-flexure',
+        default=False, action='store_true',
+        help='Apply ice flexure scaling factor to height constituents')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -722,10 +740,16 @@ def main():
     #-- run for each input Operation IceBridge file
     for arg in args.infile:
         compute_tides_icebridge_data(args.directory, arg,
-            TIDE_MODEL=args.tide, ATLAS_FORMAT=args.atlas_format,
-            GZIP=args.gzip, DEFINITION_FILE=args.definition_file,
-            METHOD=args.interpolate, EXTRAPOLATE=args.extrapolate,
-            CUTOFF=args.cutoff, VERBOSE=args.verbose, MODE=args.mode)
+            TIDE_MODEL=args.tide,
+            ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file,
+            METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate,
+            CUTOFF=args.cutoff,
+            APPLY_FLEXURE=args.apply_flexure,
+            VERBOSE=args.verbose,
+            MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

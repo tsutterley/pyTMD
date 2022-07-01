@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (06/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,8 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
+        added from_file wrapper function to read from particular formats
     Updated 04/2022: add option to reduce input GDAL raster datasets
         updated docstrings to numpy documentation format
         use gzip virtual filesystem for reading compressed geotiffs
@@ -124,6 +126,32 @@ def data_type(x, y, t):
     else:
         raise ValueError('Unknown data type')
 
+def from_file(filename, format, **kwargs):
+    """
+    Wrapper function for reading data from an input format
+
+    Parameters
+    ----------
+    filename: str
+        full path of input file
+    format: str
+        format of input file
+    **kwargs: dict
+        Keyword arguments for file reader
+    """
+    #-- read input file to extract spatial coordinates and data
+    if (format == 'ascii'):
+        dinput = from_ascii(filename, **kwargs)
+    elif (format == 'netCDF4'):
+        dinput = from_netCDF4(filename, **kwargs)
+    elif (format == 'HDF5'):
+        dinput = from_HDF5(filename, **kwargs)
+    elif (format == 'geotiff'):
+        dinput = from_geotiff(filename, **kwargs)
+    else:
+        raise ValueError('Invalid format {0}'.format(format))
+    return dinput
+
 def from_ascii(filename, **kwargs):
     """
     Read data from an ascii file
@@ -197,6 +225,7 @@ def from_ascii(filename, **kwargs):
         #-- output spatial data and attributes
         dinput = {c:np.zeros((file_lines-kwargs['header'])) for c in columns}
         dinput['attributes'] = {c:dict() for c in columns}
+        header = int(kwargs['header'])
     #-- extract spatial data array
     #-- for each line in the file
     for i,line in enumerate(file_contents[header:]):
@@ -233,6 +262,8 @@ def from_netCDF4(filename, **kwargs):
         name for y-dimension variable
     varname: str, default 'data'
         name for data variable
+    field_mapping: dict, default {}
+        mapping between output variables and input netCDF4
     """
     #-- set default keyword arguments
     kwargs.setdefault('compression',None)
@@ -240,6 +271,7 @@ def from_netCDF4(filename, **kwargs):
     kwargs.setdefault('xname','lon')
     kwargs.setdefault('yname','lat')
     kwargs.setdefault('varname','data')
+    kwargs.setdefault('field_mapping',{})
     #-- read data from netCDF4 file
     #-- Open the NetCDF4 file for reading
     if (kwargs['compression'] == 'gzip'):
@@ -270,10 +302,15 @@ def from_netCDF4(filename, **kwargs):
     attributes_list = ['description','units','long_name','calendar',
         'standard_name','grid_mapping','_FillValue']
     #-- mapping between netCDF4 variable names and output names
-    variable_mapping = dict(x=kwargs['xname'],y=kwargs['yname'],
-        data=kwargs['varname'],time=kwargs['timename'])
+    if not kwargs['field_mapping']:
+        kwargs['field_mapping']['x'] = copy.copy(kwargs['xname'])
+        kwargs['field_mapping']['y'] = copy.copy(kwargs['yname'])
+        if kwargs['varname'] is not None:
+            kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
+        if kwargs['timename'] is not None:
+            kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
     #-- for each variable
-    for key,nc in variable_mapping.items():
+    for key,nc in kwargs['field_mapping'].items():
         #-- Getting the data from each NetCDF variable
         dinput[key] = fileID.variables[nc][:]
         #-- get attributes for the included variables
@@ -291,6 +328,8 @@ def from_netCDF4(filename, **kwargs):
     if 'grid_mapping' in dinput['attributes']['data'].keys():
         #-- try getting the attribute
         grid_mapping = dinput['attributes']['data']['grid_mapping']
+        #-- get coordinate reference system attributes
+        dinput['attributes']['crs'] = {}
         for att_name in fileID[grid_mapping].ncattrs():
             dinput['attributes']['crs'][att_name] = \
                 fileID.variables[grid_mapping].getncattr(att_name)
@@ -327,6 +366,8 @@ def from_HDF5(filename, **kwargs):
         name for y-dimension variable
     varname: str, default 'data'
         name for data variable
+    field_mapping: dict, default {}
+        mapping between output variables and input HDF5
     """
     #-- set default keyword arguments
     kwargs.setdefault('compression',None)
@@ -334,6 +375,7 @@ def from_HDF5(filename, **kwargs):
     kwargs.setdefault('xname','lon')
     kwargs.setdefault('yname','lat')
     kwargs.setdefault('varname','data')
+    kwargs.setdefault('field_mapping',{})
     #-- read data from HDF5 file
     #-- Open the HDF5 file for reading
     if (kwargs['compression'] == 'gzip'):
@@ -369,10 +411,15 @@ def from_HDF5(filename, **kwargs):
     attributes_list = ['description','units','long_name','calendar',
         'standard_name','grid_mapping','_FillValue']
     #-- mapping between HDF5 variable names and output names
-    variable_mapping = dict(x=kwargs['xname'],y=kwargs['yname'],
-        data=kwargs['varname'],time=kwargs['timename'])
+    if not kwargs['field_mapping']:
+        kwargs['field_mapping']['x'] = copy.copy(kwargs['xname'])
+        kwargs['field_mapping']['y'] = copy.copy(kwargs['yname'])
+        if kwargs['varname'] is not None:
+            kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
+        if kwargs['timename'] is not None:
+            kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
     #-- for each variable
-    for key,h5 in variable_mapping.items():
+    for key,h5 in kwargs['field_mapping'].items():
         #-- Getting the data from each HDF5 variable
         dinput[key] = np.copy(fileID[h5][:])
         #-- get attributes for the included variables
@@ -387,6 +434,8 @@ def from_HDF5(filename, **kwargs):
     if 'grid_mapping' in dinput['attributes']['data'].keys():
         #-- try getting the attribute
         grid_mapping = dinput['attributes']['data']['grid_mapping']
+        #-- get coordinate reference system attributes
+        dinput['attributes']['crs'] = {}
         for att_name,att_val in fileID[grid_mapping].attrs.items():
             dinput['attributes']['crs'][att_name] = att_val
         #-- get the spatial projection reference information from wkt

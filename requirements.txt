@@ -1,5 +1,7 @@
+ATM1b-QFIT
 gdal
 h5py
+icesat2-toolkit
 lxml
 netCDF4
 numpy

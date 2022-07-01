@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 u"""
 arcticdata_tides.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (06/2022)
 Download Arctic Ocean Tide Models from the NSF ArcticData archive
+
 AODTM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N
 AOTIM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80
 AOTIM-5-2018: https://arcticdata.io/catalog/view/doi:10.18739/A21R6N14K
+Arc2kmTM: https://arcticdata.io/catalog/view/doi:10.18739/A2D21RK6K
+Gr1kmTM: https://arcticdata.io/catalog/view/doi:10.18739/A2B853K18
 
 CALLING SEQUENCE:
-    python arcticdata_tides.py --tide=AOTIM-5-2018
+    python arcticdata_tides.py --tide=Gr1kmTM
 
 COMMAND LINE OPTIONS:
     --help: list the command line options
@@ -17,6 +20,8 @@ COMMAND LINE OPTIONS:
         AODTM-5
         AOTIM-5
         AOTIM-5-2018
+        Arc2kmTM
+        Gr1kmTM
     -M X, --mode X: Local permissions mode of the files downloaded
 
 PYTHON DEPENDENCIES:
@@ -27,6 +32,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
     Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -35,10 +41,8 @@ UPDATE HISTORY:
 """
 from __future__ import print_function
 
-import sys
 import os
 import re
-import time
 import logging
 import zipfile
 import argparse
@@ -46,21 +50,26 @@ import posixpath
 import pyTMD.utilities
 
 #-- PURPOSE: Download Arctic Ocean Tide Models from the NSF ArcticData archive
-def arcticdata_tides(MODEL,DIRECTORY=None,MODE=0o775):
+def arcticdata_tides(MODEL, DIRECTORY=None, MODE=0o775):
 
     #-- create logger for verbosity level
     logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
 
-    #-- doi for each model
+    #-- digital object identifier (doi) for each Arctic tide model
     DOI = {}
     DOI['AODTM-5'] = '10.18739/A2901ZG3N'
     DOI['AOTIM-5'] = '10.18739/A2S17SS80'
     DOI['AOTIM-5-2018'] = '10.18739/A21R6N14K'
-    #-- local subdirectory for each model
+    DOI['Arc2kmTM'] = '10.18739/A2D21RK6K'
+    DOI['Gr1kmTM'] = '10.18739/A2B853K18'
+    #-- local subdirectory for each Arctic tide model
     LOCAL = {}
     LOCAL['AODTM-5'] = 'aodtm5_tmd'
     LOCAL['AOTIM-5'] = 'aotim5_tmd'
     LOCAL['AOTIM-5-2018'] = 'Arc5km2018'
+    LOCAL['Arc2kmTM'] = 'Arc2kmTM'
+    LOCAL['Gr1kmTM'] = 'Gr1kmTM'
+
     #-- recursively create directories if non-existent
     if not os.access(os.path.join(DIRECTORY,LOCAL[MODEL]), os.F_OK):
         os.makedirs(os.path.join(DIRECTORY,LOCAL[MODEL]), MODE)
@@ -71,8 +80,8 @@ def arcticdata_tides(MODEL,DIRECTORY=None,MODE=0o775):
         pyTMD.utilities.quote_plus(posixpath.join('application','bagit-097')),
         pyTMD.utilities.quote_plus(resource_map_doi)]
     #-- download zipfile from host
-    zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST))
     logger.info('{0} -->\n'.format(posixpath.join(*HOST)))
+    zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST))
     #-- find model files within zip file
     rx = re.compile('(grid|h[0]?|UV[0]?|Model|xy)_(.*?)',re.VERBOSE)
     members = [m for m in zfile.filelist if rx.search(m.filename)]
@@ -81,7 +90,7 @@ def arcticdata_tides(MODEL,DIRECTORY=None,MODE=0o775):
         #-- strip directories from member filename
         m.filename = posixpath.basename(m.filename)
         local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
-        logger.info('\t{0}\n'.format(local_file))
+        logger.info(local_file)
         #-- extract file
         zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
         #-- change permissions mode
@@ -106,8 +115,8 @@ def arguments():
         help='Working data directory')
     #-- Arctic Ocean tide model to download
     parser.add_argument('--tide','-T',
-        metavar='TIDE', type=str, nargs='+', default=['AOTIM-5-2018'],
-        choices=('AODTM-5','AOTIM-5','AOTIM-5-2018'),
+        metavar='TIDE', type=str, nargs='+', default=['Gr1kmTM'],
+        choices=('AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM'),
         help='Arctic Ocean tide model to download')
     #-- permissions mode of the local directories and files (number in octal)
     parser.add_argument('--mode','-M',
@@ -125,7 +134,9 @@ def main():
     #-- check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://arcticdata.io'):
         for m in args.tide:
-            arcticdata_tides(m,DIRECTORY=args.directory,MODE=args.mode)
+            arcticdata_tides(m,
+                DIRECTORY=args.directory,
+                MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

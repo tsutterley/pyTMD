@@ -14,7 +14,7 @@ Calling Sequence
 
     from pyTMD.read_tide_model import extract_tidal_constants
     amp,ph,D,c = extract_tidal_constants(ilon, ilat, grid_file, model_file, EPSG,
-        TYPE='z', METHOD='spline', GRID='OTIS')
+        type='z', method='spline', grid='OTIS')
 
 `Source code`__
 
@@ -25,6 +25,8 @@ Calling Sequence
 .. autofunction:: pyTMD.read_tide_model.read_tide_grid
 
 .. autofunction:: pyTMD.read_tide_model.read_atlas_grid
+
+.. autofunction:: pyTMD.read_tide_model.read_netcdf_grid
 
 .. autofunction:: pyTMD.read_tide_model.read_constituents
 
@@ -41,6 +43,8 @@ Calling Sequence
 .. autofunction:: pyTMD.read_tide_model.interpolate_atlas_model
 
 .. autofunction:: pyTMD.read_tide_model.combine_atlas_model
+
+.. autofunction:: pyTMD.read_tide_model.read_netcdf_file
 
 .. autofunction:: pyTMD.read_tide_model.extend_array
 

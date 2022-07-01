@@ -11,7 +11,8 @@ Calling Sequence
 .. code-block:: python
 
     from pyTMD.load_nodal_corrections import load_nodal_corrections
-    pu,pf,G = load_nodal_corrections(MJD,constituents)
+    pu,pf,G = load_nodal_corrections(MJD, constituents,
+        deltat=DELTAT, corrections=CORRECTIONS)
 
 `Source code`__
 

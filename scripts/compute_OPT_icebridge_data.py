@@ -77,7 +77,7 @@ import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
-import read_ATM1b_QFIT_binary.read_ATM1b_QFIT_binary as ATM1b
+import ATM1b_QFIT.read_ATM1b_QFIT_binary
 
 #-- PURPOSE: reading the number of file lines removing commented lines
 def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
@@ -90,7 +90,7 @@ def file_length(input_file, input_subsetter, HDF5=False, QFIT=False):
             file_lines, = fileID[HDF5].shape
     elif QFIT:
         #-- read the size of a QFIT binary file
-        file_lines = ATM1b.ATM1b_QFIT_shape(input_file)
+        file_lines = ATM1b_QFIT.ATM1b_QFIT_shape(input_file)
     else:
         #-- read the input file, split at lines and remove all commented lines
         with open(input_file, mode='r', encoding='utf8') as f:
@@ -147,7 +147,7 @@ def read_ATM_qfit_file(input_file, input_subsetter):
     #-- Version 1 of ATM QFIT files (binary)
     elif (SFX == 'qi'):
         #-- read input QFIT data file and subset if specified
-        fid,h = ATM1b.read_ATM1b_QFIT_binary(input_file)
+        fid,h = ATM1b_QFIT.read_ATM1b_QFIT_binary(input_file)
         #-- number of lines of data within file
         file_lines = file_length(input_file,input_subsetter,QFIT=True)
         ATM_L1b_input['lat'] = fid['latitude'][:]
@@ -476,7 +476,7 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     #-- J2000: seconds since 2000-01-01 12:00:00 UTC
     t = dinput['time'][:]/86400.0 + 51544.5
     #-- convert from MJD to calendar dates
-    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(t + 2400000.5,FORMAT='tuple')
+    YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(t + 2400000.5,format='tuple')
     #-- convert calendar dates into year decimal
     tdec = pyTMD.time.convert_calendar_decimal(YY,MM,day=DD,
         hour=HH,minute=MN,second=SS)
@@ -622,7 +622,7 @@ def compute_OPT_icebridge_data(arg,METHOD=None,VERBOSE=False,MODE=0o775):
     JD_start = np.min(t) + 2400000.5
     JD_end = np.max(t) + 2400000.5
     #-- convert to calendar date
-    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),ASTYPE=int)
+    cal = pyTMD.time.convert_julian(np.array([JD_start,JD_end]),astype=int)
     #-- add attributes with measurement date start, end and duration
     args = (cal['hour'][0],cal['minute'][0],cal['second'][0])
     fid.attrs['RangeBeginningTime'] = '{0:02d}:{1:02d}:{2:02d}'.format(*args)

@@ -122,8 +122,8 @@ def test_verify_FES2014():
 
     #-- extract amplitude and phase from tide model
     amp,ph = pyTMD.read_FES_model.extract_FES_constants(longitude,
-        latitude, model_file, TYPE=TYPE, VERSION=VERSION,
-        METHOD='spline', GZIP=True, SCALE=SCALE,)
+        latitude, model_file, type=TYPE, version=VERSION,
+        method='spline', compressed=True, scale=SCALE,)
     #-- interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)
@@ -137,9 +137,9 @@ def test_verify_FES2014():
     #-- predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model_format)
+        deltat=deltat, corrections=model_format)
     minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model_format)
+        deltat=deltat, corrections=model_format)
     tide.data[:] += minor.data[:]
 
     #-- will verify differences between model outputs are within tolerance

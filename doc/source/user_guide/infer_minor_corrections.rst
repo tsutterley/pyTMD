@@ -12,7 +12,7 @@ Calling Sequence
 
     from pyTMD.infer_minor_corrections import infer_minor_corrections
     dh = infer_minor_corrections(t, zmajor, constituents,
-        DELTAT=DELTAT, CORRECTIONS=CORRECTIONS)
+        deltat=DELTAT, corrections=CORRECTIONS)
 
 `Source code`__
 

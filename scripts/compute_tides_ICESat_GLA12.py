@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat_GLA12.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (05/2022)
 Calculates tidal elevations for correcting ICESat/GLAS L2 GLA12
     Antarctic and Greenland Ice Sheet elevation data
 
@@ -26,6 +26,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --apply-flexure: Apply ice flexure scaling factor to height constituents
+        Only valid for models containing flexure fields
     -M X, --mode X: Permission mode of directories and files created
     -V, --verbose: Output information about each created file
 
@@ -60,6 +62,9 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2022: added ESR netCDF4 formats to list of model types
+        updated keyword arguments to read tide model programs
+        added command line option to apply flexure for applicable models
     Updated 04/2022: use argparse descriptions within documentation
     Updated 03/2022: using static decorators to define available models
     Updated 02/2022: save ICESat campaign attribute to output file
@@ -115,9 +120,17 @@ from pyTMD.predict_tide_drift import predict_tide_drift
 
 #-- PURPOSE: read ICESat ice sheet HDF5 elevation data (GLAH12) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
-def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
-    ATLAS_FORMAT=None, GZIP=True, DEFINITION_FILE=None, METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=None, VERBOSE=False, MODE=0o775):
+def compute_tides_ICESat(tide_dir, INPUT_FILE,
+    TIDE_MODEL=None,
+    ATLAS_FORMAT=None,
+    GZIP=True,
+    DEFINITION_FILE=None,
+    METHOD='spline',
+    EXTRAPOLATE=False,
+    CUTOFF=None,
+    APPLY_FLEXURE=False,
+    VERBOSE=False,
+    MODE=0o775):
 
     #-- create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
@@ -133,7 +146,8 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     #-- get directory from INPUT_FILE
     logger.info('{0} -->'.format(INPUT_FILE))
     DIRECTORY = os.path.dirname(INPUT_FILE)
-
+    #-- flexure flag if being applied
+    flexure_flag = '_FLEXURE' if APPLY_FLEXURE and model.flexure else ''
     #-- compile regular expression operator for extracting information from file
     rx = re.compile((r'GLAH(\d{2})_(\d{3})_(\d{1})(\d{1})(\d{2})_(\d{3})_'
         r'(\d{4})_(\d{1})_(\d{2})_(\d{4})\.H5'), re.VERBOSE)
@@ -155,12 +169,12 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     except:
         #-- output tide HDF5 file (generic)
         fileBasename,fileExtension = os.path.splitext(INPUT_FILE)
-        args = (fileBasename,model.name,fileExtension)
-        OUTPUT_FILE = '{0}_{1}_TIDES{2}'.format(*args)
+        args = (fileBasename,model.name,flexure_flag,fileExtension)
+        OUTPUT_FILE = '{0}_{1}{2}_TIDES{3}'.format(*args)
     else:
         #-- output tide HDF5 file for NSIDC granules
-        args = (PRD,RL,model.name,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
-        file_format = 'GLAH{0}_{1}_{2}_TIDES_{3}{4}{5}_{6}_{7}_{8}_{9}_{10}.h5'
+        args = (PRD,RL,model.name,flexure_flag,RGTP,ORB,INST,CYCL,TRK,SEG,GRAN,TYPE)
+        file_format = 'GLAH{0}_{1}_{2}{3}_TIDES_{4}{5}{6}_{7}_{8}_{9}_{10}_{11}.h5'
         OUTPUT_FILE = file_format.format(*args)
 
     #-- read GLAH12 HDF5 file
@@ -192,29 +206,29 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     #-- delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     #-- read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS'):
+    if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(lon_40HZ, lat_40HZ,
-            model.grid_file, model.model_file, model.projection, TYPE=TYPE,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, GRID=model.format)
+            model.grid_file, model.model_file, model.projection,
+            type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros_like(tide_time)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = extract_netcdf_constants(lon_40HZ, lat_40HZ,
-            model.grid_file, model.model_file, TYPE=TYPE, METHOD=METHOD,
-            EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF, SCALE=model.scale,
-            GZIP=model.compressed)
+            model.grid_file, model.model_file, type=model.type,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         deltat = np.zeros_like(tide_time)
     elif (model.format == 'GOT'):
         amp,ph,c = extract_GOT_constants(lon_40HZ, lat_40HZ,
-            model.model_file, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE,
-            CUTOFF=CUTOFF, SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         #-- interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, tide_time)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon_40HZ, lat_40HZ,
-            model.model_file, TYPE=TYPE, VERSION=model.version,
-            METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE, CUTOFF=CUTOFF,
-            SCALE=model.scale, GZIP=model.compressed)
+            model.model_file, type=model.type, version=model.version,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         #-- available model constituents
         c = model.constituents
         #-- interpolate delta times from calendar dates to tide time
@@ -229,9 +243,9 @@ def compute_tides_ICESat(tide_dir, INPUT_FILE, TIDE_MODEL=None,
     tide = np.ma.empty((n_40HZ),fill_value=fv)
     tide.mask = np.any(hc.mask,axis=1)
     tide.data[:] = predict_tide_drift(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     minor = infer_minor_corrections(tide_time, hc, c,
-        DELTAT=deltat, CORRECTIONS=model.format)
+        deltat=deltat, corrections=model.format)
     tide.data[:] += minor.data[:]
     #-- replace masked and nan values with fill value
     invalid, = np.nonzero(np.isnan(tide.data) | tide.mask)
@@ -476,6 +490,10 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
+    #-- apply flexure scaling factors to height constituents
+    parser.add_argument('--apply-flexure',
+        default=False, action='store_true',
+        help='Apply ice flexure scaling factor to height constituents')
     #-- verbosity settings
     #-- verbose will output information about each output file
     parser.add_argument('--verbose','-V',
@@ -496,11 +514,17 @@ def main():
 
     #-- run for each input GLA12 file
     for FILE in args.infile:
-        compute_tides_ICESat(args.directory, FILE, TIDE_MODEL=args.tide,
-            ATLAS_FORMAT=args.atlas_format, GZIP=args.gzip,
-            DEFINITION_FILE=args.definition_file, METHOD=args.interpolate,
-            EXTRAPOLATE=args.extrapolate, CUTOFF=args.cutoff,
-            VERBOSE=args.verbose, MODE=args.mode)
+        compute_tides_ICESat(args.directory, FILE,
+            TIDE_MODEL=args.tide,
+            ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file,
+            METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate,
+            CUTOFF=args.cutoff,
+            APPLY_FLEXURE=args.apply_flexure,
+            VERBOSE=args.verbose,
+            MODE=args.mode)
 
 #-- run main program
 if __name__ == '__main__':

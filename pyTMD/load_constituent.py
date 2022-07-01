@@ -80,7 +80,7 @@ def load_constituent(c):
         5.620755e-04,2.134402e-04,4.363323e-04,1.503693e-04,2.081166e-04])
     #-- Astronomical arguments (relative to t0 = 1 Jan 0:00 1992)
     #-- phases for each constituent are referred to the time when the phase of
-    #-- the forcing for that constituent is zero on the Greenich meridian
+    #-- the forcing for that constituent is zero on the Greenwich meridian
     phase_all = np.array([1.731557546,0.000000000,0.173003674,1.558553872,
         6.050721243,6.110181633,3.487600001,5.877717569,4.086699633,
         3.463115091,5.427136701,0.553986502,0.052841931,2.137025284,

@@ -10,7 +10,8 @@ Calling Sequence
 .. code-block:: python
 
     from pyTMD.read_GOT_model import extract_GOT_constants
-    amp,ph,c = extract_GOT_constants(ilon,ilat,model_files,METHOD='spline')
+    amp,ph,c = extract_GOT_constants(ilon,i lat, model_files,
+       method='spline')
 
 `Source code`__
 

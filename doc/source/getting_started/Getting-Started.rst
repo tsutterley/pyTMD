@@ -44,6 +44,7 @@ Presently, the following models and their directories parameterized within ``pyT
     * CATS0201: ``<path_to_tide_models>/cats0201_tmd/``
     * `CATS2008 <https://www.usap-dc.org/view/dataset/601235>`_: ``<path_to_tide_models>/CATS2008/``
     * CATS2008_load: ``<path_to_tide_models>/CATS2008a_SPOTL_Load/``
+    * CATS2022: ``<path_to_tide_models>/CATS2022/``
 
 - Arctic Ocean and Greenland Coast Tidal Simulations [Padman2004]_
 
@@ -145,9 +146,9 @@ For parameters consisting of lists, the parameter values can be separated by spa
 Each definition file should have a ``name``, ``format`` and ``type`` parameters.
 Each model format also requires specific sets of parameters.
 
-- ``OTIS`` and ``ATLAS``
+- ``OTIS``, ``ATLAS`` and ``ESR``
 
-    * ``format``: ``'OTIS'`` or ``'ATLAS'``
+    * ``format``: ``'OTIS'``, ``'ATLAS'`` or ``ESR``
     * ``grid_file``: full path to model grid file
     * ``model_file``: full path to model constituent file(s)
     * ``name``: tide model name
@@ -192,7 +193,19 @@ For pole tide programs, the epoch is 1858-11-17T00:00:00 (Modified Julian Days).
 The `time module <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_ within ``pyTMD`` can convert different time formats to the necessary time format of a given program.
 The `time module <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/time.py>`_ can also parse date strings describing the units and epoch of relative times, or the calendar date of measurement for geotiff formats.
 ``pyTMD`` keeps updated `tables of leap seconds <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/leap-seconds.list>`_ for converting from GPS, LORAN and TAI times.
-``pyTMD`` keeps updated `tables of delta times <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data>`_ for converting between dynamic (TT) and universal (UT1) times.
+
+- TAI time: International Atomic Time which is computed as the weighted average of several hundred atomic clocks.
+- UTC time: Coordinated Universal Time which is `periodically adjusted <https://www.nist.gov/pml/time-and-frequency-division/leap-seconds-faqs>`_ to account for the difference between the definition of the second and the rotation of Earth.
+- GPS time: Atomic timing system for the Global Positioning System constellation of satellites monitored by the United States Naval Observatory (USNO). GPS time and UTC time were equal on January 6, 1980. TAI time is ahead of GPS time by 19 seconds.
+- LORAN time: Atomic timing system for the Loran-C chain transmitter sites used in terrestrial radionavigation. LORAN time and UTC time were equal on January 1, 1958. TAI time is ahead of LORAN time by 10 seconds.
+
+``pyTMD`` also keeps updated `tables of delta times <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/merged_deltat.data>`_ for converting between dynamic (TT) and universal (UT1) times.
+Delta times (TT - UT1) are the differences between Dynamic Time (TT) and Universal Time (UT1) [Meeus1998]_.
+Universal Time (UT1) is based on the rotation of the Earth,
+which varies irregularly, and so UT1 is adjusted periodically.
+Dynamic Time (TT) is a uniform, monotonically increasing time standard based on atomic clocks that is
+used for the accurate calculation of celestial mechanics, orbits and ephemerides.
+Delta times can be added to Universal Time (UT1) values to convert to Dynamic Time (TT) values.
 
 Spatial Coordinates
 ###################
@@ -201,15 +214,16 @@ The default coordinate system in ``pyTMD`` is WGS84 geodetic coordinates in lati
 ``pyTMD`` uses `pyproj <https://pypi.org/project/pyproj/>`_ to convert from different coordinate systems and datums.
 Some regional tide models are projected in a different coordinate system.
 For these cases, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py>`_.
-OTIS models may be projected into a separate coordinate system.
-The available OTIS projections within ``pyTMD`` are
-``'4326'`` (global latitude and longitude),
-``'3031'`` (Antarctic Polar Stereographic in kilometers),
-``'3413'`` (NSIDC Sea Ice Polar Stereographic North in kilometers),
-``'CATS2008'`` (CATS2008 Polar Stereographic in kilometers),
-``'3976'`` (NSIDC Sea Ice Polar Stereographic South in kilometers), and
-``'PSNorth'`` (idealized polar stereographic in kilometers).
-For other OTIS model projections, a formatted projection string (e.g. PROJ, WKT, or EPSG) can be used.
+
+OTIS models may be projected into a separate coordinate system. The available OTIS projections within ``pyTMD`` are
+- ``'4326'`` (global latitude and longitude)
+- ``'3031'`` (Antarctic Polar Stereographic in kilometers)
+- ``'3413'`` (NSIDC Sea Ice Polar Stereographic North in kilometers)
+- ``'CATS2008'`` (CATS2008 Polar Stereographic in kilometers)
+- ``'3976'`` (NSIDC Sea Ice Polar Stereographic South in kilometers)
+- ``'PSNorth'`` (idealized polar stereographic in kilometers)
+
+For other model projections, a formatted coordinate reference system (CRS) descriptor (e.g. PROJ, WKT, or EPSG code) can be used.
 
 Interpolation
 #############
@@ -235,13 +249,15 @@ References
 
 .. [Lyard2020] F. H. Lyard, D. J. Allain, M. Cancet, L. Carr\ |egrave|\ re, and N. Picot, "FES2014 global ocean tides atlas: design and performances", *Ocean Science Discussions*, in review, (2020). `doi: 10.5194/os-2020-96 <https://doi.org/10.5194/os-2020-96>`_
 
+.. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+
 .. [Padman2004] L. Padman and S. Y. Erofeeva, "A barotropic inverse tidal model for the Arctic Ocean", *Geophysical Research Letters*, 31(2), L02303. (2004). `doi: 10.1029/2003GL019003 <https://doi.org/10.1029/2003GL019003>`_
 
 .. [Padman2008] L. Padman, S. Y. Erofeeva, and H. A. Fricker, "Improving Antarctic tide models by assimilation of ICESat laser altimetry over ice shelves", *Geophysical Research Letters*, 35, L22504, (2008). `doi: 10.1029/2008GL035592 <https://doi.org/10.1029/2008GL035592>`_
 
 .. [Padman2018] L. Padman, M. R. Siegfried, and H. A. Fricker, "Ocean Tide Inﬂuences on the Antarctic and Greenland Ice Sheets", *Reviews of Geophysics*, 56, (2018). `doi: 10.1002/2016RG000546 <https://doi.org/10.1002/2016RG000546>`_
 
-.. [Ray1999] R. D. Ray, "A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2", *NASA Technical Memorandum*, `NASA/TM--1999-209478 <https://ntrs.nasa.gov/search.jsp?R=19990089548>`_.
+.. [Ray1999] R. D. Ray, "A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2", *NASA Technical Memorandum*, `NASA/TM--1999-209478 <https://ntrs.nasa.gov/citations/19990089548>`_.
 
 .. [Stammer2014] D. Stammer et al., "Accuracy assessment of global barotropic ocean tide models", *Reviews of Geophysics*, 52, 243--282, (2014). `doi: 10.1002/2014RG000450 <https://doi.org/10.1002/2014RG000450>`_
 

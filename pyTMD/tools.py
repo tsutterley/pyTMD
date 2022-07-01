@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (03/2022)
+Written by Tyler Sutterley (05/2022)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 05/2022: include world copy jump in webmercator maps
     Updated 03/2022: add marker relocation routines from notebooks
     Updated 02/2022: add leaflet map projections
     Written 09/2021
@@ -177,6 +178,7 @@ projections = Bunch(
 class leaflet:
     def __init__(self, projection='Global', **kwargs):
         # set default keyword arguments
+        kwargs.setdefault('map',None)
         kwargs.setdefault('attribution',True)
         kwargs.setdefault('zoom',1)
         kwargs.setdefault('zoom_control',False)
@@ -187,7 +189,7 @@ class leaflet:
         # create basemap in projection
         if (projection == 'Global'):
             self.map = ipyleaflet.Map(center=kwargs['center'],
-                zoom=kwargs['zoom'], max_zoom=15,
+                zoom=kwargs['zoom'], max_zoom=15, world_copy_jump=True,
                 attribution_control=kwargs['attribution'],
                 basemap=ipyleaflet.basemaps.Esri.WorldTopoMap)
             self.crs = 'EPSG:3857'
@@ -206,6 +208,10 @@ class leaflet:
                 basemap=ipyleaflet.basemaps.Esri.AntarcticBasemap,
                 crs=projections.EPSG3031.Basemap)
             self.crs = 'EPSG:3031'
+        else:
+            # use a predefined ipyleaflet map
+            self.map = kwargs['map']
+            self.crs = self.map.crs['name']
         # add control for layers
         if kwargs['layer_control']:
             self.layer_control = ipyleaflet.LayersControl(position='topleft')
