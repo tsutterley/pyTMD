@@ -56,20 +56,22 @@ import netCDF4
 import datetime
 import warnings
 import numpy as np
-
+#-- attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
     warnings.warn("GDAL not available")
     warnings.warn("Some functions will throw an exception if called")
-
 try:
     import h5py
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
     warnings.warn("h5py not available")
     warnings.warn("Some functions will throw an exception if called")
+#-- ignore warnings
+warnings.filterwarnings("ignore")
+
 
 def case_insensitive_filename(filename):
     """

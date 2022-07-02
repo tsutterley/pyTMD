@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_ICESat2_ATL10.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (07/2022)
 Calculates long-period equilibrium tidal elevations for correcting ICESat-2
     sea ice freeboard data
 Will calculate the long-period tides for all ATL10 segments and not just ocean
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 07/2022: place some imports within try/except statements
     Updated 04/2022: use argparse descriptions within documentation
     Forked 12/2021 from compute_LPET_ICESat2_ATL07.py
     Updated 10/2021: using python logging for handling verbose output
@@ -45,16 +46,28 @@ from __future__ import print_function
 import sys
 import os
 import re
-import h5py
 import logging
 import argparse
 import datetime
+import warnings
 import numpy as np
 import pyTMD.time
 import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
-from icesat2_toolkit.read_ICESat2_ATL10 import read_HDF5_ATL10
+#-- attempt imports
+try:
+    import h5py
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("h5py not available")
+try:
+    from icesat2_toolkit.read_ICESat2_ATL10 import read_HDF5_ATL10
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("icesat2_toolkit not available")
+#-- ignore warnings
+warnings.filterwarnings("ignore")
 
 #-- PURPOSE: read ICESat-2 sea ice freeboard (ATL10) from NSIDC
 #-- compute long-period equilibrium tides at points and times

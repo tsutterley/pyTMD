@@ -27,6 +27,4 @@ dependencies:
   - sphinx_rtd_theme
   - texlive-core
   - pip:
-    - icesat2-toolkit
-    - ATM1b-QFIT
     - ..

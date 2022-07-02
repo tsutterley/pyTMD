@@ -16,9 +16,14 @@ with open('README.rst', mode='r', encoding='utf8') as fh:
     long_description = fh.read()
 long_description_content_type = "text/x-rst"
 
-# get install requirements
-with open('requirements.txt', mode='r', encoding='utf8') as fh:
-    install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
+# install requirements and dependencies
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if on_rtd:
+    install_requires = []
+else:
+    # get install requirements
+    with open('requirements.txt', mode='r', encoding='utf8') as fh:
+        install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
 
 # get version
 with open('version.txt', mode='r', encoding='utf8') as fh:
