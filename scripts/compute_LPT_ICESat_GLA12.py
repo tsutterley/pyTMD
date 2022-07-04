@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_ICESat_GLA12.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (07/2022)
 Calculates radial load pole tide displacements for correcting ICESat/GLAS
     L2 GLA12 Antarctic and Greenland Ice Sheet elevation data following
     IERS Convention (2010) guidelines
@@ -36,6 +36,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 07/2022: place some imports within try/except statements
     Updated 04/2022: use argparse descriptions within documentation
     Updated 02/2022: save ICESat campaign attribute to output file
     Updated 10/2021: using python logging for handling verbose output
@@ -51,9 +52,9 @@ from __future__ import print_function
 import sys
 import os
 import re
-import h5py
 import logging
 import argparse
+import warnings
 import numpy as np
 import scipy.interpolate
 import pyTMD.time
@@ -61,6 +62,14 @@ import pyTMD.spatial
 import pyTMD.utilities
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
+#-- attempt imports
+try:
+    import h5py
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("h5py not available")
+#-- ignore warnings
+warnings.filterwarnings("ignore")
 
 #-- PURPOSE: read ICESat ice sheet HDF5 elevation data (GLAH12) from NSIDC
 #-- compute load pole tide radial displacements at points and times

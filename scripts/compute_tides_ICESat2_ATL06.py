@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tides_ICESat2_ATL06.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (07/2022)
 Calculates tidal elevations for correcting ICESat-2 land ice elevation data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 07/2022: place some imports within try/except statements
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
         added command line option to apply flexure for applicable models
@@ -101,10 +102,10 @@ from __future__ import print_function
 import sys
 import os
 import re
-import h5py
 import logging
 import argparse
 import datetime
+import warnings
 import numpy as np
 import pyTMD.time
 import pyTMD.model
@@ -116,7 +117,19 @@ from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.predict_tide_drift import predict_tide_drift
-from icesat2_toolkit.read_ICESat2_ATL06 import read_HDF5_ATL06
+#-- attempt imports
+try:
+    import h5py
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("h5py not available")
+try:
+    from icesat2_toolkit.read_ICESat2_ATL06 import read_HDF5_ATL06
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("icesat2_toolkit not available")
+#-- ignore warnings
+warnings.filterwarnings("ignore")
 
 #-- PURPOSE: read ICESat-2 land ice data (ATL06) from NSIDC
 #-- compute tides at points and times using tidal model driver algorithms
