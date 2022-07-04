@@ -51,10 +51,10 @@ def test_ocean_pole_tide(METHOD):
 
     #-- read test file for values
     ocean_pole_test_file = os.path.join(filepath,'opoleloadcmcor.test')
-    names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2','u_radial','u_north')
-    formats = ('i','f','f','f','f','f','f','f','f')
-    validation = np.loadtxt(ocean_pole_test_file,skiprows=26,
-        dtype=dict(names=names,formats=formats))
+    names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2','u_radial','u_north','u_east')
+    formats = ('i4','f4','f4','f4','f4','f4','f4','f4','f4','f4')
+    validation = np.loadtxt(ocean_pole_test_file, skiprows=26,
+        dtype=dict(names=names, formats=formats))
     file_lines = len(validation)
     #-- mean pole coordinates for test
     xmean = np.array([5.4e-2, 8.30e-4])
@@ -79,7 +79,7 @@ def test_ocean_pole_tide(METHOD):
         UR.imag = f2.ev(lon,lat)
     else:
         #-- use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
+        r1 = scipy.interpolate.RegularGridInterpolator((ilon, ilat[::-1]),
             iur[:,::-1], method=METHOD)
         UR = r1.__call__(np.c_[lon,lat])
 
