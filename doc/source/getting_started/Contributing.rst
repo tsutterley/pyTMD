@@ -12,7 +12,7 @@ Ways to Contribute
 1) Fixing typographical or coding errors
 2) Submitting bug reports or feature requests through the use of `GitHub issues <https://github.com/tsutterley/pyTMD/issues>`_
 3) Improving documentation and testing
-4) Sharing use cases and examples (such as `Jupyter Notebooks <./Examples.html>`_)
+4) Sharing use cases and examples (such as `Jupyter Notebooks <../user_guide/Examples.html>`_)
 5) Providing code for everyone to use
 
 Requesting a Feature
@@ -57,14 +57,14 @@ Steps to Contribute
 
 Adding Examples
 ^^^^^^^^^^^^^^^
-Examples may be in the form of executable scripts or interactive `Jupyter Notebooks <./Examples.html>`_.
+Examples may be in the form of executable scripts or interactive `Jupyter Notebooks <../user_guide/Examples.html>`_.
 Fully working (but unrendered) examples should be submitted with the same steps as above.
 
 Continuous Integration
 ^^^^^^^^^^^^^^^^^^^^^^
 We use `GitHub Actions <https://github.com/tsutterley/pyTMD/actions>`_ continuous integration (CI) services to build and test the project on Linux (Ubuntu) and Mac Operating Systems.
 The configuration files for this service are in `.github/workflows <https://github.com/tsutterley/pyTMD/blob/main/.github/workflows>`_.
-The workflows rely on the `requirements.txt <https://github.com/tsutterley/pyTMD/blob/main/requirements.txt>`_ and `requirements-dev.txt <https://github.com/tsutterley/pyTMD/blob/main/requirements-dev.txt>`_ files to install the required dependencies.
+The workflows rely on the `environment.yml <https://github.com/tsutterley/pyTMD/blob/main/environment.yml>`_ and `requirements-dev.txt <https://github.com/tsutterley/pyTMD/blob/main/requirements-dev.txt>`_ files to install the required dependencies.
 
 The GitHub Actions jobs include:
 
