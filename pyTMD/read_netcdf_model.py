@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py (05/2022)
+read_netcdf_model.py (07/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 07/2022: fix setting of masked array data to NaN
     Updated 05/2022: reformat arguments to extract_netcdf_constants definition
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -156,9 +157,9 @@ def extract_netcdf_constants(ilon, ilat,
     kwargs.setdefault('compressed', True)
     kwargs.setdefault('scale', 1.0)
     #-- raise warnings for deprecated keyword arguments
-    deprecated_keywords = dict(TYPE='type',METHOD='method',
-        EXTRAPOLATE='extrapolate',CUTOFF='cutoff',
-        GZIP='compressed',SCALE='scale')
+    deprecated_keywords = dict(TYPE='type', METHOD='method',
+        EXTRAPOLATE='extrapolate', CUTOFF='cutoff',
+        GZIP='compressed', SCALE='scale')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
             warnings.warn("""Deprecated keyword argument {0}.
@@ -177,7 +178,7 @@ def extract_netcdf_constants(ilon, ilat,
         raise FileNotFoundError(os.path.expanduser(grid_file))
 
     #-- read the tide grid file for bathymetry and spatial coordinates
-    lon,lat,bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
+    lon, lat, bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
         compressed=kwargs['compressed'])
 
     #-- adjust dimensions of input coordinates to be iterable
@@ -188,11 +189,11 @@ def extract_netcdf_constants(ilon, ilat,
     if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
         #-- input points convention (-180:180)
         #-- tide model convention (0:360)
-        ilon[ilon<0.0] += 360.0
+        ilon[ilon < 0.0] += 360.0
     elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
         #-- input points convention (0:360)
         #-- tide model convention (-180:180)
-        ilon[ilon>180.0] -= 360.0
+        ilon[ilon > 180.0] -= 360.0
 
     #-- grid step size of tide model
     dlon = lon[1] - lon[0]
@@ -207,10 +208,10 @@ def extract_netcdf_constants(ilon, ilat,
     npts = len(ilon)
     #-- interpolate bathymetry and mask to output points
     D = np.ma.zeros((npts))
-    D.mask = np.zeros((npts),dtype=bool)
+    D.mask = np.zeros((npts), dtype=bool)
     if (kwargs['method'] == 'bilinear'):
         #-- replace invalid values with nan
-        bathymetry[bathymetry.mask] = np.nan
+        bathymetry.data[bathymetry.mask] = np.nan
         #-- use quick bilinear to interpolate values
         D.data[:] = bilinear_interp(lon, lat, bathymetry, ilon, ilat)
         #-- replace nan values with fill_value
@@ -226,13 +227,13 @@ def extract_netcdf_constants(ilon, ilat,
         D.mask[:] = np.ceil(f2.ev(ilon,ilat)).astype(bool)
     else:
         #-- use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
+        r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
             bathymetry.data, method=kwargs['method'], bounds_error=False)
-        r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
+        r2 = scipy.interpolate.RegularGridInterpolator((lat, lon),
             bathymetry.mask, method=kwargs['method'], bounds_error=False,
             fill_value=1)
-        D.data[:] = r1.__call__(np.c_[ilat,ilon])
-        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
+        D.data[:] = r1.__call__(np.c_[ilat, ilon])
+        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat, ilon])).astype(bool)
 
     #-- u and v are velocities in cm/s
     if kwargs['type'] in ('v','u'):
@@ -246,10 +247,10 @@ def extract_netcdf_constants(ilon, ilat,
     #-- list of constituents
     constituents = []
     #-- amplitude and phase
-    ampl = np.ma.zeros((npts,nc))
-    ampl.mask = np.zeros((npts,nc),dtype=bool)
-    ph = np.ma.zeros((npts,nc))
-    ph.mask = np.zeros((npts,nc),dtype=bool)
+    ampl = np.ma.zeros((npts, nc))
+    ampl.mask = np.zeros((npts, nc), dtype=bool)
+    ph = np.ma.zeros((npts, nc))
+    ph.mask = np.zeros((npts, nc), dtype=bool)
     #-- read and interpolate each constituent
     for i,model_file in enumerate(model_files):
         #-- check that model file is accessible
@@ -266,11 +267,11 @@ def extract_netcdf_constants(ilon, ilat,
             #-- update constituent mask with bathymetry mask
             z.mask[:] |= bathymetry.mask[:]
             #-- interpolate amplitude and phase of the constituent
-            z1 = np.ma.zeros((npts),dtype=z.dtype)
-            z1.mask = np.zeros((npts),dtype=bool)
+            z1 = np.ma.zeros((npts), dtype=z.dtype)
+            z1.mask = np.zeros((npts), dtype=bool)
             if (kwargs['method'] == 'bilinear'):
                 #-- replace invalid values with nan
-                z[z.mask] = np.nan
+                z.data[z.mask] = np.nan
                 z1.data[:] = bilinear_interp(lon, lat, z, ilon, ilat,
                     dtype=z.dtype)
                 #-- mask invalid values
@@ -288,10 +289,10 @@ def extract_netcdf_constants(ilon, ilat,
                 z1.data[z1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
+                r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
                     z.data, method=kwargs['method'], bounds_error=False,
                     fill_value=z1.fill_value)
-                z1.data[:] = r1.__call__(np.c_[ilat,ilon])
+                z1.data[:] = r1.__call__(np.c_[ilat, ilon])
                 #-- mask invalid values
                 z1.mask[:] |= np.copy(D.mask)
                 z1.data[z1.mask] = z1.fill_value
@@ -300,14 +301,14 @@ def extract_netcdf_constants(ilon, ilat,
                 #-- find invalid data points
                 inv, = np.nonzero(z1.mask)
                 #-- replace invalid values with nan
-                z[z.mask] = np.nan
+                z.data[z.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
                 z1[inv] = nearest_extrap(lon, lat, z, ilon[inv], ilat[inv],
                     dtype=z.dtype, cutoff=kwargs['cutoff'])
             #-- amplitude and phase of the constituent
             ampl.data[:,i] = np.abs(z1.data)
             ampl.mask[:,i] = np.copy(z1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(z1.data),np.real(z1.data))
+            ph.data[:,i] = np.arctan2(-np.imag(z1.data), np.real(z1.data))
             ph.mask[:,i] = np.copy(z1.mask)
         elif kwargs['type'] in ('U','u','V','v'):
             #-- read constituent from transport file
@@ -320,9 +321,11 @@ def extract_netcdf_constants(ilon, ilat,
             #-- update constituent mask with bathymetry mask
             tr.mask[:] |= bathymetry.mask[:]
             #-- interpolate amplitude and phase of the constituent
-            tr1 = np.ma.zeros((npts),dtype=tr.dtype)
-            tr1.mask = np.zeros((npts),dtype=bool)
+            tr1 = np.ma.zeros((npts), dtype=tr.dtype)
+            tr1.mask = np.zeros((npts), dtype=bool)
             if (kwargs['method'] == 'bilinear'):
+                #-- replace invalid values with nan
+                tr.data[tr.mask] = np.nan
                 tr1.data[:]=bilinear_interp(lon, lat, tr, ilon, ilat,
                     dtype=tr.dtype)
                 #-- mask invalid values
@@ -340,10 +343,10 @@ def extract_netcdf_constants(ilon, ilat,
                 tr1.data[tr1.mask] = z1.fill_value
             else:
                 #-- use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
+                r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
                     tr.data, method=kwargs['method'], bounds_error=False,
                     fill_value=tr1.fill_value)
-                tr1.data[:] = r1.__call__(np.c_[ilat,ilon])
+                tr1.data[:] = r1.__call__(np.c_[ilat, ilon])
                 #-- mask invalid values
                 tr1.mask[:] |= np.copy(D.mask)
                 tr1.data[tr1.mask] = tr1.fill_value
@@ -352,7 +355,7 @@ def extract_netcdf_constants(ilon, ilat,
                 #-- find invalid data points
                 inv, = np.nonzero(tr1.mask)
                 #-- replace invalid values with nan
-                tr[tr.mask] = np.nan
+                tr.data[tr.mask] = np.nan
                 #-- extrapolate points within cutoff of valid model points
                 tr1[inv] = nearest_extrap(lon, lat, tr, ilon[inv], ilat[inv],
                     dtype=tr.dtype, cutoff=kwargs['cutoff'])
@@ -360,7 +363,7 @@ def extract_netcdf_constants(ilon, ilat,
             #-- amplitude and phase of the constituent
             ampl.data[:,i] = np.abs(tr1.data)/unit_conv
             ampl.mask[:,i] = np.copy(tr1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(tr1.data),np.real(tr1.data))
+            ph.data[:,i] = np.arctan2(-np.imag(tr1.data), np.real(tr1.data))
             ph.mask[:,i] = np.copy(tr1.mask)
 
     #-- convert amplitude from input units to meters
@@ -372,7 +375,7 @@ def extract_netcdf_constants(ilon, ilat,
     return (amplitude, phase, D, constituents)
 
 #-- PURPOSE: wrapper function to extend an array
-def extend_array(input_array,step_size):
+def extend_array(input_array, step_size):
     """
     Wrapper function to extend an array
 
@@ -389,7 +392,7 @@ def extend_array(input_array,step_size):
         extended array
     """
     n = len(input_array)
-    temp = np.zeros((n+2),dtype=input_array.dtype)
+    temp = np.zeros((n+2), dtype=input_array.dtype)
     #-- extended array [x-1,x0,...,xN,xN+1]
     temp[0] = input_array[0] - step_size
     temp[1:-1] = input_array[:]
@@ -412,7 +415,7 @@ def extend_matrix(input_matrix):
         extended matrix
     """
     ny,nx = np.shape(input_matrix)
-    temp = np.ma.zeros((ny,nx+2),dtype=input_matrix.dtype)
+    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
     temp[:,0] = input_matrix[:,-1]
     temp[:,1:-1] = input_matrix[:,:]
     temp[:,-1] = input_matrix[:,0]
@@ -454,10 +457,10 @@ def read_netcdf_grid(input_file, variable, **kwargs):
     #-- reading a combined global solution with localized solutions
     if kwargs['compressed']:
         #-- read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file),'rb')
-        fileID=netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file), 'rb')
+        fileID=netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID=netCDF4.Dataset(os.path.expanduser(input_file),'r')
+        fileID=netCDF4.Dataset(os.path.expanduser(input_file), 'r')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
@@ -487,7 +490,7 @@ def read_netcdf_grid(input_file, variable, **kwargs):
     #-- close the grid file
     fileID.close()
     f.close() if kwargs['compressed'] else None
-    return (lon,lat,bathymetry)
+    return (lon, lat, bathymetry)
 
 #-- PURPOSE: read elevation file to extract real and imaginary components for
 #-- constituent
@@ -515,25 +518,25 @@ def read_elevation_file(input_file, **kwargs):
     #-- reading a combined global solution with localized solutions
     if kwargs['compressed']:
         #-- read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file),'rb')
-        fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file), 'rb')
+        fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
     #-- constituent name
     con = fileID.variables['con'][:].tobytes().decode('utf8')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
     #-- real and imaginary components of elevation
-    h = np.ma.zeros((ny,nx),dtype=np.complex64)
-    h.mask = np.zeros((ny,nx),dtype=bool)
+    h = np.ma.zeros((ny,nx), dtype=np.complex64)
+    h.mask = np.zeros((ny,nx), dtype=bool)
     h.data.real[:,:] = fileID.variables['hRe'][:,:].T
     h.data.imag[:,:] = fileID.variables['hIm'][:,:].T
     #-- close the file
     fileID.close()
     f.close() if kwargs['compressed'] else None
     #-- return the elevation and constituent
-    return (h,con.strip())
+    return (h, con.strip())
 
 #-- PURPOSE: read transport file to extract real and imaginary components for
 #-- constituent
@@ -569,18 +572,18 @@ def read_transport_file(input_file, variable, **kwargs):
     #-- reading a combined global solution with localized solutions
     if kwargs['compressed']:
         #-- read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file),'rb')
-        fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
+        f = gzip.open(os.path.expanduser(input_file), 'rb')
+        fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
     #-- constituent name
     con = fileID.variables['con'][:].tobytes().decode('utf8')
     #-- variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
     #-- real and imaginary components of transport
-    tr = np.ma.zeros((ny,nx),dtype=np.complex64)
-    tr.mask = np.zeros((ny,nx),dtype=bool)
+    tr = np.ma.zeros((ny,nx), dtype=np.complex64)
+    tr.mask = np.zeros((ny,nx), dtype=bool)
     if variable in ('U','u'):
         tr.data.real[:,:] = fileID.variables['uRe'][:,:].T
         tr.data.imag[:,:] = fileID.variables['uIm'][:,:].T
@@ -591,4 +594,4 @@ def read_transport_file(input_file, variable, **kwargs):
     fileID.close()
     f.close() if kwargs['compressed'] else None
     #-- return the transport components and constituent
-    return (tr,con.strip())
+    return (tr, con.strip())
