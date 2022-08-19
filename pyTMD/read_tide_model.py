@@ -107,7 +107,7 @@ from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
-#-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
+# PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_tidal_constants(ilon, ilat,
     grid_file=None,
     model_file=None,
@@ -172,14 +172,14 @@ def extract_tidal_constants(ilon, ilat,
     constituents: list
         list of model constituents
     """
-    #-- set default keyword arguments
+    # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
     kwargs.setdefault('grid', 'OTIS')
     kwargs.setdefault('apply_flexure', False)
-    #-- raise warnings for deprecated keyword arguments
+    # raise warnings for deprecated keyword arguments
     deprecated_keywords = dict(TYPE='type',METHOD='method',
         EXTRAPOLATE='extrapolate',CUTOFF='cutoff',GRID='grid')
     for old,new in deprecated_keywords.items():
@@ -187,30 +187,30 @@ def extract_tidal_constants(ilon, ilat,
             warnings.warn("""Deprecated keyword argument {0}.
                 Changed to '{1}'""".format(old,new),
                 DeprecationWarning)
-            #-- set renamed argument to not break workflows
+            # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
-    #-- check that grid file is accessible
+    # check that grid file is accessible
     if not os.access(os.path.expanduser(grid_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(grid_file))
-    #-- read the OTIS-format tide grid file
+    # read the OTIS-format tide grid file
     if (kwargs['grid'] == 'ATLAS'):
-        #-- if reading a global solution with localized solutions
+        # if reading a global solution with localized solutions
         x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,VARIABLE='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,VARIABLE='depth')
     elif (kwargs['grid'] == 'ESR'):
-        #-- if reading a single ESR netCDF4 solution
+        # if reading a single ESR netCDF4 solution
         xi,yi,hz,mz,sf = read_netcdf_grid(grid_file)
     else:
-        #-- if reading a single OTIS solution
+        # if reading a single OTIS solution
         xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
-    #-- invert tide mask to be True for invalid points
+    # invert tide mask to be True for invalid points
     mz = np.logical_not(mz).astype(mz.dtype)
-    #-- adjust dimensions of input coordinates to be iterable
-    #-- run wrapper function to convert coordinate systems of input lat/lon
+    # adjust dimensions of input coordinates to be iterable
+    # run wrapper function to convert coordinate systems of input lat/lon
     x,y = convert_ll_xy(np.atleast_1d(ilon),np.atleast_1d(ilat),EPSG,'F')
-    #-- grid step size of tide model
+    # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
 
@@ -218,41 +218,41 @@ def extract_tidal_constants(ilon, ilat,
         mz,mu,mv = Muv(hz)
         hu,hv = Huv(hz)
 
-    #-- if global: extend limits
+    # if global: extend limits
     global_grid = False
-    #-- replace original values with extend arrays/matrices
+    # replace original values with extend arrays/matrices
     if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
         xi = extend_array(xi, dx)
         hz = extend_matrix(hz)
         mz = extend_matrix(mz)
-        #-- set global grid flag
+        # set global grid flag
         global_grid = True
 
-    #-- adjust longitudinal convention of input latitude and longitude
-    #-- to fit tide model convention
+    # adjust longitudinal convention of input latitude and longitude
+    # to fit tide model convention
     if (np.min(x) < np.min(xi)) & (EPSG == '4326'):
         x[x < 0] += 360.0
     if (np.max(x) > np.max(xi)) & (EPSG == '4326'):
         x[x > 180] -= 360.0
-    #-- determine if any input points are outside of the model bounds
+    # determine if any input points are outside of the model bounds
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
 
-    #-- masks zero values
+    # masks zero values
     hz = np.ma.array(hz,mask=(hz==0))
     if (kwargs['type'] != 'z'):
-        #-- replace original values with extend matrices
+        # replace original values with extend matrices
         if global_grid:
             hu = extend_matrix(hu)
             hv = extend_matrix(hv)
             mu = extend_matrix(mu)
             mv = extend_matrix(mv)
-        #-- masks zero values
+        # masks zero values
         hu = np.ma.array(hu,mask=(hu==0))
         hv = np.ma.array(hv,mask=(hv==0))
 
-    #-- interpolate depth and mask to output points
+    # interpolate depth and mask to output points
     if (kwargs['method'] == 'bilinear'):
-        #-- use quick bilinear to interpolate values
+        # use quick bilinear to interpolate values
         D = bilinear_interp(xi, yi, hz, x, y)
         mz1 = bilinear_interp(xi, yi, mz, x, y)
         mz1 = np.ceil(mz1).astype(mz.dtype)
@@ -262,7 +262,7 @@ def extract_tidal_constants(ilon, ilat,
             mv1 = bilinear_interp(xi, yi, mv, x, y)
             mv1 = np.ceil(mv1).astype(mz.dtype)
     elif (kwargs['method'] == 'spline'):
-        #-- use scipy bivariate splines to interpolate values
+        # use scipy bivariate splines to interpolate values
         f1=scipy.interpolate.RectBivariateSpline(xi, yi, hz.T, kx=1, ky=1)
         f2=scipy.interpolate.RectBivariateSpline(xi, yi, mz.T, kx=1, ky=1)
         D = f1.ev(x,y)
@@ -273,7 +273,7 @@ def extract_tidal_constants(ilon, ilat,
             mu1 = np.ceil(f3.ev(x,y)).astype(mu.dtype)
             mv1 = np.ceil(f4.ev(x,y)).astype(mv.dtype)
     else:
-        #-- use scipy regular grid to interpolate values for a given method
+        # use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), hz,
             method=kwargs['method'], bounds_error=False)
         r2 = scipy.interpolate.RegularGridInterpolator((yi,xi), mz,
@@ -288,20 +288,20 @@ def extract_tidal_constants(ilon, ilat,
             mu1 = np.ceil(r3.__call__(np.c_[y,x])).astype(mu.dtype)
             mv1 = np.ceil(r4.__call__(np.c_[y,x])).astype(mv.dtype)
 
-    #-- u and v: velocities in cm/s
+    # u and v: velocities in cm/s
     if kwargs['type'] in ('v','u'):
         unit_conv = (D/100.0)
-    #-- U and V: transports in m^2/s
+    # U and V: transports in m^2/s
     elif kwargs['type'] in ('V','U'):
         unit_conv = 1.0
 
-    #-- read and interpolate each constituent
+    # read and interpolate each constituent
     if isinstance(model_file,list):
         constituents = [read_constituents(m)[0].pop() for m in model_file]
         nc = len(constituents)
     else:
         constituents,nc = read_constituents(model_file, grid=kwargs['grid'])
-    #-- number of output data points
+    # number of output data points
     npts = len(D)
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc),dtype=bool)
@@ -309,76 +309,76 @@ def extract_tidal_constants(ilon, ilat,
     ph.mask = np.zeros((npts,nc),dtype=bool)
     for i,c in enumerate(constituents):
         if (kwargs['type'] == 'z'):
-            #-- read constituent from elevation file
+            # read constituent from elevation file
             if (kwargs['grid'] == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
                 xi,yi,z = combine_atlas_model(x0, y0, z0, pmask, zlocal,
                     variable='z')
             elif (kwargs['grid'] == 'ESR'):
                 z = read_netcdf_file(model_file, i, variable='z')
-                #-- apply flexure scaling
+                # apply flexure scaling
                 if kwargs['apply_flexure']:
                     z *= sf
             elif isinstance(model_file,list):
                 z = read_elevation_file(model_file[i], 0)
             else:
                 z = read_elevation_file(model_file, i)
-            #-- replace original values with extend matrices
+            # replace original values with extend matrices
             if global_grid:
                 z = extend_matrix(z)
-            #-- copy mask to elevation
+            # copy mask to elevation
             z.mask |= mz.astype(bool)
-            #-- interpolate amplitude and phase of the constituent
+            # interpolate amplitude and phase of the constituent
             z1 = np.ma.zeros((npts),dtype=z.dtype)
             if (kwargs['method'] == 'bilinear'):
-                #-- replace zero values with nan
+                # replace zero values with nan
                 z[(z==0) | z.mask] = np.nan
-                #-- use quick bilinear to interpolate values
+                # use quick bilinear to interpolate values
                 z1.data[:] = bilinear_interp(xi, yi, z, x, y,
                     dtype=np.longcomplex)
-                #-- replace nan values with fill_value
+                # replace nan values with fill_value
                 z1.mask = (np.isnan(z1.data) | (mz1.astype(bool)))
                 z1.data[z1.mask] = z1.fill_value
             elif (kwargs['method'] == 'spline'):
-                #-- use scipy bivariate splines to interpolate values
+                # use scipy bivariate splines to interpolate values
                 f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     z.real.T, kx=1, ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
                     z.imag.T, kx=1, ky=1)
                 z1.data.real = f1.ev(x,y)
                 z1.data.imag = f2.ev(x,y)
-                #-- replace zero values with fill_value
+                # replace zero values with fill_value
                 z1.mask = (mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
             else:
-                #-- use scipy regular grid to interpolate values
+                # use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), z,
                     method=kwargs['method'],
                     bounds_error=False,
                     fill_value=z1.fill_value)
                 z1 = np.ma.zeros((npts),dtype=z.dtype)
                 z1.data[:] = r1.__call__(np.c_[y,x])
-                #-- replace invalid values with fill_value
+                # replace invalid values with fill_value
                 z1.mask = (z1.data == z1.fill_value) | (mz1.astype(bool))
                 z1.data[z1.mask] = z1.fill_value
-            #-- extrapolate data using nearest-neighbors
+            # extrapolate data using nearest-neighbors
             if kwargs['extrapolate'] and np.any(z1.mask):
-                #-- find invalid data points
+                # find invalid data points
                 inv, = np.nonzero(z1.mask)
-                #-- replace zero values with nan
+                # replace zero values with nan
                 z[(z==0) | z.mask] = np.nan
-                #-- extrapolate points within cutoff of valid model points
+                # extrapolate points within cutoff of valid model points
                 z1[inv] = nearest_extrap(xi, yi, z, x[inv], y[inv],
                     dtype=np.longcomplex,
                     cutoff=kwargs['cutoff'],
                     EPSG=EPSG)
-            #-- amplitude and phase of the constituent
+            # amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(z1.data)
             amplitude.mask[:,i] = np.copy(z1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(z1.data),np.real(z1.data))
             ph.mask[:,i] = np.copy(z1.mask)
         elif kwargs['type'] in ('U','u'):
-            #-- read constituent from transport file
+            # read constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,u = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
@@ -389,22 +389,22 @@ def extract_tidal_constants(ilon, ilat,
                 u,v = read_transport_file(model_file[i], 0)
             else:
                 u,v = read_transport_file(model_file, i)
-            #-- replace original values with extend matrices
+            # replace original values with extend matrices
             if global_grid:
                 u = extend_matrix(u)
-            #-- copy mask to u transports
+            # copy mask to u transports
             u.mask |= mu.astype(bool)
-            #-- x coordinates for u transports
+            # x coordinates for u transports
             xu = xi - dx/2.0
-            #-- interpolate amplitude and phase of the constituent
+            # interpolate amplitude and phase of the constituent
             u1 = np.ma.zeros((npts),dtype=u.dtype)
             if (kwargs['method'] == 'bilinear'):
-                #-- replace zero values with nan
+                # replace zero values with nan
                 u[(u==0) | u.mask] = np.nan
-                #-- use quick bilinear to interpolate values
+                # use quick bilinear to interpolate values
                 u1.data[:] = bilinear_interp(xu, yi, u, x, y,
                     dtype=np.longcomplex)
-                #-- replace nan values with fill_value
+                # replace nan values with fill_value
                 u1.mask = (np.isnan(u1.data) | (mu1.astype(bool)))
                 u1.data[u1.mask] = u1.fill_value
             elif (kwargs['method'] == 'spline'):
@@ -414,37 +414,37 @@ def extract_tidal_constants(ilon, ilat,
                     u.imag.T, kx=1, ky=1)
                 u1.data.real = f1.ev(x,y)
                 u1.data.imag = f2.ev(x,y)
-                #-- replace zero values with fill_value
+                # replace zero values with fill_value
                 u1.mask = (mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
             else:
-                #-- use scipy regular grid to interpolate values
+                # use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((yi,xu), u,
                     method=kwargs['method'], bounds_error=False,
                     fill_value=u1.fill_value)
                 u1.data[:] = r1.__call__(np.c_[y,x])
-                #-- replace invalid values with fill_value
+                # replace invalid values with fill_value
                 u1.mask = (u1.data == u1.fill_value) | (mu1.astype(bool))
                 u1.data[u1.mask] = u1.fill_value
-            #-- extrapolate data using nearest-neighbors
+            # extrapolate data using nearest-neighbors
             if kwargs['extrapolate'] and np.any(u1.mask):
-                #-- find invalid data points
+                # find invalid data points
                 inv, = np.nonzero(u1.mask)
-                #-- replace zero values with nan
+                # replace zero values with nan
                 u[(u==0) | u.mask] = np.nan
-                #-- extrapolate points within cutoff of valid model points
+                # extrapolate points within cutoff of valid model points
                 u1[inv] = nearest_extrap(xu, yi, u, x[inv], y[inv],
                     dtype=np.longcomplex,
                     cutoff=kwargs['cutoff'],
                     EPSG=EPSG)
-            #-- convert units
-            #-- amplitude and phase of the constituent
+            # convert units
+            # amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(u1.data)/unit_conv
             amplitude.mask[:,i] = np.copy(u1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(u1),np.real(u1))
             ph.mask[:,i] = np.copy(u1.mask)
         elif kwargs['type'] in ('V','v'):
-            #-- read constituent from transport file
+            # read constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,v = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
@@ -455,22 +455,22 @@ def extract_tidal_constants(ilon, ilat,
                 u,v = read_transport_file(model_file[i], 0)
             else:
                 u,v = read_transport_file(model_file, i)
-            #-- replace original values with extend matrices
+            # replace original values with extend matrices
             if global_grid:
                 v = extend_matrix(v)
-            #-- copy mask to v transports
+            # copy mask to v transports
             v.mask |= mv.astype(bool)
-            #-- y coordinates for v transports
+            # y coordinates for v transports
             yv = yi - dy/2.0
-            #-- interpolate amplitude and phase of the constituent
+            # interpolate amplitude and phase of the constituent
             v1 = np.ma.zeros((npts),dtype=v.dtype)
             if (kwargs['method'] == 'bilinear'):
-                #-- replace zero values with nan
+                # replace zero values with nan
                 v[(v==0) | v.mask] = np.nan
-                #-- use quick bilinear to interpolate values
+                # use quick bilinear to interpolate values
                 v1.data[:] = bilinear_interp(xi, yv, v, x, y,
                     dtype=np.longcomplex)
-                #-- replace nan values with fill_value
+                # replace nan values with fill_value
                 v1.mask = (np.isnan(v1.data) | (mv1.astype(bool)))
                 v1.data[v1.mask] = v1.fill_value
             elif (kwargs['method'] == 'spline'):
@@ -480,50 +480,50 @@ def extract_tidal_constants(ilon, ilat,
                     v.imag.T, kx=1, ky=1)
                 v1.data.real = f1.ev(x,y)
                 v1.data.imag = f2.ev(x,y)
-                #-- replace zero values with fill_value
+                # replace zero values with fill_value
                 v1.mask = (mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
             else:
-                #-- use scipy regular grid to interpolate values
+                # use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((yv,xi), v,
                     method=kwargs['method'],
                     bounds_error=False,
                     fill_value=v1.fill_value)
                 v1.data[:] = r1.__call__(np.c_[y,x])
-                #-- replace invalid values with fill_value
+                # replace invalid values with fill_value
                 v1.mask = (v1.data == v1.fill_value) | (mv1.astype(bool))
                 v1.data[v1.mask] = v1.fill_value
-            #-- extrapolate data using nearest-neighbors
+            # extrapolate data using nearest-neighbors
             if kwargs['extrapolate'] and np.any(v1.mask):
-                #-- find invalid data points
+                # find invalid data points
                 inv, = np.nonzero(v1.mask)
-                #-- replace zero values with nan
+                # replace zero values with nan
                 v[(v==0) | v.mask] = np.nan
-                #-- extrapolate points within cutoff of valid model points
+                # extrapolate points within cutoff of valid model points
                 v1[inv] = nearest_extrap(xi, yv, v, x[inv], y[inv],
                     dtype=np.longcomplex,
                     cutoff=kwargs['cutoff'],
                     EPSG=EPSG)
-            #-- convert units
-            #-- amplitude and phase of the constituent
+            # convert units
+            # amplitude and phase of the constituent
             amplitude.data[:,i] = np.abs(v1.data)/unit_conv
             amplitude.mask[:,i] = np.copy(v1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(v1),np.real(v1))
             ph.mask[:,i] = np.copy(v1.mask)
-        #-- update mask to invalidate points outside model domain
+        # update mask to invalidate points outside model domain
         ph.mask[:,i] |= invalid
         amplitude.mask[:,i] |= invalid
 
-    #-- convert phase to degrees
+    # convert phase to degrees
     phase = ph*180.0/np.pi
     phase.data[phase.data < 0] += 360.0
-    #-- replace data for invalid mask values
+    # replace data for invalid mask values
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value
-    #-- return the interpolated values
+    # return the interpolated values
     return (amplitude,phase,D,constituents)
 
-#-- PURPOSE: wrapper function to extend an array
+# PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
     """
     Wrapper function to extend an array
@@ -542,13 +542,13 @@ def extend_array(input_array,step_size):
     """
     n = len(input_array)
     temp = np.zeros((n+2),dtype=input_array.dtype)
-    #-- extended array [x-1,x0,...,xN,xN+1]
+    # extended array [x-1,x0,...,xN,xN+1]
     temp[0] = input_array[0] - step_size
     temp[1:-1] = input_array[:]
     temp[-1] = input_array[-1] + step_size
     return temp
 
-#-- PURPOSE: wrapper function to extend a matrix
+# PURPOSE: wrapper function to extend a matrix
 def extend_matrix(input_matrix):
     """
     Wrapper function to extend a matrix
@@ -570,7 +570,7 @@ def extend_matrix(input_matrix):
     temp[:,-1] = input_matrix[:,0]
     return temp
 
-#-- PURPOSE: read tide grid file
+# PURPOSE: read tide grid file
 def read_tide_grid(input_file):
     """
     Read grid file to extract model coordinates, bathymetry, masks and indices
@@ -595,26 +595,26 @@ def read_tide_grid(input_file):
     dt: float
         time step
     """
-    #-- open the file
+    # open the file
     fid = open(os.path.expanduser(input_file),'rb')
     fid.seek(4,0)
-    #-- read data as big endian
-    #-- get model dimensions and limits
+    # read data as big endian
+    # get model dimensions and limits
     nx, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     ny, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
-    #-- extract x and y limits (these could be latitude and longitude)
+    # extract x and y limits (these could be latitude and longitude)
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     dt, = np.fromfile(fid, dtype=np.dtype('>f4'), count=1)
-    #-- convert longitudinal limits (if x == longitude)
+    # convert longitudinal limits (if x == longitude)
     if (xlim[0] < 0) & (xlim[1] < 0) & (dt > 0):
         xlim += 360.0
-    #-- create x and y arrays arrays (these could be lon and lat values)
+    # create x and y arrays arrays (these could be lon and lat values)
     dx = (xlim[1] - xlim[0])/nx
     dy = (ylim[1] - ylim[0])/ny
     x = np.linspace(xlim[0]+dx/2.0,xlim[1]-dx/2.0,nx)
     y = np.linspace(ylim[0]+dy/2.0,ylim[1]-dy/2.0,ny)
-    #-- read nob and iob from file
+    # read nob and iob from file
     nob, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     if (nob == 0):
         fid.seek(20,1)
@@ -623,17 +623,17 @@ def read_tide_grid(input_file):
         fid.seek(8,1)
         iob=np.fromfile(fid, dtype=np.dtype('>i4'), count=2*nob).reshape(nob,2)
         fid.seek(8,1)
-    #-- read hz matrix
+    # read hz matrix
     hz = np.fromfile(fid, dtype=np.dtype('>f4'), count=nx*ny).reshape(ny,nx)
     fid.seek(8,1)
-    #-- read mz matrix
+    # read mz matrix
     mz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nx*ny).reshape(ny,nx)
-    #-- close the file
+    # close the file
     fid.close()
-    #-- return values
+    # return values
     return (x,y,hz,mz,iob,dt)
 
-#-- PURPOSE: read tide grid file with localized solutions
+# PURPOSE: read tide grid file with localized solutions
 def read_atlas_grid(input_file):
     """
     Read ATLAS grid file to extract model coordinates, bathymetry, masks and
@@ -665,25 +665,25 @@ def read_atlas_grid(input_file):
 
             - ``'depth'``: model bathymetry
     """
-    #-- read the input file to get file information
+    # read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
     file_info = os.fstat(fd)
     fid = os.fdopen(fd, 'rb')
     fid.seek(4,0)
-    #-- read data as big endian
-    #-- get model dimensions and limits
+    # read data as big endian
+    # get model dimensions and limits
     nx, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     ny, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
-    #-- extract latitude and longitude limits
+    # extract latitude and longitude limits
     lats = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     lons = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     dt, = np.fromfile(fid, dtype=np.dtype('>f4'), count=1)
-    #-- create lon and lat arrays
+    # create lon and lat arrays
     dlon = (lons[1] - lons[0])/nx
     dlat = (lats[1] - lats[0])/ny
     x = np.linspace(lons[0]+dlon/2.0,lons[1]-dlon/2.0,nx)
     y = np.linspace(lats[0]+dlat/2.0,lats[1]-dlat/2.0,ny)
-    #-- read nob and iob from file
+    # read nob and iob from file
     nob, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     if (nob == 0):
         fid.seek(20,1)
@@ -692,31 +692,31 @@ def read_atlas_grid(input_file):
         fid.seek(8,1)
         iob=np.fromfile(fid, dtype=np.dtype('>i4'), count=2*nob).reshape(nob,2)
         fid.seek(8,1)
-    #-- read hz matrix
+    # read hz matrix
     hz = np.fromfile(fid, dtype=np.dtype('>f4'), count=nx*ny).reshape(ny,nx)
     fid.seek(8,1)
-    #-- read mz matrix
+    # read mz matrix
     mz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nx*ny).reshape(ny,nx)
     fid.seek(8,1)
-    #-- read pmask matrix
+    # read pmask matrix
     pmask = np.fromfile(fid, dtype=np.dtype('>i4'), count=nx*ny).reshape(ny,nx)
     fid.seek(4,1)
-    #-- read local models
+    # read local models
     nmod = 0
     local = {}
-    #-- while the file position is not at the end of file
+    # while the file position is not at the end of file
     while (fid.tell() < file_info.st_size):
-        #-- add 1 to number of models
+        # add 1 to number of models
         fid.seek(4,1)
         nmod += 1
-        #-- get local model dimensions and limits
+        # get local model dimensions and limits
         nx1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         ny1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nd, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
-        #-- extract latitude and longitude limits of local model
+        # extract latitude and longitude limits of local model
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-        #-- extract name
+        # extract name
         name = fid.read(20).strip()
         fid.seek(8,1)
         iz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nd)
@@ -727,14 +727,14 @@ def read_atlas_grid(input_file):
         depth.data[jz-1,iz-1] = np.fromfile(fid,dtype=np.dtype('>f4'),count=nd)
         depth.mask[jz-1,iz-1] = False
         fid.seek(4,1)
-        #-- save to dictionary
+        # save to dictionary
         local[name] = dict(lon=ln1,lat=lt1,depth=depth)
-    #-- close the file
+    # close the file
     fid.close()
-    #-- return values
+    # return values
     return (x,y,hz,mz,iob,dt,pmask,local)
 
-#-- PURPOSE: read grid file
+# PURPOSE: read grid file
 def read_netcdf_grid(input_file):
     """
     Read netCDF4 grid file to extract model coordinates, bathymetry,
@@ -758,26 +758,26 @@ def read_netcdf_grid(input_file):
     sf: float
         scaling factor for applying ice flexure
     """
-    #-- read the netcdf format tide grid file
+    # read the netcdf format tide grid file
     fileID=netCDF4.Dataset(os.path.expanduser(input_file),'r')
-    #-- read coordinates and flip y orientation
+    # read coordinates and flip y orientation
     x = fileID.variables['x'][:].copy()
     y = fileID.variables['y'][::-1].copy()
-    #-- read water column thickness and flip y orientation
+    # read water column thickness and flip y orientation
     hz = fileID.variables['wct'][::-1,:].copy()
-    #-- read mask and flip y orientation
+    # read mask and flip y orientation
     mz = fileID.variables['mask'][::-1,:].copy()
-    #-- read flexure and convert from percent to scale factor
+    # read flexure and convert from percent to scale factor
     sf = fileID.variables['flexure'][::-1,:]/100.0
-    #-- update bathymetry and scale factor masks
+    # update bathymetry and scale factor masks
     hz.mask = (hz.data == 0.0)
     sf.mask = (sf.data == 0.0)
-    #-- close the grid file
+    # close the grid file
     fileID.close()
-    #-- return values
+    # return values
     return (x,y,hz,mz,sf)
 
-#-- PURPOSE: read list of constituents from an elevation or transport file
+# PURPOSE: read list of constituents from an elevation or transport file
 def read_constituents(input_file, grid='OTIS'):
     """
     Read the list of constituents from an elevation or transport file
@@ -800,17 +800,17 @@ def read_constituents(input_file, grid='OTIS'):
     nc: int
         number of constituents
     """
-    #-- check that model file is accessible
+    # check that model file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(input_file))
     if (grid == 'ESR'):
-        #-- open the netCDF4 file
+        # open the netCDF4 file
         fid = netCDF4.Dataset(os.path.expanduser(input_file),'r')
         constituents = fid.variables['constituents'].constituent_order.split()
         nc = len(constituents)
         fid.close()
     else:
-        #-- open the file
+        # open the file
         fid = open(os.path.expanduser(input_file),'rb')
         ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
@@ -819,8 +819,8 @@ def read_constituents(input_file, grid='OTIS'):
         fid.close()
     return (constituents,nc)
 
-#-- PURPOSE: read elevation file to extract real and imaginary components for
-#-- constituent
+# PURPOSE: read elevation file to extract real and imaginary components for
+# constituent
 def read_elevation_file(input_file,ic):
     """
     Read elevation file to extract real and imaginary components for constituent
@@ -837,34 +837,34 @@ def read_elevation_file(input_file,ic):
     h: float
         tidal elevation
     """
-    #-- open the file
+    # open the file
     fid = open(os.path.expanduser(input_file),'rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
-    #-- extract x and y limits
+    # extract x and y limits
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-    #-- skip records to constituent
+    # skip records to constituent
     nskip = ic*(nx*ny*8+8) + 8 + ll - 28
     fid.seek(nskip,1)
-    #-- real and imaginary components of elevation
+    # real and imaginary components of elevation
     h = np.ma.zeros((ny,nx),dtype=np.complex64)
     h.mask = np.zeros((ny,nx),dtype=bool)
     for i in range(ny):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
         h.data.imag[i,:] = temp[1:2*nx:2]
-    #-- update mask for nan values
+    # update mask for nan values
     h.mask[np.isnan(h.data)] = True
-    #-- replace masked values with fill value
+    # replace masked values with fill value
     h.data[h.mask] = h.fill_value
-    #-- close the file
+    # close the file
     fid.close()
-    #-- return the elevation
+    # return the elevation
     return h
 
-#-- PURPOSE: read elevation file with localized solutions to extract real and
-#-- imaginary components for constituent
+# PURPOSE: read elevation file with localized solutions to extract real and
+# imaginary components for constituent
 def read_atlas_elevation(input_file,ic,constituent):
     """
     Read elevation file with localized solutions to extract real and imaginary
@@ -888,80 +888,80 @@ def read_atlas_elevation(input_file,ic,constituent):
 
             - ``'z'``: tidal elevation
     """
-    #-- read the input file to get file information
+    # read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
     file_info = os.fstat(fd)
     fid = os.fdopen(fd, 'rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
-    #-- extract x and y limits
+    # extract x and y limits
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-    #-- skip records to constituent
+    # skip records to constituent
     nskip = 8 + nc*4 + ic*(nx*ny*8 + 8)
     fid.seek(nskip,1)
-    #-- real and imaginary components of elevation
+    # real and imaginary components of elevation
     h = np.ma.zeros((ny,nx),dtype=np.complex64)
     h.mask = np.zeros((ny,nx),dtype=bool)
     for i in range(ny):
         temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nx)
         h.data.real[i,:] = temp[0:2*nx-1:2]
         h.data.imag[i,:] = temp[1:2*nx:2]
-    #-- skip records after constituent
+    # skip records after constituent
     nskip = (nc-ic-1)*(nx*ny*8 + 8) + 4
     fid.seek(nskip,1)
-    #-- read local models to find constituent
+    # read local models to find constituent
     nmod = 0
     local = {}
-    #-- while the file position is not at the end of file
+    # while the file position is not at the end of file
     while (fid.tell() < file_info.st_size):
-        #-- add 1 to number of models
+        # add 1 to number of models
         fid.seek(4,1)
         nmod += 1
-        #-- get local model dimensions and limits
+        # get local model dimensions and limits
         nx1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         ny1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nc1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nz, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
-        #-- extract latitude and longitude limits of local model
+        # extract latitude and longitude limits of local model
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-        #-- extract constituents for localized solution
+        # extract constituents for localized solution
         cons = fid.read(nc1*4).strip().decode("utf8").split()
-        #-- check if constituent is in list of localized solutions
+        # check if constituent is in list of localized solutions
         if (constituent in cons):
             ic1, = [i for i,c in enumerate(cons) if (c == constituent)]
-            #-- extract name
+            # extract name
             name = fid.read(20).strip()
             fid.seek(8,1)
             iz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nz)
             jz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nz)
-            #-- skip records to constituent
+            # skip records to constituent
             nskip = 8 + ic1*(8*nz + 8)
             fid.seek(nskip,1)
-            #-- real and imaginary components of elevation
+            # real and imaginary components of elevation
             h1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
             h1.mask = np.ones((ny1,nx1),dtype=bool)
             temp = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nz)
             h1.data.real[jz-1,iz-1] = temp[0:2*nz-1:2]
             h1.data.imag[jz-1,iz-1] = temp[1:2*nz:2]
             h1.mask[jz-1,iz-1] = False
-            #-- save constituent to dictionary
+            # save constituent to dictionary
             local[name] = dict(lon=ln1,lat=lt1,z=h1)
-            #-- skip records after constituent
+            # skip records after constituent
             nskip = (nc1-ic1-1)*(8*nz + 8) + 4
             fid.seek(nskip,1)
         else:
-            #-- skip records for local model if constituent not in list
+            # skip records for local model if constituent not in list
             nskip = 40 + 16*nz + (nc1-1)*(8*nz + 8)
             fid.seek(nskip,1)
-    #-- close the file
+    # close the file
     fid.close()
-    #-- return the elevation
+    # return the elevation
     return (h,local)
 
-#-- PURPOSE: read transport file to extract real and imaginary components for
-#-- constituent
+# PURPOSE: read transport file to extract real and imaginary components for
+# constituent
 def read_transport_file(input_file,ic):
     """
     Read transport file to extract real and imaginary components for constituent
@@ -980,17 +980,17 @@ def read_transport_file(input_file,ic):
     v: float
         meridional zonal transport
     """
-    #-- open the file
+    # open the file
     fid = open(os.path.expanduser(input_file),'rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
-    #-- extract x and y limits
+    # extract x and y limits
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-    #-- skip records to constituent
+    # skip records to constituent
     nskip = ic*(nx*ny*16+8) + 8 + ll - 28
     fid.seek(nskip,1)
-    #-- real and imaginary components of transport
+    # real and imaginary components of transport
     u = np.ma.zeros((ny,nx),dtype=np.complex64)
     u.mask = np.zeros((ny,nx),dtype=bool)
     v = np.ma.zeros((ny,nx),dtype=np.complex64)
@@ -1001,19 +1001,19 @@ def read_transport_file(input_file,ic):
         u.data.imag[i,:] = temp[1:4*nx-2:4]
         v.data.real[i,:] = temp[2:4*nx-1:4]
         v.data.imag[i,:] = temp[3:4*nx:4]
-    #-- update mask for nan values
+    # update mask for nan values
     u.mask[np.isnan(u.data)] = True
     v.mask[np.isnan(v.data)] = True
-    #-- replace masked values with fill value
+    # replace masked values with fill value
     u.data[u.mask] = u.fill_value
     v.data[v.mask] = v.fill_value
-    #-- close the file
+    # close the file
     fid.close()
-    #-- return the transport components
+    # return the transport components
     return (u,v)
 
-#-- PURPOSE: read transport file with localized solutions to extract real and
-#-- imaginary components for constituent
+# PURPOSE: read transport file with localized solutions to extract real and
+# imaginary components for constituent
 def read_atlas_transport(input_file,ic,constituent):
     """
     Read transport file with localized solutions to extract real and imaginary
@@ -1040,19 +1040,19 @@ def read_atlas_transport(input_file,ic,constituent):
             - ``'u'``: zonal tidal transport
             - ``'v'``: meridional zonal transport
     """
-    #-- read the input file to get file information
+    # read the input file to get file information
     fd = os.open(os.path.expanduser(input_file),os.O_RDONLY)
     file_info = os.fstat(fd)
     fid = os.fdopen(fd, 'rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
-    #-- extract x and y limits
+    # extract x and y limits
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-    #-- skip records to constituent
+    # skip records to constituent
     nskip = 8 + nc*4 + ic*(nx*ny*16 + 8)
     fid.seek(nskip,1)
-    #-- real and imaginary components of transport
+    # real and imaginary components of transport
     u = np.ma.zeros((ny,nx),dtype=np.complex64)
     u.mask = np.zeros((ny,nx),dtype=bool)
     v = np.ma.zeros((ny,nx),dtype=np.complex64)
@@ -1063,32 +1063,32 @@ def read_atlas_transport(input_file,ic,constituent):
         u.data.imag[i,:] = temp[1:4*nx-2:4]
         v.data.real[i,:] = temp[2:4*nx-1:4]
         v.data.imag[i,:] = temp[3:4*nx:4]
-    #-- skip records after constituent
+    # skip records after constituent
     nskip = (nc-ic-1)*(nx*ny*16 + 8) + 4
     fid.seek(nskip,1)
-    #-- read local models to find constituent
+    # read local models to find constituent
     nmod = 0
     local = {}
-    #-- while the file position is not at the end of file
+    # while the file position is not at the end of file
     while (fid.tell() < file_info.st_size):
-        #-- add 1 to number of models
+        # add 1 to number of models
         fid.seek(4,1)
         nmod += 1
-        #-- get local model dimensions and limits
+        # get local model dimensions and limits
         nx1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         ny1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nc1, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nu, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nv, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
-        #-- extract latitude and longitude limits of local model
+        # extract latitude and longitude limits of local model
         lt1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
         ln1 = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
-        #-- extract constituents for localized solution
+        # extract constituents for localized solution
         cons = fid.read(nc1*4).strip().decode("utf8").split()
-        #-- check if constituent is in list of localized solutions
+        # check if constituent is in list of localized solutions
         if (constituent in cons):
             ic1, = [i for i,c in enumerate(cons) if (c == constituent)]
-            #-- extract name
+            # extract name
             name = fid.read(20).strip()
             fid.seek(8,1)
             iu = np.fromfile(fid, dtype=np.dtype('>i4'), count=nu)
@@ -1096,10 +1096,10 @@ def read_atlas_transport(input_file,ic,constituent):
             fid.seek(8,1)
             iv = np.fromfile(fid, dtype=np.dtype('>i4'), count=nv)
             jv = np.fromfile(fid, dtype=np.dtype('>i4'), count=nv)
-            #-- skip records to constituent
+            # skip records to constituent
             nskip = 8 + ic1*(8*nu + 8*nv + 16)
             fid.seek(nskip,1)
-            #-- real and imaginary components of u transport
+            # real and imaginary components of u transport
             u1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
             u1.mask = np.ones((ny1,nx1),dtype=bool)
             tmpu = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nu)
@@ -1107,28 +1107,28 @@ def read_atlas_transport(input_file,ic,constituent):
             u1.data.imag[ju-1,iu-1] = tmpu[1:2*nu:2]
             u1.mask[ju-1,iu-1] = False
             fid.seek(8,1)
-            #-- real and imaginary components of v transport
+            # real and imaginary components of v transport
             v1 = np.ma.zeros((ny1,nx1),fill_value=np.nan,dtype=np.complex64)
             v1.mask = np.ones((ny1,nx1),dtype=bool)
             tmpv = np.fromfile(fid, dtype=np.dtype('>f4'), count=2*nv)
             v1.data.real[jv-1,iv-1] = tmpv[0:2*nv-1:2]
             v1.data.imag[jv-1,iv-1] = tmpv[1:2*nv:2]
             v1.mask[jv-1,iv-1] = False
-            #-- save constituent to dictionary
+            # save constituent to dictionary
             local[name] = dict(lon=ln1,lat=lt1,u=u1,v=v1)
-            #-- skip records after constituent
+            # skip records after constituent
             nskip = (nc1-ic1-1)*(8*nu + 8*nv + 16) + 4
             fid.seek(nskip,1)
         else:
-            #-- skip records for local model if constituent not in list
+            # skip records for local model if constituent not in list
             nskip = 56 + 16*nu + 16*nv + (nc1-1)*(8*nu + 8*nv + 16)
             fid.seek(nskip,1)
-    #-- close the file
+    # close the file
     fid.close()
-    #-- return the transport components
+    # return the transport components
     return (u,v,local)
 
-#-- PURPOSE: create a 2 arc-minute grid mask from mz and depth variables
+# PURPOSE: create a 2 arc-minute grid mask from mz and depth variables
 def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     """
     Creates a high-resolution grid mask from model variables
@@ -1160,43 +1160,43 @@ def create_atlas_mask(xi,yi,mz,local,VARIABLE=None):
     m30: int
         high-resolution land/water mask
     """
-    #-- create 2 arc-minute grid dimensions
+    # create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
     x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)
     y30 = np.arange(-90.0+d30/2.0, 90.0+d30/2.0, d30)
-    #-- interpolate global mask to create initial 2 arc-minute mask
+    # interpolate global mask to create initial 2 arc-minute mask
     xcoords=np.clip((len(xi)-1)*(x30-xi[0])/(xi[-1]-xi[0]),0,len(xi)-1)
     ycoords=np.clip((len(yi)-1)*(y30-yi[0])/(yi[-1]-yi[0]),0,len(yi)-1)
     gridy,gridx=np.meshgrid(np.around(ycoords),np.around(xcoords),indexing='ij')
-    #-- interpolate with nearest-neighbors
+    # interpolate with nearest-neighbors
     m30 = np.ma.zeros((len(y30),len(x30)),dtype=np.int8,fill_value=0)
     m30.data[:,:] = mz[gridy.astype(np.int32),gridx.astype(np.int32)]
-    #-- iterate over localized solutions to fill in high-resolution coastlines
+    # iterate over localized solutions to fill in high-resolution coastlines
     for key,val in local.items():
-        #-- shape of local variable
+        # shape of local variable
         ny,nx = np.shape(val[VARIABLE])
-        #-- correct limits for local grid
+        # correct limits for local grid
         lon0 = np.floor(val['lon'][0]/d30)*d30
         lat0 = np.floor(val['lat'][0]/d30)*d30
-        #-- create latitude and longitude for local model
+        # create latitude and longitude for local model
         xi = lon0 + np.arange(nx)*d30
         yi = lat0 + np.arange(ny)*d30
         gridx,gridy = np.meshgrid(xi,yi)
-        #-- local model output
+        # local model output
         validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
-        #-- check if any model longitudes are -180:180
+        # check if any model longitudes are -180:180
         X = np.where(gridx[validy,validx] <= 0.0,
             gridx[validy,validx] + 360.0, gridx[validy,validx])
-        #-- grid indices of local model
+        # grid indices of local model
         ii = ((X - x30[0])//d30).astype('i')
         jj = ((gridy[validy,validx] - y30[0])//d30).astype('i')
-        #-- fill global mask with regional solution
+        # fill global mask with regional solution
         m30[jj,ii] = 1
-    #-- return the 2 arc-minute mask
+    # return the 2 arc-minute mask
     m30.mask = (m30.data == m30.fill_value)
     return m30
 
-#-- PURPOSE: resample global solution to higher-resolution
+# PURPOSE: resample global solution to higher-resolution
 def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
     """
     Interpolates global ATLAS tidal solutions into a
@@ -1222,13 +1222,13 @@ def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
     zs: float
         high-resolution tidal solution for variable
     """
-    #-- create resampled grid dimensions
+    # create resampled grid dimensions
     xs = np.arange(spacing/2.0, 360.0+spacing/2.0, spacing)
     ys = np.arange(-90.0+spacing/2.0, 90.0+spacing/2.0, spacing)
-    #-- interpolate global solution
+    # interpolate global solution
     zs = np.ma.zeros((len(ys),len(xs)),dtype=zi.dtype)
     zs.mask = np.zeros((len(ys),len(xs)),dtype=bool)
-    #-- test if combining elevation/transport variables with complex components
+    # test if combining elevation/transport variables with complex components
     if np.iscomplexobj(zs):
         f1 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.real.T, kx=1,ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(xi, yi, zi.imag.T, kx=1,ky=1)
@@ -1237,10 +1237,10 @@ def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
     else:
         f = scipy.interpolate.RectBivariateSpline(xi, yi, zi.T, kx=1,ky=1)
         zs.data[:,:] = f(xs,ys).T
-    #-- return resampled solution and coordinates
+    # return resampled solution and coordinates
     return (xs,ys,zs)
 
-#-- PURPOSE: combines global and local atlas solutions
+# PURPOSE: combines global and local atlas solutions
 def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
     """
     Combines global and local ATLAS tidal solutions into a single
@@ -1275,36 +1275,36 @@ def combine_atlas_model(xi, yi, zi, pmask, local, VARIABLE=None):
     z30: float
         combined high-resolution tidal solution for variable
     """
-    #-- create 2 arc-minute grid dimensions
+    # create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
-    #-- interpolate global solution to 2 arc-minute solution
+    # interpolate global solution to 2 arc-minute solution
     x30,y30,z30 = interpolate_atlas_model(xi,yi,zi,spacing=d30)
-    #-- iterate over localized solutions
+    # iterate over localized solutions
     for key,val in local.items():
-        #-- shape of local variable
+        # shape of local variable
         ny,nx = np.shape(val[VARIABLE])
-        #-- correct limits for local grid
+        # correct limits for local grid
         lon0 = np.floor(val['lon'][0]/d30)*d30
         lat0 = np.floor(val['lat'][0]/d30)*d30
-        #-- create latitude and longitude for local model
+        # create latitude and longitude for local model
         xi = lon0 + np.arange(nx)*d30
         yi = lat0 + np.arange(ny)*d30
         gridx,gridy = np.meshgrid(xi,yi)
-        #-- local model output
+        # local model output
         validy,validx = np.nonzero(np.logical_not(val[VARIABLE].mask))
-        #-- check if any model longitudes are -180:180
+        # check if any model longitudes are -180:180
         X = np.where(gridx[validy,validx] <= 0.0,
             gridx[validy,validx] + 360.0, gridx[validy,validx])
-        #-- grid indices of local model
+        # grid indices of local model
         ii = ((X - x30[0])//d30).astype('i')
         jj = ((gridy[validy,validx] - y30[0])//d30).astype('i')
-        #-- fill global mask with regional solution
+        # fill global mask with regional solution
         z30.data[jj,ii] = val[VARIABLE][validy,validx]
-    #-- return 2 arc-minute solution and coordinates
+    # return 2 arc-minute solution and coordinates
     return (x30,y30,z30)
 
-#-- PURPOSE: read netCDF4 file to extract real and imaginary components for
-#-- constituent
+# PURPOSE: read netCDF4 file to extract real and imaginary components for
+# constituent
 def read_netcdf_file(input_file, ic, variable=None):
     """
     Read netCDF4 file to extract real and imaginary components for constituent
@@ -1329,15 +1329,15 @@ def read_netcdf_file(input_file, ic, variable=None):
     hc: complex
         complex form of tidal constituent oscillation
     """
-    #-- read the netcdf format tide grid file
+    # read the netcdf format tide grid file
     fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
-    #-- variable dimensions
+    # variable dimensions
     nx = fileID.dimensions['x'].size
     ny = fileID.dimensions['y'].size
-    #-- real and imaginary components of tidal constituent
+    # real and imaginary components of tidal constituent
     hc = np.ma.zeros((ny,nx),dtype=np.complex64)
     hc.mask = np.zeros((ny,nx),dtype=bool)
-    #-- extract constituent and flip y orientation
+    # extract constituent and flip y orientation
     if (variable == 'z'):
         hc.data.real[:,:] = fileID.variables['hRe'][ic,::-1,:]
         hc.data.imag[:,:] = -fileID.variables['hIm'][ic,::-1,:]
@@ -1347,50 +1347,50 @@ def read_netcdf_file(input_file, ic, variable=None):
     elif variable in ('V','v'):
         hc.data.real[:,:] = fileID.variables['vRe'][ic,::-1,:]
         hc.data.imag[:,:] = -fileID.variables['vIm'][ic,::-1,:]
-    #-- close the file
+    # close the file
     fileID.close()
-    #-- return output variables
+    # return output variables
     return hc
 
-#-- For a rectangular bathymetry grid:
-#-- construct masks for zeta, u and v nodes on a C-grid
+# For a rectangular bathymetry grid:
+# construct masks for zeta, u and v nodes on a C-grid
 def Muv(hz):
     """
     Construct masks for zeta, u and v nodes on a C-grid
     """
     ny,nx = np.shape(hz)
     mz = (hz > 0).astype(int)
-    #-- x-indices
+    # x-indices
     indx = np.zeros((nx),dtype=int)
     indx[:-1] = np.arange(1,nx)
     indx[-1] = 0
-    #-- y-indices
+    # y-indices
     indy = np.zeros((ny),dtype=int)
     indy[:-1] = np.arange(1,ny)
     indy[-1] = 0
-    #-- calculate mu and mv
+    # calculate mu and mv
     mu = np.zeros((ny,nx),dtype=int)
     mv = np.zeros((ny,nx),dtype=int)
     mu[indy,:] = mz*mz[indy,:]
     mv[:,indx] = mz*mz[:,indx]
     return (mu,mv,mz)
 
-#-- PURPOSE: Interpolate bathymetry to zeta, u and v nodes on a C-grid
+# PURPOSE: Interpolate bathymetry to zeta, u and v nodes on a C-grid
 def Huv(hz):
     """
     Interpolate bathymetry to zeta, u and v nodes on a C-grid
     """
     ny,nx = np.shape(hz)
     mu,mv,mz = Muv(hz)
-    #-- x-indices
+    # x-indices
     indx = np.zeros((nx),dtype=int)
     indx[0] = nx-1
     indx[1:] = np.arange(1,nx)
-    #-- y-indices
+    # y-indices
     indy = np.zeros((ny),dtype=int)
     indy[0] = ny-1
     indy[1:] = np.arange(1,ny)
-    #-- calculate hu and hv
+    # calculate hu and hv
     hu = mu*(hz + hz[indy,:])/2.0
     hv = mv*(hz + hz[:,indx])/2.0
     return (hu,hv)

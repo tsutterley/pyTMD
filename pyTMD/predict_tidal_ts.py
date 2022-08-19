@@ -77,25 +77,25 @@ def predict_tidal_ts(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     """
 
     nt = len(t)
-    #-- load the nodal corrections
-    #-- convert time to Modified Julian Days (MJD)
+    # load the nodal corrections
+    # convert time to Modified Julian Days (MJD)
     pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
-    #-- allocate for output time series
+    # allocate for output time series
     ht = np.ma.zeros((nt))
     ht.mask = np.zeros((nt),dtype=bool)
-    #-- for each constituent
+    # for each constituent
     for k,c in enumerate(constituents):
         if corrections in ('OTIS','ATLAS','ESR','netcdf'):
-            #-- load parameters for each constituent
+            # load parameters for each constituent
             amp,ph,omega,alpha,species = load_constituent(c)
-            #-- add component for constituent to output tidal time series
+            # add component for constituent to output tidal time series
             th = omega*t*86400.0 + ph + pu[:,k]
         elif corrections in ('GOT','FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
-        #-- sum over all tides at location
+        # sum over all tides at location
         ht.data[:] += pf[:,k]*hc.real[0,k]*np.cos(th) - \
             pf[:,k]*hc.imag[0,k]*np.sin(th)
         ht.mask[:] |= np.any(hc.real.mask[0,k] | hc.imag.mask[0,k])
-    #-- return the tidal time series
+    # return the tidal time series
     return ht

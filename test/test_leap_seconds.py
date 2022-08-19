@@ -8,7 +8,7 @@ import warnings
 import pyTMD.time
 import pyTMD.utilities
 
-#-- PURPOSE: Define GPS leap seconds
+# PURPOSE: Define GPS leap seconds
 def get_leaps():
     """
     Gets a list of GPS times for when leap seconds occurred
@@ -18,13 +18,13 @@ def get_leaps():
         599184012, 820108813, 914803214, 1025136015, 1119744016, 1167264017]
     return leaps
 
-#-- PURPOSE: Count number of leap seconds that have passed for each GPS time
+# PURPOSE: Count number of leap seconds that have passed for each GPS time
 def test_leap_seconds():
     valid_gps_leaps = get_leaps()
     test_gps_leaps = pyTMD.time.get_leap_seconds()
     assert all((v==t) for v,t in zip(valid_gps_leaps,test_gps_leaps))
 
-#-- PURPOSE: update leap second file
+# PURPOSE: update leap second file
 def test_update_leap_seconds():
     pyTMD.time.update_leap_seconds(verbose=False, mode=0o775)
     FILE = pyTMD.utilities.get_data_path(['data','leap-seconds.list'])

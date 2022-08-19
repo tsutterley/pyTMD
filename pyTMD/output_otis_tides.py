@@ -22,7 +22,7 @@ import os
 import struct
 import numpy as np
 
-#-- PURPOSE: output grid file in OTIS format
+# PURPOSE: output grid file in OTIS format
 def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
     """
     Writes OTIS-format grid files
@@ -44,7 +44,7 @@ def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
     dt: float
         time step
     """
-    #-- open this way for files
+    # open this way for files
     fid = open(os.path.expanduser(FILE), 'wb')
     nob = len(iob)
     ny,nx = np.shape(hz)
@@ -67,7 +67,7 @@ def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
         iob.tofile(fid,format='>i4')
         fid.write(struct.pack('>i',reclen))
     reclen = 4*nx*ny
-    #-- write depth and mask data to file
+    # write depth and mask data to file
     fid.write(struct.pack('>i',reclen))
     hz.tofile(fid,format='>f4')
     for m in range(ny):
@@ -77,10 +77,10 @@ def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
     for m in range(ny):
         mz[m,:].tofile(fid,format='>i4')
     fid.write(struct.pack('>i',reclen))
-    #-- close the output OTIS file
+    # close the output OTIS file
     fid.close()
 
-#-- PURPOSE: output elevation file in OTIS format
+# PURPOSE: output elevation file in OTIS format
 def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     """
     Writes OTIS-format elevation files
@@ -100,7 +100,7 @@ def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     """
     fid = open(os.path.expanduser(FILE), 'wb')
     ny,nx,nc = np.shape(h)
-    #-- length of header: allow for 4 character >i c_id strings
+    # length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)
     fid.write(struct.pack('>i',header_length))
     fid.write(struct.pack('>i',nx))
@@ -111,7 +111,7 @@ def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     for c in constituents:
         fid.write(c.ljust(4).encode('utf8'))
     fid.write(struct.pack('>i',header_length))
-    #-- write each constituent to file
+    # write each constituent to file
     constituent_header = 8*nx*ny
     for ic in range(nc):
         fid.write(struct.pack('>i',constituent_header))
@@ -121,10 +121,10 @@ def output_otis_elevation(FILE, h, xlim, ylim, constituents):
             temp[1:2*nx:2] = h.imag[m,:,ic]
             temp.tofile(fid,format='>f4')
         fid.write(struct.pack('>i',constituent_header))
-    #-- close the output OTIS file
+    # close the output OTIS file
     fid.close()
 
-#-- PURPOSE: output transport file in OTIS format
+# PURPOSE: output transport file in OTIS format
 def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
     """
     Writes OTIS-format transport files
@@ -146,7 +146,7 @@ def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
     """
     fid = open(os.path.expanduser(FILE), 'wb')
     ny,nx,nc = np.shape(u)
-    #-- length of header: allow for 4 character >i c_id strings
+    # length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)
     fid.write(struct.pack('>i',header_length))
     fid.write(struct.pack('>i',nx))
@@ -157,7 +157,7 @@ def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
     for c in constituents:
         fid.write(c.ljust(4).encode('utf8'))
     fid.write(struct.pack('>i',header_length))
-    #-- write each constituent to file
+    # write each constituent to file
     constituent_header = 2*8*nx*ny
     for ic in range(nc):
         fid.write(struct.pack('>i',constituent_header))
@@ -169,5 +169,5 @@ def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
             temp[3:4*nx:4] = v.imag[m,:,ic]
             temp.tofile(fid,format='>f4')
         fid.write(struct.pack('>i',constituent_header))
-    #-- close the output OTIS file
+    # close the output OTIS file
     fid.close()

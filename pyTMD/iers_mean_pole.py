@@ -48,7 +48,7 @@ import copy
 import warnings
 import numpy as np
 
-#-- read table of mean pole values, calculate angular coordinates at epoch
+# read table of mean pole values, calculate angular coordinates at epoch
 def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
@@ -79,39 +79,39 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     .. [1] Petit, G. and Luzum, B. (eds.), IERS Conventions (2010),
         IERS Technical Note No. 36, BKG (2010)
     """
-    #-- set default keyword arguments
+    # set default keyword arguments
     kwargs.setdefault('fill_value', np.nan)
-    #-- raise warnings for deprecated keyword argument
+    # raise warnings for deprecated keyword argument
     if 'FILL_VALUE' in kwargs.keys():
         warnings.warn("""Deprecated keyword argument {0}.
             Changed to '{1}'""".format('FILL_VALUE','fill_value'),
             DeprecationWarning)
-        #-- set renamed argument to not break workflows
+        # set renamed argument to not break workflows
         kwargs['fill_value'] = copy.copy(kwargs['FILL_VALUE'])
-    #-- verify IERS model version
+    # verify IERS model version
     assert version in ('2003','2010','2015'), "Incorrect IERS model version"
-    #-- read mean pole file
+    # read mean pole file
     table = np.loadtxt(os.path.expanduser(input_file))
-    #-- reduce to 1971 to end date
+    # reduce to 1971 to end date
     ii, = np.nonzero(table[:,0] >= 1971)
     table = np.copy(table[ii,:])
-    #-- reduce to yearly values
+    # reduce to yearly values
     jj, = np.nonzero((table[:,0] % 1) == 0.0)
     table = np.copy(table[jj,:])
     end_time = table[-1,0] + 0.2
-    #-- final shape of the table
+    # final shape of the table
     nrows, ncols = np.shape(table)
-    #-- allocate for output arrays
+    # allocate for output arrays
     x = np.full_like(input_epoch, kwargs['fill_value'])
     y = np.full_like(input_epoch, kwargs['fill_value'])
     flag = np.zeros_like(input_epoch, dtype=bool)
     for t,epoch in enumerate(input_epoch):
-        #-- Conventional mean pole model in IERS Conventions 2003
+        # Conventional mean pole model in IERS Conventions 2003
         if (version == '2003') and (epoch >= 1975) and (epoch < 2004):
             x[t] = 0.054 + 0.00083*(epoch-2000.0)
             y[t] = 0.357 + 0.00395*(epoch-2000.0)
             flag[t] = True
-        #-- Conventional mean pole model in IERS Conventions 2010
+        # Conventional mean pole model in IERS Conventions 2010
         elif (version == '2010') and (epoch >= 1975) and (epoch < 2011):
             dx = epoch-2000.0
             if (dx < 10.0):
@@ -121,10 +121,10 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
                 x[t] = 0.023513 + 0.0076141*dx
                 y[t] = 0.358891 - 0.0006287*dx
             flag[t] = True
-        #-- Conventional mean pole model in IERS Conventions 2015
-        #-- must be below maximum valid date within file (e.g. 2015.2 for 2015)
+        # Conventional mean pole model in IERS Conventions 2015
+        # must be below maximum valid date within file (e.g. 2015.2 for 2015)
         elif (version == '2015') and (epoch >= 1975) and (epoch < end_time):
-            #-- find epoch within mean pole table
+            # find epoch within mean pole table
             i = 1
             j = nrows+1
             while (j > (i+1)):
@@ -133,7 +133,7 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
                     j = k
                 else:
                     i = k
-            #-- calculate differential from point in table
+            # calculate differential from point in table
             dx = epoch - table[i,0]
             if (i == (nrows-1)):
                 x[t] = table[i,1] + dx*(table[nrows-1,1]-table[nrows-2,1])
@@ -142,5 +142,5 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
                 x[t] = table[i,1] + dx*(table[i+1,1]-table[i,1])
                 y[t] = table[i,2] + dx*(table[i+1,2]-table[i,2])
             flag[t] = True
-    #-- return mean pole values
+    # return mean pole values
     return (x,y,flag)

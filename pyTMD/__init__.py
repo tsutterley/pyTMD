@@ -13,6 +13,7 @@ Documentation is available at https://pytmd.readthedocs.io
 """
 import pyTMD.eop
 import pyTMD.time
+import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD.bilinear_interp import bilinear_interp

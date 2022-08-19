@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (08/2022)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 08/2022: place some imports behind try/except statements
     Updated 05/2022: include world copy jump in webmercator maps
     Updated 03/2022: add marker relocation routines from notebooks
     Updated 02/2022: add leaflet map projections
@@ -27,10 +28,8 @@ import os
 import copy
 import base64
 import pyproj
-import IPython
 import datetime
-import ipyleaflet
-import ipywidgets
+import warnings
 import numpy as np
 import matplotlib
 matplotlib.rcParams['axes.linewidth'] = 2.0
@@ -40,8 +39,35 @@ import matplotlib.colorbar
 import matplotlib.animation
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from traitlets.utils.bunch import Bunch
 import pyTMD.model
+
+# attempt imports
+try:
+    import IPython
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("IPython not available")
+    warnings.warn("Some functions will throw an exception if called")
+try:
+    import ipyleaflet
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("ipyleaflet not available")
+    warnings.warn("Some functions will throw an exception if called")
+try:
+    import ipywidgets
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("ipywidgets not available")
+    warnings.warn("Some functions will throw an exception if called")
+try:
+    from traitlets.utils.bunch import Bunch
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("traitlets not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 class widgets:
     def __init__(self, **kwargs):

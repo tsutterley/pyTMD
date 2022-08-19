@@ -43,7 +43,7 @@ import re
 import gzip
 import numpy as np
 
-#-- PURPOSE: read real and imaginary ocean pole tide coefficients
+# PURPOSE: read real and imaginary ocean pole tide coefficients
 def read_ocean_pole_tide(input_file):
     """
     Read real and imaginary ocean pole tide coefficients
@@ -74,37 +74,37 @@ def read_ocean_pole_tide(input_file):
         satellite altimetry", Journal of Geodesy, 89(12), p1233-1243, 2015.
         doi: 10.1007/s00190-015-0848-7
     """
-    #-- check that ocean pole tide file is accessible
+    # check that ocean pole tide file is accessible
     if not os.access(os.path.expanduser(input_file), os.F_OK):
         raise FileNotFoundError(os.path.expanduser(input_file))
 
-    #-- read GZIP ocean pole tide file
+    # read GZIP ocean pole tide file
     with gzip.open(os.path.expanduser(input_file),'rb') as f:
         file_contents = f.read().splitlines()
 
-    #-- counts the number of lines in the header
+    # counts the number of lines in the header
     count = 0
-    #-- Reading over header text
+    # Reading over header text
     HEADER = True
     while HEADER:
-        #-- file line at count
+        # file line at count
         line = file_contents[count]
-        #-- find --------- within line to set HEADER flag to False when found
+        # find --------- within line to set HEADER flag to False when found
         HEADER = not bool(re.match(b'---------',line))
-        #-- add 1 to counter
+        # add 1 to counter
         count += 1
 
-    #-- grid parameters and dimensions
+    # grid parameters and dimensions
     dlon,dlat = (0.50,0.50)
     glon = np.arange(dlon/2.0,360+dlon/2.0,dlon)
     glat = np.arange(90.0-dlat/2.0,-90.0-dlat/2.0,-dlat)
     nlon = len(glon)
     nlat = len(glat)
-    #-- allocate for output grid maps
+    # allocate for output grid maps
     ur = np.zeros((nlon,nlat),dtype=np.longcomplex)
     un = np.zeros((nlon,nlat),dtype=np.longcomplex)
     ue = np.zeros((nlon,nlat),dtype=np.longcomplex)
-    #-- read lines of file and add to output variables
+    # read lines of file and add to output variables
     for i,line in enumerate(file_contents[count:]):
         ln,lt,urr,uri,unr,uni,uer,uei = np.array(line.split(), dtype='f8')
         ilon = int(ln/dlon)
@@ -113,15 +113,15 @@ def read_ocean_pole_tide(input_file):
         un[ilon,ilat] = unr + 1j*uni
         ue[ilon,ilat] = uer + 1j*uei
 
-    #-- extend matrix for bilinear interpolation
+    # extend matrix for bilinear interpolation
     glon = extend_array(glon,dlon)
     ur = extend_matrix(ur)
     un = extend_matrix(un)
     ue = extend_matrix(ue)
-    #-- return values
+    # return values
     return (ur,un,ue,glon,glat)
 
-#-- PURPOSE: wrapper function to extend an array
+# PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
     """
     Wrapper function to extend an array
@@ -137,13 +137,13 @@ def extend_array(input_array,step_size):
     """
     n = len(input_array)
     temp = np.zeros((n+2),dtype=input_array.dtype)
-    #-- extended array [x-1,x0,...,xN,xN+1]
+    # extended array [x-1,x0,...,xN,xN+1]
     temp[0] = input_array[0] - step_size
     temp[1:-1] = input_array[:]
     temp[-1] = input_array[-1] + step_size
     return temp
 
-#-- PURPOSE: wrapper function to extend a matrix
+# PURPOSE: wrapper function to extend a matrix
 def extend_matrix(input_matrix):
     """
     Wrapper function to extend a matrix

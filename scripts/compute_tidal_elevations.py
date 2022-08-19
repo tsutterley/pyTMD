@@ -150,34 +150,34 @@ from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 
-#-- PURPOSE: try to get the projection information for the input file
+# PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
-    #-- coordinate reference system string from file
+    # coordinate reference system string from file
     try:
         crs = pyproj.CRS.from_string(attributes['projection'])
     except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- EPSG projection code
+    # EPSG projection code
     try:
         crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- coordinate reference system string
+    # coordinate reference system string
     try:
         crs = pyproj.CRS.from_string(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- no projection can be made
+    # no projection can be made
     raise pyproj.exceptions.CRSError
 
-#-- PURPOSE: read csv, netCDF or HDF5 data
-#-- compute tides at points and times using tidal model driver algorithms
+# PURPOSE: read csv, netCDF or HDF5 data
+# compute tides at points and times using tidal model driver algorithms
 def compute_tidal_elevations(tide_dir, input_file, output_file,
     TIDE_MODEL=None,
     ATLAS_FORMAT='netcdf',
@@ -198,11 +198,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     VERBOSE=False,
     MODE=0o775):
 
-    #-- create logger for verbosity level
+    # create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
 
-    #-- get parameters for tide model
+    # get parameters for tide model
     if DEFINITION_FILE is not None:
         model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
     else:
@@ -210,20 +210,20 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             compressed=GZIP).elevation(TIDE_MODEL)
     output_variable = model.variable
 
-    #-- invalid value
+    # invalid value
     fill_value = -9999.0
-    #-- output netCDF4 and HDF5 file attributes
-    #-- will be added to YAML header in csv files
+    # output netCDF4 and HDF5 file attributes
+    # will be added to YAML header in csv files
     attrib = {}
-    #-- latitude
+    # latitude
     attrib['lat'] = {}
     attrib['lat']['long_name'] = 'Latitude'
     attrib['lat']['units'] = 'Degrees_North'
-    #-- longitude
+    # longitude
     attrib['lon'] = {}
     attrib['lon']['long_name'] = 'Longitude'
     attrib['lon']['units'] = 'Degrees_East'
-    #-- tides
+    # tides
     attrib[output_variable] = {}
     attrib[output_variable]['description'] = model.description
     attrib[output_variable]['reference'] = model.reference
@@ -231,13 +231,13 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     attrib[output_variable]['units'] = 'meters'
     attrib[output_variable]['long_name'] = model.long_name
     attrib[output_variable]['_FillValue'] = fill_value
-    #-- time
+    # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
     attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
 
-    #-- read input file to extract time, spatial coordinates and data
+    # read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
             header=HEADER)
@@ -249,14 +249,14 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'geotiff'):
         dinput = pyTMD.spatial.from_geotiff(input_file)
-        #-- copy global geotiff attributes for projection and grid parameters
+        # copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = dinput['attributes'][att_name]
-    #-- update time variable if entered as argument
+    # update time variable if entered as argument
     if TIME is not None:
         dinput['time'] = np.copy(TIME)
 
-    #-- converting x,y from projection to latitude/longitude
+    # converting x,y from projection to latitude/longitude
     crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
@@ -267,54 +267,54 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (TYPE == 'drift'):
         lon,lat = transformer.transform(dinput['x'],dinput['y'])
 
-    #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
+    # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
         epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
         epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    #-- convert time to seconds
+    # convert time to seconds
     delta_time = to_secs*dinput['time'].flatten()
 
-    #-- calculate leap seconds if specified
+    # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'LORAN'):
-        #-- LORAN time is ahead of GPS time by 9 seconds
+        # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'TAI'):
-        #-- TAI time is ahead of GPS time by 19 seconds
+        # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     else:
         leap_seconds = 0.0
 
-    #-- convert time from units to days since 1992-01-01T00:00:00
+    # convert time from units to days since 1992-01-01T00:00:00
     tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
         epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
-    #-- number of time points
+    # number of time points
     nt = len(tide_time)
-    #-- delta time (TT - UT1) file
+    # delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
-    #-- read tidal constants and interpolate to grid points
+    # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(lon.flatten(), lat.flatten(),
             model.grid_file, model.model_file, model.projection,
@@ -331,24 +331,24 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         amp,ph,c = extract_GOT_constants(lon.flatten(), lat.flatten(),
             model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
-        #-- interpolate delta times from calendar dates to tide time
+        # interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file,tide_time)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon.flatten(), lat.flatten(),
             model.model_file, type=model.type, version=model.version,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
-        #-- available model constituents
+        # available model constituents
         c = model.constituents
-        #-- interpolate delta times from calendar dates to tide time
+        # interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file,tide_time)
 
-    #-- calculate complex phase in radians for Euler's
+    # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
-    #-- calculate constituent oscillation
+    # calculate constituent oscillation
     hc = amp*np.exp(cph)
 
-    #-- predict tidal elevations at time and infer minor corrections
+    # predict tidal elevations at time and infer minor corrections
     if (TYPE == 'grid'):
         tide = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
@@ -357,7 +357,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
                 deltat=deltat[i], corrections=model.format)
             MINOR = infer_minor_corrections(tide_time[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            #-- add major and minor components and reform grid
+            # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
     elif (TYPE == 'drift'):
@@ -368,10 +368,10 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         minor = infer_minor_corrections(tide_time, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
-    #-- replace invalid values with fill value
+    # replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
 
-    #-- output to file
+    # output to file
     output = {'time':tide_time,'lon':lon,'lat':lat,output_variable:tide}
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
@@ -383,10 +383,10 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (FORMAT == 'geotiff'):
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname=output_variable)
-    #-- change the permissions level to MODE
+    # change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- PURPOSE: create argument parser
+# PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates tidal elevations for an input file
@@ -394,21 +394,21 @@ def arguments():
         fromfile_prefix_chars="@"
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
-    #-- command line options
+    # command line options
     group = parser.add_mutually_exclusive_group(required=True)
-    #-- input and output file
+    # input and output file
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
         help='Input file to run')
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
         help='Computed output file')
-    #-- set data directory containing the tidal data
+    # set data directory containing the tidal data
     parser.add_argument('--directory','-D',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
         default=os.getcwd(),
         help='Working data directory')
-    #-- tide model to use
+    # tide model to use
     choices = sorted(pyTMD.model.ocean_elevation() + pyTMD.model.load_elevation())
     group.add_argument('--tide','-T',
         metavar='TIDE', type=str,
@@ -420,90 +420,90 @@ def arguments():
     parser.add_argument('--gzip','-G',
         default=False, action='store_true',
         help='Tide model files are gzip compressed')
-    #-- tide model definition file to set an undefined model
+    # tide model definition file to set an undefined model
     group.add_argument('--definition-file',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
         help='Tide model definition file for use as correction')
-    #-- input and output data format
+    # input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Input and output data format')
-    #-- variable names (for csv names of columns)
+    # variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
         type=str, nargs='+', default=['time','lat','lon','data'],
         help='Variable names of data in input file')
-    #-- number of header lines for csv files
+    # number of header lines for csv files
     parser.add_argument('--header','-H',
         type=int, default=0,
         help='Number of header lines for csv files')
-    #-- input data type
-    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
-    #-- grid: spatial grids or images (single time for all data points)
+    # input data type
+    # drift: drift buoys or satellite/airborne altimetry (time per data point)
+    # grid: spatial grids or images (single time for all data points)
     parser.add_argument('--type','-t',
         type=str, default='drift',
         choices=('drift','grid'),
         help='Input data type')
-    #-- time epoch (default Modified Julian Days)
-    #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
+    # time epoch (default Modified Julian Days)
+    # in form "time-units since yyyy-mm-dd hh:mm:ss"
     parser.add_argument('--epoch','-e',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
-    #-- input delta time for files without date information
+    # input delta time for files without date information
     parser.add_argument('--deltatime','-d',
         type=float, nargs='+',
         help='Input delta time for files without date variables')
-    #-- input time standard definition
+    # input time standard definition
     parser.add_argument('--standard','-s',
         type=str, choices=('UTC','GPS','TAI','LORAN'), default='UTC',
         help='Input time standard for delta times')
-    #-- spatial projection (EPSG code or PROJ4 string)
+    # spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
-    #-- interpolation method
+    # interpolation method
     parser.add_argument('--interpolate','-I',
         metavar='METHOD', type=str, default='spline',
         choices=('spline','linear','nearest','bilinear'),
         help='Spatial interpolation method')
-    #-- extrapolate with nearest-neighbors
+    # extrapolate with nearest-neighbors
     parser.add_argument('--extrapolate','-E',
         default=False, action='store_true',
         help='Extrapolate with nearest-neighbors')
-    #-- extrapolation cutoff in kilometers
-    #-- set to inf to extrapolate over all points
+    # extrapolation cutoff in kilometers
+    # set to inf to extrapolate over all points
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
-    #-- apply flexure scaling factors to height constituents
+    # apply flexure scaling factors to height constituents
     parser.add_argument('--apply-flexure',
         default=False, action='store_true',
         help='Apply ice flexure scaling factor to height constituents')
-    #-- verbose output of processing run
-    #-- print information about each input and output file
+    # verbose output of processing run
+    # print information about each input and output file
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
         help='Verbose output of run')
-    #-- permissions mode of the local files (number in octal)
+    # permissions mode of the local files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    #-- return the parser
+    # return the parser
     return parser
 
-#-- This is the main part of the program that calls the individual functions
+# This is the main part of the program that calls the individual functions
 def main():
-    #-- Read the system arguments listed after the program
+    # Read the system arguments listed after the program
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    #-- set output file from input filename if not entered
+    # set output file from input filename if not entered
     if not args.outfile:
         fileBasename,fileExtension = os.path.splitext(args.infile)
         flexure_flag = '_FLEXURE' if args.apply_flexure else ''
         vars = (fileBasename,args.tide,flexure_flag,fileExtension)
         args.outfile = '{0}_{1}{2}{3}'.format(*vars)
 
-    #-- run tidal elevation program for input file
+    # run tidal elevation program for input file
     compute_tidal_elevations(args.directory, args.infile, args.outfile,
         TIDE_MODEL=args.tide,
         ATLAS_FORMAT=args.atlas_format,
@@ -524,6 +524,6 @@ def main():
         VERBOSE=args.verbose,
         MODE=args.mode)
 
-#-- run main program
+# run main program
 if __name__ == '__main__':
     main()

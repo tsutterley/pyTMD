@@ -43,49 +43,49 @@ import pyTMD.compute_tide_corrections
 import pyTMD.check_tide_points
 import pyTMD.calc_delta_time
 
-#-- current file path
+# current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
-#-- PURPOSE: Download GOT4.7 constituents from AWS S3 bucket
+# PURPOSE: Download GOT4.7 constituents from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
 def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
-    #-- get aws session object
+    # get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         region_name=aws_region_name)
-    #-- get s3 object and bucket object for pytmd data
+    # get s3 object and bucket object for pytmd data
     s3 = session.resource('s3')
     bucket = s3.Bucket('pytmd')
 
-    #-- model parameters for GOT4.7
+    # model parameters for GOT4.7
     model = pyTMD.model(filepath,compressed=True,
         verify=False).elevation('GOT4.7')
-    #-- recursively create model directory
+    # recursively create model directory
     os.makedirs(model.model_directory)
-    #-- retrieve each model file from s3
+    # retrieve each model file from s3
     for model_file in model.model_file:
-        #-- retrieve constituent file
+        # retrieve constituent file
         f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('GOT4.7','grids_oceantide',f))
         response = obj.get()
-        #-- save constituent data
+        # save constituent data
         with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(model_file, os.F_OK)
-    #-- run tests
+    # run tests
     yield
-    #-- clean up model
+    # clean up model
     shutil.rmtree(model.model_directory)
 
-#-- parameterize interpolation method
+# parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
-#-- PURPOSE: Tests that interpolated results are comparable to PERTH3 program
+# PURPOSE: Tests that interpolated results are comparable to PERTH3 program
 def test_verify_GOT47(METHOD):
-    #-- model parameters for GOT4.7
+    # model parameters for GOT4.7
     model_directory = os.path.join(filepath,'GOT4.7','grids_oceantide')
-    #-- perth3 test program infers m4 tidal constituent
+    # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
     model_file = [os.path.join(model_directory,m) for m in model_files]
@@ -94,10 +94,10 @@ def test_verify_GOT47(METHOD):
     GZIP = True
     SCALE = 1.0
 
-    #-- read validation dataset
+    # read validation dataset
     with gzip.open(os.path.join(filepath,'perth_output_got4.7.gz'),'r') as fid:
         file_contents = fid.read().decode('ISO-8859-1').splitlines()
-    #-- extract latitude, longitude, time (Modified Julian Days) and tide data
+    # extract latitude, longitude, time (Modified Julian Days) and tide data
     npts = len(file_contents) - 2
     latitude = np.zeros((npts))
     longitude = np.zeros((npts))
@@ -113,25 +113,25 @@ def test_verify_GOT47(METHOD):
             validation.data[i] = np.float64(line_contents[3])
             validation.mask[i] = False
 
-    #-- convert time from MJD to days since 1992-01-01T00:00:00
+    # convert time from MJD to days since 1992-01-01T00:00:00
     tide_time = MJD - 48622.0
 
-    #-- extract amplitude and phase from tide model
+    # extract amplitude and phase from tide model
     amp,ph,cons = pyTMD.read_GOT_model.extract_GOT_constants(longitude,
         latitude, model_file, method=METHOD, compressed=GZIP, scale=SCALE)
     assert all(c in constituents for c in cons)
-    #-- interpolate delta times from calendar dates to tide time
+    # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)
-    #-- calculate complex phase in radians for Euler's
+    # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
-    #-- calculate constituent oscillations
+    # calculate constituent oscillations
     hc = amp*np.exp(cph)
 
-    #-- allocate for out tides at point
+    # allocate for out tides at point
     tide = np.ma.zeros((npts))
     tide.mask = np.zeros((npts),dtype=bool)
-    #-- predict tidal elevations at time and infer minor corrections
+    # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, cons,
         deltat=deltat, corrections=model_format)
@@ -139,16 +139,16 @@ def test_verify_GOT47(METHOD):
         deltat=deltat, corrections=model_format)
     tide.data[:] += minor.data[:]
 
-    #-- will verify differences between model outputs are within tolerance
+    # will verify differences between model outputs are within tolerance
     eps = 0.01
-    #-- calculate differences between perth3 and python version
+    # calculate differences between perth3 and python version
     difference = np.ma.zeros((npts))
     difference.data[:] = tide.data - validation
     difference.mask = (tide.mask | validation.mask)
     if not np.all(difference.mask):
         assert np.all(np.abs(difference) <= eps)
 
-#-- PURPOSE: Tests check point program
+# PURPOSE: Tests check point program
 def test_check_GOT47():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
@@ -158,34 +158,34 @@ def test_check_GOT47():
         True, True, True, False, False])
     assert np.all(obs == exp)
 
-#-- parameterize interpolation method
+# parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest','bilinear'])
 @pytest.mark.parametrize("EXTRAPOLATE", [True])
-#-- PURPOSE: test the tide correction wrapper function
+# PURPOSE: test the tide correction wrapper function
 def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
-    #-- create an image around the Ross Ice Shelf
+    # create an image around the Ross Ice Shelf
     xlimits = np.array([-750000,550000])
     ylimits = np.array([-1450000,-300000])
     spacing = np.array([50e3,-50e3])
-    #-- x and y coordinates
+    # x and y coordinates
     x = np.arange(xlimits[0],xlimits[1]+spacing[0],spacing[0])
     y = np.arange(ylimits[1],ylimits[0]+spacing[1],spacing[1])
     xgrid,ygrid = np.meshgrid(x,y)
-    #-- time dimension
+    # time dimension
     delta_time = 0.0
-    #-- calculate tide map
+    # calculate tide map
     tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL='GOT4.7', GZIP=True,
         EPOCH=(2018,1,1,0,0,0), TYPE='grid', TIME='GPS',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
 
-#-- PURPOSE: test definition file functionality
+# PURPOSE: test definition file functionality
 @pytest.mark.parametrize("MODEL", ['GOT4.7'])
 def test_definition_file(MODEL):
-    #-- get model parameters
+    # get model parameters
     model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
-    #-- create model definition file
+    # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','model_file','compressed','type','scale']
     for attr in attrs:
@@ -195,12 +195,12 @@ def test_definition_file(MODEL):
         else:
             fid.write('{0}\t{1}\n'.format(attr,val))
     fid.seek(0)
-    #-- use model definition file as input
+    # use model definition file as input
     m = pyTMD.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
 
-#-- PURPOSE: test the catch in the correction wrapper function
+# PURPOSE: test the catch in the correction wrapper function
 def test_unlisted_model():
     ermsg = "Unlisted tide model"
     with pytest.raises(Exception, match=ermsg):

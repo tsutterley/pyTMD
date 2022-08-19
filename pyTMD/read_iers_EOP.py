@@ -35,7 +35,7 @@ import os
 import re
 import numpy as np
 
-#-- calculates the daily earth orientation parameters (EOP) from IERS
+# calculates the daily earth orientation parameters (EOP) from IERS
 def read_iers_EOP(input_file):
     """
     Calculates the daily earth orientation parameters (EOP) from IERS
@@ -59,21 +59,21 @@ def read_iers_EOP(input_file):
     [Petit2010] G. Petit, and B. Luzum, (eds.), IERS Conventions (2010),
         IERS Technical Note No. 36, BKG (2010)
     """
-    #-- tilde-expansion of input file
+    # tilde-expansion of input file
     input_file = os.path.expanduser(input_file)
-    #-- check that IERS finals file is accessible
+    # check that IERS finals file is accessible
     if not os.access(input_file, os.F_OK):
         raise FileNotFoundError(input_file)
-    #-- read data file splitting at line breaks
+    # read data file splitting at line breaks
     with open(input_file, mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
-    #-- number of data lines
+    # number of data lines
     n_lines = len(file_contents)
     dinput = {}
     dinput['MJD'] = np.zeros((n_lines))
     dinput['x'] = np.zeros((n_lines))
     dinput['y'] = np.zeros((n_lines))
-    #-- for each line in the file
+    # for each line in the file
     flag = 'I'
     counter = 0
     while (flag == 'I'):
@@ -87,9 +87,9 @@ def read_iers_EOP(input_file):
         i = j+10; j = i+9
         dinput['y'][counter] = np.float64(line[i:j])
         counter += 1
-    #-- reduce to data values
+    # reduce to data values
     dinput['MJD'] = dinput['MJD'][:counter]
     dinput['x'] = dinput['x'][:counter]
     dinput['y'] = dinput['y'][:counter]
-    #-- return the date, flag and polar motion values
+    # return the date, flag and polar motion values
     return dinput
