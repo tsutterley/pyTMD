@@ -45,25 +45,25 @@ def compute_equilibrium_tide(t, lat):
     .. [1] Cartwright & Tayler, Geophys. J. R.A.S., 23, 45, 1971.
     .. [2] Cartwright & Edden, Geophys. J. R.A.S., 33, 253, 1973.
     """
-    #-- longitude of moon
-    #-- longitude of sun
-    #-- longitude of lunar perigee
-    #-- longitude of ascending lunar node
+    # longitude of moon
+    # longitude of sun
+    # longitude of lunar perigee
+    # longitude of ascending lunar node
     PHC = np.array([290.21,280.12,274.35,343.51])
     DPD = np.array([13.1763965,0.9856473,0.1114041,0.0529539])
 
-    #-- number of input points
+    # number of input points
     nt = len(np.atleast_1d(t))
     nlat = len(np.atleast_1d(lat))
-    #-- compute 4 principal mean longitudes in radians at delta time (SHPN)
+    # compute 4 principal mean longitudes in radians at delta time (SHPN)
     SHPN = np.zeros((4,nt))
     for N in range(4):
-        #-- convert time from days relative to 1992-01-01 to 1987-01-01
+        # convert time from days relative to 1992-01-01 to 1987-01-01
         ANGLE = PHC[N] + (t + 1826.0)*DPD[N]
         SHPN[N,:] = np.pi*np.mod(ANGLE, 360.0)/180.0
 
-    #-- assemble long-period tide potential from 15 CTE terms greater than 1 mm
-    #-- nodal term is included but not the constant term.
+    # assemble long-period tide potential from 15 CTE terms greater than 1 mm
+    # nodal term is included but not the constant term.
     PH = np.zeros((nt))
     Z = np.zeros((nt))
     Z += 2.79*np.cos(SHPN[3,:]) - 0.49*np.cos(SHPN[1,:] - \
@@ -80,13 +80,13 @@ def compute_equilibrium_tide(t, lat):
         0.53*np.cos(PH - SHPN[2,:] + SHPN[3,:]) - \
         0.24*np.cos(PH - 2.0*SHPN[1,:] + SHPN[2,:])
 
-    #-- Multiply by gamma_2 * normalization * P20(lat)
+    # Multiply by gamma_2 * normalization * P20(lat)
     gamma_2 = 0.693
     P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)
-    #-- calculate long-period equilibrium tide and convert to meters
+    # calculate long-period equilibrium tide and convert to meters
     if (nlat != nt):
         lpet = gamma_2*np.sqrt((4.0+1.0)/(4.0*np.pi))*np.outer(P20,Z/100.0)
     else:
         lpet = gamma_2*np.sqrt((4.0+1.0)/(4.0*np.pi))*P20*(Z/100.0)
-    #-- return the long-period equilibrium tides
+    # return the long-period equilibrium tides
     return lpet

@@ -46,51 +46,51 @@ import posixpath
 import webbrowser
 import pyTMD.utilities
 
-#-- PURPOSE: Download Circum-Antarctic Tidal Simulations from USAP
+# PURPOSE: Download Circum-Antarctic Tidal Simulations from USAP
 def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
 
-    #-- create logger for verbosity level
+    # create logger for verbosity level
     logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
 
-    #-- remote subdirectories for each model
+    # remote subdirectories for each model
     REMOTE = {}
     REMOTE['CATS2008'] = ['601235','2019-12-19T23:26:43.6Z',
         'CATS2008.zip?dataset_id=601235']
-    #-- local subdirectory for each model
+    # local subdirectory for each model
     LOCAL = {}
     LOCAL['CATS2008'] = 'CATS2008'
-    #-- recursively create directories if non-existent
+    # recursively create directories if non-existent
     if not os.access(os.path.join(DIRECTORY,LOCAL[MODEL]), os.F_OK):
         os.makedirs(os.path.join(DIRECTORY,LOCAL[MODEL]), MODE)
 
-    #-- USAP now requires a captcha to download datasets
-    #-- use a manual download until USAP allows some sort of verification
+    # USAP now requires a captcha to download datasets
+    # use a manual download until USAP allows some sort of verification
     DATASET = {}
     DATASET['CATS2008'] = ['https://www.usap-dc.org','view','dataset','601235']
-    #-- open USAP url in a new browser window
+    # open USAP url in a new browser window
     webbrowser.open_new_tab(posixpath.join(*DATASET[MODEL]))
     pyTMD.utilities.file_opener(os.path.join(DIRECTORY,LOCAL[MODEL]))
     return
 
-    #-- download CATS2008 zip file and read as virtual file object
+    # download CATS2008 zip file and read as virtual file object
     HOST = ['https://www.usap-dc.org','dataset','usap-dc',*REMOTE[MODEL]]
-    #-- download zipfile from host
+    # download zipfile from host
     zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST))
     logger.info('{0} -->\n'.format(posixpath.join(*HOST)))
-    #-- extract each member
+    # extract each member
     for m in zfile.filelist:
-        #-- strip directories from member filename
+        # strip directories from member filename
         m.filename = posixpath.basename(m.filename)
         local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
         logger.info('\t{0}\n'.format(local_file))
-        #-- extract file
+        # extract file
         zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
-        #-- change permissions mode
+        # change permissions mode
         os.chmod(local_file, MODE)
-    #-- close the zipfile object
+    # close the zipfile object
     zfile.close()
 
-#-- PURPOSE: create argument parser
+# PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
         description="""Download Circum-Antarctic Tidal Simulations from the
@@ -99,38 +99,38 @@ def arguments():
         fromfile_prefix_chars="@"
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
-    #-- command line parameters
-    #-- working data directory for location of tide models
+    # command line parameters
+    # working data directory for location of tide models
     parser.add_argument('--directory','-D',
         type=lambda p: os.path.abspath(os.path.expanduser(p)),
         default=os.getcwd(),
         help='Working data directory')
-    #-- Antarctic Ocean tide model to download
+    # Antarctic Ocean tide model to download
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, nargs='+', default=['CATS2008'],
         choices=('CATS2008',),
         help='Circum-Antarctic tide model to download')
-    #-- permissions mode of the local directories and files (number in octal)
+    # permissions mode of the local directories and files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permissions mode of the files downloaded')
-    #-- return the parser
+    # return the parser
     return parser
 
-#-- This is the main part of the program that calls the individual functions
+# This is the main part of the program that calls the individual functions
 def main():
-    #-- Read the system arguments listed after the program
+    # Read the system arguments listed after the program
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    #-- warn user that USAP requires a reCAPTCHA check
+    # warn user that USAP requires a reCAPTCHA check
     warnings.filterwarnings("always")
     warnings.warn("Deprecated. USAP now requires captcha",DeprecationWarning)
-    #-- check internet connection before attempting to run program
+    # check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://www.usap-dc.org'):
         for m in args.tide:
             usap_cats_tides(m,DIRECTORY=args.directory,MODE=args.mode)
 
-#-- run main program
+# run main program
 if __name__ == '__main__':
     main()

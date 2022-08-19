@@ -41,43 +41,43 @@ import pyTMD.infer_minor_corrections
 import pyTMD.check_tide_points
 import pyTMD.calc_delta_time
 
-#-- current file path
+# current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = os.path.dirname(os.path.abspath(filename))
 
-#-- PURPOSE: Download FES2014 constituents from AWS S3 bucket
+# PURPOSE: Download FES2014 constituents from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
 def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
-    #-- get aws session object
+    # get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         region_name=aws_region_name)
-    #-- get s3 object and bucket object for pytmd data
+    # get s3 object and bucket object for pytmd data
     s3 = session.resource('s3')
     bucket = s3.Bucket('pytmd')
 
-    #-- model parameters for FES2014
+    # model parameters for FES2014
     model = pyTMD.model(filepath,compressed=True,
         verify=False).elevation('FES2014')
-    #-- recursively create model directory
+    # recursively create model directory
     os.makedirs(model.model_directory)
-    #-- retrieve each model file from s3
+    # retrieve each model file from s3
     for model_file in model.model_file:
-        #-- retrieve constituent file
+        # retrieve constituent file
         f = os.path.basename(model_file)
         obj = bucket.Object(key=posixpath.join('fes2014','ocean_tide',f))
         response = obj.get()
-        #-- save constituent data
+        # save constituent data
         with open(model_file, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert os.access(model_file, os.F_OK)
-    #-- run tests
+    # run tests
     yield
-    #-- clean up model
+    # clean up model
     shutil.rmtree(model.model_directory)
 
-#-- PURPOSE: Tests check point program
+# PURPOSE: Tests check point program
 def test_check_FES2014():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
@@ -87,11 +87,11 @@ def test_check_FES2014():
         True, True, True, False, False])
     assert np.all(obs == exp)
 
-#-- PURPOSE: Tests that interpolated results are comparable to FES program
+# PURPOSE: Tests that interpolated results are comparable to FES program
 def test_verify_FES2014():
-    #-- model parameters for FES2014
+    # model parameters for FES2014
     model_directory = os.path.join(filepath,'fes2014','ocean_tide')
-    #-- constituent files included in test
+    # constituent files included in test
     model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
         'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
         'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
@@ -103,8 +103,8 @@ def test_verify_FES2014():
     TYPE = 'z'
     SCALE = 1.0/100.0
 
-    #-- read validation dataset
-    #-- extract time (Modified Julian Days), latitude, longitude, and tide data
+    # read validation dataset
+    # extract time (Modified Julian Days), latitude, longitude, and tide data
     names = ('CNES','Hour','Latitude','Longitude','Short_tide','LP_tide',
         'Pure_tide','Geo_tide','Rad_tide')
     formats = ('f','i','f','f','f','f','f','f','f')
@@ -112,29 +112,29 @@ def test_verify_FES2014():
         skiprows=1,dtype=dict(names=names,formats=formats))
     longitude = file_contents['Longitude']
     latitude = file_contents['Latitude']
-    #-- convert short tide estimates to meters
+    # convert short tide estimates to meters
     validation = file_contents['Short_tide']/100.0
     npts = len(file_contents)
 
-    #-- convert time from CNES Julian Days to days since 1992-01-01T00:00:00
-    #-- CNES Julian Days = Days relative to 1950-01-01 (MJD:33282)
+    # convert time from CNES Julian Days to days since 1992-01-01T00:00:00
+    # CNES Julian Days = Days relative to 1950-01-01 (MJD:33282)
     tide_time = file_contents['CNES'] - 15340.0
 
-    #-- extract amplitude and phase from tide model
+    # extract amplitude and phase from tide model
     amp,ph = pyTMD.read_FES_model.extract_FES_constants(longitude,
         latitude, model_file, type=TYPE, version=VERSION,
         method='spline', compressed=True, scale=SCALE,)
-    #-- interpolate delta times from calendar dates to tide time
+    # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.calc_delta_time(delta_file, tide_time)
-    #-- calculate complex phase in radians for Euler's
-    #-- calculate constituent oscillations
+    # calculate complex phase in radians for Euler's
+    # calculate constituent oscillations
     hc = amp*np.exp(-1j*ph*np.pi/180.0)
 
-    #-- allocate for out tides at point
+    # allocate for out tides at point
     tide = np.ma.zeros((npts))
     tide.mask = np.zeros((npts),dtype=bool)
-    #-- predict tidal elevations at time and infer minor corrections
+    # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,
         deltat=deltat, corrections=model_format)
@@ -142,21 +142,21 @@ def test_verify_FES2014():
         deltat=deltat, corrections=model_format)
     tide.data[:] += minor.data[:]
 
-    #-- will verify differences between model outputs are within tolerance
+    # will verify differences between model outputs are within tolerance
     eps = 0.05
-    #-- calculate differences between fes2014 and python version
+    # calculate differences between fes2014 and python version
     difference = np.ma.zeros((npts))
     difference.data[:] = tide.data - validation
     difference.mask = np.copy(tide.mask)
     if not np.all(difference.mask):
         assert np.all(np.abs(difference) <= eps)
 
-#-- PURPOSE: test definition file functionality
+# PURPOSE: test definition file functionality
 @pytest.mark.parametrize("MODEL", ['FES2014'])
 def test_definition_file(MODEL):
-    #-- get model parameters
+    # get model parameters
     model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
-    #-- create model definition file
+    # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','model_file','compressed','type','scale','version']
     for attr in attrs:
@@ -166,7 +166,7 @@ def test_definition_file(MODEL):
         else:
             fid.write('{0}\t{1}\n'.format(attr,val))
     fid.seek(0)
-    #-- use model definition file as input
+    # use model definition file as input
     m = pyTMD.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)

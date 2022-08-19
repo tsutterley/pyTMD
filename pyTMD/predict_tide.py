@@ -77,27 +77,27 @@ def predict_tide(t, hc, constituents, deltat=0.0, corrections='OTIS'):
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
     """
 
-    #-- number of points and number of constituents
+    # number of points and number of constituents
     npts,nc = np.shape(hc)
-    #-- load the nodal corrections
-    #-- convert time to Modified Julian Days (MJD)
+    # load the nodal corrections
+    # convert time to Modified Julian Days (MJD)
     pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
-    #-- allocate for output tidal elevation
+    # allocate for output tidal elevation
     ht = np.ma.zeros((npts))
     ht.mask = np.zeros((npts),dtype=bool)
-    #-- for each constituent
+    # for each constituent
     for k,c in enumerate(constituents):
         if corrections in ('OTIS','ATLAS','ESR','netcdf'):
-            #-- load parameters for each constituent
+            # load parameters for each constituent
             amp,ph,omega,alpha,species = load_constituent(c)
-            #-- add component for constituent to output tidal elevation
+            # add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[0,k]
         elif corrections in ('GOT','FES'):
             th = G[0,k]*np.pi/180.0 + pu[0,k]
-        #-- sum over all tides
+        # sum over all tides
         ht.data[:] += pf[0,k]*hc.real[:,k]*np.cos(th) - \
             pf[0,k]*hc.imag[:,k]*np.sin(th)
         ht.mask[:] |= (hc.real.mask[:,k] | hc.imag.mask[:,k])
-    #-- return the tidal elevation after removing singleton dimensions
+    # return the tidal elevation after removing singleton dimensions
     return np.squeeze(ht)

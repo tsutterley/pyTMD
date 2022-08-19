@@ -115,13 +115,13 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
         array describing if input coordinate is within model domain
     """
 
-    #-- check that tide directory is accessible
+    # check that tide directory is accessible
     try:
         os.access(DIRECTORY, os.F_OK)
     except:
         raise FileNotFoundError("Invalid tide directory")
 
-    #-- get parameters for tide model
+    # get parameters for tide model
     if DEFINITION_FILE is not None:
         model = pyTMD.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:

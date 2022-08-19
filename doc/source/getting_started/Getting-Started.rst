@@ -70,10 +70,10 @@ Presently, the following models and their directories parameterized within ``pyT
 
     * GOT4.7: ``<path_to_tide_models>/GOT4.7/grids_oceantide/``
     * GOT4.7_load: ``<path_to_tide_models>/GOT4.7/grids_loadtide/``
-    * GOT4.8: ``<path_to_tide_models>/got4.8/grids_oceantide/``
-    * GOT4.8_load: ``<path_to_tide_models>/got4.8/grids_loadtide/``
-    * GOT4.10: ``<path_to_tide_models>/GOT4.10c/grids_oceantide/``
-    * GOT4.10_load: ``<path_to_tide_models>/GOT4.10c/grids_loadtide/``
+    * `GOT4.8 <https://earth.gsfc.nasa.gov/sites/default/files/2022-07/got4.8.tar.gz>`_: ``<path_to_tide_models>/got4.8/grids_oceantide/``
+    * `GOT4.8_load <https://earth.gsfc.nasa.gov/sites/default/files/2022-07/got4.8.tar.gz>`_: ``<path_to_tide_models>/got4.8/grids_loadtide/``
+    * `GOT4.10 <https://earth.gsfc.nasa.gov/sites/default/files/2022-07/got4.10c.tar.gz>`_: ``<path_to_tide_models>/GOT4.10c/grids_oceantide/``
+    * `GOT4.10_load <https://earth.gsfc.nasa.gov/sites/default/files/2022-07/got4.10c.tar.gz>`_: ``<path_to_tide_models>/GOT4.10c/grids_loadtide/``
 
 - Finite Element Solution tide models [Lyard2020]_
 

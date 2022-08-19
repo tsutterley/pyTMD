@@ -1420,10 +1420,10 @@ class model:
             output_file = os.path.join(self.model_directory,
                 ''.join([model_file,self.suffix,self.gzip]))
             valid = os.access(output_file, os.F_OK)
-        #-- check that (all) output files exist
+        # check that (all) output files exist
         if self.verify and not valid:
             raise FileNotFoundError(output_file)
-        #-- return the complete output path
+        # return the complete output path
         return output_file
 
     def from_file(self, definition_file):

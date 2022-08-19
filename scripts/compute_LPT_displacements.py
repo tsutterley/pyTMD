@@ -95,57 +95,57 @@ import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 
-#-- PURPOSE: try to get the projection information for the input file
+# PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
-    #-- coordinate reference system string from file
+    # coordinate reference system string from file
     try:
         crs = pyproj.CRS.from_string(attributes['projection'])
     except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- EPSG projection code
+    # EPSG projection code
     try:
         crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- coordinate reference system string
+    # coordinate reference system string
     try:
         crs = pyproj.CRS.from_string(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    #-- no projection can be made
+    # no projection can be made
     raise pyproj.exceptions.CRSError
 
-#-- PURPOSE: compute the pole load tide radial displacements following
-#-- IERS conventions (2010)
+# PURPOSE: compute the pole load tide radial displacements following
+# IERS conventions (2010)
 def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     VARIABLES=['time','lat','lon','data'], HEADER=0, TYPE='drift',
     TIME_UNITS='days since 1858-11-17T00:00:00', TIME=None,
     TIME_STANDARD='UTC', PROJECTION='4326', VERBOSE=False, MODE=0o775):
 
-    #-- create logger for verbosity level
+    # create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
 
-    #-- invalid value
+    # invalid value
     fill_value = -9999.0
-    #-- output netCDF4 and HDF5 file attributes
-    #-- will be added to YAML header in csv files
+    # output netCDF4 and HDF5 file attributes
+    # will be added to YAML header in csv files
     attrib = {}
-    #-- latitude
+    # latitude
     attrib['lat'] = {}
     attrib['lat']['long_name'] = 'Latitude'
     attrib['lat']['units'] = 'Degrees_North'
-    #-- longitude
+    # longitude
     attrib['lon'] = {}
     attrib['lon']['long_name'] = 'Longitude'
     attrib['lon']['units'] = 'Degrees_East'
-    #-- load pole tides
+    # load pole tides
     attrib['tide_pole'] = {}
     attrib['tide_pole']['long_name'] = 'Solid_Earth_Pole_Tide'
     attrib['tide_pole']['description'] = ('Solid_Earth_pole_tide_radial_'
@@ -154,14 +154,14 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
         'chapter7/tn36_c7.pdf')
     attrib['tide_pole']['units'] = 'meters'
     attrib['tide_pole']['_FillValue'] = fill_value
-    #-- time
+    # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
     attrib['time']['units'] = 'days since 1858-11-17T00:00:00'
     attrib['time']['description'] = 'Modified Julian Days'
     attrib['time']['calendar'] = 'standard'
 
-    #-- read input file to extract time, spatial coordinates and data
+    # read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
             header=HEADER)
@@ -173,14 +173,14 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
             xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
     elif (FORMAT == 'geotiff'):
         dinput = pyTMD.spatial.from_geotiff(input_file)
-        #-- copy global geotiff attributes for projection and grid parameters
+        # copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = dinput['attributes'][att_name]
-    #-- update time variable if entered as argument
+    # update time variable if entered as argument
     if TIME is not None:
         dinput['time'] = np.copy(TIME)
 
-    #-- converting x,y from projection to latitude/longitude
+    # converting x,y from projection to latitude/longitude
     crs1 = get_projection(dinput['attributes'], PROJECTION)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
@@ -192,142 +192,142 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
         lon,lat = transformer.transform(dinput['x'].flatten(),
             dinput['y'].flatten())
 
-    #-- extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
+    # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
         epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
         epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    #-- convert time to seconds
+    # convert time to seconds
     delta_time = to_secs*dinput['time'].flatten()
 
-    #-- calculate leap seconds if specified
+    # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'LORAN'):
-        #-- LORAN time is ahead of GPS time by 9 seconds
+        # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'TAI'):
-        #-- TAI time is ahead of GPS time by 19 seconds
+        # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     else:
         leap_seconds = 0.0
 
-    #-- convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
+    # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
     MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
         epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
-    #-- add offset to convert to Julian days and then convert to calendar dates
+    # add offset to convert to Julian days and then convert to calendar dates
     Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
-    #-- calculate time in year-decimal format
+    # calculate time in year-decimal format
     time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
         hour=h,minute=m,second=s)
-    #-- number of time points
+    # number of time points
     nt = len(time_decimal)
 
-    #-- degrees to radians
+    # degrees to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
-    #-- earth and physical parameters (IERS and WGS84)
-    GM = 3.986004418e14#-- geocentric gravitational constant [m^3/s^2]
-    a_axis = 6378136.6#-- semimajor axis of the WGS84 ellipsoid [m]
-    flat = 1.0/298.257223563#-- flattening of the WGS84 ellipsoid
-    b_axis = (1.0 - flat)*a_axis#-- semiminor axis of the WGS84 ellipsoid [m]
-    omega = 7.292115e-5#-- mean rotation rate of the Earth [radians/s]
-    #-- tidal love number appropriate for the load tide
+    # earth and physical parameters (IERS and WGS84)
+    GM = 3.986004418e14# geocentric gravitational constant [m^3/s^2]
+    a_axis = 6378136.6# semimajor axis of the WGS84 ellipsoid [m]
+    flat = 1.0/298.257223563# flattening of the WGS84 ellipsoid
+    b_axis = (1.0 - flat)*a_axis# semiminor axis of the WGS84 ellipsoid [m]
+    omega = 7.292115e-5# mean rotation rate of the Earth [radians/s]
+    # tidal love number appropriate for the load tide
     hb2 = 0.6207
-    #-- Linear eccentricity, first and second numerical eccentricity
+    # Linear eccentricity, first and second numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
     ecc1 = lin_ecc/a_axis
     ecc2 = lin_ecc/b_axis
-    #-- m parameter [omega^2*a^2*b/(GM)]. p. 70, Eqn.(2-137)
+    # m parameter [omega^2*a^2*b/(GM)]. p. 70, Eqn.(2-137)
     m = omega**2*((1 -flat)*a_axis**3)/GM
-    #-- flattening components
+    # flattening components
     f_2 = -flat + (5.0/2.0)*m + (1.0/2.0)*flat**2.0 - (26.0/7.0)*flat*m + \
         (15.0/4.0)*m**2.0
     f_4 = -(1.0/2.0)*flat**2.0 + (5.0/2.0)*flat*m
 
-    #-- flatten heights
+    # flatten heights
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
-    #-- convert from geodetic latitude to geocentric latitude
-    #-- calculate X, Y and Z from geodetic latitude and longitude
+    # convert from geodetic latitude to geocentric latitude
+    # calculate X, Y and Z from geodetic latitude and longitude
     X,Y,Z = pyTMD.spatial.to_cartesian(lon,lat,h=h,a_axis=a_axis,flat=flat)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
-    #-- calculate geocentric latitude and convert to degrees
+    # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
-    #-- geocentric colatitude and longitude in radians
+    # geocentric colatitude and longitude in radians
     theta = dtr*(90.0 - latitude_geocentric)
     phi = lon*dtr
 
-    #-- compute normal gravity at spatial location and elevation of points.
-    #-- normal gravity at the equator. p. 79, Eqn.(2-186)
+    # compute normal gravity at spatial location and elevation of points.
+    # normal gravity at the equator. p. 79, Eqn.(2-186)
     gamma_a = (GM/(a_axis*b_axis)) * (1.0-(3.0/2.0)*m - (3.0/14.0)*ecc2**2.0*m)
-    #-- Normal gravity. p. 80, Eqn.(2-199)
+    # Normal gravity. p. 80, Eqn.(2-199)
     gamma_0 = gamma_a*(1.0 + f_2*np.cos(theta)**2.0 +
         f_4*np.sin(np.pi*latitude_geocentric/180.0)**4.0)
-    #-- Normal gravity at height h. p. 82, Eqn.(2-215)
+    # Normal gravity at height h. p. 82, Eqn.(2-215)
     gamma_h = gamma_0*(1.0 - \
         (2.0/a_axis)*(1.0+flat+m-2.0*flat*np.cos(theta)**2.0)*h + \
         (3.0/a_axis**2.0)*h**2.0)
 
-    #-- pole tide files (mean and daily)
+    # pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
-    #-- calculate angular coordinates of mean pole at time
+    # calculate angular coordinates of mean pole at time
     mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,'2015')
-    #-- read IERS daily polar motion values
+    # read IERS daily polar motion values
     EOP = read_iers_EOP(pole_tide_file)
-    #-- interpolate daily polar motion values to MJD using cubic splines
+    # interpolate daily polar motion values to MJD using cubic splines
     xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
     px = xSPL(MJD)
     py = ySPL(MJD)
-    #-- calculate differentials from mean pole positions
+    # calculate differentials from mean pole positions
     mx = px - mpx
     my = -(py - mpy)
 
-    #-- calculate radial displacement at time
+    # calculate radial displacement at time
     dfactor = -hb2*atr*(omega**2*rr**2)/(2.0*gamma_h)
     Srad = np.ma.zeros((len(latitude_geocentric)),fill_value=fill_value)
     Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
-    #-- replace fill values
+    # replace fill values
     Srad.mask = np.isnan(Srad.data)
     Srad.data[Srad.mask] = Srad.fill_value
 
-    #-- calculate radial displacement at time
+    # calculate radial displacement at time
     if (TYPE == 'grid'):
         Srad = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
         Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             SRAD=dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
-            #-- reform grid
+            # reform grid
             Srad.data[:,:,i]=np.reshape(SRAD, (ny,nx))
             Srad.mask[:,:,i]=np.isnan(SRAD)
     elif (TYPE == 'drift'):
         Srad = np.ma.zeros((nt),fill_value=fill_value)
         Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi)+my*np.sin(phi))
         Srad.mask = np.isnan(Srad.data)
-    #-- replace invalid data with fill values
+    # replace invalid data with fill values
     Srad.data[Srad.mask] = Srad.fill_value
 
-    #-- output to file
+    # output to file
     output = dict(time=MJD,lon=lon,lat=lat,tide_pole=Srad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
@@ -339,10 +339,10 @@ def compute_LPT_displacements(input_file, output_file, FORMAT='csv',
     elif (FORMAT == 'geotiff'):
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_pole')
-    #-- change the permissions level to MODE
+    # change the permissions level to MODE
     os.chmod(output_file, MODE)
 
-#-- PURPOSE: create argument parser
+# PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
         description="""Calculates radial pole load tide displacements for
@@ -351,81 +351,81 @@ def arguments():
         fromfile_prefix_chars="@"
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
-    #-- command line options
-    #-- input and output file
+    # command line options
+    # input and output file
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
         help='Input file to run')
     parser.add_argument('outfile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
         help='Computed output file')
-    #-- input and output data format
+    # input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
         help='Input and output data format')
-    #-- variable names (for csv names of columns)
+    # variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
         type=str, nargs='+', default=['time','lat','lon','data'],
         help='Variable names of data in input file')
-    #-- number of header lines for csv files
+    # number of header lines for csv files
     parser.add_argument('--header','-H',
         type=int, default=0,
         help='Number of header lines for csv files')
-    #-- input data type
-    #-- drift: drift buoys or satellite/airborne altimetry (time per data point)
-    #-- grid: spatial grids or images (single time for all data points)
+    # input data type
+    # drift: drift buoys or satellite/airborne altimetry (time per data point)
+    # grid: spatial grids or images (single time for all data points)
     parser.add_argument('--type','-t',
         type=str, default='drift',
         choices=('drift','grid'),
         help='Input data type')
-    #-- time epoch (default Modified Julian Days)
-    #-- in form "time-units since yyyy-mm-dd hh:mm:ss"
+    # time epoch (default Modified Julian Days)
+    # in form "time-units since yyyy-mm-dd hh:mm:ss"
     parser.add_argument('--epoch','-e',
         type=str, default='days since 1858-11-17T00:00:00',
         help='Reference epoch of input time')
-    #-- input delta time for files without date information
+    # input delta time for files without date information
     parser.add_argument('--deltatime','-d',
         type=float, nargs='+',
         help='Input delta time for files without date variables')
-    #-- input time standard definition
+    # input time standard definition
     parser.add_argument('--standard','-s',
         type=str, choices=('UTC','GPS','TAI','LORAN'), default='UTC',
         help='Input time standard for delta times')
-    #-- spatial projection (EPSG code or PROJ4 string)
+    # spatial projection (EPSG code or PROJ4 string)
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
-    #-- verbose output of processing run
-    #-- print information about each input and output file
+    # verbose output of processing run
+    # print information about each input and output file
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
         help='Verbose output of run')
-    #-- permissions mode of the local files (number in octal)
+    # permissions mode of the local files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
         help='Permission mode of output file')
-    #-- return the parser
+    # return the parser
     return parser
 
-#-- This is the main part of the program that calls the individual functions
+# This is the main part of the program that calls the individual functions
 def main():
-    #-- Read the system arguments listed after the program
+    # Read the system arguments listed after the program
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    #-- set output file from input filename if not entered
+    # set output file from input filename if not entered
     if not args.outfile:
         fileBasename,fileExtension = os.path.splitext(args.infile)
         vars = (fileBasename,'pole_tide',fileExtension)
         args.outfile = '{0}_{1}{2}'.format(*vars)
 
-    #-- run load pole tide program for input file
+    # run load pole tide program for input file
     compute_LPT_displacements(args.infile, args.outfile, FORMAT=args.format,
         VARIABLES=args.variables, HEADER=args.header, TYPE=args.type,
         TIME_UNITS=args.epoch, TIME=args.deltatime,
         TIME_STANDARD=args.standard, PROJECTION=args.projection,
         VERBOSE=args.verbose, MODE=args.mode)
 
-#-- run main program
+# run main program
 if __name__ == '__main__':
     main()

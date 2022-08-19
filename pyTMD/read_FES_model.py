@@ -88,7 +88,7 @@ import scipy.interpolate
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
-#-- PURPOSE: extract tidal harmonic constants from tide models at coordinates
+# PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     """
     Reads files for an ascii or netCDF4 tidal model
@@ -143,7 +143,7 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     phase: float
         phases of tidal constituents
     """
-    #-- set default keyword arguments
+    # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('version', None)
     kwargs.setdefault('method', 'spline')
@@ -151,7 +151,7 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     kwargs.setdefault('cutoff', 10.0)
     kwargs.setdefault('compressed', False)
     kwargs.setdefault('scale', 1.0)
-    #-- raise warnings for deprecated keyword arguments
+    # raise warnings for deprecated keyword arguments
     deprecated_keywords = dict(TYPE='type',VERSION='version',
         METHOD='method',EXTRAPOLATE='extrapolate',CUTOFF='cutoff',
         GZIP='compressed',SCALE='scale')
@@ -160,64 +160,64 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
             warnings.warn("""Deprecated keyword argument {0}.
                 Changed to '{1}'""".format(old,new),
                 DeprecationWarning)
-            #-- set renamed argument to not break workflows
+            # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
-    #-- raise warning if model files are entered as a string
+    # raise warning if model files are entered as a string
     if isinstance(model_files,str):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
-    #-- adjust dimensions of input coordinates to be iterable
+    # adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(ilon)
     ilat = np.atleast_1d(ilat)
-    #-- number of points
+    # number of points
     npts = len(ilon)
-    #-- number of constituents
+    # number of constituents
     nc = len(model_files)
 
-    #-- amplitude and phase
+    # amplitude and phase
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc),dtype=bool)
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=bool)
-    #-- read and interpolate each constituent
+    # read and interpolate each constituent
     for i,fi in enumerate(model_files):
-        #-- check that model file is accessible
+        # check that model file is accessible
         if not os.access(os.path.expanduser(fi), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(fi))
-        #-- read constituent from elevation file
+        # read constituent from elevation file
         if kwargs['version'] in ('FES1999','FES2004'):
-            #-- FES ascii constituent files
+            # FES ascii constituent files
             hc,lon,lat = read_ascii_file(os.path.expanduser(fi), **kwargs)
         elif kwargs['version'] in ('FES2012','FES2014','EOT20'):
-            #-- FES netCDF4 constituent files
+            # FES netCDF4 constituent files
             hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
-        #-- adjust longitudinal convention of input latitude and longitude
-        #-- to fit tide model convention
+        # adjust longitudinal convention of input latitude and longitude
+        # to fit tide model convention
         if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
-            #-- input points convention (-180:180)
-            #-- tide model convention (0:360)
+            # input points convention (-180:180)
+            # tide model convention (0:360)
             ilon[ilon<0.0] += 360.0
         elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
-            #-- input points convention (0:360)
-            #-- tide model convention (-180:180)
+            # input points convention (0:360)
+            # tide model convention (-180:180)
             ilon[ilon>180.0] -= 360.0
-        #-- interpolated complex form of constituent oscillation
+        # interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
         hci.mask = np.zeros((npts),dtype=bool)
-        #-- interpolate amplitude and phase of the constituent
+        # interpolate amplitude and phase of the constituent
         if (kwargs['method'] == 'bilinear'):
-            #-- replace invalid values with nan
+            # replace invalid values with nan
             hc[hc.mask] = np.nan
-            #-- use quick bilinear to interpolate values
+            # use quick bilinear to interpolate values
             hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
                 dtype=hc.dtype)
-            #-- replace nan values with fill_value
+            # replace nan values with fill_value
             hci.mask[:] |= np.isnan(hci.data)
             hci.data[hci.mask] = hci.fill_value
         elif (kwargs['method'] == 'spline'):
-            #-- interpolate complex form of the constituent with scipy
+            # interpolate complex form of the constituent with scipy
             f1=scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.data.real.T, kx=1, ky=1)
             f2=scipy.interpolate.RectBivariateSpline(lon, lat,
@@ -227,10 +227,10 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
             hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
-            #-- replace invalid values with fill_value
+            # replace invalid values with fill_value
             hci.data[hci.mask] = hci.fill_value
         else:
-            #-- use scipy regular grid to interpolate values for a given method
+            # use scipy regular grid to interpolate values for a given method
             r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                 hc.data, method=kwargs['method'], bounds_error=False,
                 fill_value=hci.fill_value)
@@ -239,35 +239,35 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
                 fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
-            #-- replace invalid values with fill_value
+            # replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
-        #-- extrapolate data using nearest-neighbors
+        # extrapolate data using nearest-neighbors
         if kwargs['extrapolate'] and np.any(hci.mask):
-            #-- find invalid data points
+            # find invalid data points
             inv, = np.nonzero(hci.mask)
-            #-- replace invalid values with nan
+            # replace invalid values with nan
             hc[hc.mask] = np.nan
-            #-- extrapolate points within cutoff of valid model points
+            # extrapolate points within cutoff of valid model points
             hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
                 dtype=hc.dtype, cutoff=kwargs['cutoff'])
-        #-- convert amplitude from input units to meters
+        # convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci.data)*kwargs['scale']
         amplitude.mask[:,i] = np.copy(hci.mask)
-        #-- phase of the constituent in radians
+        # phase of the constituent in radians
         ph.data[:,i] = np.arctan2(-np.imag(hci.data),np.real(hci.data))
         ph.mask[:,i] = np.copy(hci.mask)
 
-    #-- convert phase to degrees
+    # convert phase to degrees
     phase = ph*180.0/np.pi
     phase.data[phase.data < 0] += 360.0
-    #-- replace data for invalid mask values
+    # replace data for invalid mask values
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value
-    #-- return the interpolated values
+    # return the interpolated values
     return (amplitude,phase)
 
-#-- PURPOSE: read FES ascii tide model grid files
+# PURPOSE: read FES ascii tide model grid files
 def read_ascii_file(input_file, **kwargs):
     """
     Read FES (Finite Element Solution) tide model file
@@ -285,61 +285,61 @@ def read_ascii_file(input_file, **kwargs):
     lon: longitude of tidal model
     lat: latitude of tidal model
     """
-    #-- set default keyword arguments
+    # set default keyword arguments
     kwargs.setdefault('compressed', False)
-    #-- tilde-expand input file
+    # tilde-expand input file
     input_file = os.path.expanduser(input_file)
-    #-- read input tide model file
+    # read input tide model file
     if kwargs['compressed']:
-        #-- read gzipped ascii file
+        # read gzipped ascii file
         with gzip.open(input_file, 'rb') as f:
             file_contents = f.read(input_file).splitlines()
     else:
         with open(input_file, mode="r", encoding='utf8') as f:
             file_contents = f.read().splitlines()
-    #-- parse header text
-    #-- longitude range (lonmin, lonmax)
+    # parse header text
+    # longitude range (lonmin, lonmax)
     lonmin,lonmax = np.array(file_contents[0].split(), dtype=np.float64)
-    #-- latitude range (latmin, latmax)
+    # latitude range (latmin, latmax)
     latmin,latmax = np.array(file_contents[1].split(), dtype=np.float64)
-    #-- grid step size (dlon, dlat)
+    # grid step size (dlon, dlat)
     dlon,dlat = np.array(file_contents[2].split(), dtype=np.float64)
-    #-- grid dimensions (nlon, nlat)
+    # grid dimensions (nlon, nlat)
     nlon,nlat = np.array(file_contents[3].split(), dtype=int)
-    #-- mask fill value
+    # mask fill value
     masked_values = file_contents[4].split()
     fill_value = np.float64(masked_values[0])
-    #-- create output variables
+    # create output variables
     lat = np.linspace(latmin, latmax, nlat)
     lon = np.linspace(lonmin,lonmax,nlon)
     amp = np.ma.zeros((nlat,nlon),fill_value=fill_value,dtype=np.float32)
     ph = np.ma.zeros((nlat,nlon),fill_value=fill_value,dtype=np.float32)
-    #-- create masks for output variables (0=valid)
+    # create masks for output variables (0=valid)
     amp.mask = np.zeros((nlat,nlon),dtype=bool)
     ph.mask = np.zeros((nlat,nlon),dtype=bool)
-    #-- starting line to fill amplitude and phase variables
+    # starting line to fill amplitude and phase variables
     i1 = 5
-    #-- for each latitude
+    # for each latitude
     for i in range(nlat):
         for j in range(nlon//30):
             j1 = j*30
             amp.data[i,j1:j1+30]=np.array(file_contents[i1].split(),dtype='f')
             ph.data[i,j1:j1+30]=np.array(file_contents[i1+1].split(),dtype='f')
             i1 += 2
-        #-- add last tidal variables
+        # add last tidal variables
         j1 = (j+1)*30
         j2 = nlon % 30
         amp.data[i,j1:j1+j2] = np.array(file_contents[i1].split(),dtype='f')
         ph.data[i,j1:j1+j2] = np.array(file_contents[i1+1].split(),dtype='f')
         i1 += 2
-    #-- calculate complex form of constituent oscillation
+    # calculate complex form of constituent oscillation
     hc = amp*np.exp(-1j*ph*np.pi/180.0)
-    #-- set masks
+    # set masks
     hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
-    #-- return output variables
+    # return output variables
     return (hc,lon,lat)
 
-#-- PURPOSE: read FES netCDF4 tide model files
+# PURPOSE: read FES netCDF4 tide model files
 def read_netcdf_file(input_file, **kwargs):
     """
     Read FES (Finite Element Solution) tide model netCDF4 file
@@ -368,25 +368,25 @@ def read_netcdf_file(input_file, **kwargs):
     lat: float
         latitude of tidal model
     """
-    #-- set default keyword arguments
+    # set default keyword arguments
     kwargs.setdefault('type', None)
     kwargs.setdefault('version', None)
     kwargs.setdefault('compressed', False)
-    #-- read the netcdf format tide elevation file
+    # read the netcdf format tide elevation file
     if kwargs['compressed']:
-        #-- read gzipped netCDF4 file
+        # read gzipped netCDF4 file
         f = gzip.open(os.path.expanduser(input_file),'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
     else:
         fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
-    #-- variable dimensions for each model
+    # variable dimensions for each model
     if kwargs['version'] in ('FES2012',):
         lon = fileID.variables['longitude'][:]
         lat = fileID.variables['latitude'][:]
     elif kwargs['version'] in ('FES2014','EOT20'):
         lon = fileID.variables['lon'][:]
         lat = fileID.variables['lat'][:]
-    #-- amplitude and phase components for each type
+    # amplitude and phase components for each type
     if (kwargs['type'] == 'z'):
         amp = fileID.variables['amplitude'][:]
         ph = fileID.variables['phase'][:]
@@ -396,14 +396,14 @@ def read_netcdf_file(input_file, **kwargs):
     elif (kwargs['type'] == 'v'):
         amp = fileID.variables['Va'][:]
         ph = fileID.variables['Vg'][:]
-    #-- close the file
+    # close the file
     fileID.close()
     f.close() if kwargs['compressed'] else None
-    #-- calculate complex form of constituent oscillation
+    # calculate complex form of constituent oscillation
     hc = amp*np.exp(-1j*ph*np.pi/180.0)
-    #-- set masks
+    # set masks
     hc.mask = (amp.data == amp.fill_value) | \
         (ph.data == ph.fill_value) | \
         np.isnan(amp.data) | np.isnan(ph.data)
-    #-- return output variables
+    # return output variables
     return (hc,lon,lat)

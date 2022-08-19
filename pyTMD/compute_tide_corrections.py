@@ -125,7 +125,7 @@ from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
 
-#-- PURPOSE: compute tides at points and times using tide model algorithms
+# PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     ATLAS_FORMAT='netcdf', GZIP=False, DEFINITION_FILE=None, EPSG=3031,
     EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC', METHOD='spline',
@@ -200,24 +200,24 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tidal elevation at coordinates and time in meters
     """
 
-    #-- check that tide directory is accessible
+    # check that tide directory is accessible
     try:
         os.access(DIRECTORY, os.F_OK)
     except:
         raise FileNotFoundError("Invalid tide directory")
 
-    #-- get parameters for tide model
+    # get parameters for tide model
     if DEFINITION_FILE is not None:
         model = pyTMD.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
         model = pyTMD.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).elevation(MODEL)
 
-    #-- determine input data type based on variable dimensions
+    # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
-    #-- reform coordinate dimensions for input grids
-    #-- or verify coordinate dimension shapes
+    # reform coordinate dimensions for input grids
+    # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
         x,y = np.meshgrid(np.copy(x),np.copy(y))
     elif (TYPE.lower() == 'grid'):
@@ -227,63 +227,63 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
 
-    #-- converting x,y from EPSG to latitude/longitude
+    # converting x,y from EPSG to latitude/longitude
     try:
-        #-- EPSG projection code string or int
+        # EPSG projection code string or int
         crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(EPSG)))
     except (ValueError,pyproj.exceptions.CRSError):
-        #-- Projection SRS string
+        # Projection SRS string
         crs1 = pyproj.CRS.from_string(EPSG)
     crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
 
-    #-- assert delta time is an array
+    # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
-    #-- calculate leap seconds if specified
+    # calculate leap seconds if specified
     if (TIME.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'LORAN'):
-        #-- LORAN time is ahead of GPS time by 9 seconds
+        # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'TAI'):
-        #-- TAI time is ahead of GPS time by 19 seconds
+        # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
             epoch2=(1980,1,6,0,0,0), scale=1.0)
-        #-- calculate difference in leap seconds from start of epoch
+        # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     else:
         leap_seconds = 0.0
 
-    #-- convert delta times or datetimes objects
+    # convert delta times or datetimes objects
     if (TIME.lower() == 'datetime'):
-        #-- convert delta time array from datetime object
-        #-- to days relative to 1992-01-01T00:00:00
+        # convert delta time array from datetime object
+        # to days relative to 1992-01-01T00:00:00
         t = pyTMD.time.convert_datetime(delta_time,
             epoch=(1992,1,1,0,0,0))/86400.0
     else:
-        #-- convert time to days relative to Jan 1, 1992 (48622mjd)
+        # convert time to days relative to Jan 1, 1992 (48622mjd)
         t = pyTMD.time.convert_delta_time(delta_time - leap_seconds,
             epoch1=EPOCH, epoch2=(1992,1,1,0,0,0), scale=(1.0/86400.0))
-    #-- delta time (TT - UT1) file
+    # delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
-    #-- read tidal constants and interpolate to grid points
+    # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
         amp,ph,D,c = extract_tidal_constants(lon, lat, model.grid_file,
             model.model_file, model.projection, type=model.type,
@@ -300,24 +300,24 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         amp,ph,c = extract_GOT_constants(lon, lat, model.model_file,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
-        #-- interpolate delta times from calendar dates to tide time
+        # interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
     elif (model.format == 'FES'):
         amp,ph = extract_FES_constants(lon, lat, model.model_file,
             type=model.type, version=model.version, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
-        #-- available model constituents
+        # available model constituents
         c = model.constituents
-        #-- interpolate delta times from calendar dates to tide time
+        # interpolate delta times from calendar dates to tide time
         deltat = calc_delta_time(delta_file, t)
 
-    #-- calculate complex phase in radians for Euler's
+    # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
-    #-- calculate constituent oscillation
+    # calculate constituent oscillation
     hc = amp*np.exp(cph)
 
-    #-- predict tidal elevations at time and infer minor corrections
+    # predict tidal elevations at time and infer minor corrections
     if (TYPE.lower() == 'grid'):
         ny,nx = np.shape(x); nt = len(t)
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
@@ -327,7 +327,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
                 deltat=deltat[i], corrections=model.format)
             MINOR = infer_minor_corrections(t[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            #-- add major and minor components and reform grid
+            # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
     elif (TYPE.lower() == 'drift'):
@@ -348,8 +348,8 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         minor = infer_minor_corrections(t, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
-    #-- replace invalid values with fill value
+    # replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
 
-    #-- return the tide correction
+    # return the tide correction
     return tide

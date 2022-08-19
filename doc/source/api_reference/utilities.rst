@@ -23,7 +23,7 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.get_hash
 
-.. autofunction:: pyTMD.utilities.url_split(s)
+.. autofunction:: pyTMD.utilities.url_split
 
 .. autofunction:: pyTMD.utilities.roman_to_int
 

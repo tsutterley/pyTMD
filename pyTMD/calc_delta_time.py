@@ -38,8 +38,8 @@ import numpy as np
 import scipy.interpolate
 import pyTMD.time
 
-#-- PURPOSE: calculate the difference between universal time and dynamical time
-#-- by interpolating a delta time file to a given date
+# PURPOSE: calculate the difference between universal time and dynamical time
+# by interpolating a delta time file to a given date
 def calc_delta_time(delta_file, idays):
     """
     Calculates the difference between universal time (UT) and
@@ -61,12 +61,12 @@ def calc_delta_time(delta_file, idays):
     ----------
     .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
-    #-- read delta time file
+    # read delta time file
     dinput = np.loadtxt(os.path.expanduser(delta_file))
-    #-- calculate Julian days and then convert to days since 1992-01-01T00:00:00
+    # calculate Julian days and then convert to days since 1992-01-01T00:00:00
     days = pyTMD.time.convert_calendar_dates(dinput[:,0],dinput[:,1],dinput[:,2],
         epoch=(1992,1,1,0,0,0))
-    #-- use scipy interpolating splines to interpolate delta times
+    # use scipy interpolating splines to interpolate delta times
     spl = scipy.interpolate.UnivariateSpline(days,dinput[:,3],k=1,s=0,ext=0)
-    #-- return the delta time for the input date converted to days
+    # return the delta time for the input date converted to days
     return spl(idays)/86400.0
