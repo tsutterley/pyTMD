@@ -60,12 +60,6 @@ except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
     warnings.warn("ipywidgets not available")
     warnings.warn("Some functions will throw an exception if called")
-try:
-    from traitlets.utils.bunch import Bunch
-except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("traitlets not available")
-    warnings.warn("Some functions will throw an exception if called")
 # ignore warnings
 warnings.filterwarnings("ignore")
 
@@ -132,10 +126,10 @@ class widgets:
             self.atlas.layout.display = 'inline-flex'
 
 # define projections for ipyleaflet tiles
-projections = Bunch(
+projections = dict(
     # Alaska Polar Stereographic (WGS84)
-    EPSG5936=Bunch(
-        Basemap=dict(
+    EPSG5936 = dict(
+        Basemap = dict(
             name='EPSG:5936',
             custom=True,
             proj4def="""+proj=stere +lat_0=90 +lat_ts=90 +lon_0=-150 +k=0.994
@@ -174,7 +168,7 @@ projections = Bunch(
         )
     ),
     # Polar Stereographic South (WGS84)
-    EPSG3031 = Bunch(
+    EPSG3031 = dict(
         Basemap = dict(
             name='EPSG:3031',
             custom=True,
@@ -224,7 +218,7 @@ class leaflet:
                 zoom=kwargs['zoom'], max_zoom=24,
                 attribution_control=kwargs['attribution'],
                 basemap=ipyleaflet.basemaps.Esri.ArcticOceanBase,
-                crs=projections.EPSG5936.Basemap)
+                crs=projections['EPSG5936']['Basemap'])
             self.map.add_layer(ipyleaflet.basemaps.Esri.ArcticOceanReference)
             self.crs = 'EPSG:5936'
         elif (projection == 'South'):
@@ -232,7 +226,7 @@ class leaflet:
                 zoom=kwargs['zoom'], max_zoom=9,
                 attribution_control=kwargs['attribution'],
                 basemap=ipyleaflet.basemaps.Esri.AntarcticBasemap,
-                crs=projections.EPSG3031.Basemap)
+                crs=projections['EPSG3031']['Basemap'])
             self.crs = 'EPSG:3031'
         else:
             # use a predefined ipyleaflet map
