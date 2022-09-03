@@ -49,8 +49,6 @@ This software is also dependent on other commonly used Python packages:
 - `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
 - `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
 - `PyYAML: YAML parser and emitter for Python <https://github.com/yaml/pyyaml>`_
-- `read-ICESat-2: Python tools to read data from the NASA ICESat-2 mission <https://github.com/tsutterley/read-ICESat-2/>`_
-- `read-ATM1b-QFIT-binary: Python reader for Airborne Topographic Mapper (ATM) QFIT data products <https://github.com/tsutterley/read-ATM1b-QFIT-binary>`_
 - `scipy: Scientific Tools for Python <https://www.scipy.org/>`_
 - `setuptools_scm: manager for python package versions using scm metadata <https://pypi.org/project/setuptools-scm/1.9.0/>`_
 

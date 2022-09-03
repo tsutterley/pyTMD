@@ -74,27 +74,7 @@ conventions for calculating radial pole tide displacements.
     :caption: Use Cases
 
     api_reference/compute_LPET_elevations.rst
-    api_reference/compute_LPET_icebridge_data.rst
-    api_reference/compute_LPET_ICESat_GLA12.rst
-    api_reference/compute_LPET_ICESat2_ATL03.rst
-    api_reference/compute_LPET_ICESat2_ATL06.rst
-    api_reference/compute_LPET_ICESat2_ATL07.rst
-    api_reference/compute_LPET_ICESat2_ATL10.rst
-    api_reference/compute_LPET_ICESat2_ATL11.rst
-    api_reference/compute_LPET_ICESat2_ATL12.rst
     api_reference/compute_LPT_displacements.rst
-    api_reference/compute_LPT_icebridge_data.rst
-    api_reference/compute_LPT_ICESat_GLA12.rst
     api_reference/compute_OPT_displacements.rst
-    api_reference/compute_OPT_icebridge_data.rst
-    api_reference/compute_OPT_ICESat_GLA12.rst
     api_reference/compute_tidal_currents.rst
     api_reference/compute_tidal_elevations.rst
-    api_reference/compute_tides_icebridge_data.rst
-    api_reference/compute_tides_ICESat_GLA12.rst
-    api_reference/compute_tides_ICESat2_ATL03.rst
-    api_reference/compute_tides_ICESat2_ATL06.rst
-    api_reference/compute_tides_ICESat2_ATL07.rst
-    api_reference/compute_tides_ICESat2_ATL10.rst
-    api_reference/compute_tides_ICESat2_ATL11.rst
-    api_reference/compute_tides_ICESat2_ATL12.rst
