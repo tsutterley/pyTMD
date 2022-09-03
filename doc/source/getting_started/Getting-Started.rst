@@ -124,18 +124,6 @@ elevations or currents (zonal and meridional) for each point.
         --epoch 'seconds since 1970-01-01T00:00:00' --verbose --mode 0o775 \
         input_file.H5 output_file.H5
 
-
-There are specific programs for correcting some publicly available elevation datasets:
-
-- `NASA Operation IceBridge data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_icebridge_data.py>`_
-- `ICESat GLA12 ice sheet altimetry data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat_GLA12.py>`_
-- `ICESat-2 ATL03 geolocated photon data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL03.py>`_
-- `ICESat-2 ATL06 land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL06.py>`_
-- `ICESat-2 ATL07 sea ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL07.py>`_
-- `ICESat-2 ATL10 sea ice freeboard data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL10.py>`_
-- `ICESat-2 ATL11 annual land ice height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL11.py>`_
-- `ICESat-2 ATL12 ocean surface height data <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tides_ICESat2_ATL12.py>`_
-
 Definition Files
 ################
 

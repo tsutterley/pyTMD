@@ -293,7 +293,6 @@ RUN pip3 install --no-cache-dir --no-binary=h5py,cartopy \
         h5py \
         lxml \
         matplotlib \
-        mpi4py \
         netCDF4 \
         numpy \
         pandas \
@@ -302,10 +301,7 @@ RUN pip3 install --no-cache-dir --no-binary=h5py,cartopy \
         pyyaml \
         scikit-learn \
         scipy \
-        setuptools_scm \
-        zarr && \
-    pip3 install --no-cache-dir --no-deps git+https://github.com/tsutterley/read-ICESat-2.git && \
-    pip3 install --no-cache-dir --no-deps git+https://github.com/tsutterley/read-ATM1b-QFIT-binary.git
+        setuptools_scm
 
 COPY . .
 

@@ -20,6 +20,3 @@ dependencies:
   - pyyaml
   - scipy
   - setuptools_scm
-  - pip:
-     - icesat2-toolkit
-     - ATM1b-QFIT
