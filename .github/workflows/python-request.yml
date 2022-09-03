@@ -51,6 +51,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install --no-deps .
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
         pytest --verbose --capture=no --cov=./ --cov-report=xml \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }} \
