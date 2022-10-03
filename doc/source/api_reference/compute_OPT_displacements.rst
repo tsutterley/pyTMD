@@ -38,6 +38,7 @@ compute_OPT_displacements.py
         * ``'GPS'``: GPS Time
         * ``'LORAN'``: Long Range Navigator Time
         * ``'TAI'``: International Atomic Time
+        * ``'datetime'``: formatted datetime string in UTC
 
     --projection : @after
         * ``4326``: latitude and longitude coordinates on WGS84 reference ellipsoid
