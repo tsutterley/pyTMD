@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (06/2022)
+Written by Tyler Sutterley (10/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 10/2022: added datetime parser for ascii time columns
     Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
         added from_file wrapper function to read from particular formats
     Updated 04/2022: add option to reduce input GDAL raster datasets
@@ -56,6 +57,7 @@ import netCDF4
 import datetime
 import warnings
 import numpy as np
+import dateutil.parser
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
@@ -165,13 +167,19 @@ def from_ascii(filename, **kwargs):
         file compression type
     columns: list, default ['time','y','x','data']
         column names of ascii file
+    delimiter: str,
+        Delimiter for csv or ascii files
     header: int, default 0
         header lines to skip from start of file
+    parse_dates: bool, default False
+        Try parsing the time column
     """
     # set default keyword arguments
     kwargs.setdefault('compression',None)
     kwargs.setdefault('columns',['time','y','x','data'])
+    kwargs.setdefault('delimiter',',')
     kwargs.setdefault('header',0)
+    kwargs.setdefault('parse_dates',False)
     # print filename
     logging.info(filename)
     # get column names
@@ -218,30 +226,43 @@ def from_ascii(filename, **kwargs):
         dinput['attributes'] = YAML_HEADER['header']['global_attributes']
         # allocate for each variable and copy variable attributes
         for c in columns:
-            dinput[c] = np.zeros((file_lines-count))
+            if (c == 'time') and kwargs['parse_dates']:
+                dinput[c] = np.zeros((file_lines-count),dtype='datetime64[ms]')
+            else:
+                dinput[c] = np.zeros((file_lines-count))
             dinput['attributes'][c] = YAML_HEADER['header']['variables'][c]
         # update number of file lines to skip for reading data
         header = int(count)
     else:
-        # output spatial data and attributes
-        dinput = {c:np.zeros((file_lines-kwargs['header'])) for c in columns}
-        dinput['attributes'] = {c:dict() for c in columns}
+        # allocate for each variable and variable attributes
+        dinput = {}
         header = int(kwargs['header'])
+        for c in columns:
+            if (c == 'time') and kwargs['parse_dates']:
+                dinput[c] = np.zeros((file_lines-header),dtype='datetime64[ms]')
+            else:
+                dinput[c] = np.zeros((file_lines-header))
+        dinput['attributes'] = {c:dict() for c in columns}
     # extract spatial data array
     # for each line in the file
     for i,line in enumerate(file_contents[header:]):
         # extract columns of interest and assign to dict
         # convert fortran exponentials if applicable
-        column = {c:r.replace('D','E') for c,r in zip(columns,rx.findall(line))}
+        if kwargs['delimiter']:
+            column = {c:l.replace('D','E') for c,l in zip(columns,line.split(kwargs['delimiter']))}
+        else:
+            column = {c:r.replace('D','E') for c,r in zip(columns,rx.findall(line))}
         # copy variables from column dict to output dictionary
         for c in columns:
-            dinput[c][i] = np.float64(column[c])
+            if (c == 'time') and kwargs['parse_dates']:
+                dinput[c][i] = dateutil.parser.parse(column[c])
+            else:
+                dinput[c][i] = np.float64(column[c])
     # convert to masked array if fill values
-    dinput['data'] = np.ma.asarray(dinput['data'])
-    dinput['data'].mask = np.zeros_like(dinput['data'],dtype=bool)
-    if '_FillValue' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and '_FillValue' in dinput['attributes']['data'].keys():
+        dinput['data'] = np.ma.asarray(dinput['data'])
         dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
-        dinput['data'].mask[:] = (dinput['data'].data == dinput['data'].fill_value)
+        dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
     # return the spatial variables
     return dinput
 
@@ -340,7 +361,7 @@ def from_netCDF4(filename, **kwargs):
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
-    if '_FillValue' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and '_FillValue' in dinput['attributes']['data'].keys():
         dinput['data'] = np.ma.asarray(dinput['data'])
         dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
         dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
@@ -445,7 +466,7 @@ def from_HDF5(filename, **kwargs):
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
-    if '_FillValue' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and '_FillValue' in dinput['attributes']['data'].keys():
         dinput['data'] = np.ma.asarray(dinput['data'])
         dinput['data'].fill_value = dinput['attributes']['data']['_FillValue']
         dinput['data'].mask = (dinput['data'].data == dinput['data'].fill_value)
