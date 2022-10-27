@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (08/2022)
+Written by Tyler Sutterley (10/2022)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 10/2022: added encoding for reading leap seconds ascii files
     Updated 08/2022: output variables to unit conversion to seconds
         and the number of days per month for both leap and standard years
     Updated 05/2022: changed keyword arguments to camel case
@@ -555,7 +556,7 @@ def get_leap_seconds(truncate=True):
     """
     leap_secs = pyTMD.utilities.get_data_path(['data','leap-seconds.list'])
     # find line with file expiration as delta time
-    with open(leap_secs,'r') as fid:
+    with open(leap_secs, mode='r', encoding='utf8') as fid:
         secs, = [re.findall(r'\d+',i).pop() for i in fid.read().splitlines()
             if re.match(r'^(?=#@)',i)]
     # check that leap seconds file is still valid
@@ -973,7 +974,7 @@ def read_iers_bulletin_a(fileID):
     # TAI time is ahead of GPS by 19 seconds
     TAI_GPS = 19.0
     # calculate calendar dates from Modified Julian days
-    Y,M,D,h,m,s = convert_julian(MJD[:valid]+2400000.5,FORMAT='tuple')
+    Y,M,D,h,m,s = convert_julian(MJD[:valid]+2400000.5, format='tuple')
     # calculate GPS Time (seconds since 1980-01-06T00:00:00)
     # by converting the Modified Julian days (days since 1858-11-17T00:00:00)
     GPS_Time = convert_delta_time(MJD[:valid]*8.64e4, epoch1=(1858,11,17,0,0,0),

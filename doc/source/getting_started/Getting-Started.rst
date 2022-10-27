@@ -204,6 +204,7 @@ Some regional tide models are projected in a different coordinate system.
 For these cases, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py>`_.
 
 OTIS models may be projected into a separate coordinate system. The available OTIS projections within ``pyTMD`` are
+
 - ``'4326'`` (global latitude and longitude)
 - ``'3031'`` (Antarctic Polar Stereographic in kilometers)
 - ``'3413'`` (NSIDC Sea Ice Polar Stereographic North in kilometers)
