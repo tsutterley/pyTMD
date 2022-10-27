@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (09/2021)
+test_download_and_read.py (10/2022)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 10/2022: added encoding for reading ascii files
     Updated 09/2021: added test for model definition files
     Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha
     Updated 05/2021: added test for check point program
@@ -238,7 +239,8 @@ class Test_CATS2008:
         TYPE = 'z'
 
         # open Antarctic Tide Gauge (AntTG) database
-        with open(os.path.join(filepath,'AntTG_ocean_height_v1.txt'),'r') as f:
+        AntTG = 'AntTG_ocean_height_v1.txt'
+        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -333,7 +335,8 @@ class Test_CATS2008:
         EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
-        with open(os.path.join(filepath,'AntTG_ocean_height_v1.txt'),'r') as f:
+        AntTG = 'AntTG_ocean_height_v1.txt'
+        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -444,7 +447,8 @@ class Test_CATS2008:
         EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
-        with open(os.path.join(filepath,'AntTG_ocean_height_v1.txt'),'r') as f:
+        AntTG = 'AntTG_ocean_height_v1.txt'
+        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -654,7 +658,8 @@ class Test_AOTIM5_2018:
         EPSG = 'PSNorth'
 
         # open Arctic Tidal Current Atlas list of records
-        with open(os.path.join(filepath,'List_of_records.txt'),'r') as f:
+        ATLAS = 'List_of_records.txt'
+        with open(os.path.join(filepath,ATLAS),mode='r',encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # skip 2 header rows
         count = 2

@@ -31,4 +31,5 @@ Software
 - `TMD Matlab Toolbox Repository <https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5>`_
 - `Antarctic Tide Gauge (AntTG) Database Tools <https://github.com/EarthAndSpaceResearch/AntTG_Database_Tools>`_
 - `OSU Tidal Prediction Software (OTPS) <https://www.tpxo.net/otps>`_
-- `FES (Finite Element Solution) tide model software <https://bitbucket.org/cnes_aviso/fes/src/master/>`_
+- `FES (Finite Element Solution) tide model software <https://github.com/CNES/aviso-fes>`_
+- `Tidal Correction Software for NASA Polar Altimetry Missions <https://github.com/tsutterley/Grounding-Zones>`_
