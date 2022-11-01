@@ -67,7 +67,7 @@ except Exception as e:
 else:
     log.info("HDF5 version from via h5dump: {0}".format(hdf5_version))
 # if the HDF5 version not found
-if not any(hdf5_output):
+if not any(hdf5_output) and any(install_requires):
     hdf5_index = install_requires.index('h5py')
     install_requires.pop(hdf5_index)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (10/2022)
+Written by Tyler Sutterley (11/2022)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -94,6 +94,7 @@ PROGRAM DEPENDENCIES:
     predict_tide_drift.py: predict tidal elevations using harmonic constants
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
@@ -130,8 +131,8 @@ from __future__ import print_function
 
 import sys
 import os
-import pyproj
 import logging
+import warnings
 import argparse
 import numpy as np
 import pyTMD.time
@@ -145,6 +146,16 @@ from pyTMD.predict_tide_drift import predict_tide_drift
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_FES_model import extract_FES_constants
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):

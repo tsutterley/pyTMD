@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py (05/2022)
+read_FES_model.py (11/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
     FES (Finite Element Solution) tide models for given locations
@@ -54,6 +54,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 05/2022: reformat arguments to extract_FES_constants definition
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -81,12 +82,21 @@ import os
 import copy
 import gzip
 import uuid
-import netCDF4
 import warnings
 import numpy as np
 import scipy.interpolate
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
+
+# attempt imports
+try:
+    import netCDF4
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("netCDF4 not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):

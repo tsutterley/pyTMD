@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (11/2022)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -79,6 +79,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
         added option to apply flexure to heights for applicable models
@@ -109,7 +110,7 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import os
-import pyproj
+import warnings
 import numpy as np
 import pyTMD.time
 import pyTMD.model
@@ -124,6 +125,16 @@ from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants
 from pyTMD.read_GOT_model import extract_GOT_constants
 from pyTMD.read_FES_model import extract_FES_constants
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,

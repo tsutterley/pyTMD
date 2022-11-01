@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 convert_ll_xy.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 09/2021: added function for using custom projections
     Updated 06/2021: added 3413 for new 1km Greenland model from ESR
@@ -40,8 +41,18 @@ UPDATE HISTORY:
     Updated 11/2019: using pyproj for coordinate conversions
     Written 09/2017
 """
+import warnings
 import numpy as np
-import pyproj
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 def convert_ll_xy(i1,i2,PROJ,BF,EPSG=4326):
     """

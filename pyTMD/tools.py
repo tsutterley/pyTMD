@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (08/2022)
+Written by Tyler Sutterley (11/2022)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 11/2022: place more imports within try/except statements
     Updated 08/2022: place some imports behind try/except statements
     Updated 05/2022: include world copy jump in webmercator maps
     Updated 03/2022: add marker relocation routines from notebooks
@@ -27,7 +28,6 @@ import io
 import os
 import copy
 import base64
-import pyproj
 import datetime
 import warnings
 import numpy as np
@@ -59,6 +59,12 @@ try:
 except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
     warnings.warn("ipywidgets not available")
+    warnings.warn("Some functions will throw an exception if called")
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
     warnings.warn("Some functions will throw an exception if called")
 # ignore warnings
 warnings.filterwarnings("ignore")
