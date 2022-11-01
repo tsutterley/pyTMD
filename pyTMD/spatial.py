@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (10/2022)
+Written by Tyler Sutterley (11/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 10/2022: added datetime parser for ascii time columns
     Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
         added from_file wrapper function to read from particular formats
@@ -53,7 +54,6 @@ import gzip
 import uuid
 import yaml
 import logging
-import netCDF4
 import datetime
 import warnings
 import numpy as np
@@ -70,6 +70,12 @@ try:
 except (ImportError, ModuleNotFoundError) as e:
     warnings.filterwarnings("always")
     warnings.warn("h5py not available")
+    warnings.warn("Some functions will throw an exception if called")
+try:
+    import netCDF4
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("netCDF4 not available")
     warnings.warn("Some functions will throw an exception if called")
 # ignore warnings
 warnings.filterwarnings("ignore")

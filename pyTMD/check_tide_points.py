@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (11/2022)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -63,7 +64,7 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import os
-import pyproj
+import warnings
 import numpy as np
 import scipy.interpolate
 import pyTMD.model
@@ -73,6 +74,16 @@ import pyTMD.read_netcdf_model
 import pyTMD.read_GOT_model
 import pyTMD.read_FES_model
 from pyTMD.bilinear_interp import bilinear_interp
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
 def check_tide_points(x, y, DIRECTORY=None, MODEL=None,

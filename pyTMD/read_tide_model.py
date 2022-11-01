@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py (10/2022)
+read_tide_model.py (11/2022)
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 10/2022: invert current tide masks to be True for invalid points
     Updated 06/2022: unit updates in the ESR netCDF4 format
     Updated 05/2022: add functions for using ESR netCDF4 format models
@@ -100,13 +101,22 @@ UPDATE HISTORY:
 """
 import os
 import copy
-import netCDF4
 import warnings
 import numpy as np
 import scipy.interpolate
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
+
+# attempt imports
+try:
+    import netCDF4
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("netCDF4 not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: extract tidal harmonic constants from tide models at coordinates
 def extract_tidal_constants(ilon, ilat,

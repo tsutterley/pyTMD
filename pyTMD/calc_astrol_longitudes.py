@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-calc_astrol_longitudes.py (04/2022)
+calc_astrol_longitudes.py (10/2022)
 Modification of ASTROL fortran subroutine by Richard Ray 03/1999
 
 Computes the basic astronomical mean longitudes: s, h, p, N and PP
@@ -35,6 +35,7 @@ REFERENCES:
     Jean Meeus, Astronomical Algorithms, 2nd edition, 1998.
 
 UPDATE HISTORY:
+    Updated 10/2022: fix MEEUS solar perigee rate
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 08/2020: change time variable names to not overwrite functions
     Updated 07/2020: added function docstrings
@@ -118,7 +119,7 @@ def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
             1.55628359e-12, 4.390675353e-20, -9.26940435e-27])
         N = polynomial_sum(lunar_node,T)
         # mean longitude of solar perigee (Simon et al., 1994)
-        PP = 282.94 + 1.7192 * T
+        PP = 282.94 + 1.7192 * T / 36525.0
     elif ASTRO5:
         # convert from MJD to centuries relative to 2000-01-01T12:00:00
         T = (MJD - 51544.5)/36525.0

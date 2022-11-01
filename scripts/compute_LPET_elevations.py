@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (10/2022)
+Written by Tyler Sutterley (11/2022)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -64,6 +64,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
     Updated 04/2022: use argparse descriptions within documentation
     Updated 01/2022: added option for changing the time standard
@@ -78,8 +79,8 @@ from __future__ import print_function
 
 import sys
 import os
-import pyproj
 import logging
+import warnings
 import argparse
 import numpy as np
 import pyTMD.time
@@ -87,6 +88,16 @@ import pyTMD.spatial
 import pyTMD.utilities
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):

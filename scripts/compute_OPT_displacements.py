@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (10/2022)
+Written by Tyler Sutterley (11/2022)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -79,6 +79,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
     Updated 04/2022: use longcomplex data format to be windows compliant
         use argparse descriptions within sphinx documentation
@@ -104,8 +105,8 @@ from __future__ import print_function
 
 import sys
 import os
-import pyproj
 import logging
+import warnings
 import argparse
 import numpy as np
 import pyTMD.time
@@ -115,6 +116,16 @@ import scipy.interpolate
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.read_iers_EOP import read_iers_EOP
 from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):

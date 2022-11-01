@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (05/2022)
+Written by Tyler Sutterley (11/2022)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
     output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 11/2022: place some imports within try/except statements
     Updated 05/2022: updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 11/2021: add function for attempting to extract projection
@@ -47,7 +48,7 @@ from __future__ import print_function
 
 import sys
 import os
-import pyproj
+import warnings
 import argparse
 import numpy as np
 import pyTMD.model
@@ -55,6 +56,16 @@ import pyTMD.utilities
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.read_tide_model import *
 from pyTMD.output_otis_tides import *
+
+# attempt imports
+try:
+    import pyproj
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("pyproj not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(PROJECTION):
