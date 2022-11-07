@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        added encoding for writing ascii files
     Updated 10/2022: added datetime parser for ascii time columns
     Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
         added from_file wrapper function to read from particular formats
@@ -610,7 +611,7 @@ def to_ascii(output, attributes, filename, **kwargs):
     filename = os.path.expanduser(filename)
     logging.info(filename)
     # open the output file
-    fid = open(filename, 'w')
+    fid = open(filename, mode='w', encoding='utf8')
     # create a column stack arranging data in column order
     data_stack = np.c_[[output[col] for col in columns]]
     ncol,nrow = np.shape(data_stack)

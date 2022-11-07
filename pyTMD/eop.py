@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 eop.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Utilities for maintaining Earth Orientation Parameter (EOP) files
 
 PYTHON DEPENDENCIES:
@@ -14,6 +14,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 11/2022: added encoding for writing ascii files
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Written 11/2020
@@ -113,7 +114,7 @@ def calculate_mean_pole(verbose=False, mode=0o775):
     ym = np.zeros((nlines))
     # output file with mean pole coordinates
     LOCAL = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    fid = open(LOCAL, 'w')
+    fid = open(LOCAL, mode='w', encoding='utf8')
     logging.info(LOCAL)
     for i,T in enumerate(data['an']):
         # mean pole is Gaussian Weight of all dates with a = 3.40 years.

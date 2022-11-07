@@ -1,11 +1,11 @@
-# This workflow will install Python dependencies and update the time and EOP files
+# This workflow will install Python dependencies and get the latest bulletin-A file
 
-name: Auto-Update Files
+name: Auto-Update Bulletin-A files
 
 on:
   schedule:
     # * is a special character in YAML so you have to quote this string
-    - cron:  '0 0 1 * *'
+    - cron:  '0 0 * * *'
 
 jobs:
   build:
@@ -42,19 +42,21 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest test/test_leap_seconds.py test/test_eop.py \
-            --username=${{ secrets.EARTHDATA_USERNAME }} \
-            --password=${{ secrets.EARTHDATA_PASSWORD }}
+        python -c "import pyTMD.time; pyTMD.time.update_bulletin_a(verbose=True)"
     - name: Check for changes
       id: changes
       run: |
-        if [ -n "$(git status --porcelain)" ] ; then
+        if [ -n "$(git status --porcelain data/ser7.dat)" ] ; then
             echo "::set-output name=detected::true";
             echo "::debug::Changes detected";
         else
             echo "::set-output name=detected::false";
             echo "::debug::No changes detected";
         fi
+    - name: Append delta time file
+      if: steps.changes.outputs.detected == 'true'
+      run: |
+        python -c "import pyTMD.time; pyTMD.time.append_delta_time(verbose=True)"
     - name: Create pull request
       if: steps.changes.outputs.detected == 'true'
       uses: peter-evans/create-pull-request@v3

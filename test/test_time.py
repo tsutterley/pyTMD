@@ -122,7 +122,7 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
         epoch1=(1980,1,6,0,0,0), epoch2=(2018,1,1,0,0,0), scale=1.0)
     assert (delta_time == output_time)
 
-# PURPOSE: update delta time values
+# PURPOSE: update delta time files and values
 def test_update_delta_time(username, password):
     pyTMD.time.merge_delta_time(username=username,password=password)
     # confirm delta time files

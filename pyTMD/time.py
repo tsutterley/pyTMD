@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (10/2022)
+Written by Tyler Sutterley (11/2022)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,9 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 11/2022: use IERS https server as default for Bulletin-A files
+        added download function for latest Bulletin-A file from IERS
+        added function to append from existing merged delta time file
     Updated 10/2022: added encoding for reading leap seconds ascii files
     Updated 08/2022: output variables to unit conversion to seconds
         and the number of days per month for both leap and standard years
@@ -39,6 +42,7 @@ import copy
 import logging
 import warnings
 import datetime
+import traceback
 import numpy as np
 import dateutil.parser
 import pyTMD.utilities
@@ -609,7 +613,8 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
         pyTMD.utilities.check_ftp_connection(HOST[0])
         pyTMD.utilities.from_ftp(HOST, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except:
+    except Exception as e:
+        logging.debug(traceback.format_exc())
         pass
     else:
         return
@@ -619,7 +624,8 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_http(REMOTE, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except:
+    except Exception as e:
+        logging.debug(traceback.format_exc())
         pass
     else:
         return
@@ -670,16 +676,16 @@ def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
     monthly_time = convert_calendar_decimal(monthly[:,0],monthly[:,1],
         day=monthly[:,2])
     # retrieve daily delta time files
-    merge_bulletin_a_files(username=username,password=password,
-        verbose=verbose,mode=mode)
+    merge_bulletin_a_files(username=username, password=password,
+        verbose=verbose, mode=mode)
     # read modern daily delta time file from IERS Bulletin A files
     daily_file = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
     daily = np.loadtxt(daily_file)
-    daily_time = convert_calendar_decimal(daily[:,0],daily[:,1],
+    daily_time = convert_calendar_decimal(daily[:,0], daily[:,1],
         day=daily[:,2])
     # write to new merged file
     merged_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    fid = open(merged_file,'w')
+    fid = open(merged_file, mode='w', encoding='utf8')
     logging.info(merged_file)
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     # use historical values for times prior to monthly
@@ -688,14 +694,48 @@ def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
         args = (HY[i],HM[i],HD[i],historic[i,1])
         print(file_format.format(*args),file=fid)
     # use monthly values for times prior to daily
-    ind2, = np.nonzero(monthly_time < daily_time[0])
+    ind2, = np.nonzero(monthly_time < np.min(daily_time))
     for i in ind2:
         args = (monthly[i,0],monthly[i,1],monthly[i,2],monthly[i,3])
         print(file_format.format(*args),file=fid)
     # use daily values for all times available
-    for i,dt in enumerate(daily_time):
+    for i in np.argsort(daily_time):
         args = (daily[i,0],daily[i,1],daily[i,2],daily[i,3])
         print(file_format.format(*args),file=fid)
+    # close the merged file and change the permissions mode
+    fid.close()
+    os.chmod(merged_file,mode)
+
+# PURPOSE: Append Bulletin-A file to merged delta time file
+def append_delta_time(verbose=False, mode=0o775):
+    """
+    Appends merged delta time file with values from latest Bulletin-A file
+
+    Parameters
+    ----------
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
+    """
+
+    # append to merged file
+    merged_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+    fid = open(merged_file, mode='a', encoding='utf8')
+    logging.info(merged_file)
+    file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
+    # read latest Bulletin-A file from IERS
+    bulletin_file = pyTMD.utilities.get_data_path(['data','ser7.dat'])
+    logging.info(bulletin_file)
+    with open(bulletin_file, mode='rb') as fileID:
+        YY,MM,DD,DELTAT = read_iers_bulletin_a(fileID)
+    # append latest delta time values to merged file
+    for Y,M,D,T in zip(YY,MM,DD,DELTAT):
+        print(file_format.format(Y,M,D,T), file=fid)
     # close the merged file and change the permissions mode
     fid.close()
     os.chmod(merged_file,mode)
@@ -711,6 +751,7 @@ def merge_bulletin_a_files(username=None,password=None,
 
     Servers and Mirrors
 
+    - https://datacenter.iers.org/availableVersions.php?id=6
     - ftp://ftp.iers.org/products/eop/rapid/bulletina/
     - https://cddis.nasa.gov/archive/products/iers/iers_bulletins/bulletin_a/
 
@@ -732,10 +773,22 @@ def merge_bulletin_a_files(username=None,password=None,
     # if complete: replace previous version of file
     LOCAL = pyTMD.utilities.get_data_path(['data','iers_deltat.data'])
     COPY = pyTMD.utilities.get_data_path(['data','iers_deltat.temp'])
-    # try connecting to IERS ftp servers and merge Bulletin-A files
+    # try connecting to IERS http servers and merge Bulletin-A files
     try:
         iers_delta_time(COPY, verbose=verbose, mode=mode)
-    except:
+    except Exception as e:
+        logging.debug(traceback.format_exc())
+        os.remove(COPY) if os.access(COPY, os.F_OK) else None
+        pass
+    else:
+        pyTMD.utilities.copy(COPY, LOCAL, move=True)
+        return
+
+    # try connecting to IERS ftp servers and merge Bulletin-A files
+    try:
+        iers_ftp_delta_time(COPY, verbose=verbose, mode=mode)
+    except Exception as e:
+        logging.debug(traceback.format_exc())
         os.remove(COPY) if os.access(COPY, os.F_OK) else None
         pass
     else:
@@ -746,17 +799,18 @@ def merge_bulletin_a_files(username=None,password=None,
     try:
         cddis_delta_time(COPY, username=username, password=password,
             verbose=verbose, mode=mode)
-    except:
+    except Exception as e:
+        logging.debug(traceback.format_exc())
         os.remove(COPY) if os.access(COPY, os.F_OK) else None
         pass
     else:
         pyTMD.utilities.copy(COPY, LOCAL, move=True)
         return
 
-# PURPOSE: connects to IERS servers and finds Bulletin-A files
-def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
+# PURPOSE: connects to IERS ftp servers and finds Bulletin-A files
+def iers_ftp_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     """
-    Connects to the IERS server to download Bulletin-A files
+    Connects to the IERS ftp server to download Bulletin-A files
 
     - https://datacenter.iers.org/productMetadata.php?id=6
 
@@ -787,7 +841,7 @@ def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     # regular expression pattern for finding files
     rx = re.compile(r'bulletina-(.*?)-(\d+).txt$',re.VERBOSE)
     # open output daily delta time file
-    fid = open(daily_file,'w')
+    fid = open(daily_file, mode='w', encoding='utf8')
     # output file format
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     # find subdirectories
@@ -821,6 +875,57 @@ def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     fid.close()
     # change the permissions mode
     os.chmod(daily_file,mode)
+
+# PURPOSE: connects to IERS http servers and finds Bulletin-A files
+def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
+    """
+    Connects to the IERS server to download Bulletin-A files
+
+    - https://datacenter.iers.org/productMetadata.php?id=6
+
+    Reads the IERS Bulletin-A files and calculates the daily delta times
+
+    Servers and Mirrors
+
+    - https://datacenter.iers.org/availableVersions.php?id=6
+
+    Parameters
+    ----------
+    daily_file: str
+        output daily delta time file from merged Bulletin-A files
+    timeout: int, default 120
+        timeout in seconds for blocking operations
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+
+    Notes
+    -----
+    Delta times are the difference between universal time and dynamical time
+    """
+    # open output daily delta time file
+    fid = open(daily_file, mode='w', encoding='utf8')
+    # output file format
+    file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
+    # connect to http host for IERS Bulletin-A files
+    HOST = 'https://datacenter.iers.org/availableVersions.php?id=6'
+    bulletin_files,_ = pyTMD.utilities.iers_list(HOST, timeout=timeout)
+    # for each Bulletin-A file
+    for f in bulletin_files[-100:]:
+        logging.info(f)
+        remote_buffer = pyTMD.utilities.from_http(f, timeout=timeout)
+        # read Bulletin-A file from BytesIO object
+        YY,MM,DD,DELTAT = read_iers_bulletin_a(remote_buffer)
+        # print delta time for week to output file
+        for Y,M,D,T in zip(YY,MM,DD,DELTAT):
+            print(file_format.format(Y,M,D,T), file=fid)
+        # close the bytesIO object
+        remote_buffer.close()
+    # close the output file
+    fid.close()
+    # change the permissions mode
+    os.chmod(daily_file, mode)
 
 # PURPOSE: connects to CDDIS Earthdata https server and finds Bulletin-A files
 def cddis_delta_time(daily_file, username=None, password=None,
@@ -862,7 +967,7 @@ def cddis_delta_time(daily_file, username=None, password=None,
     # regular expression pattern for finding files
     R2 = re.compile(r'iers_bulletina\.(.*?)_(\d+)$',re.VERBOSE)
     # open output daily delta time file
-    fid = open(daily_file,'w')
+    fid = open(daily_file, mode='w', encoding='utf8')
     file_format = ' {0:4.0f} {1:2.0f} {2:2.0f} {3:7.4f}'
     # for each subdirectory
     subdirectory,mtimes=pyTMD.utilities.cddis_list(HOST,build=False,pattern=R1)
@@ -989,6 +1094,42 @@ def read_iers_bulletin_a(fileID):
     # return dates and delta times
     return (Y,M,D,DELTAT)
 
+# PURPOSE: connects to servers and downloads latest Bulletin-A file
+def update_bulletin_a(timeout=20, verbose=False, mode=0o775):
+    """
+    Connects to IERS Rapid Service/Prediction Center (RS/PC) and
+    downloads latest Bulletin-A file
+
+    - https://maia.usno.navy.mil/ser7/readme.bulla
+
+    Servers and Mirrors
+
+    - https://maia.usno.navy.mil/ser7/ser7.dat
+
+    Parameters
+    ----------
+    timeout: int, default 20
+        timeout in seconds for blocking operations
+    verbose: bool, default False
+        print file information about output file
+    mode: oct, default 0o775
+        permissions mode of output file
+    """
+    # local version of file
+    LOCAL = pyTMD.utilities.get_data_path(['data','ser7.dat'])
+    HASH = pyTMD.utilities.get_hash(LOCAL)
+
+    # try downloading from IERS Rapid Service/Prediction Center (RS/PC)
+    REMOTE = ['https://maia.usno.navy.mil','ser7','ser7.dat']
+    try:
+        pyTMD.utilities.from_http(REMOTE, timeout=timeout, local=LOCAL,
+            hash=HASH, verbose=verbose, mode=mode)
+    except Exception as e:
+        logging.debug(traceback.format_exc())
+        pass
+    else:
+        return
+
 # PURPOSE: connects to servers and downloads delta time files
 def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     """
@@ -1030,7 +1171,8 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     try:
         pyTMD.utilities.from_http(HOST,timeout=5,local=LOCAL,hash=HASH,
             verbose=verbose,mode=mode)
-    except:
+    except Exception as e:
+        logging.debug(traceback.format_exc())
         pass
     else:
         return
@@ -1046,7 +1188,8 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
             pyTMD.utilities.check_ftp_connection(HOST[0])
             pyTMD.utilities.from_ftp(HOST,timeout=20,local=LOCAL,hash=HASH,
                 verbose=verbose,mode=mode)
-        except:
+        except Exception as e:
+            logging.debug(traceback.format_exc())
             pass
         else:
             return
@@ -1057,7 +1200,8 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     try:
         pyTMD.utilities.from_cddis(HOST,username=username,password=password,
             timeout=20,local=LOCAL,hash=HASH,verbose=verbose,mode=mode)
-    except:
+    except Exception as e:
+        logging.debug(traceback.format_exc())
         pass
     else:
         return

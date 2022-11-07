@@ -71,12 +71,18 @@ General Methods
 
 .. autofunction:: pyTMD.time.merge_delta_time
 
+.. autofunction:: pyTMD.time.append_delta_time
+
 .. autofunction:: pyTMD.time.merge_bulletin_a_files
+
+.. autofunction:: pyTMD.time.iers_ftp_delta_time
 
 .. autofunction:: pyTMD.time.iers_delta_time
 
 .. autofunction:: pyTMD.time.cddis_delta_time
 
 .. autofunction:: pyTMD.time.read_iers_bulletin_a
+
+.. autofunction:: pyTMD.time.update_bulletin_a
 
 .. autofunction:: pyTMD.time.pull_deltat_file
