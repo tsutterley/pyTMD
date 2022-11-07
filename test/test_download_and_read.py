@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (10/2022)
+test_download_and_read.py (11/2022)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 11/2022: added encoding for writing ascii files
     Updated 10/2022: added encoding for reading ascii files
     Updated 09/2021: added test for model definition files
     Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha
@@ -97,7 +98,7 @@ class Test_CATS2008:
         zfile.close()
         # output control file for tide model
         CFname = os.path.join(filepath,'Model_CATS2008')
-        fid = open(CFname,'w')
+        fid = open(CFname, mode='w', encoding='utf8')
         for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
             print(os.path.join(modelpath,model_file),file=fid)
         print('xy_ll_CATS2008',file=fid)
@@ -128,7 +129,7 @@ class Test_CATS2008:
         os.makedirs(modelpath)
         # output control file for tide model
         CFname = os.path.join(filepath,'Model_CATS2008')
-        fid = open(CFname,'w')
+        fid = open(CFname, mode='w', encoding='utf8')
         # retrieve each model file from s3
         for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
             # retrieve CATS2008 modelfile
@@ -614,7 +615,7 @@ class Test_AOTIM5_2018:
         zfile.close()
         # output control file for tide model
         CFname = os.path.join(filepath,'Model_Arc5km2018')
-        fid = open(CFname,'w')
+        fid = open(CFname, mode='w', encoding='utf8')
         for model_file in ['h_Arc5km2018','UV_Arc5km2018','grid_Arc5km2018']:
             print(os.path.join(modelpath,model_file),file=fid)
         print('xy_ll_Arc5km2018',file=fid)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 aviso_fes_tides.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Downloads the FES (Finite Element Solution) global tide model from AVISO
 Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/data/products/auxiliary-products/
@@ -35,6 +35,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 11/2022: added encoding for writing ascii files
     Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -80,7 +81,7 @@ def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
         # format: AVISO_FES_tides_2002-04-01.log
         today = time.strftime('%Y-%m-%d',time.localtime())
         LOGFILE = 'AVISO_FES_tides_{0}.log'.format(today)
-        fid = open(os.path.join(DIRECTORY,LOGFILE),'w')
+        fid = open(os.path.join(DIRECTORY,LOGFILE), mode='w', encoding='utf8')
         logger = pyTMD.utilities.build_logger(__name__,stream=fid,
             level=logging.INFO)
         logger.info('AVISO FES Sync Log ({0})'.format(today))

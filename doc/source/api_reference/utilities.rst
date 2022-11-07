@@ -54,3 +54,5 @@ General Methods
 .. autofunction:: pyTMD.utilities.cddis_list
 
 .. autofunction:: pyTMD.utilities.from_cddis
+
+.. autofunction:: pyTMD.utilities.iers_list

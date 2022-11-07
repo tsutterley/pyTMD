@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 11/2022: added list program for IERS Bulletin-A https server
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: build python logging instance for handling verbose output
     Updated 09/2021: added generic list from Apache http server
@@ -906,3 +907,48 @@ def from_cddis(HOST, username=None, password=None, build=True,
         # return the bytesIO object
         remote_buffer.seek(0)
         return remote_buffer
+
+# PURPOSE: list a directory on IERS https Server
+def iers_list(HOST, timeout=None, context=ssl.SSLContext(),
+    parser=lxml.etree.HTMLParser()):
+    """
+    List a directory on IERS Bulletin-A https server
+
+    Parameters
+    ----------
+    HOST: str or list
+        remote http host path
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    context: obj, default ssl.SSLContext()
+        SSL context for url opener object
+    parser: obj, default lxml.etree.HTMLParser()
+        HTML parser for lxml
+
+    Returns
+    -------
+    colnames: list
+        column names in a directory
+    collastmod: list
+        last modification times for items in the directory
+    """
+    # verify inputs for remote http host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
+    # try listing from http
+    try:
+        # Create and submit request.
+        request = urllib2.Request(posixpath.join(*HOST))
+        response = urllib2.urlopen(request, timeout=timeout, context=context)
+    except (urllib2.HTTPError, urllib2.URLError):
+        raise Exception('List error from {0}'.format(posixpath.join(*HOST)))
+    else:
+        # read and parse request for files (column names and modified times)
+        tree = lxml.etree.parse(response, parser)
+        colnames = tree.xpath('//tr/td[@class="$tdclass"][4]//a/@href')
+        # get the Unix timestamp value for a modification time
+        collastmod = [get_unix_time(i,format='%Y-%m-%d')
+            for i in tree.xpath('//tr/td[@class="$tdclass"][2]/span/text()')]
+        # sort list of column names and last modified times in reverse order
+        # return the list of column names and last modified times
+        return (colnames[::-1], collastmod[::-1])
