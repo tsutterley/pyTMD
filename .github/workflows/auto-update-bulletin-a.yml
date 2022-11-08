@@ -6,6 +6,7 @@ on:
   schedule:
     # * is a special character in YAML so you have to quote this string
     - cron:  '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -42,6 +43,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        pip install --no-deps .
         python -c "import pyTMD.time; pyTMD.time.update_bulletin_a(verbose=True)"
     - name: Check for changes
       id: changes
