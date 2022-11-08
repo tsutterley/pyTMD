@@ -6,6 +6,7 @@ on:
   schedule:
     # * is a special character in YAML so you have to quote this string
     - cron:  '0 0 1 * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -42,6 +43,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        pip install --no-deps .
         pytest test/test_leap_seconds.py test/test_eop.py \
             --username=${{ secrets.EARTHDATA_USERNAME }} \
             --password=${{ secrets.EARTHDATA_PASSWORD }}
