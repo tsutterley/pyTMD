@@ -12,7 +12,7 @@ compute_tidal_currents.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py
 
 .. argparse::
-    :filename: ../../scripts/compute_tidal_currents.py
+    :filename: compute_tidal_currents.py
     :func: arguments
     :prog: compute_tidal_currents.py
     :nodescription:

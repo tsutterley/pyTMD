@@ -13,7 +13,7 @@ compute_tidal_elevations.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_elevations.py
 
 .. argparse::
-    :filename: ../../scripts/compute_tidal_elevations.py
+    :filename: compute_tidal_elevations.py
     :func: arguments
     :prog: compute_tidal_elevations.py
     :nodescription:

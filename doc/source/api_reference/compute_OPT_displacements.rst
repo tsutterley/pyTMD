@@ -13,7 +13,7 @@ compute_OPT_displacements.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_OPT_displacements.py
 
 .. argparse::
-    :filename: ../../scripts/compute_OPT_displacements.py
+    :filename: compute_OPT_displacements.py
     :func: arguments
     :prog: compute_OPT_displacements.py
     :nodescription:

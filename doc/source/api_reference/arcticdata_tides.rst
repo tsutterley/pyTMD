@@ -18,7 +18,7 @@ Calling Sequence
 ################
 
 .. argparse::
-    :filename: ../../scripts/arcticdata_tides.py
+    :filename: arcticdata_tides.py
     :func: arguments
     :prog: arcticdata_tides.py
     :nodescription:
