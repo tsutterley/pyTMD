@@ -48,7 +48,7 @@ jobs:
     - name: Check for changes
       id: changes
       run: |
-        if [ -n "$(git status --porcelain data/ser7.dat)" ] ; then
+        if [ -n "$(git status --porcelain)" ] ; then
             echo "::set-output name=detected::true";
             echo "::debug::Changes detected";
         else

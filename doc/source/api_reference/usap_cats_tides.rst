@@ -12,7 +12,7 @@ usap_cats_tides.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/usap_cats_tides.py
 
 .. argparse::
-    :filename: ../../scripts/usap_cats_tides.py
+    :filename: usap_cats_tides.py
     :func: arguments
     :prog: usap_cats_tides.py
     :nodescription:

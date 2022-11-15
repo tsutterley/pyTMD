@@ -9,7 +9,7 @@ reduce_OTIS_files.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/reduce_OTIS_files.py
 
 .. argparse::
-    :filename: ../../scripts/reduce_OTIS_files.py
+    :filename: reduce_OTIS_files.py
     :func: arguments
     :prog: reduce_OTIS_files.py
     :nodescription:

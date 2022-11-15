@@ -18,8 +18,8 @@ dependencies:
   - scipy
   - setuptools_scm
   - sphinx
-  - sphinx-argparse
   - sphinx_rtd_theme
   - texlive-core
   - pip:
+    - sphinx-argparse>=0.4
     - ..

@@ -12,7 +12,7 @@ compute_LPT_displacements.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_LPT_displacements.py
 
 .. argparse::
-    :filename: ../../scripts/compute_LPT_displacements.py
+    :filename: compute_LPT_displacements.py
     :func: arguments
     :prog: compute_LPT_displacements.py
     :nodescription:

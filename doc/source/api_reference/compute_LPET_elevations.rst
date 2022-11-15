@@ -14,7 +14,7 @@ Calling Sequence
 ################
 
 .. argparse::
-    :filename: ../../scripts/compute_LPET_elevations.py
+    :filename: compute_LPET_elevations.py
     :func: arguments
     :prog: compute_LPET_elevations.py
     :nodescription:

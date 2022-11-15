@@ -10,7 +10,7 @@ verify_box_tpxo.py
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/verify_box_tpxo.py
 
 .. argparse::
-    :filename: ../../scripts/verify_box_tpxo.py
+    :filename: verify_box_tpxo.py
     :func: arguments
     :prog: verify_box_tpxo.py
     :nodescription:
