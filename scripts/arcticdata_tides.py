@@ -75,7 +75,7 @@ def arcticdata_tides(MODEL, DIRECTORY=None, MODE=0o775):
         os.makedirs(os.path.join(DIRECTORY,LOCAL[MODEL]), MODE)
 
     # build host url for model
-    resource_map_doi = 'resource_map_doi:{0}'.format(DOI[MODEL])
+    resource_map_doi = f'resource_map_doi:{DOI[MODEL]}'
     HOST = ['https://arcticdata.io','metacat','d1','mn','v2','packages',
         pyTMD.utilities.quote_plus(posixpath.join('application','bagit-097')),
         pyTMD.utilities.quote_plus(resource_map_doi)]

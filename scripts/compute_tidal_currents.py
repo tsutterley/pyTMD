@@ -168,7 +168,7 @@ def get_projection(attributes, PROJECTION):
         return crs
     # EPSG projection code
     try:
-        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+        crs = pyproj.CRS.from_epsg(int(PROJECTION))
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
@@ -275,7 +275,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
 
     # converting x,y from projection to latitude/longitude
     crs1 = get_projection(dinput['attributes'], PROJECTION)
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):
         ny,nx = (len(dinput['y']),len(dinput['x']))

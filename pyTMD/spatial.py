@@ -97,7 +97,7 @@ def case_insensitive_filename(filename):
         directory = os.path.dirname(os.path.expanduser(filename))
         f = [f for f in os.listdir(directory) if re.match(basename,f,re.I)]
         if not f:
-            raise IOError('{0} not found in file system'.format(filename))
+            raise FileNotFoundError(f'{filename} not found in file system')
         filename = os.path.join(directory,f.pop())
     return os.path.expanduser(filename)
 
@@ -159,7 +159,7 @@ def from_file(filename, format, **kwargs):
     elif (format == 'geotiff'):
         dinput = from_geotiff(filename, **kwargs)
     else:
-        raise ValueError('Invalid format {0}'.format(format))
+        raise ValueError(f'Invalid format {format}')
     return dinput
 
 def from_ascii(filename, **kwargs):
@@ -501,11 +501,11 @@ def from_geotiff(filename, **kwargs):
     # Open the geotiff file for reading
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
-        mmap_name = "/vsigzip/{0}".format(case_insensitive_filename(filename))
+        mmap_name = f"/vsigzip/{case_insensitive_filename(filename)}"
         ds = osgeo.gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         # read as GDAL memory-mapped (diskless) geotiff dataset
-        mmap_name = "/vsimem/{0}".format(uuid.uuid4().hex)
+        mmap_name = f"/vsimem/{uuid.uuid4().hex}"
         osgeo.gdal.FileFromMemBuffer(mmap_name, filename.read())
         ds = osgeo.gdal.Open(mmap_name)
     else:
@@ -644,7 +644,7 @@ def to_ascii(output, attributes, filename, **kwargs):
         fid.write('\n\n# End of YAML header\n')
     # write to file for each data point
     for line in range(nrow):
-        line_contents = ['{0:0.8f}'.format(d) for d in data_stack[:,line]]
+        line_contents = [f'{d:0.8f}' for d in data_stack[:,line]]
         print(kwargs['delimiter'].join(line_contents), file=fid)
     # close the output file
     fid.close()

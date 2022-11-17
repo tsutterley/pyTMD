@@ -1518,4 +1518,4 @@ class model:
         elif val.lower() in ('n','no','f','false','0'):
             return False
         else:
-            raise ValueError('Invalid boolean string {0}'.format(val))
+            raise ValueError(f'Invalid boolean string {val}')

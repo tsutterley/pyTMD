@@ -82,12 +82,13 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     # set default keyword arguments
     kwargs.setdefault('fill_value', np.nan)
     # raise warnings for deprecated keyword argument
-    if 'FILL_VALUE' in kwargs.keys():
-        warnings.warn("""Deprecated keyword argument {0}.
-            Changed to '{1}'""".format('FILL_VALUE','fill_value'),
-            DeprecationWarning)
-        # set renamed argument to not break workflows
-        kwargs['fill_value'] = copy.copy(kwargs['FILL_VALUE'])
+    deprecated_keywords = dict(FILL_VALUE='fill_value')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
+            # set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
     # verify IERS model version
     assert version in ('2003','2010','2015'), "Incorrect IERS model version"
     # read mean pole file

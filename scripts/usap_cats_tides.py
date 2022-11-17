@@ -82,7 +82,7 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
         # strip directories from member filename
         m.filename = posixpath.basename(m.filename)
         local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
-        logger.info('\t{0}\n'.format(local_file))
+        logger.info(f'\t{local_file}\n')
         # extract file
         zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
         # change permissions mode

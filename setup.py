@@ -44,12 +44,12 @@ try:
 except Exception as e:
     log.warning('Failed to get options via gdal-config')
 else:
-    log.info("GDAL version from via gdal-config: {0}".format(gdal_output[3]))
+    log.info(f"GDAL version from via gdal-config: {gdal_output[3]}")
 # if setting GDAL version from via gdal-config
 if gdal_output[3]:
     # add version information to gdal in install_requires
     gdal_index = install_requires.index('gdal')
-    install_requires[gdal_index] = 'gdal=={0}'.format(gdal_output[3])
+    install_requires[gdal_index] = f'gdal=={gdal_output[3]}'
 elif any(install_requires):
     # gdal version not found
     gdal_index = install_requires.index('gdal')
@@ -65,7 +65,7 @@ try:
 except Exception as e:
     log.warning('Failed to get HDF5 options')
 else:
-    log.info("HDF5 version from via h5dump: {0}".format(hdf5_version))
+    log.info(f"HDF5 version from via h5dump: {hdf5_version}")
 # if the HDF5 version not found
 if not any(hdf5_output) and any(install_requires):
     hdf5_index = install_requires.index('h5py')
@@ -98,6 +98,8 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     keywords=keywords,
     packages=find_packages(),

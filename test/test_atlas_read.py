@@ -154,8 +154,8 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
         # verify constituents
         assert (cons == constituents[i])
         # calculate difference in amplitude and phase
-        amp_diff = amp[:,i] - val['{0}_amp'.format(cons)]
-        ph_diff = ph[:,i] - val['{0}_ph'.format(cons)]
+        amp_diff = amp[:,i] - val[f'{cons}_amp']
+        ph_diff = ph[:,i] - val[f'{cons}_ph']
         assert np.all(np.abs(amp_diff) <= amp_eps)
         assert np.all(np.abs(ph_diff) <= ph_eps)
 

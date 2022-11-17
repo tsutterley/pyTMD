@@ -589,7 +589,8 @@ class Test_AOTIM5_2018:
     @pytest.fixture(scope="class", autouse=True)
     def download_AOTIM5_2018(self):
         # build host url for model
-        resource_map_doi = 'resource_map_doi:{0}'.format('10.18739/A21R6N14K')
+        doi = '10.18739/A21R6N14K'
+        resource_map_doi = f'resource_map_doi:{doi}'
         HOST = ['https://arcticdata.io','metacat','d1','mn','v2','packages',
             pyTMD.utilities.quote_plus(posixpath.join('application','bagit-097')),
             pyTMD.utilities.quote_plus(resource_map_doi)]

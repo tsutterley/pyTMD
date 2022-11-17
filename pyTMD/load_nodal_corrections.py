@@ -97,9 +97,8 @@ def load_nodal_corrections(MJD, constituents, **kwargs):
     deprecated_keywords = dict(DELTAT='deltat',CORRECTIONS='corrections')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

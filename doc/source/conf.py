@@ -28,7 +28,7 @@ author = 'Tyler C. Sutterley'
 # get semantic version from setuptools-scm
 version = get_distribution("pyTMD").version
 # append "v" before the version
-release = "v{0}".format(version)
+release = f"v{version}"
 
 # -- General configuration ---------------------------------------------------
 

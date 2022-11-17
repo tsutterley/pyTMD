@@ -69,7 +69,7 @@ def update_mean_pole(verbose=False, mode=0o775):
         return
 
     # raise exception
-    raise RuntimeError('Unable to download {0}'.format(FILE))
+    raise RuntimeError(f'Unable to download {FILE}')
 
 # PURPOSE: read table of IERS pole coordinates and calculate Gaussian average
 def calculate_mean_pole(verbose=False, mode=0o775):
@@ -178,7 +178,7 @@ def pull_pole_coordinates(FILE, verbose=False):
         return buffer
 
     # raise exception
-    raise RuntimeError('Unable to download {0}'.format(FILE))
+    raise RuntimeError(f'Unable to download {FILE}')
 
 # PURPOSE: connects to servers and downloads finals files
 def update_finals_file(username=None, password=None, verbose=False, mode=0o775):

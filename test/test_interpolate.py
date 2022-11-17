@@ -22,7 +22,7 @@ filepath = os.path.dirname(os.path.abspath(filename))
 # https://github.com/gradywright/spherepts
 @pytest.fixture(scope="module", autouse=True)
 def download_nodes(N=324):
-	matfile = 'md{0:05d}.mat'.format(N)
+	matfile = f'md{N:05d}.mat'
 	HOST = ['https://github.com','gradywright','spherepts','raw',
 		'master','nodes','max_determinant',matfile]
 	pyTMD.utilities.from_http(HOST,
@@ -44,7 +44,7 @@ def franke_3d(x,y,z):
 # use max determinant nodes from spherepts
 def test_cartesian(N=324):
 	# read the node file
-	matfile = 'md{0:05d}.mat'.format(N)
+	matfile = f'md{N:05d}.mat'
 	xd = scipy.io.loadmat(os.path.join(filepath,matfile))
 	x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
 	# convert from cartesian to sphere
@@ -58,7 +58,7 @@ def test_cartesian(N=324):
 # use max determinant nodes from spherepts
 def test_geodetic(N=324):
 	# read the node file
-	matfile = 'md{0:05d}.mat'.format(N)
+	matfile = f'md{N:05d}.mat'
 	xd = scipy.io.loadmat(os.path.join(filepath,matfile))
 	# convert from cartesian to sphere
 	ln,lt,_ = pyTMD.spatial.to_sphere(xd['x'][:,0],
@@ -82,7 +82,7 @@ def test_geodetic(N=324):
 # PURPOSE: test interpolation routines over a sphere
 def test_interpolate(METHOD, N=324):
 	# read the node file
-	matfile = 'md{0:05d}.mat'.format(N)
+	matfile = f'md{N:05d}.mat'
 	xd = scipy.io.loadmat(os.path.join(filepath,matfile))
 	x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
 	# convert from cartesian to sphere
@@ -122,7 +122,7 @@ def test_interpolate(METHOD, N=324):
 # PURPOSE: test extrapolation over a sphere
 def test_extrapolate(N=324):
 	# read the node file
-	matfile = 'md{0:05d}.mat'.format(N)
+	matfile = f'md{N:05d}.mat'
 	xd = scipy.io.loadmat(os.path.join(filepath,matfile))
 	x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
 	# convert from cartesian to sphere
@@ -149,7 +149,7 @@ def test_extrapolate(N=324):
 # PURPOSE: test that extrapolation will not occur if invalid
 def test_extrapolation_checks(N=324):
 	# read the node file
-	matfile = 'md{0:05d}.mat'.format(N)
+	matfile = f'md{N:05d}.mat'
 	xd = scipy.io.loadmat(os.path.join(filepath,matfile))
 	x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
 	# convert from cartesian to sphere
