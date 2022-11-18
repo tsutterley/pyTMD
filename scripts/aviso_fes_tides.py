@@ -166,7 +166,8 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
     remote_file = posixpath.join('auxiliary','tide_model',*remote_path)
 
     # Printing files transferred
-    logger.info(f'ftp://{ftp.host}/{remote_file} --> ')
+    remote_ftp_url = posixpath.join('ftp://', ftp.host, remote_file)
+    logger.info(f'{remote_ftp_url} -->')
     if tarmode:
         # copy remote file contents to bytesIO object
         fileobj = io.BytesIO()

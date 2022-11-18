@@ -49,10 +49,10 @@ jobs:
       id: changes
       run: |
         if [ -n "$(git status --porcelain)" ] ; then
-            echo "DETECTED=true" >> $GITHUB_OUTPUT
+            echo "DETECTED=true" >> $GITHUB_OUTPUT;
             echo "::debug::Changes detected";
         else
-            echo "DETECTED=false" >> $GITHUB_OUTPUT
+            echo "DETECTED=false" >> $GITHUB_OUTPUT;
             echo "::debug::No changes detected";
         fi
     - name: Append delta time file
