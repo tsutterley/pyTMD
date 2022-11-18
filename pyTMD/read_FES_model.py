@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_FES_constants definition
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -167,9 +168,8 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
         GZIP='compressed',SCALE='scale')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

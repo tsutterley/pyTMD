@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
 
@@ -25,6 +25,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
     Updated 08/2021: USAP now requires captchas for dataset downloads
@@ -82,7 +83,7 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
         # strip directories from member filename
         m.filename = posixpath.basename(m.filename)
         local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
-        logger.info('\t{0}\n'.format(local_file))
+        logger.info(f'\t{local_file}\n')
         # extract file
         zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
         # change permissions mode

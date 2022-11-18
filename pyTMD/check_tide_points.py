@@ -53,6 +53,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -144,11 +145,11 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     # converting x,y from EPSG to latitude/longitude
     try:
         # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(EPSG)))
+        crs1 = pyproj.CRS.from_epsg(int(EPSG))
     except (ValueError,pyproj.exceptions.CRSError):
         # Projection SRS string
         crs1 = pyproj.CRS.from_string(EPSG)
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(np.atleast_1d(x).flatten(),
         np.atleast_1d(y).flatten())

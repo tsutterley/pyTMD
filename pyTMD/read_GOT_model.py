@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_GOT_model.py (05/2022)
+read_GOT_model.py (11/2022)
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
 Includes functions to extract tidal harmonic constants out of a tidal model for
@@ -39,6 +39,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_GOT_constants definition
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -135,9 +136,8 @@ def extract_GOT_constants(ilon, ilat, model_files=None, **kwargs):
         GZIP='compressed',SCALE='scale')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

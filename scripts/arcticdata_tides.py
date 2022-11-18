@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arcticdata_tides.py
-Written by Tyler Sutterley (06/2022)
+Written by Tyler Sutterley (11/2022)
 Download Arctic Ocean Tide Models from the NSF ArcticData archive
 
 AODTM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N
@@ -32,6 +32,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
     Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
@@ -75,7 +76,7 @@ def arcticdata_tides(MODEL, DIRECTORY=None, MODE=0o775):
         os.makedirs(os.path.join(DIRECTORY,LOCAL[MODEL]), MODE)
 
     # build host url for model
-    resource_map_doi = 'resource_map_doi:{0}'.format(DOI[MODEL])
+    resource_map_doi = f'resource_map_doi:{DOI[MODEL]}'
     HOST = ['https://arcticdata.io','metacat','d1','mn','v2','packages',
         pyTMD.utilities.quote_plus(posixpath.join('application','bagit-097')),
         pyTMD.utilities.quote_plus(resource_map_doi)]

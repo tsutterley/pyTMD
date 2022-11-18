@@ -19,7 +19,6 @@ dependencies:
   - setuptools_scm
   - sphinx
   - sphinx_rtd_theme
-  - texlive-core
   - pip:
     - sphinx-argparse>=0.4
     - ..

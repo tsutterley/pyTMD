@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
         fix variable reads for ATLAS compact data formats
+        use f-strings for formatting verbose or ascii output
     Updated 10/2022: invert current tide masks to be True for invalid points
     Updated 06/2022: unit updates in the ESR netCDF4 format
     Updated 05/2022: add functions for using ESR netCDF4 format models
@@ -196,9 +197,8 @@ def extract_tidal_constants(ilon, ilat,
         EXTRAPOLATE='extrapolate',CUTOFF='cutoff',GRID='grid')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

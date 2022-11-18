@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: added list program for IERS Bulletin-A https server
+        use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: build python logging instance for handling verbose output
     Updated 09/2021: added generic list from Apache http server
@@ -305,7 +306,7 @@ def copy(source, destination, move=False, **kwargs):
     source = os.path.abspath(os.path.expanduser(source))
     destination = os.path.abspath(os.path.expanduser(destination))
     # log source and destination
-    logging.info('{0} -->\n\t{1}'.format(source,destination))
+    logging.info(f'{source} -->\n\t{destination}')
     shutil.copyfile(source, destination)
     shutil.copystat(source, destination)
     if move:
@@ -374,7 +375,7 @@ def ftp_list(HOST, username=None, password=None, timeout=None,
     try:
         ftp = ftplib.FTP(HOST[0],timeout=timeout)
     except (socket.gaierror,IOError):
-        raise RuntimeError('Unable to connect to {0}'.format(HOST[0]))
+        raise RuntimeError(f'Unable to connect to {HOST[0]}')
     else:
         ftp.login(username,password)
         # list remote path
@@ -385,7 +386,7 @@ def ftp_list(HOST, username=None, password=None, timeout=None,
         for i,f in enumerate(output):
             try:
                 # try sending modification time command
-                mdtm = ftp.sendcmd('MDTM {0}'.format(f))
+                mdtm = ftp.sendcmd(f'MDTM {f}')
             except ftplib.error_perm:
                 # directories will return with an error
                 pass
@@ -458,14 +459,14 @@ def from_ftp(HOST, username=None, password=None, timeout=None,
         # try to connect to ftp host
         ftp = ftplib.FTP(HOST[0], timeout=timeout)
     except (socket.gaierror,IOError):
-        raise RuntimeError('Unable to connect to {0}'.format(HOST[0]))
+        raise RuntimeError(f'Unable to connect to {HOST[0]}')
     else:
         ftp.login(username,password)
         # remote path
         ftp_remote_path = posixpath.join(*HOST[1:])
         # copy remote file contents to bytesIO object
         remote_buffer = io.BytesIO()
-        ftp.retrbinary('RETR {0}'.format(ftp_remote_path),
+        ftp.retrbinary(f'RETR {ftp_remote_path}',
             remote_buffer.write, blocksize=chunk)
         remote_buffer.seek(0)
         # save file basename with bytesIO object
@@ -473,7 +474,7 @@ def from_ftp(HOST, username=None, password=None, timeout=None,
         # generate checksum hash for remote file
         remote_hash = hashlib.md5(remote_buffer.getvalue()).hexdigest()
         # get last modified date of remote file and convert into unix time
-        mdtm = ftp.sendcmd('MDTM {0}'.format(ftp_remote_path))
+        mdtm = ftp.sendcmd(f'MDTM {ftp_remote_path}')
         remote_mtime = get_unix_time(mdtm[4:], format="%Y%m%d%H%M%S")
         # compare checksums
         if local and (hash != remote_hash):
@@ -708,7 +709,7 @@ def build_opener(username, password, context=ssl.SSLContext(ssl.PROTOCOL_TLS),
     # Encode username/password for request authorization headers
     # add Authorization header to opener
     if authorization_header:
-        b64 = base64.b64encode('{0}:{1}'.format(username, password).encode())
+        b64 = base64.b64encode(f'{username}:{password}'.encode())
         opener.addheaders = [("Authorization","Basic {0}".format(b64.decode()))]
     # Now all calls to urllib2.urlopen use our opener.
     urllib2.install_opener(opener)
@@ -780,7 +781,7 @@ def cddis_list(HOST, username=None, password=None, build=True,
     if isinstance(HOST, str):
         HOST = url_split(HOST)
     # Encode username/password for request authorization headers
-    base64_string = base64.b64encode('{0}:{1}'.format(username, password).encode())
+    base64_string = base64.b64encode(f'{username}:{password}'.encode())
     authorization_header = "Basic {0}".format(base64_string.decode())
     # try listing from https
     try:
@@ -869,7 +870,7 @@ def from_cddis(HOST, username=None, password=None, build=True,
     if isinstance(HOST, str):
         HOST = url_split(HOST)
     # Encode username/password for request authorization headers
-    base64_string = base64.b64encode('{0}:{1}'.format(username, password).encode())
+    base64_string = base64.b64encode(f'{username}:{password}'.encode())
     authorization_header = "Basic {0}".format(base64_string.decode())
     # try downloading from https
     try:

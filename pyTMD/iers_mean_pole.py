@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 iers_mean_pole.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Provides the angular coordinates of the IERS Conventional Mean Pole (CMP)
 Coordinates are based on the table of values from
     ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab
@@ -34,6 +34,7 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
@@ -82,12 +83,13 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     # set default keyword arguments
     kwargs.setdefault('fill_value', np.nan)
     # raise warnings for deprecated keyword argument
-    if 'FILL_VALUE' in kwargs.keys():
-        warnings.warn("""Deprecated keyword argument {0}.
-            Changed to '{1}'""".format('FILL_VALUE','fill_value'),
-            DeprecationWarning)
-        # set renamed argument to not break workflows
-        kwargs['fill_value'] = copy.copy(kwargs['FILL_VALUE'])
+    deprecated_keywords = dict(FILL_VALUE='fill_value')
+    for old,new in deprecated_keywords.items():
+        if old in kwargs.keys():
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
+            # set renamed argument to not break workflows
+            kwargs[new] = copy.copy(kwargs[old])
     # verify IERS model version
     assert version in ('2003','2010','2015'), "Incorrect IERS model version"
     # read mean pole file

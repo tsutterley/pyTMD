@@ -154,7 +154,7 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
         # check if there are any valid points within the input bounds
         if not np.any(valid_mask & valid_bounds):
             # return filled masked array
-            return data
+            return DATA
         # find where input grid is valid and close to output points
         indy,indx = np.nonzero(valid_mask & valid_bounds)
         # flattened model coordinates

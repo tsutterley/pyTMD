@@ -49,19 +49,19 @@ jobs:
       id: changes
       run: |
         if [ -n "$(git status --porcelain)" ] ; then
-            echo "::set-output name=detected::true";
+            echo "DETECTED=true" >> $GITHUB_OUTPUT;
             echo "::debug::Changes detected";
         else
-            echo "::set-output name=detected::false";
+            echo "DETECTED=false" >> $GITHUB_OUTPUT;
             echo "::debug::No changes detected";
         fi
     - name: Append delta time file
-      if: steps.changes.outputs.detected == 'true'
+      if: steps.changes.outputs.DETECTED == 'true'
       run: |
         python -c "import pyTMD.time; pyTMD.time.append_delta_time(verbose=True)"
     - name: Create pull request
-      if: steps.changes.outputs.detected == 'true'
+      if: steps.changes.outputs.DETECTED == 'true'
       uses: peter-evans/create-pull-request@v3
       with:
         assignees: ${{ github.actor }}
-        title: "data: automatic time updates"
+        title: "data: automatic bulletin updates"

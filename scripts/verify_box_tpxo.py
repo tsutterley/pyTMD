@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -31,6 +31,7 @@ REFERENCE:
     https://developer.box.com/guides/
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
     Updated 10/2021: using python logging for handling verbose output
@@ -74,7 +75,7 @@ def build_opener(token, context=ssl.SSLContext(), redirect=True):
     # create "opener" (OpenerDirector instance)
     opener = pyTMD.utilities.urllib2.build_opener(*handler)
     # add Authorization header to opener
-    opener.addheaders = [("Authorization","Bearer {0}".format(token))]
+    opener.addheaders = [("Authorization",f"Bearer {token}")]
     # Now all calls to urllib2.urlopen use our opener.
     pyTMD.utilities.urllib2.install_opener(opener)
     return opener
@@ -106,7 +107,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
     regex_patterns.append('h')
     if CURRENTS:
         regex_patterns.append('u')
-    rx = re.compile('^({0})'.format('|'.join(regex_patterns)), re.VERBOSE)
+    rx = re.compile(r'^({0})'.format(r'|'.join(regex_patterns)), re.VERBOSE)
 
     # box api url
     HOST = posixpath.join('https://api.box.com','2.0')
@@ -123,7 +124,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         # have insufficient permissions for downloading content
         file_url = posixpath.join(HOST,'files',entry['id'])
         # print remote path
-        logger.info('{0} -->'.format(file_url))
+        logger.info(f'{file_url} -->')
         # get last modified time for file
         request = pyTMD.utilities.urllib2.Request(file_url)
         response = pyTMD.utilities.urllib2.urlopen(request)
@@ -133,12 +134,12 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
             format='%Y-%m-%dT%H:%M:%S%z')
         # print file information
         local = os.path.join(localpath,entry['name'])
-        logger.info('\t{0}'.format(local))
+        logger.info(f'\t{local}')
         # compare checksums to validate download
         sha1 = pyTMD.utilities.get_hash(local,algorithm='sha1')
         if sha1 != entry['sha1']:
-            logger.critical('Remote checksum: {0}'.format(entry['sha1']))
-            logger.critical('Local checksum: {0}' .format(sha1))
+            logger.critical(f'Remote checksum: {entry["sha1"]}')
+            logger.critical(f'Local checksum: {sha1}')
             raise Exception('Checksum verification failed')
         # keep remote modification time of file and local access time
         os.utime(local, (os.stat(local).st_atime, remote_mtime))

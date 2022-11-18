@@ -36,6 +36,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: added encoding for writing ascii files
+        use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
     Updated 07/2021: can use prefix files to define command line arguments
@@ -80,12 +81,12 @@ def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
     if LOG:
         # format: AVISO_FES_tides_2002-04-01.log
         today = time.strftime('%Y-%m-%d',time.localtime())
-        LOGFILE = 'AVISO_FES_tides_{0}.log'.format(today)
+        LOGFILE = f'AVISO_FES_tides_{today}.log'
         fid = open(os.path.join(DIRECTORY,LOGFILE), mode='w', encoding='utf8')
         logger = pyTMD.utilities.build_logger(__name__,stream=fid,
             level=logging.INFO)
-        logger.info('AVISO FES Sync Log ({0})'.format(today))
-        logger.info('\tMODEL: {0}'.format(MODEL))
+        logger.info(f'AVISO FES Sync Log ({today})')
+        logger.info(f'\tMODEL: {MODEL}')
     else:
         # standard output (terminal output)
         logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
@@ -165,11 +166,12 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
     remote_file = posixpath.join('auxiliary','tide_model',*remote_path)
 
     # Printing files transferred
-    logger.info('{0}{1}/{2} --> '.format('ftp://',ftp.host,remote_file))
+    remote_ftp_url = posixpath.join('ftp://', ftp.host, remote_file)
+    logger.info(f'{remote_ftp_url} -->')
     if tarmode:
         # copy remote file contents to bytesIO object
         fileobj = io.BytesIO()
-        ftp.retrbinary('RETR {0}'.format(remote_file), fileobj.write)
+        ftp.retrbinary(f'RETR {remote_file}', fileobj.write)
         fileobj.seek(0)
         # open the AOD1B monthly tar file
         tar = tarfile.open(name=remote_path[-1], fileobj=fileobj, mode=tarmode)
@@ -181,8 +183,8 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
             # extract file contents to new file
             if fileExtension in ('.asc','.nc') and GZIP:
                 local_file = os.path.join(local_dir,
-                    *posixpath.split('{0}.gz'.format(member)))
-                logger.info('\t{0}'.format(local_file))
+                    *posixpath.split(f'{member}.gz'))
+                logger.info(f'\t{local_file}')
                 # recursively create output directory if non-existent
                 if not os.access(os.path.dirname(local_file),os.F_OK):
                     os.makedirs(os.path.dirname(local_file),MODE)
@@ -191,7 +193,7 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
                     shutil.copyfileobj(fi, fo)
             else:
                 local_file = os.path.join(local_dir,*posixpath.split(member))
-                logger.info('\t{0}'.format(local_file))
+                logger.info(f'\t{local_file}')
                 # recursively create output directory if non-existent
                 if not os.access(os.path.dirname(local_file),os.F_OK):
                     os.makedirs(os.path.dirname(local_file),MODE)
@@ -205,12 +207,12 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
     else:
         # copy readme and uncompressed files directly
         local_file = os.path.join(local_dir,remote_path[-1])
-        logger.info('\t{0}\n'.format(local_file))
+        logger.info(f'\t{local_file}\n')
         # copy remote file contents to local file
         with open(local_file, 'wb') as f:
-            ftp.retrbinary('RETR {0}'.format(remote_file), f.write)
+            ftp.retrbinary(f'RETR {remote_file}', f.write)
         # get last modified date of remote file and convert into unix time
-        mdtm = ftp.sendcmd('MDTM {0}'.format(remote_file))
+        mdtm = ftp.sendcmd(f'MDTM {remote_file}')
         remote_mtime = calendar.timegm(time.strptime(mdtm[4:],"%Y%m%d%H%M%S"))
         # keep remote modification time of file and local access time
         os.utime(local_file, (os.stat(local_file).st_atime, remote_mtime))
@@ -283,10 +285,10 @@ def main():
     except:
         # check that AVISO FTP Server credentials were entered
         if not args.user:
-            prompt = 'Username for {0}: '.format(HOST)
+            prompt = f'Username for {HOST}: '
             args.user = builtins.input(prompt)
         # enter password securely from command-line
-        prompt = 'Password for {0}@{1}: '.format(args.user,HOST)
+        prompt = f'Password for {args.user}@{HOST}: '
         PASSWORD = getpass.getpass(prompt)
 
     # check internet connection before attempting to run program

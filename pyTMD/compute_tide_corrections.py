@@ -80,6 +80,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
         added option to apply flexure to heights for applicable models
@@ -241,11 +242,12 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     # converting x,y from EPSG to latitude/longitude
     try:
         # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(int(EPSG)))
+        crs1 = pyproj.CRS.from_epsg(int(EPSG))
     except (ValueError,pyproj.exceptions.CRSError):
         # Projection SRS string
         crs1 = pyproj.CRS.from_string(EPSG)
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    # output coordinate reference system
+    crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
 

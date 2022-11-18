@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (05/2022)
+load_nodal_corrections.py (11/2022)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -37,6 +37,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -97,9 +98,8 @@ def load_nodal_corrections(MJD, constituents, **kwargs):
     deprecated_keywords = dict(DELTAT='deltat',CORRECTIONS='corrections')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 07/2022: fix setting of masked array data to NaN
     Updated 05/2022: reformat arguments to extract_netcdf_constants definition
         changed keyword arguments to camel case
@@ -172,9 +173,8 @@ def extract_netcdf_constants(ilon, ilat,
         GZIP='compressed', SCALE='scale')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

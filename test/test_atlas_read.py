@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (09/2021)
+test_atlas_read.py (11/2022)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 09/2021: added test for model definition files
     Updated 03/2021: use pytest fixture to setup and teardown model data
         simplified netcdf inputs to be similar to binary OTIS read program
@@ -154,8 +155,8 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
         # verify constituents
         assert (cons == constituents[i])
         # calculate difference in amplitude and phase
-        amp_diff = amp[:,i] - val['{0}_amp'.format(cons)]
-        ph_diff = ph[:,i] - val['{0}_ph'.format(cons)]
+        amp_diff = amp[:,i] - val[f'{cons}_amp']
+        ph_diff = ph[:,i] - val[f'{cons}_ph']
         assert np.all(np.abs(amp_diff) <= amp_eps)
         assert np.all(np.abs(ph_diff) <= ph_eps)
 

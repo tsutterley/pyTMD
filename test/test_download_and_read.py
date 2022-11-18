@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: added encoding for writing ascii files
+        use f-strings for formatting verbose or ascii output
     Updated 10/2022: added encoding for reading ascii files
     Updated 09/2021: added test for model definition files
     Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha
@@ -589,7 +590,8 @@ class Test_AOTIM5_2018:
     @pytest.fixture(scope="class", autouse=True)
     def download_AOTIM5_2018(self):
         # build host url for model
-        resource_map_doi = 'resource_map_doi:{0}'.format('10.18739/A21R6N14K')
+        doi = '10.18739/A21R6N14K'
+        resource_map_doi = f'resource_map_doi:{doi}'
         HOST = ['https://arcticdata.io','metacat','d1','mn','v2','packages',
             pyTMD.utilities.quote_plus(posixpath.join('application','bagit-097')),
             pyTMD.utilities.quote_plus(resource_map_doi)]

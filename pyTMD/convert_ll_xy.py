@@ -31,6 +31,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 09/2021: added function for using custom projections
     Updated 06/2021: added 3413 for new 1km Greenland model from ESR
@@ -106,14 +107,14 @@ def convert_ll_xy(i1,i2,PROJ,BF,EPSG=4326):
     else:
         return (o1, o2)
     # projection not found or available
-    raise Exception('PROJ:{0} conversion function not found'.format(PROJ))
+    raise Exception(f'PROJ:{PROJ} conversion function not found')
 
 # wrapper function for models in EPSG 3031 (Antarctic Polar Stereographic)
 def convert_EPSG3031(i1,i2,BF,EPSG=4326):
     """Converts models in EPSG 3031 (Antarctic Polar Stereographic)
     """
     # projections for converting from input EPSG (default latitude/longitude)
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-71,
         'lon_0':0,'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84',
         'units':'km'})
@@ -132,7 +133,7 @@ def convert_EPSG3413(i1,i2,BF,EPSG=4326):
     """Converts models in EPSG 3413 (Sea Ice Polar Stereographic North)
     """
     # projections for converting from input EPSG (default latitude/longitude)
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':90,'lat_ts':70,
         'lon_0':-45,'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84',
         'units':'km'})
@@ -151,7 +152,7 @@ def convert_CATS2008(i1,i2,BF,EPSG=4326):
     """Converts Circum-Antarctic Tidal Simulation models
     """
     # projections for converting from input EPSG (default latitude/longitude)
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-71,
         'lon_0':-70,'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84',
         'units':'km'})
@@ -170,7 +171,7 @@ def convert_EPSG3976(i1,i2,BF,EPSG=4326):
     """Converts models in EPSG 3976 (Sea Ice Polar Stereographic South)
     """
     # projections for converting from input EPSG (default latitude/longitude)
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
     crs2 = pyproj.CRS.from_user_input({'proj':'stere','lat_0':-90,'lat_ts':-70,
         'lon_0':0,'x_0':0.,'y_0':0.,'ellps': 'WGS84','datum': 'WGS84',
         'units':'km'})
@@ -189,8 +190,8 @@ def convert_PSNorth(i1,i2,BF,EPSG=4326):
     """Converts idealized Arctic Polar Stereographic models
     """
     # projections for converting to and from input EPSG
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
+    crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     # convert lat/lon to (idealized) Polar-Stereographic x/y
     if (BF.upper() == 'F'):
@@ -213,8 +214,8 @@ def convert_PSNorth(i1,i2,BF,EPSG=4326):
 def convert_EPSG4326(i1,i2,BF,EPSG=4326):
     """Converts models in EPSG 4326 (WGS84 Latitude/Longitude)
     """
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
+    crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (BF.upper() == 'F'):
         direction = pyproj.enums.TransformDirection.FORWARD
@@ -228,7 +229,7 @@ def convert_projection(i1,i2,PROJ,BF,EPSG=4326):
     """Converts models in a custom projection
     """
     # projections for converting from input EPSG (default latitude/longitude)
-    crs1 = pyproj.CRS.from_string("epsg:{0:d}".format(EPSG))
+    crs1 = pyproj.CRS.from_epsg(EPSG)
     crs2 = pyproj.CRS.from_string(PROJ)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     # convert lat/lon to custom projection

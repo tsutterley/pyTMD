@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-infer_minor_corrections.py (05/2022)
+infer_minor_corrections.py (11/2022)
 Return correction for minor constituents based on Richard Ray's PERTH3 code
     PERTH: PREdict Tidal Heights
 
@@ -35,6 +35,7 @@ REFERENCES:
         time series", Advances in Water Resources, 12, (1989).
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 08/2020: change time variable names to not overwrite functions
@@ -90,9 +91,8 @@ def infer_minor_corrections(t, zmajor, constituents, **kwargs):
     deprecated_keywords = dict(DELTAT='deltat',CORRECTIONS='corrections')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn("""Deprecated keyword argument {0}.
-                Changed to '{1}'""".format(old,new),
-                DeprecationWarning)
+            warnings.warn(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 

@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 11/2021: add function for attempting to extract projection
@@ -71,7 +72,7 @@ warnings.filterwarnings("ignore")
 def get_projection(PROJECTION):
     # EPSG projection code
     try:
-        crs = pyproj.CRS.from_string("epsg:{0:d}".format(int(PROJECTION)))
+        crs = pyproj.CRS.from_epsg(int(PROJECTION))
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:
@@ -107,7 +108,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
 
     # converting bounds x,y from projection to latitude/longitude
     crs1 = get_projection(PROJECTION)
-    crs2 = pyproj.CRS.from_string("epsg:{0:d}".format(4326))
+    crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     xbox = np.array([BOUNDS[0],BOUNDS[1],BOUNDS[1],BOUNDS[0],BOUNDS[0]])
     ybox = np.array([BOUNDS[2],BOUNDS[2],BOUNDS[3],BOUNDS[3],BOUNDS[2]])
