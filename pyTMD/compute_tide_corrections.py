@@ -80,6 +80,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         updated keyword arguments to read tide model programs
         added option to apply flexure to heights for applicable models

@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: added list program for IERS Bulletin-A https server
+        use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 10/2021: build python logging instance for handling verbose output
     Updated 09/2021: added generic list from Apache http server

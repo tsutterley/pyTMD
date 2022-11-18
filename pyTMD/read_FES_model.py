@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_FES_constants definition
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format

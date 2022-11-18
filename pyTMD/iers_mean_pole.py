@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 iers_mean_pole.py
-Written by Tyler Sutterley (04/2022)
+Written by Tyler Sutterley (11/2022)
 Provides the angular coordinates of the IERS Conventional Mean Pole (CMP)
 Coordinates are based on the table of values from
     ftp://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab
@@ -34,6 +34,7 @@ REFERENCE:
         IERS Technical Note No. 36, BKG (2010)
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 02/2021: replaced numpy bool to prevent deprecation warning

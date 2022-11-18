@@ -2,6 +2,10 @@
 u"""
 test_interpolate.py (03/2021)
 Test the interpolation and extrapolation routines
+
+UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
+	Written 03/2021
 """
 import os
 import inspect

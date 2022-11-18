@@ -15,6 +15,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: added encoding for writing ascii files
+        use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Written 11/2020

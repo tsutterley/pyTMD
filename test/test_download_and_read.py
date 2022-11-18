@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: added encoding for writing ascii files
+        use f-strings for formatting verbose or ascii output
     Updated 10/2022: added encoding for reading ascii files
     Updated 09/2021: added test for model definition files
     Updated 07/2021: download CATS2008 and AntTG from S3 to bypass USAP captcha

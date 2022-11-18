@@ -21,6 +21,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
         added encoding for writing ascii files
+        use f-strings for formatting verbose or ascii output
     Updated 10/2022: added datetime parser for ascii time columns
     Updated 06/2022: added field_mapping options to netCDF4 and HDF5 reads
         added from_file wrapper function to read from particular formats

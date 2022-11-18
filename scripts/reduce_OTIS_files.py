@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 05/2022: updated keyword arguments to read tide model programs
     Updated 04/2022: use argparse descriptions within documentation
     Updated 11/2021: add function for attempting to extract projection

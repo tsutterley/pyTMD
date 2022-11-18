@@ -64,4 +64,4 @@ jobs:
       uses: peter-evans/create-pull-request@v3
       with:
         assignees: ${{ github.actor }}
-        title: "data: automatic time updates"
+        title: "data: automatic bulletin updates"

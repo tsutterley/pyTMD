@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
         fix variable reads for ATLAS compact data formats
+        use f-strings for formatting verbose or ascii output
     Updated 10/2022: invert current tide masks to be True for invalid points
     Updated 06/2022: unit updates in the ESR netCDF4 format
     Updated 05/2022: add functions for using ESR netCDF4 format models

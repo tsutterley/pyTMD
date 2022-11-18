@@ -19,6 +19,7 @@ UPDATE HISTORY:
     Updated 11/2022: use IERS https server as default for Bulletin-A files
         added download function for latest Bulletin-A file from IERS
         added function to append from existing merged delta time file
+        use f-strings for formatting verbose or ascii output
     Updated 10/2022: added encoding for reading leap seconds ascii files
     Updated 08/2022: output variables to unit conversion to seconds
         and the number of days per month for both leap and standard years

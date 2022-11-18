@@ -31,6 +31,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 09/2021: added function for using custom projections
     Updated 06/2021: added 3413 for new 1km Greenland model from ESR

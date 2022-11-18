@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2022: place some imports within try/except statements
+        use f-strings for formatting verbose or ascii output
     Updated 07/2022: fix setting of masked array data to NaN
     Updated 05/2022: reformat arguments to extract_netcdf_constants definition
         changed keyword arguments to camel case

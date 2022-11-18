@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (06/2022)
+Written by Tyler Sutterley (11/2022)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
         updated citation url for Global Ocean Tide (GOT) models
     Updated 05/2022: added ESR CATS2022 to list of models
