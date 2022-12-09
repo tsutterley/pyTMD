@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -64,6 +64,7 @@ PROGRAM DEPENDENCIES:
     compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 12/2022: single implicit import of pyTMD tools
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
@@ -84,11 +85,7 @@ import logging
 import warnings
 import argparse
 import numpy as np
-import pyTMD.time
-import pyTMD.spatial
-import pyTMD.utilities
-from pyTMD.calc_delta_time import calc_delta_time
-from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
+import pyTMD
 
 # attempt imports
 try:
@@ -252,7 +249,7 @@ def compute_LPET_elevations(input_file, output_file,
             epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
     # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = calc_delta_time(delta_file, tide_time)
+    deltat = pyTMD.calc_delta_time(delta_file, tide_time)
     # number of time points
     nt = len(tide_time)
 
@@ -260,10 +257,10 @@ def compute_LPET_elevations(input_file, output_file,
     if (TYPE == 'grid'):
         tide_lpe = np.zeros((ny,nx,nt))
         for i in range(nt):
-            lpet = compute_equilibrium_tide(tide_time[i] + deltat[i], lat)
+            lpet = pyTMD.compute_equilibrium_tide(tide_time[i] + deltat[i], lat)
             tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
     elif (TYPE == 'drift'):
-        tide_lpe = compute_equilibrium_tide(tide_time + deltat, lat)
+        tide_lpe = pyTMD.compute_equilibrium_tide(tide_time + deltat, lat)
 
     # output to file
     output = dict(time=tide_time,lon=lon,lat=lat,tide_lpe=tide_lpe)
