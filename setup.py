@@ -46,11 +46,11 @@ except Exception as e:
 else:
     log.info(f"GDAL version from via gdal-config: {gdal_output[3]}")
 # if setting GDAL version from via gdal-config
-if gdal_output[3]:
+if gdal_output[3] and ('gdal' in install_requires):
     # add version information to gdal in install_requires
     gdal_index = install_requires.index('gdal')
     install_requires[gdal_index] = f'gdal=={gdal_output[3]}'
-elif any(install_requires):
+elif any(install_requires) and ('gdal' in install_requires):
     # gdal version not found
     gdal_index = install_requires.index('gdal')
     install_requires.pop(gdal_index)
@@ -67,7 +67,7 @@ except Exception as e:
 else:
     log.info(f"HDF5 version from via h5dump: {hdf5_version}")
 # if the HDF5 version not found
-if not any(hdf5_output) and any(install_requires):
+if not any(hdf5_output) and ('h5py' in install_requires):
     hdf5_index = install_requires.index('h5py')
     install_requires.pop(hdf5_index)
 
