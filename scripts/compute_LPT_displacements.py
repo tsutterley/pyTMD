@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 Calculates radial pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -67,6 +67,7 @@ PROGRAM DEPENDENCIES:
     read_iers_EOP.py: read daily earth orientation parameters from IERS
 
 UPDATE HISTORY:
+    Updated 12/2022: single implicit import of pyTMD tools
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
@@ -93,12 +94,8 @@ import logging
 import warnings
 import argparse
 import numpy as np
-import pyTMD.time
-import pyTMD.spatial
-import pyTMD.utilities
 import scipy.interpolate
-from pyTMD.iers_mean_pole import iers_mean_pole
-from pyTMD.read_iers_EOP import read_iers_EOP
+import pyTMD
 
 # attempt imports
 try:
@@ -321,9 +318,9 @@ def compute_LPT_displacements(input_file, output_file,
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean pole at time
-    mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,'2015')
+    mpx,mpy,fl = pyTMD.iers_mean_pole(mean_pole_file,time_decimal,'2015')
     # read IERS daily polar motion values
-    EOP = read_iers_EOP(pole_tide_file)
+    EOP = pyTMD.read_iers_EOP(pole_tide_file)
     # interpolate daily polar motion values to MJD using cubic splines
     xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)

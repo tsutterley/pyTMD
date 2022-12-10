@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 12/2022: add software information to output HDF5 and netCDF4
     Updated 11/2022: place some imports within try/except statements
         added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
@@ -60,6 +61,8 @@ import datetime
 import warnings
 import numpy as np
 import dateutil.parser
+import pyTMD.version
+from pyTMD.utilities import get_git_revision_hash
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
@@ -685,6 +688,10 @@ def to_netCDF4(output, attributes, filename, **kwargs):
             nc[key].setncattr(att_name,att_val)
     # add attribute for date created
     fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    fileID.software_revision = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
@@ -730,6 +737,10 @@ def to_HDF5(output, attributes, filename, **kwargs):
             h5[key].attrs[att_name] = att_val
     # add attribute for date created
     fileID.attrs['date_created'] = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.attrs['software_reference'] = pyTMD.version.project_name
+    fileID.attrs['software_version'] = pyTMD.version.full_version
+    fileID.attrs['software_revision'] = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file

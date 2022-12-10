@@ -44,6 +44,7 @@ import socket
 import inspect
 import hashlib
 import logging
+import warnings
 import posixpath
 import subprocess
 import lxml.etree
@@ -126,6 +127,43 @@ def get_hash(local, algorithm='MD5'):
                 return hashlib.sha1(local_buffer.read()).hexdigest()
     else:
         return ''
+
+# PURPOSE: get the git hash value
+def get_git_revision_hash(refname='HEAD', short=False):
+    """
+    Get the git hash value for a particular reference
+
+    Parameters
+    ----------
+    refname: str, default HEAD
+        Symbolic reference name
+    short: bool, default False
+        Return the shorted hash value
+    """
+    # get path to .git directory from current file path
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    basepath = os.path.dirname(os.path.dirname(os.path.abspath(filename)))
+    gitpath = os.path.join(basepath,'.git')
+    # build command
+    cmd = ['git', f'--git-dir={gitpath}', 'rev-parse']
+    cmd.append('--short') if short else None
+    cmd.append(refname)
+    # get output
+    with warnings.catch_warnings():
+        return str(subprocess.check_output(cmd), encoding='utf8').strip()
+
+# PURPOSE: get the current git status
+def get_git_status():
+    """Get the status of a git repository as a boolean value
+    """
+    # get path to .git directory from current file path
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    basepath = os.path.dirname(os.path.dirname(os.path.abspath(filename)))
+    gitpath = os.path.join(basepath,'.git')
+    # build command
+    cmd = ['git', f'--git-dir={gitpath}', 'status', '--porcelain']
+    with warnings.catch_warnings():
+        return bool(subprocess.check_output(cmd))
 
 # PURPOSE: recursively split a url path
 def url_split(s):

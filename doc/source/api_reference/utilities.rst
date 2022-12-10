@@ -23,6 +23,10 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.get_hash
 
+.. autofunction:: pyTMD.utilities.get_git_revision_hash
+
+.. autofunction:: pyTMD.utilities.get_git_status
+
 .. autofunction:: pyTMD.utilities.url_split
 
 .. autofunction:: pyTMD.utilities.roman_to_int
