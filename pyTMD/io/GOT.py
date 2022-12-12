@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py
+GOT.py
 Written by Tyler Sutterley (12/2022)
 
-Reads files for a tidal model and makes initial calculations to run tide program
-Includes functions to extract tidal harmonic constants from the
-    FES (Finite Element Solution) tide models for given locations
-ascii and netCDF4 files can be been compressed using gzip
-
-Reads ascii and netCDF4 FES tidal solutions provided by AVISO
-    https://www.aviso.altimetry.fr/data/products/auxiliary-products/
-        global-tide-fes.html
+Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
+    calculations to run the tide program
+Includes functions to extract tidal harmonic constants out of a tidal model for
+    given locations
 
 INPUTS:
     ilon: longitude to interpolate
@@ -18,16 +14,6 @@ INPUTS:
     model_files: list of model files for each constituent
 
 OPTIONS:
-    type: tidal variable to run
-        z: heights
-        u: horizontal transport velocities
-        v: vertical transport velocities
-    version: model version to run
-        FES1999
-        FES2004
-        FES2012
-        FES2014
-        EOT20
     method: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -41,6 +27,7 @@ OPTIONS:
 OUTPUTS:
     amplitude: amplitudes of tidal constituents
     phase: phases of tidal constituents
+    constituents: list of model constituents
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -48,23 +35,18 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
-    netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to coordinates
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
-    Updated 12/2022: refactored tide read programs under io
-    Updated 11/2022: place some imports within try/except statements
-        use f-strings for formatting verbose or ascii output
-    Updated 05/2022: reformat arguments to extract_FES_constants definition
+    Updated 12/2022: refactor tide read programs under io
+    Updated 11/2022: use f-strings for formatting verbose or ascii output
+    Updated 05/2022: reformat arguments to extract_GOT_constants definition
         changed keyword arguments to camel case
     Updated 04/2022: updated docstrings to numpy documentation format
         include utf-8 encoding in reads to be windows compliant
-        fix netCDF4 masks for nan values
-    Updated 01/2022: added global Empirical Ocean Tide model (EOT20)
     Updated 12/2021: adjust longitude convention based on model longitude
     Updated 07/2021: added check that tide model files are accessible
     Updated 06/2021: add warning for tide models being entered as string
@@ -73,39 +55,39 @@ UPDATE HISTORY:
         prevent ComplexWarning for fill values when calculating amplitudes
         simplified inputs to be similar to binary OTIS read program
         replaced numpy bool/int to prevent deprecation warnings
-        use uuid for reading from gzipped netCDF4 files
     Updated 02/2021: set invalid values to nan in extrapolation
         replaced numpy bool to prevent deprecation warning
-    Updated 12/2020: added nearest-neighbor data extrapolation
+    Updated 12/2020: added valid data extrapolation with nearest_extrap
     Updated 09/2020: set bounds error to false for regular grid interpolations
         adjust dimensions of input coordinates to be iterable
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
-    Written 07/2020
+    Updated 07/2020: added function docstrings. separate bilinear interpolation
+        update griddata interpolation. add option for compression
+    Updated 06/2020: use argmin and argmax in bilinear interpolation
+    Updated 11/2019: find invalid mask points for each constituent
+    Updated 09/2019: output as numpy masked arrays instead of nan-filled arrays
+    Updated 07/2019: interpolate fill value mask with bivariate splines
+    Updated 12/2018: python3 compatibility updates for division and zip
+    Updated 10/2018: added scale as load tides are in mm and ocean are in cm
+    Updated 08/2018: added multivariate spline interpolation option
+    Written 07/2018
 """
+from __future__ import division
+
 import os
+import re
 import copy
 import gzip
-import uuid
 import warnings
 import numpy as np
 import scipy.interpolate
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
-# attempt imports
-try:
-    import netCDF4
-except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("netCDF4 not available")
-    warnings.warn("Some functions will throw an exception if called")
-# ignore warnings
-warnings.filterwarnings("ignore")
-
-# PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
+# PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
+def extract_constants(ilon, ilat, model_files=None, **kwargs):
     """
-    Reads files for an ascii or netCDF4 tidal model
+    Reads files for Richard Ray's Global Ocean Tide (GOT) models
 
     Makes initial calculations to run the tide program
 
@@ -119,20 +101,6 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
         latitude to interpolate
     model_files: list or NoneType, default None
         list of model files for each constituent
-    type: str, default 'z'
-        Tidal variable to read
-
-            - ``'z'``: heights
-            - ``'u'``: horizontal transport velocities
-            - ``'v'``: vertical transport velocities
-    version: str or NoneType, default None
-        Model version to read
-
-            - ``'FES1999'``
-            - ``'FES2004'``
-            - ``'FES2012'``
-            - ``'FES2014'``
-            - ``'EOT20'``
     method: str, default 'spline'
         Interpolation method
 
@@ -156,22 +124,18 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
         amplitudes of tidal constituents
     phase: float
         phases of tidal constituents
+    constituents: list
+        list of model constituents
     """
-    # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
-
     # set default keyword arguments
-    kwargs.setdefault('type', 'z')
-    kwargs.setdefault('version', None)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
     kwargs.setdefault('compressed', False)
     kwargs.setdefault('scale', 1.0)
     # raise warnings for deprecated keyword arguments
-    deprecated_keywords = dict(TYPE='type',VERSION='version',
-        METHOD='method',EXTRAPOLATE='extrapolate',CUTOFF='cutoff',
+    deprecated_keywords = dict(METHOD='method',
+        EXTRAPOLATE='extrapolate',CUTOFF='cutoff',
         GZIP='compressed',SCALE='scale')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
@@ -192,6 +156,7 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     npts = len(ilon)
     # number of constituents
     nc = len(model_files)
+    constituents = []
 
     # amplitude and phase
     amplitude = np.ma.zeros((npts,nc))
@@ -199,17 +164,15 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=bool)
     # read and interpolate each constituent
-    for i,fi in enumerate(model_files):
+    for i,model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(fi), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(fi))
+        if not os.access(os.path.expanduser(model_file), os.F_OK):
+            raise FileNotFoundError(os.path.expanduser(model_file))
         # read constituent from elevation file
-        if kwargs['version'] in ('FES1999','FES2004'):
-            # FES ascii constituent files
-            hc,lon,lat = read_ascii_file(os.path.expanduser(fi), **kwargs)
-        elif kwargs['version'] in ('FES2012','FES2014','EOT20'):
-            # FES netCDF4 constituent files
-            hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
+        hc,lon,lat,cons = read_ascii_file(os.path.expanduser(model_file),
+            compressed=kwargs['compressed'])
+        # append to the list of constituents
+        constituents.append(cons)
         # adjust longitudinal convention of input latitude and longitude
         # to fit tide model convention
         if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -220,6 +183,12 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
             # input points convention (0:360)
             # tide model convention (-180:180)
             ilon[ilon>180.0] -= 360.0
+        # grid step size of tide model
+        dlon = np.abs(lon[1] - lon[0])
+        dlat = np.abs(lat[1] - lat[0])
+        # replace original values with extend matrices
+        lon = extend_array(lon,dlon)
+        hc = extend_matrix(hc)
         # interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
         hci.mask = np.zeros((npts),dtype=bool)
@@ -282,97 +251,66 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     amplitude.data[amplitude.mask] = amplitude.fill_value
     phase.data[phase.mask] = phase.fill_value
     # return the interpolated values
-    return (amplitude,phase)
+    return (amplitude, phase, constituents)
 
-# PURPOSE: read FES ascii tide model grid files
-def read_ascii_file(input_file, **kwargs):
+# PURPOSE: wrapper function to extend an array
+def extend_array(input_array, step_size):
     """
-    Read FES (Finite Element Solution) tide model file
+    Wrapper function to extend an array
 
     Parameters
     ----------
-    input_file: str
-        model file
-    compressed: bool, default False
-        Input file is gzip compressed
+    input_array: float
+        array to extend
+    step_size: float
+        step size between elements of array
 
     Returns
     -------
-    hc: complex form of tidal constituent oscillation
-    lon: longitude of tidal model
-    lat: latitude of tidal model
+    temp: float
+        extended array
     """
-    # set default keyword arguments
-    kwargs.setdefault('compressed', False)
-    # tilde-expand input file
-    input_file = os.path.expanduser(input_file)
-    # read input tide model file
-    if kwargs['compressed']:
-        # read gzipped ascii file
-        with gzip.open(input_file, 'rb') as f:
-            file_contents = f.read(input_file).splitlines()
-    else:
-        with open(input_file, mode="r", encoding='utf8') as f:
-            file_contents = f.read().splitlines()
-    # parse header text
-    # longitude range (lonmin, lonmax)
-    lonmin,lonmax = np.array(file_contents[0].split(), dtype=np.float64)
-    # latitude range (latmin, latmax)
-    latmin,latmax = np.array(file_contents[1].split(), dtype=np.float64)
-    # grid step size (dlon, dlat)
-    dlon,dlat = np.array(file_contents[2].split(), dtype=np.float64)
-    # grid dimensions (nlon, nlat)
-    nlon,nlat = np.array(file_contents[3].split(), dtype=int)
-    # mask fill value
-    masked_values = file_contents[4].split()
-    fill_value = np.float64(masked_values[0])
-    # create output variables
-    lat = np.linspace(latmin, latmax, nlat)
-    lon = np.linspace(lonmin,lonmax,nlon)
-    amp = np.ma.zeros((nlat,nlon),fill_value=fill_value,dtype=np.float32)
-    ph = np.ma.zeros((nlat,nlon),fill_value=fill_value,dtype=np.float32)
-    # create masks for output variables (0=valid)
-    amp.mask = np.zeros((nlat,nlon),dtype=bool)
-    ph.mask = np.zeros((nlat,nlon),dtype=bool)
-    # starting line to fill amplitude and phase variables
-    i1 = 5
-    # for each latitude
-    for i in range(nlat):
-        for j in range(nlon//30):
-            j1 = j*30
-            amp.data[i,j1:j1+30]=np.array(file_contents[i1].split(),dtype='f')
-            ph.data[i,j1:j1+30]=np.array(file_contents[i1+1].split(),dtype='f')
-            i1 += 2
-        # add last tidal variables
-        j1 = (j+1)*30
-        j2 = nlon % 30
-        amp.data[i,j1:j1+j2] = np.array(file_contents[i1].split(),dtype='f')
-        ph.data[i,j1:j1+j2] = np.array(file_contents[i1+1].split(),dtype='f')
-        i1 += 2
-    # calculate complex form of constituent oscillation
-    hc = amp*np.exp(-1j*ph*np.pi/180.0)
-    # set masks
-    hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
-    # return output variables
-    return (hc,lon,lat)
+    n = len(input_array)
+    temp = np.zeros((n+3),dtype=input_array.dtype)
+    # extended array [x-1,x0,...,xN,xN+1,xN+2]
+    temp[0] = input_array[0] - step_size
+    temp[1:-2] = input_array[:]
+    temp[-2] = input_array[-1] + step_size
+    temp[-1] = input_array[-1] + 2.0*step_size
+    return temp
 
-# PURPOSE: read FES netCDF4 tide model files
-def read_netcdf_file(input_file, **kwargs):
+# PURPOSE: wrapper function to extend a matrix
+def extend_matrix(input_matrix):
     """
-    Read FES (Finite Element Solution) tide model netCDF4 file
+    Wrapper function to extend a matrix
+
+    Parameters
+    ----------
+    input_matrix: float
+        matrix to extend
+
+    Returns
+    -------
+    temp: float
+        extended matrix
+    """
+    ny,nx = np.shape(input_matrix)
+    temp = np.ma.zeros((ny,nx+3),dtype=input_matrix.dtype)
+    temp[:,0] = input_matrix[:,-1]
+    temp[:,1:-2] = input_matrix[:,:]
+    temp[:,-2] = input_matrix[:,0]
+    temp[:,-1] = input_matrix[:,1]
+    return temp
+
+# PURPOSE: read GOT model grid files
+def read_ascii_file(input_file, **kwargs):
+    """
+    Read Richard Ray's Global Ocean Tide (GOT) model file
 
     Parameters
     ----------
     input_file: str
-        model file
-    type: str or NoneType, default None
-        Tidal variable to read
-
-            - ``'z'``: heights
-            - ``'u'``: horizontal transport velocities
-            - ``'v'``: vertical transport velocities
-    version: str or NoneType, default None
-        FES model version
+        Model file
     compressed: bool, default False
         Input file is gzip compressed
 
@@ -384,43 +322,60 @@ def read_netcdf_file(input_file, **kwargs):
         longitude of tidal model
     lat: float
         latitude of tidal model
+    cons: str
+        tidal constituent ID
     """
     # set default keyword arguments
-    kwargs.setdefault('type', None)
-    kwargs.setdefault('version', None)
     kwargs.setdefault('compressed', False)
-    # read the netcdf format tide elevation file
+    # tilde-expand input file
+    input_file = os.path.expanduser(input_file)
+    # read input tide model file
     if kwargs['compressed']:
-        # read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file),'rb')
-        fileID = netCDF4.Dataset(uuid.uuid4().hex,'r',memory=f.read())
+        # read gzipped ascii file
+        with gzip.open(input_file, 'rb') as f:
+            file_contents = f.read().decode('utf8').splitlines()
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
-    # variable dimensions for each model
-    if kwargs['version'] in ('FES2012',):
-        lon = fileID.variables['longitude'][:]
-        lat = fileID.variables['latitude'][:]
-    elif kwargs['version'] in ('FES2014','EOT20'):
-        lon = fileID.variables['lon'][:]
-        lat = fileID.variables['lat'][:]
-    # amplitude and phase components for each type
-    if (kwargs['type'] == 'z'):
-        amp = fileID.variables['amplitude'][:]
-        ph = fileID.variables['phase'][:]
-    elif (kwargs['type'] == 'u'):
-        amp = fileID.variables['Ua'][:]
-        ph = fileID.variables['Ug'][:]
-    elif (kwargs['type'] == 'v'):
-        amp = fileID.variables['Va'][:]
-        ph = fileID.variables['Vg'][:]
-    # close the file
-    fileID.close()
-    f.close() if kwargs['compressed'] else None
+        with open(input_file, mode="r", encoding='utf8') as f:
+            file_contents = f.read().splitlines()
+    # parse header text
+    constituent_list = ['Q1','O1','P1','K1','N2','M2','S2','K2','S1','M4']
+    regex = re.compile(r'|'.join(constituent_list), re.IGNORECASE)
+    cons = regex.findall(file_contents[0]).pop().lower()
+    nlat,nlon = np.array(file_contents[2].split(), dtype=int)
+    # longitude range
+    ilat = np.array(file_contents[3].split(), dtype=np.float64)
+    # latitude range
+    ilon = np.array(file_contents[4].split(), dtype=np.float64)
+    # mask fill value
+    fill_value = np.array(file_contents[5].split(), dtype=np.float64)
+    # create output variables
+    lat = np.linspace(ilat[0],ilat[1],nlat)
+    lon = np.linspace(ilon[0],ilon[1],nlon)
+    amp = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float32)
+    ph = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float32)
+    # create masks for output variables (0=valid)
+    amp.mask = np.zeros((nlat,nlon),dtype=bool)
+    ph.mask = np.zeros((nlat,nlon),dtype=bool)
+    # starting lines to fill amplitude and phase variables
+    l1 = 7
+    l2 = 14 + int(nlon//11)*nlat + nlat
+    # for each latitude
+    for i in range(nlat):
+        for j in range(nlon//11):
+            j1 = j*11
+            amp.data[i,j1:j1+11] = np.array(file_contents[l1].split(),dtype='f')
+            ph.data[i,j1:j1+11] = np.array(file_contents[l2].split(),dtype='f')
+            l1 += 1
+            l2 += 1
+        # add last tidal variables
+        j1 = (j+1)*11; j2 = nlon % 11
+        amp.data[i,j1:j1+j2] = np.array(file_contents[l1].split(),dtype='f')
+        ph.data[i,j1:j1+j2] = np.array(file_contents[l2].split(),dtype='f')
+        l1 += 1
+        l2 += 1
     # calculate complex form of constituent oscillation
     hc = amp*np.exp(-1j*ph*np.pi/180.0)
     # set masks
-    hc.mask = (amp.data == amp.fill_value) | \
-        (ph.data == ph.fill_value) | \
-        np.isnan(amp.data) | np.isnan(ph.data)
+    hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
     # return output variables
-    return (hc,lon,lat)
+    return (hc,lon,lat,cons)

@@ -84,18 +84,15 @@ PROGRAM DEPENDENCIES:
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
-    calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
-    infer_minor_corrections.py: return corrections for minor constituents
-    read_tide_model.py: extract tidal harmonic constants from OTIS tide models
-    read_netcdf_model.py: extract tidal harmonic constants from netcdf models
-    read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
-    read_FES_model.py: extract tidal harmonic constants from FES tide models
+    io/OTIS.py: extract tidal harmonic constants from OTIS tide models
+    io/ATLAS.py: extract tidal harmonic constants from netcdf models
+    io/FES.py: extract tidal harmonic constants from FES tide models
     bilinear_interp.py: bilinear interpolation of data to coordinates
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
-    predict_tide_drift.py: predict tidal elevations using harmonic constants
+    predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of pyTMD tools
@@ -329,32 +326,32 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
-        amp,ph,D,c = pyTMD.extract_tidal_constants(lon.flatten(), lat.flatten(),
+        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon.flatten(), lat.flatten(),
             model.grid_file, model.model_file, model.projection,
             type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros((nt))
     elif (model.format == 'netcdf'):
-        amp,ph,D,c = pyTMD.extract_netcdf_constants(lon.flatten(), lat.flatten(),
+        amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon.flatten(), lat.flatten(),
             model.grid_file, model.model_file, type=model.type,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         deltat = np.zeros((nt))
     elif (model.format == 'GOT'):
-        amp,ph,c = pyTMD.extract_GOT_constants(lon.flatten(), lat.flatten(),
+        amp,ph,c = pyTMD.io.GOT.extract_constants(lon.flatten(), lat.flatten(),
             model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         # interpolate delta times from calendar dates to tide time
-        deltat = pyTMD.calc_delta_time(delta_file,tide_time)
+        deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
     elif (model.format == 'FES'):
-        amp,ph = pyTMD.extract_FES_constants(lon.flatten(), lat.flatten(),
+        amp,ph = pyTMD.io.FES.extract_constants(lon.flatten(), lat.flatten(),
             model.model_file, type=model.type, version=model.version,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         # available model constituents
         c = model.constituents
         # interpolate delta times from calendar dates to tide time
-        deltat = pyTMD.calc_delta_time(delta_file,tide_time)
+        deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -366,9 +363,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         tide = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            TIDE = pyTMD.predict_tide(tide_time[i], hc, c,
+            TIDE = pyTMD.predict.map(tide_time[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            MINOR = pyTMD.infer_minor_corrections(tide_time[i], hc, c,
+            MINOR = pyTMD.predict.infer_minor(tide_time[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
             # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
@@ -376,9 +373,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (TYPE == 'drift'):
         tide = np.ma.zeros((nt), fill_value=fill_value)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,
+        tide.data[:] = pyTMD.predict.drift(tide_time, hc, c,
             deltat=deltat, corrections=model.format)
-        minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
+        minor = pyTMD.predict.infer_minor(tide_time, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     # replace invalid values with fill value

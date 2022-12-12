@@ -10,8 +10,6 @@ import numpy as np
 import scipy.interpolate
 import pyTMD.eop
 import pyTMD.time
-from pyTMD.iers_mean_pole import iers_mean_pole
-from pyTMD.read_iers_EOP import read_iers_EOP
 
 # PURPOSE: update mean pole values
 def test_update_mean_pole():
@@ -49,11 +47,11 @@ def test_read_EOP(EPOCH):
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean pole at time
     # iterate over different IERS conventional mean pole (CMP) formulations
-    mpx,mpy,fl = iers_mean_pole(mean_pole_file,time_decimal,EPOCH)
+    mpx,mpy,fl = pyTMD.eop.iers_mean_pole(mean_pole_file,time_decimal,EPOCH)
     # check flags
     assert np.all(fl)
     # read IERS daily polar motion values
-    EOP = read_iers_EOP(pole_tide_file)
+    EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
     # check validity
     assert np.all(np.isfinite(EOP['x'])) & np.all(np.isfinite(EOP['y']))
     # interpolate daily polar motion values to time using cubic splines

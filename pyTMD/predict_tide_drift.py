@@ -44,11 +44,10 @@ UPDATE HISTORY:
     Updated 07/2018: added option to use GSFC GOT nodal corrections
     Updated 09/2017: Rewritten in Python
 """
-import numpy as np
-from pyTMD.load_constituent import load_constituent
-from pyTMD.load_nodal_corrections import load_nodal_corrections
+import warnings
+import pyTMD.predict
 
-def predict_tide_drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
+def predict_tide_drift(*args, **kwargs):
     """
     Predict tides at multiple times and locations using harmonic constants
 
@@ -75,27 +74,8 @@ def predict_tide_drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
     """
-
-    nt = len(t)
-    # load the nodal corrections
-    # convert time to Modified Julian Days (MJD)
-    pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
-    # allocate for output time series
-    ht = np.ma.zeros((nt))
-    ht.mask = np.zeros((nt),dtype=bool)
-    # for each constituent
-    for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','ESR','netcdf'):
-            # load parameters for each constituent
-            amp, ph, omega, alpha, species = load_constituent(c)
-            # add component for constituent to output tidal elevation
-            th = omega*t*86400.0 + ph + pu[:,k]
-        elif corrections in ('GOT','FES'):
-            th = G[:,k]*np.pi/180.0 + pu[:,k]
-        # sum over all tides
-        ht.data[:] += pf[:,k]*hc.real[:,k]*np.cos(th) - \
-            pf[:,k]*hc.imag[:,k]*np.sin(th)
-        ht.mask[:] |= (hc.real.mask[:,k] | hc.imag.mask[:,k])
-    # return tides
-    return ht
+    # raise warnings for deprecation of module
+    warnings.filterwarnings("always")
+    warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)
+    # call renamed version to not break workflows
+    return pyTMD.predict.drift(*args, **kwargs)

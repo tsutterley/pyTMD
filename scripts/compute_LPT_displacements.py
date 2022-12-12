@@ -63,8 +63,7 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
-    iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
-    read_iers_EOP.py: read daily earth orientation parameters from IERS
+    eop.py: utilities for calculating Earth Orientation Parameters (EOP)
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of pyTMD tools
@@ -318,9 +317,9 @@ def compute_LPT_displacements(input_file, output_file,
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean pole at time
-    mpx,mpy,fl = pyTMD.iers_mean_pole(mean_pole_file,time_decimal,'2015')
+    mpx,mpy,fl = pyTMD.eop.iers_mean_pole(mean_pole_file,time_decimal,'2015')
     # read IERS daily polar motion values
-    EOP = pyTMD.read_iers_EOP(pole_tide_file)
+    EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
     # interpolate daily polar motion values to MJD using cubic splines
     xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)

@@ -60,8 +60,7 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
-    calc_delta_time.py: calculates difference between universal and dynamic time
-    compute_equilibrium_tide.py: calculates long-period equilibrium ocean tides
+    predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of pyTMD tools
@@ -247,9 +246,10 @@ def compute_LPET_elevations(input_file, output_file,
         # convert time from units to days since 1992-01-01T00:00:00 (UTC)
         tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
             epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
+
     # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.calc_delta_time(delta_file, tide_time)
+    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
     # number of time points
     nt = len(tide_time)
 
@@ -257,10 +257,10 @@ def compute_LPET_elevations(input_file, output_file,
     if (TYPE == 'grid'):
         tide_lpe = np.zeros((ny,nx,nt))
         for i in range(nt):
-            lpet = pyTMD.compute_equilibrium_tide(tide_time[i] + deltat[i], lat)
+            lpet = pyTMD.predict.equilibrium_tide(tide_time[i] + deltat[i], lat)
             tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
     elif (TYPE == 'drift'):
-        tide_lpe = pyTMD.compute_equilibrium_tide(tide_time + deltat, lat)
+        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time + deltat, lat)
 
     # output to file
     output = dict(time=tide_time,lon=lon,lat=lat,tide_lpe=tide_lpe)

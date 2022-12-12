@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_netcdf_model.py
+ATLAS.py
 Written by Tyler Sutterley (12/2022)
 
 Reads files for a tidal model and makes initial calculations to run tide program
@@ -56,7 +56,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
-    Updated 12/2022: refactored tide read programs under io
+    Updated 12/2022: refactor tide read programs under io
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 07/2022: fix setting of masked array data to NaN
@@ -106,7 +106,7 @@ except (ImportError, ModuleNotFoundError) as e:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_netcdf_constants(ilon, ilat,
+def extract_constants(ilon, ilat,
     grid_file=None,
     model_files=None,
     **kwargs):
@@ -163,10 +163,6 @@ def extract_netcdf_constants(ilon, ilat,
     constituents: list
         list of model constituents
     """
-    # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
-
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('method', 'spline')
@@ -275,7 +271,7 @@ def extract_netcdf_constants(ilon, ilat,
             raise FileNotFoundError(os.path.expanduser(model_file))
         if (kwargs['type'] == 'z'):
             # read constituent from elevation file
-            z,con = read_elevation_file(model_file,
+            z,con = read_netcdf_elevation(model_file,
                 compressed=kwargs['compressed'])
             # append constituent to list
             constituents.append(con)
@@ -329,7 +325,7 @@ def extract_netcdf_constants(ilon, ilat,
             ph.mask[:,i] = np.copy(z1.mask)
         elif kwargs['type'] in ('U','u','V','v'):
             # read constituent from transport file
-            tr,con = read_transport_file(model_file, kwargs['type'],
+            tr,con = read_netcdf_transport(model_file, kwargs['type'],
                 compressed=kwargs['compressed'])
             # append constituent to list
             constituents.append(con)
@@ -511,7 +507,7 @@ def read_netcdf_grid(input_file, variable, **kwargs):
 
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
-def read_elevation_file(input_file, **kwargs):
+def read_netcdf_elevation(input_file, **kwargs):
     """
     Read elevation file to extract real and imaginary components for constituent
 
@@ -557,7 +553,7 @@ def read_elevation_file(input_file, **kwargs):
 
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
-def read_transport_file(input_file, variable, **kwargs):
+def read_netcdf_transport(input_file, variable, **kwargs):
     """
     Read transport file to extract real and imaginary components for constituent
 

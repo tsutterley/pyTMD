@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -45,13 +45,14 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     model.py: retrieves tide model parameters for named tide models
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
-    read_tide_model.py: extract tidal harmonic constants from OTIS tide models
-    read_netcdf_model.py: extract tidal harmonic constants from netcdf models
-    read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
-    read_FES_model.py: extract tidal harmonic constants from FES tide models
+    io/OTIS.py: extract tidal harmonic constants from OTIS tide models
+    io/ATLAS.py: extract tidal harmonic constants from ATLAS netcdf models
+    io/GOT.py: extract tidal harmonic constants from GSFC GOT models
+    io/FES.py: extract tidal harmonic constants from FES tide models
     bilinear_interp.py: bilinear interpolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2022: refactored tide read programs under io
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
@@ -68,12 +69,10 @@ import os
 import warnings
 import numpy as np
 import scipy.interpolate
+
+import pyTMD.io
 import pyTMD.model
 import pyTMD.convert_ll_xy
-import pyTMD.read_tide_model
-import pyTMD.read_netcdf_model
-import pyTMD.read_GOT_model
-import pyTMD.read_FES_model
 from pyTMD.bilinear_interp import bilinear_interp
 
 # attempt imports
@@ -157,7 +156,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
         # if reading a single OTIS solution
-        xi,yi,hz,mz,iob,dt = pyTMD.read_tide_model.read_tide_grid(model.grid_file)
+        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_tide_grid(model.grid_file)
         # invert model mask
         mz = np.logical_not(mz)
         # adjust dimensions of input coordinates to be iterable
@@ -165,7 +164,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
         X,Y = pyTMD.convert_ll_xy(lon,lat,model.projection,'F')
     elif (model.format == 'netcdf'):
         # if reading a netCDF OTIS atlas solution
-        xi,yi,hz = pyTMD.read_netcdf_model.read_netcdf_grid(model.grid_file,
+        xi,yi,hz = pyTMD.io.ATLAS.read_netcdf_grid(model.grid_file,
             compressed=model.compressed, type=model.type)
         # copy bathymetry mask
         mz = np.copy(hz.mask)
@@ -175,7 +174,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
         X[lt0] += 360.0
     elif (model.format == 'GOT'):
         # if reading a NASA GOT solution
-        hc,xi,yi,c = pyTMD.read_GOT_model.read_GOT_grid(model.model_file[0],
+        hc,xi,yi,c = pyTMD.io.GOT.read_ascii_file(model.model_file[0],
             compressed=model.compressed)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
@@ -185,7 +184,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
         X[lt0] += 360.0
     elif (model.format == 'FES'):
         # if reading a FES netCDF solution
-        hc,xi,yi = pyTMD.read_FES_model.read_netcdf_file(model.model_file[0],
+        hc,xi,yi = pyTMD.io.FES.read_netcdf_file(model.model_file[0],
             compressed=model.compressed, type=model.type,
             version=model.version)
         # copy tidal constituent mask

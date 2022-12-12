@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_tide_model.py
+OTIS.py
 Written by Tyler Sutterley (12/2022)
 
 Reads files for a tidal model and makes initial calculations to run tide program
@@ -60,7 +60,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
-    Updated 12/2022: refactored tide read programs under io
+    Updated 12/2022: refactor tide read programs under io
     Updated 11/2022: place some imports within try/except statements
         fix variable reads for ATLAS compact data formats
         use f-strings for formatting verbose or ascii output
@@ -106,6 +106,7 @@ UPDATE HISTORY:
 """
 import os
 import copy
+import struct
 import warnings
 import numpy as np
 import scipy.interpolate
@@ -124,7 +125,7 @@ except (ImportError, ModuleNotFoundError) as e:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_tidal_constants(ilon, ilat,
+def extract_constants(ilon, ilat,
     grid_file=None,
     model_file=None,
     EPSG=None,
@@ -188,10 +189,6 @@ def extract_tidal_constants(ilon, ilat,
     constituents: list
         list of model constituents
     """
-    # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
-
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('method', 'spline')
@@ -223,7 +220,7 @@ def extract_tidal_constants(ilon, ilat,
         xi,yi,hz,mz,sf = read_netcdf_grid(grid_file)
     else:
         # if reading a single OTIS solution
-        xi,yi,hz,mz,iob,dt = read_tide_grid(grid_file)
+        xi,yi,hz,mz,iob,dt = read_otis_grid(grid_file)
     # invert tide mask to be True for invalid points
     mz = np.logical_not(mz).astype(mz.dtype)
     # adjust dimensions of input coordinates to be iterable
@@ -343,9 +340,9 @@ def extract_tidal_constants(ilon, ilat,
                 if kwargs['apply_flexure']:
                     z *= sf
             elif isinstance(model_file,list):
-                z = read_elevation_file(model_file[i], 0)
+                z = read_otis_elevation(model_file[i], 0)
             else:
-                z = read_elevation_file(model_file, i)
+                z = read_otis_elevation(model_file, i)
             # replace original values with extend matrices
             if global_grid:
                 z = extend_matrix(z)
@@ -409,9 +406,9 @@ def extract_tidal_constants(ilon, ilat,
             elif (kwargs['grid'] == 'ESR'):
                 u = read_netcdf_file(model_file, i, variable='u')
             elif isinstance(model_file,list):
-                u,v = read_transport_file(model_file[i], 0)
+                u,v = read_otis_transport(model_file[i], 0)
             else:
-                u,v = read_transport_file(model_file, i)
+                u,v = read_otis_transport(model_file, i)
             # replace original values with extend matrices
             if global_grid:
                 u = extend_matrix(u)
@@ -475,9 +472,9 @@ def extract_tidal_constants(ilon, ilat,
             elif (kwargs['grid'] == 'ESR'):
                 v = read_netcdf_file(model_file, i, type='v')
             elif isinstance(model_file,list):
-                u,v = read_transport_file(model_file[i], 0)
+                u,v = read_otis_transport(model_file[i], 0)
             else:
-                u,v = read_transport_file(model_file, i)
+                u,v = read_otis_transport(model_file, i)
             # replace original values with extend matrices
             if global_grid:
                 v = extend_matrix(v)
@@ -594,7 +591,7 @@ def extend_matrix(input_matrix):
     return temp
 
 # PURPOSE: read tide grid file
-def read_tide_grid(input_file):
+def read_otis_grid(input_file):
     """
     Read grid file to extract model coordinates, bathymetry, masks and indices
 
@@ -844,7 +841,7 @@ def read_constituents(input_file, grid='OTIS'):
 
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
-def read_elevation_file(input_file,ic):
+def read_otis_elevation(input_file,ic):
     """
     Read elevation file to extract real and imaginary components for constituent
 
@@ -985,7 +982,7 @@ def read_atlas_elevation(input_file, ic, constituent):
 
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
-def read_transport_file(input_file,ic):
+def read_otis_transport(input_file,ic):
     """
     Read transport file to extract real and imaginary components for constituent
 
@@ -1374,6 +1371,156 @@ def read_netcdf_file(input_file, ic, variable=None):
     fileID.close()
     # return output variables
     return hc
+
+# PURPOSE: output grid file in OTIS format
+def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
+    """
+    Writes OTIS-format grid files
+
+    Parameters
+    ----------
+    FILE: str
+        output OTIS grid file name
+    xlim: float
+        x-coordinate grid-cell edges of output grid
+    ylim: float
+        y-coordinate grid-cell edges of output grid
+    hz:float
+        bathymetry
+    mz: int
+        land/water mask
+    iob: int
+        open boundary index
+    dt: float
+        time step
+    """
+    # open this way for files
+    fid = open(os.path.expanduser(FILE), 'wb')
+    nob = len(iob)
+    ny,nx = np.shape(hz)
+    reclen = 32
+    fid.write(struct.pack('>i',reclen))
+    fid.write(struct.pack('>i',nx))
+    fid.write(struct.pack('>i',ny))
+    ylim.tofile(fid,format='>f4')
+    xlim.tofile(fid,format='>f4')
+    fid.write(struct.pack('>f',dt))
+    fid.write(struct.pack('>i',nob))
+    fid.write(struct.pack('>i',reclen))
+    if (nob == 0):
+        fid.write(struct.pack('>i',4))
+        fid.write(struct.pack('>i',0))
+        fid.write(struct.pack('>i',4))
+    else:
+        reclen = 8*nob
+        fid.write(struct.pack('>i',reclen))
+        iob.tofile(fid,format='>i4')
+        fid.write(struct.pack('>i',reclen))
+    reclen = 4*nx*ny
+    # write depth and mask data to file
+    fid.write(struct.pack('>i',reclen))
+    hz.tofile(fid,format='>f4')
+    for m in range(ny):
+        hz[m,:].tofile(fid,format='>f4')
+    fid.write(struct.pack('>i',reclen))
+    fid.write(struct.pack('>i',reclen))
+    for m in range(ny):
+        mz[m,:].tofile(fid,format='>i4')
+    fid.write(struct.pack('>i',reclen))
+    # close the output OTIS file
+    fid.close()
+
+# PURPOSE: output elevation file in OTIS format
+def output_otis_elevation(FILE, h, xlim, ylim, constituents):
+    """
+    Writes OTIS-format elevation files
+
+    Parameters
+    ----------
+    FILE: str
+        output OTIS elevation file name
+    h: complex
+        Eulerian form of tidal height oscillation
+    xlim: float
+        x-coordinate grid-cell edges of output grid
+    ylim: float
+        y-coordinate grid-cell edges of output grid
+    constituents: list
+        tidal constituent IDs
+    """
+    fid = open(os.path.expanduser(FILE), 'wb')
+    ny,nx,nc = np.shape(h)
+    # length of header: allow for 4 character >i c_id strings
+    header_length = 4*(7 + nc)
+    fid.write(struct.pack('>i',header_length))
+    fid.write(struct.pack('>i',nx))
+    fid.write(struct.pack('>i',ny))
+    fid.write(struct.pack('>i',nc))
+    ylim.tofile(fid,format='>f4')
+    xlim.tofile(fid,format='>f4')
+    for c in constituents:
+        fid.write(c.ljust(4).encode('utf8'))
+    fid.write(struct.pack('>i',header_length))
+    # write each constituent to file
+    constituent_header = 8*nx*ny
+    for ic in range(nc):
+        fid.write(struct.pack('>i',constituent_header))
+        for m in range(ny):
+            temp = np.zeros((2*nx),dtype='>f')
+            temp[0:2*nx-1:2] = h.real[m,:,ic]
+            temp[1:2*nx:2] = h.imag[m,:,ic]
+            temp.tofile(fid,format='>f4')
+        fid.write(struct.pack('>i',constituent_header))
+    # close the output OTIS file
+    fid.close()
+
+# PURPOSE: output transport file in OTIS format
+def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
+    """
+    Writes OTIS-format transport files
+
+    Parameters
+    ----------
+    FILE: str
+        output OTIS transport file name
+    u: complex
+        Eulerian form of tidal zonal transport oscillation
+    v: complex
+        Eulerian form of tidal meridional transport oscillation
+    xlim: float
+        x-coordinate grid-cell edges of output grid
+    ylim: float
+        y-coordinate grid-cell edges of output grid
+    constituents: list
+        tidal constituent IDs
+    """
+    fid = open(os.path.expanduser(FILE), 'wb')
+    ny,nx,nc = np.shape(u)
+    # length of header: allow for 4 character >i c_id strings
+    header_length = 4*(7 + nc)
+    fid.write(struct.pack('>i',header_length))
+    fid.write(struct.pack('>i',nx))
+    fid.write(struct.pack('>i',ny))
+    fid.write(struct.pack('>i',nc))
+    ylim.tofile(fid,format='>f4')
+    xlim.tofile(fid,format='>f4')
+    for c in constituents:
+        fid.write(c.ljust(4).encode('utf8'))
+    fid.write(struct.pack('>i',header_length))
+    # write each constituent to file
+    constituent_header = 2*8*nx*ny
+    for ic in range(nc):
+        fid.write(struct.pack('>i',constituent_header))
+        for m in range(ny):
+            temp = np.zeros((4*nx),dtype='>f')
+            temp[0:4*nx-3:4] = u.real[m,:,ic]
+            temp[1:4*nx-2:4] = u.imag[m,:,ic]
+            temp[2:4*nx-1:4] = v.real[m,:,ic]
+            temp[3:4*nx:4] = v.imag[m,:,ic]
+            temp.tofile(fid,format='>f4')
+        fid.write(struct.pack('>i',constituent_header))
+    # close the output OTIS file
+    fid.close()
 
 # For a rectangular bathymetry grid:
 # construct masks for zeta, u and v nodes on a C-grid

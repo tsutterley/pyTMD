@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 12/2022: added interpolation for delta time (TT - UT1)
     Updated 11/2022: use IERS https server as default for Bulletin-A files
         added download function for latest Bulletin-A file from IERS
         added function to append from existing merged delta time file
@@ -46,6 +47,7 @@ import datetime
 import traceback
 import numpy as np
 import dateutil.parser
+import scipy.interpolate
 import pyTMD.utilities
 
 # conversion factors between time units and seconds
@@ -513,6 +515,39 @@ def convert_julian(JD, **kwargs):
         return (year, month, day, hour, minute, second)
     elif (kwargs['format'] == 'zip'):
         return zip(year, month, day, hour, minute, second)
+
+# PURPOSE: calculate the difference between universal time and dynamical time
+# by interpolating a delta time file to a given date
+def interpolate_delta_time(delta_file, idays):
+    """
+    Calculates the difference between universal time (UT) and
+    dynamical time (TT) [Meeus1998]_
+
+    Parameters
+    ----------
+    delta_file: str
+        file containing the delta times
+    idays: float
+        input times to interpolate (days since 1992-01-01T00:00:00)
+
+    Returns
+    -------
+    deltat: float
+        delta time at the input time
+
+    References
+    ----------
+    .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    """
+    # read delta time file
+    dinput = np.loadtxt(os.path.expanduser(delta_file))
+    # calculate Julian days and then convert to days since 1992-01-01T00:00:00
+    days = pyTMD.time.convert_calendar_dates(dinput[:,0],dinput[:,1],dinput[:,2],
+        epoch=(1992,1,1,0,0,0))
+    # use scipy interpolating splines to interpolate delta times
+    spl = scipy.interpolate.UnivariateSpline(days,dinput[:,3],k=1,s=0,ext=0)
+    # return the delta time for the input date converted to days
+    return spl(idays)/86400.0
 
 # PURPOSE: Count number of leap seconds that have passed for each GPS time
 def count_leap_seconds(GPS_Time, truncate=True):

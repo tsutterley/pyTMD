@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-read_FES_model.py
+FES.py
 Written by Tyler Sutterley (12/2022)
 
 Reads files for a tidal model and makes initial calculations to run tide program
@@ -56,7 +56,7 @@ PROGRAM DEPENDENCIES:
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
-    Updated 12/2022: refactored tide read programs under io
+    Updated 12/2022: refactor tide read programs under io
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_FES_constants definition
@@ -103,7 +103,7 @@ except (ImportError, ModuleNotFoundError) as e:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: extract tidal harmonic constants from tide models at coordinates
-def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
+def extract_constants(ilon, ilat, model_files=None, **kwargs):
     """
     Reads files for an ascii or netCDF4 tidal model
 
@@ -157,10 +157,6 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     phase: float
         phases of tidal constituents
     """
-    # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
-
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('version', None)
