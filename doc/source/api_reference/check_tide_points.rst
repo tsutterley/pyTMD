@@ -1,6 +1,6 @@
-====================
-check_tide_points.py
-====================
+=================
+check_tide_points
+=================
 
 - Check if points are within a tide model domain
 - Can check OTIS format tidal solutions provided by Ohio State University and ESR

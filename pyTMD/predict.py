@@ -421,7 +421,7 @@ def infer_minor(t, zmajor, constituents, **kwargs):
     # return the inferred elevation
     return dh
 
-# PURPOSE: infer the minor corrections from the major constituents
+# PURPOSE: estimate long-period equilibrium tides
 def equilibrium_tide(t, lat):
     """
     Compute the long-period equilibrium tides the summation of fifteen

@@ -355,7 +355,7 @@ def iers_daily_EOP(input_file):
 
     References
     ----------
-    [Petit2010] G. Petit, and B. Luzum, (eds.), IERS Conventions (2010),
+    .. [1] Petit, G. and Luzum, B. (eds.), IERS Conventions (2010),
         IERS Technical Note No. 36, BKG (2010)
     """
     # tilde-expansion of input file

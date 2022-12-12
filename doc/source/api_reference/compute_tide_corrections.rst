@@ -1,6 +1,6 @@
-===========================
-compute_tide_corrections.py
-===========================
+========================
+compute_tide_corrections
+========================
 
 - Calculates tidal elevations for correcting elevation or imagery data
 - Can use OTIS format tidal solutions provided by Ohio State University and ESR
