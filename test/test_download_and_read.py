@@ -47,11 +47,11 @@ import zipfile
 import warnings
 import posixpath
 import numpy as np
-import pyTMD.time
+import pyTMD.io
 import pyTMD.model
+import pyTMD.predict
+import pyTMD.time
 import pyTMD.utilities
-import pyTMD.read_tide_model
-import pyTMD.predict_tidal_ts
 import pyTMD.check_tide_points
 import pyTMD.tidal_ellipse
 from oct2py import octave
@@ -203,7 +203,7 @@ class Test_CATS2008:
         elevation_file = os.path.join(modelpath,'hf.CATS2008.out')
         transport_file = os.path.join(modelpath,'uv.CATS2008.out')
         # read CATS2008 grid file
-        xi,yi,hz,mz,iob,dt = pyTMD.read_tide_model.read_tide_grid(grid_file)
+        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(grid_file)
         # check dimensions of input grids
         assert (hz.shape == (ny,nx))
         assert (mz.shape == (ny,nx))
@@ -379,7 +379,7 @@ class Test_CATS2008:
         ndays = len(tide_time)
 
         # extract amplitude and phase from tide model
-        amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon,
             station_lat, grid_file, model_file, EPSG, type=TYPE,
             method='spline', grid=GRID)
         # calculate complex phase in radians for Euler's
@@ -496,7 +496,7 @@ class Test_CATS2008:
         # iterate over zonal and meridional currents
         for TYPE in TYPES:
             # extract amplitude and phase from tide model
-            amp,ph,D,c=pyTMD.read_tide_model.extract_tidal_constants(station_lon[i],
+            amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon[i],
                 station_lat[i], grid_file, model_file, EPSG, type=TYPE,
                 method='spline', grid=GRID)
             # calculate complex phase in radians for Euler's
@@ -691,7 +691,7 @@ class Test_AOTIM5_2018:
         ndays = len(tide_time)
 
         # extract amplitude and phase from tide model
-        amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon,
             station_lat, grid_file, model_file, EPSG, type=TYPE,
             method='spline', grid=GRID)
         # calculate complex phase in radians for Euler's

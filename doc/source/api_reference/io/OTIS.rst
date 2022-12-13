@@ -58,3 +58,7 @@ Calling Sequence
 .. autofunction:: pyTMD.io.OTIS.extend_array
 
 .. autofunction:: pyTMD.io.OTIS.extend_matrix
+
+.. autofunction:: pyTMD.io.OTIS.Muv
+
+.. autofunction:: pyTMD.io.OTIS.Huv

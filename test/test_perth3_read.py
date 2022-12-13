@@ -40,7 +40,6 @@ import pyTMD.utilities
 import pyTMD.predict
 import pyTMD.compute_tide_corrections
 import pyTMD.check_tide_points
-import pyTMD.calc_delta_time
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename

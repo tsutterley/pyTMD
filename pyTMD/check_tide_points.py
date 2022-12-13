@@ -156,7 +156,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
         # if reading a single OTIS solution
-        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_tide_grid(model.grid_file)
+        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(model.grid_file)
         # invert model mask
         mz = np.logical_not(mz)
         # adjust dimensions of input coordinates to be iterable
