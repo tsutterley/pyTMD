@@ -283,27 +283,27 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'LORAN'):
         # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'TAI'):
         # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
@@ -314,11 +314,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         # convert delta time array from datetime object
         # to days relative to 1992-01-01T00:00:00
         tide_time = pyTMD.time.convert_datetime(delta_time,
-            epoch=(1992,1,1,0,0,0))/86400.0
+            epoch=pyTMD.time._tide_epoch)/86400.0
     else:
         # convert time from units to days since 1992-01-01T00:00:00
         tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=epoch1, epoch2=(1992,1,1,0,0,0), scale=1.0/86400.0)
+            epoch1=epoch1, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
     # number of time points
     nt = len(tide_time)
     # delta time (TT - UT1) file

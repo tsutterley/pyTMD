@@ -246,27 +246,27 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     # calculate leap seconds if specified
     if (TIME.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'LORAN'):
         # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'TAI'):
         # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
@@ -278,11 +278,11 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         # convert delta time array from datetime object
         # to days relative to 1992-01-01T00:00:00
         t = pyTMD.time.convert_datetime(delta_time,
-            epoch=(1992,1,1,0,0,0))/86400.0
+            epoch=pyTMD.time._tide_epoch)/86400.0
     else:
         # convert time to days relative to Jan 1, 1992 (48622mjd)
         t = pyTMD.time.convert_delta_time(delta_time - leap_seconds,
-            epoch1=EPOCH, epoch2=(1992,1,1,0,0,0), scale=(1.0/86400.0))
+            epoch1=EPOCH, epoch2=pyTMD.time._tide_epoch, scale=(1.0/86400.0))
     # delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 

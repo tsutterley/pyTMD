@@ -200,7 +200,7 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         # convert from calendar dates into days since 1992-01-01T00:00:00
         val['time'][j] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
-            hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
+            hour=hh, minute=mm, second=ss, epoch=pyTMD.time._tide_epoch)
         # add to counter
         j += 1
 
@@ -276,7 +276,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         # convert from calendar dates into days since 1992-01-01T00:00:00
         val['time'][i] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
-            hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
+            hour=hh, minute=mm, second=ss, epoch=pyTMD.time._tide_epoch)
 
     # extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(

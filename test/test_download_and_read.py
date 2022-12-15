@@ -558,7 +558,7 @@ class Test_CATS2008:
         # calculate tide drift corrections
         tide = pyTMD.compute_tide_corrections(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
-            EPOCH=(2000,1,1,12,0,0), TYPE='drift', TIME='UTC',
+            EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 
@@ -765,7 +765,7 @@ class Test_AOTIM5_2018:
         # calculate tide map
         tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
             DIRECTORY=filepath, MODEL='AOTIM-5-2018', GZIP=False,
-            EPOCH=(2000,1,1,12,0,0), TYPE='grid', TIME='UTC',
+            EPOCH=pyTMD.time._j2000_epoch, TYPE='grid', TIME='UTC',
             EPSG=3413, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 

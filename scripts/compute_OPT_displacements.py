@@ -242,27 +242,27 @@ def compute_OPT_displacements(input_file, output_file,
     # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'LORAN'):
         # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'TAI'):
         # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
@@ -273,11 +273,11 @@ def compute_OPT_displacements(input_file, output_file,
         # convert delta time array from datetime object
         # to Modified Julian days (days since 1858-11-17T00:00:00)
         MJD = pyTMD.time.convert_datetime(delta_time,
-            epoch=(1858,11,17,0,0,0))/86400.0
+            epoch=pyTMD.time._mjd_epoch)/86400.0
     else:
         # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
         MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
+            epoch1=epoch1, epoch2=pyTMD.time._mjd_epoch, scale=1.0/86400.0)
     # add offset to convert to Julian days and then convert to calendar dates
     Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
     # calculate time in year-decimal format

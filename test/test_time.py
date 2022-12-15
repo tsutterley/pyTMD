@@ -27,7 +27,7 @@ def test_julian(YEAR,MONTH):
     SECOND = 60.0*np.random.random_sample(1)
     MJD = pyTMD.time.convert_calendar_dates(YEAR, MONTH, DAY,
         hour=HOUR, minute=MINUTE, second=SECOND,
-        epoch=(1858,11,17,0,0,0))
+        epoch=pyTMD.time._mjd_epoch)
     # convert MJD to calendar date
     JD = np.squeeze(MJD) + 2400000.5
     YY,MM,DD,HH,MN,SS = pyTMD.time.convert_julian(JD,
@@ -119,7 +119,7 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
     time_leaps = pyTMD.time.count_leap_seconds(gps_seconds)
     # compare output delta times with original values
     output_time = pyTMD.time.convert_delta_time(gps_seconds - time_leaps,
-        epoch1=(1980,1,6,0,0,0), epoch2=(2018,1,1,0,0,0), scale=1.0)
+        epoch1=pyTMD.time._gps_epoch, epoch2=pyTMD.time._atlas_sdp_epoch, scale=1.0)
     assert (delta_time == output_time)
 
 # PURPOSE: update delta time files and values

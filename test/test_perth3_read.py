@@ -174,7 +174,7 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
     # calculate tide map
     tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL='GOT4.7', GZIP=True,
-        EPOCH=(2018,1,1,0,0,0), TYPE='grid', TIME='GPS',
+        EPOCH=pyTMD.time._atlas_sdp_epoch, TYPE='grid', TIME='GPS',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
 
