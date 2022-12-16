@@ -1,9 +1,9 @@
-=========================
-load_nodal_corrections.py
-=========================
+======================
+load_nodal_corrections
+======================
 
 - Calculates the nodal corrections for tidal constituents
-- Based on Richard Ray's ARGUMENTS fortran subroutine
+- Based on Richard Ray's ``ARGUMENTS`` fortran subroutine
 
 Calling Sequence
 ----------------

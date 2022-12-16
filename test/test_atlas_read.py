@@ -34,11 +34,10 @@ import inspect
 import warnings
 import posixpath
 import numpy as np
+import pyTMD.io
 import pyTMD.time
 import pyTMD.model
 import pyTMD.utilities
-import pyTMD.read_tide_model
-import pyTMD.read_netcdf_model
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -140,7 +139,7 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
         skiprows=3,dtype=dict(names=names,formats=formats))
 
     # extract amplitude and phase from tide model
-    amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
+    amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(
         val['Lon'], val['Lat'], grid_file, model_file, type=TYPE,
         method=METHOD, extrapolate=EXTRAPOLATE, scale=SCALE,
         compressed=GZIP)
@@ -201,12 +200,12 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         # convert from calendar dates into days since 1992-01-01T00:00:00
         val['time'][j] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
-            hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
+            hour=hh, minute=mm, second=ss, epoch=pyTMD.time._tide_epoch)
         # add to counter
         j += 1
 
     # extract amplitude and phase from tide model
-    amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(
+    amp,ph,D,c = pyTMD.io.OTIS.extract_constants(
         val['longitude'], val['latitude'], model.grid_file,
         model.model_file, model.projection, type=model.type,
         method=METHOD, extrapolate=EXTRAPOLATE, grid=model.format)
@@ -223,7 +222,7 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
     tide.mask = np.zeros((nval),dtype=bool)
     # predict tidal elevations at time
     tide.mask[:] = np.any(hc.mask, axis=1)
-    tide.data[:] = pyTMD.predict_tide_drift(val['time'], hc[:,i],
+    tide.data[:] = pyTMD.predict.drift(val['time'], hc[:,i],
         constituents, deltat=deltat, corrections=model.format)
 
     # will verify differences between model outputs are within tolerance
@@ -277,10 +276,10 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         # convert from calendar dates into days since 1992-01-01T00:00:00
         val['time'][i] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
-            hour=hh, minute=mm, second=ss, epoch=(1992,1,1,0,0,0))
+            hour=hh, minute=mm, second=ss, epoch=pyTMD.time._tide_epoch)
 
     # extract amplitude and phase from tide model
-    amp,ph,D,c = pyTMD.read_netcdf_model.extract_netcdf_constants(
+    amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(
         val['longitude'], val['latitude'], grid_file, model_file,
         type=TYPE, method=METHOD, extrapolate=EXTRAPOLATE,
         scale=SCALE, compressed=GZIP)
@@ -297,7 +296,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     tide.mask = np.zeros((nval),dtype=bool)
     # predict tidal elevations at time
     tide.mask[:] = np.any(hc.mask, axis=1)
-    tide.data[:] = pyTMD.predict_tide_drift(val['time'], hc, c,
+    tide.data[:] = pyTMD.predict.drift(val['time'], hc, c,
         deltat=deltat, corrections=model_format)
 
     # will verify differences between model outputs are within tolerance

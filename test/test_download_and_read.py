@@ -47,12 +47,11 @@ import zipfile
 import warnings
 import posixpath
 import numpy as np
-import pyTMD.time
+import pyTMD.io
 import pyTMD.model
+import pyTMD.predict
+import pyTMD.time
 import pyTMD.utilities
-import pyTMD.read_tide_model
-import pyTMD.predict_tidal_ts
-import pyTMD.infer_minor_corrections
 import pyTMD.check_tide_points
 import pyTMD.tidal_ellipse
 from oct2py import octave
@@ -204,18 +203,18 @@ class Test_CATS2008:
         elevation_file = os.path.join(modelpath,'hf.CATS2008.out')
         transport_file = os.path.join(modelpath,'uv.CATS2008.out')
         # read CATS2008 grid file
-        xi,yi,hz,mz,iob,dt = pyTMD.read_tide_model.read_tide_grid(grid_file)
+        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(grid_file)
         # check dimensions of input grids
         assert (hz.shape == (ny,nx))
         assert (mz.shape == (ny,nx))
         # check constituent list
-        constituents,nc = pyTMD.read_tide_model.read_constituents(elevation_file)
+        constituents,nc = pyTMD.io.OTIS.read_constituents(elevation_file)
         cons = ['m2','s2','n2','k2','k1','o1','p1','q1','mf','mm']
         assert all(c in constituents for c in cons)
         # check dimensions of input grids from elevation and transport files
         for i,c in enumerate(constituents):
-            z = pyTMD.read_tide_model.read_elevation_file(elevation_file,i)
-            u,v = pyTMD.read_tide_model.read_transport_file(transport_file,i)
+            z = pyTMD.io.OTIS.read_otis_elevation(elevation_file,i)
+            u,v = pyTMD.io.OTIS.read_otis_transport(transport_file,i)
             assert (z.shape == (ny,nx))
             assert (u.shape == (ny,nx))
             assert (v.shape == (ny,nx))
@@ -283,7 +282,7 @@ class Test_CATS2008:
         station_ph.data[station_ph.mask] = station_ph.fill_value
 
         # extract amplitude and phase from tide model
-        amp,ph,D,cons = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        amp,ph,D,cons = pyTMD.io.OTIS.extract_constants(station_lon,
             station_lat, grid_file, model_file, EPSG, type=TYPE, method='spline',
             grid=GRID)
         # reorder constituents of model and convert amplitudes to cm
@@ -380,7 +379,7 @@ class Test_CATS2008:
         ndays = len(tide_time)
 
         # extract amplitude and phase from tide model
-        amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon,
             station_lat, grid_file, model_file, EPSG, type=TYPE,
             method='spline', grid=GRID)
         # calculate complex phase in radians for Euler's
@@ -424,9 +423,9 @@ class Test_CATS2008:
             tide.mask = np.zeros((ndays),dtype=bool)
             # predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
-            tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
+            tide.data[:] = pyTMD.predict.time_series(tide_time, hc, c,
                 deltat=deltat, corrections=GRID)
-            minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
+            minor = pyTMD.predict.infer_minor(tide_time, hc, c,
                 deltat=deltat, corrections=GRID)
             tide.data[:] += minor.data[:]
 
@@ -497,7 +496,7 @@ class Test_CATS2008:
         # iterate over zonal and meridional currents
         for TYPE in TYPES:
             # extract amplitude and phase from tide model
-            amp,ph,D,c=pyTMD.read_tide_model.extract_tidal_constants(station_lon[i],
+            amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon[i],
                 station_lat[i], grid_file, model_file, EPSG, type=TYPE,
                 method='spline', grid=GRID)
             # calculate complex phase in radians for Euler's
@@ -559,7 +558,7 @@ class Test_CATS2008:
         # calculate tide drift corrections
         tide = pyTMD.compute_tide_corrections(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
-            EPOCH=(2000,1,1,12,0,0), TYPE='drift', TIME='UTC',
+            EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 
@@ -692,7 +691,7 @@ class Test_AOTIM5_2018:
         ndays = len(tide_time)
 
         # extract amplitude and phase from tide model
-        amp,ph,D,c = pyTMD.read_tide_model.extract_tidal_constants(station_lon,
+        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon,
             station_lat, grid_file, model_file, EPSG, type=TYPE,
             method='spline', grid=GRID)
         # calculate complex phase in radians for Euler's
@@ -731,9 +730,9 @@ class Test_AOTIM5_2018:
             tide.mask = np.zeros((ndays),dtype=bool)
             # predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
-            tide.data[:] = pyTMD.predict_tidal_ts(tide_time, hc, c,
+            tide.data[:] = pyTMD.predict.time_series(tide_time, hc, c,
                 deltat=deltat, corrections=GRID)
-            minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
+            minor = pyTMD.predict.infer_minor(tide_time, hc, c,
                 deltat=deltat, corrections=GRID)
             tide.data[:] += minor.data[:]
 
@@ -766,7 +765,7 @@ class Test_AOTIM5_2018:
         # calculate tide map
         tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
             DIRECTORY=filepath, MODEL='AOTIM-5-2018', GZIP=False,
-            EPOCH=(2000,1,1,12,0,0), TYPE='grid', TIME='UTC',
+            EPOCH=pyTMD.time._j2000_epoch, TYPE='grid', TIME='UTC',
             EPSG=3413, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 

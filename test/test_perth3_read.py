@@ -33,15 +33,13 @@ import inspect
 import warnings
 import posixpath
 import numpy as np
+import pyTMD.io
 import pyTMD.time
 import pyTMD.model
 import pyTMD.utilities
-import pyTMD.read_GOT_model
-import pyTMD.predict_tide_drift
-import pyTMD.infer_minor_corrections
+import pyTMD.predict
 import pyTMD.compute_tide_corrections
 import pyTMD.check_tide_points
-import pyTMD.calc_delta_time
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -117,12 +115,12 @@ def test_verify_GOT47(METHOD):
     tide_time = MJD - 48622.0
 
     # extract amplitude and phase from tide model
-    amp,ph,cons = pyTMD.read_GOT_model.extract_GOT_constants(longitude,
-        latitude, model_file, method=METHOD, compressed=GZIP, scale=SCALE)
+    amp,ph,cons = pyTMD.io.GOT.extract_constants(longitude, latitude,
+        model_file, method=METHOD, compressed=GZIP, scale=SCALE)
     assert all(c in constituents for c in cons)
     # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.calc_delta_time(delta_file, tide_time)
+    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillations
@@ -133,9 +131,9 @@ def test_verify_GOT47(METHOD):
     tide.mask = np.zeros((npts),dtype=bool)
     # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
-    tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, cons,
+    tide.data[:] = pyTMD.predict.drift(tide_time, hc, cons,
         deltat=deltat, corrections=model_format)
-    minor = pyTMD.infer_minor_corrections(tide_time, hc, cons,
+    minor = pyTMD.predict.infer_minor(tide_time, hc, cons,
         deltat=deltat, corrections=model_format)
     tide.data[:] += minor.data[:]
 
@@ -176,7 +174,7 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
     # calculate tide map
     tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL='GOT4.7', GZIP=True,
-        EPOCH=(2018,1,1,0,0,0), TYPE='grid', TIME='GPS',
+        EPOCH=pyTMD.time._atlas_sdp_epoch, TYPE='grid', TIME='GPS',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
 

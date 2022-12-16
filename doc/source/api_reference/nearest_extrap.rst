@@ -1,8 +1,8 @@
-=================
-nearest_extrap.py
-=================
+==============
+nearest_extrap
+==============
 
-- Uses `kd-trees <https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.cKDTree.html>`_ for nearest-neighbor (NN) extrapolation of valid tide model data
+- Uses `kd-trees <https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.cKDTree.html>`_ for nearest-neighbor (`NN`) extrapolation of valid tide model data
 
 Calling Sequence
 ----------------

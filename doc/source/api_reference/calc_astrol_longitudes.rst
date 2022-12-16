@@ -1,10 +1,10 @@
-=========================
-calc_astrol_longitudes.py
-=========================
+======================
+calc_astrol_longitudes
+======================
 
-- Computes the basic astronomical mean longitudes: s, h, p, N and PP
-- Note N is not N', i.e. N is decreasing with time.
-- Formulae for the period 1990-2010 were derived by David Cartwright
+- Computes the basic astronomical mean longitudes: `s`, `h`, `p`, `N` and `PP`
+- Note `N` is not `N'`, i.e. `N` is decreasing with time.
+- Formulae for the period 1990--2010 were derived by David Cartwright
 
 Calling Sequence
 ----------------

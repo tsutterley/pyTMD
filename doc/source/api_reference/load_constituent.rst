@@ -1,6 +1,6 @@
-====================
-load_constituent.py
-====================
+================
+load_constituent
+================
 
 - Loads parameters for a given tidal constituent
 

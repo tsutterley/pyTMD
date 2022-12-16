@@ -9,10 +9,7 @@ import warnings
 import pytest
 import numpy as np
 import scipy.interpolate
-from pyTMD.utilities import get_data_path
-from pyTMD.iers_mean_pole import iers_mean_pole
-from pyTMD.read_iers_EOP import read_iers_EOP
-from pyTMD.read_ocean_pole_tide import read_ocean_pole_tide
+import pyTMD
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -64,8 +61,9 @@ def test_ocean_pole_tide(METHOD):
     lon,lat = (232.25,-43.75)
 
     # read ocean pole tide map from Desai (2002)
-    ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
-    iur,iun,iue,ilon,ilat = read_ocean_pole_tide(ocean_pole_tide_file)
+    ocean_pole_tide_file = pyTMD.utilities.get_data_path(
+        ['data','opoleloadcoefcmcor.txt.gz'])
+    iur,iun,iue,ilon,ilat = pyTMD.io.ocean_pole_tide(ocean_pole_tide_file)
 
     # interpolate ocean pole tide map from Desai (2002)
     if (METHOD == 'spline'):

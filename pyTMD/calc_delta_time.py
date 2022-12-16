@@ -25,6 +25,7 @@ REFERENCES:
     Jean Meeus, Astronomical Algorithms, 2nd edition, 1998.
 
 UPDATE HISTORY:
+    Updated 12/2022: refactor delta time as part of time module
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 08/2020: using builtin time operations, interpolate with tide time
         convert output units to be in days
@@ -33,9 +34,7 @@ UPDATE HISTORY:
     Updated 07/2018: linearly extrapolate if using dates beyond the table
     Written 07/2018
 """
-import os
-import numpy as np
-import scipy.interpolate
+import warnings
 import pyTMD.time
 
 # PURPOSE: calculate the difference between universal time and dynamical time
@@ -61,12 +60,7 @@ def calc_delta_time(delta_file, idays):
     ----------
     .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
-    # read delta time file
-    dinput = np.loadtxt(os.path.expanduser(delta_file))
-    # calculate Julian days and then convert to days since 1992-01-01T00:00:00
-    days = pyTMD.time.convert_calendar_dates(dinput[:,0],dinput[:,1],dinput[:,2],
-        epoch=(1992,1,1,0,0,0))
-    # use scipy interpolating splines to interpolate delta times
-    spl = scipy.interpolate.UnivariateSpline(days,dinput[:,3],k=1,s=0,ext=0)
-    # return the delta time for the input date converted to days
-    return spl(idays)/86400.0
+    warnings.filterwarnings("always")
+    warnings.warn("Deprecated. Please use pyTMD.time instead",DeprecationWarning)
+    # call renamed version to not break workflows
+    return pyTMD.time.interpolate_delta_time(delta_file, idays)

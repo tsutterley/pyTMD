@@ -32,14 +32,12 @@ import inspect
 import warnings
 import posixpath
 import numpy as np
+import pyTMD.io
 import pyTMD.time
 import pyTMD.model
 import pyTMD.utilities
-import pyTMD.read_FES_model
-import pyTMD.predict_tide_drift
-import pyTMD.infer_minor_corrections
+import pyTMD.predict
 import pyTMD.check_tide_points
-import pyTMD.calc_delta_time
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -121,12 +119,12 @@ def test_verify_FES2014():
     tide_time = file_contents['CNES'] - 15340.0
 
     # extract amplitude and phase from tide model
-    amp,ph = pyTMD.read_FES_model.extract_FES_constants(longitude,
+    amp,ph = pyTMD.io.FES.extract_constants(longitude,
         latitude, model_file, type=TYPE, version=VERSION,
         method='spline', compressed=True, scale=SCALE,)
     # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.calc_delta_time(delta_file, tide_time)
+    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
     # calculate complex phase in radians for Euler's
     # calculate constituent oscillations
     hc = amp*np.exp(-1j*ph*np.pi/180.0)
@@ -136,9 +134,9 @@ def test_verify_FES2014():
     tide.mask = np.zeros((npts),dtype=bool)
     # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
-    tide.data[:] = pyTMD.predict_tide_drift(tide_time, hc, c,
+    tide.data[:] = pyTMD.predict.drift(tide_time, hc, c,
         deltat=deltat, corrections=model_format)
-    minor = pyTMD.infer_minor_corrections(tide_time, hc, c,
+    minor = pyTMD.predict.infer_minor(tide_time, hc, c,
         deltat=deltat, corrections=model_format)
     tide.data[:] += minor.data[:]
 

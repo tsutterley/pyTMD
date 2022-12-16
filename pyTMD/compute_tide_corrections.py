@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -63,22 +63,19 @@ PROGRAM DEPENDENCIES:
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
-    calc_delta_time.py: calculates difference between universal and dynamic time
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
-    infer_minor_corrections.py: return corrections for minor constituents
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
-    predict_tide.py: predict tides at single times using harmonic constants
-    predict_tidal_ts.py: predict tidal time series using harmonic constants
-    predict_tide_drift.py: predict tidal elevations using harmonic constants
-    read_tide_model.py: extract tidal harmonic constants from OTIS tide models
-    read_netcdf_model.py: extract tidal harmonic constants from netcdf models
-    read_GOT_model.py: extract tidal harmonic constants from GSFC GOT models
-    read_FES_model.py: extract tidal harmonic constants from FES tide models
+    predict.py: predict tide values using harmonic constants
+    io/OTIS.py: extract tidal harmonic constants from OTIS tide models
+    io/ATLAS.py: extract tidal harmonic constants from ATLAS netcdf models
+    io/GOT.py: extract tidal harmonic constants from GSFC GOT models
+    io/FES.py: extract tidal harmonic constants from FES tide models
     bilinear_interp.py: bilinear interpolation of data to coordinates
     nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
 
 UPDATE HISTORY:
+    Updated 12/2022: refactored tide read and prediction programs
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
@@ -113,19 +110,12 @@ from __future__ import print_function
 import os
 import warnings
 import numpy as np
+import pyTMD.io
 import pyTMD.time
 import pyTMD.model
+import pyTMD.predict
 import pyTMD.spatial
 import pyTMD.utilities
-from pyTMD.calc_delta_time import calc_delta_time
-from pyTMD.infer_minor_corrections import infer_minor_corrections
-from pyTMD.predict_tide import predict_tide
-from pyTMD.predict_tidal_ts import predict_tidal_ts
-from pyTMD.predict_tide_drift import predict_tide_drift
-from pyTMD.read_tide_model import extract_tidal_constants
-from pyTMD.read_netcdf_model import extract_netcdf_constants
-from pyTMD.read_GOT_model import extract_GOT_constants
-from pyTMD.read_FES_model import extract_FES_constants
 
 # attempt imports
 try:
@@ -256,27 +246,27 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     # calculate leap seconds if specified
     if (TIME.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'LORAN'):
         # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME.upper() == 'TAI'):
         # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
@@ -288,42 +278,42 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         # convert delta time array from datetime object
         # to days relative to 1992-01-01T00:00:00
         t = pyTMD.time.convert_datetime(delta_time,
-            epoch=(1992,1,1,0,0,0))/86400.0
+            epoch=pyTMD.time._tide_epoch)/86400.0
     else:
         # convert time to days relative to Jan 1, 1992 (48622mjd)
         t = pyTMD.time.convert_delta_time(delta_time - leap_seconds,
-            epoch1=EPOCH, epoch2=(1992,1,1,0,0,0), scale=(1.0/86400.0))
+            epoch1=EPOCH, epoch2=pyTMD.time._tide_epoch, scale=(1.0/86400.0))
     # delta time (TT - UT1) file
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
-        amp,ph,D,c = extract_tidal_constants(lon, lat, model.grid_file,
+        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
             model.model_file, model.projection, type=model.type,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros_like(t)
     elif (model.format == 'netcdf'):
-        amp,ph,D,c = extract_netcdf_constants(lon, lat, model.grid_file,
+        amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
             model.model_file, type=model.type, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
         deltat = np.zeros_like(t)
     elif (model.format == 'GOT'):
-        amp,ph,c = extract_GOT_constants(lon, lat, model.model_file,
+        amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         # interpolate delta times from calendar dates to tide time
-        deltat = calc_delta_time(delta_file, t)
+        deltat = pyTMD.time.interpolate_delta_time(delta_file, t)
     elif (model.format == 'FES'):
-        amp,ph = extract_FES_constants(lon, lat, model.model_file,
+        amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
             type=model.type, version=model.version, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
         # available model constituents
         c = model.constituents
         # interpolate delta times from calendar dates to tide time
-        deltat = calc_delta_time(delta_file, t)
+        deltat = pyTMD.time.interpolate_delta_time(delta_file, t)
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -336,9 +326,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            TIDE = predict_tide(t[i], hc, c,
+            TIDE = pyTMD.predict.map(t[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            MINOR = infer_minor_corrections(t[i], hc, c,
+            MINOR = pyTMD.predict.infer_minor(t[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
             # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
@@ -347,18 +337,18 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
         npts = len(t)
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = predict_tide_drift(t, hc, c,
+        tide.data[:] = pyTMD.predict.drift(t, hc, c,
             deltat=deltat, corrections=model.format)
-        minor = infer_minor_corrections(t, hc, c,
+        minor = pyTMD.predict.infer_minor(t, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
         npts = len(t)
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = predict_tidal_ts(t, hc, c,
+        tide.data[:] = pyTMD.predict.time_series(t, hc, c,
             deltat=deltat, corrections=model.format)
-        minor = infer_minor_corrections(t, hc, c,
+        minor = pyTMD.predict.infer_minor(t, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     # replace invalid values with fill value

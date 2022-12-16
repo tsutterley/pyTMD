@@ -1,6 +1,6 @@
-==================
-bilinear_interp.py
-==================
+===============
+bilinear_interp
+===============
 
 - Bilinear interpolation of input data to output coordinates
 

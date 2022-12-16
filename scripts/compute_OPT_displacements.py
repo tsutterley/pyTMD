@@ -67,9 +67,8 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
-    iers_mean_pole.py: provides the angular coordinates of IERS Mean Pole
-    read_iers_EOP.py: read daily earth orientation parameters from IERS
-    read_ocean_pole_tide.py: read ocean pole load tide map from IERS
+    eop.py: utilities for calculating Earth Orientation Parameters (EOP)
+    io/ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 REFERENCES:
     S Desai, "Observing the pole tide with satellite altimetry", Journal of
@@ -243,27 +242,27 @@ def compute_OPT_displacements(input_file, output_file,
     # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'LORAN'):
         # LORAN time is ahead of GPS time by 9 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
     elif (TIME_STANDARD.upper() == 'TAI'):
         # TAI time is ahead of GPS time by 19 seconds
         GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
-            epoch2=(1980,1,6,0,0,0), scale=1.0)
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
         # calculate difference in leap seconds from start of epoch
         leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
             pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
@@ -274,11 +273,11 @@ def compute_OPT_displacements(input_file, output_file,
         # convert delta time array from datetime object
         # to Modified Julian days (days since 1858-11-17T00:00:00)
         MJD = pyTMD.time.convert_datetime(delta_time,
-            epoch=(1858,11,17,0,0,0))/86400.0
+            epoch=pyTMD.time._mjd_epoch)/86400.0
     else:
         # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
         MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=epoch1, epoch2=(1858,11,17,0,0,0), scale=1.0/86400.0)
+            epoch1=epoch1, epoch2=pyTMD.time._mjd_epoch, scale=1.0/86400.0)
     # add offset to convert to Julian days and then convert to calendar dates
     Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
     # calculate time in year-decimal format
@@ -321,9 +320,9 @@ def compute_OPT_displacements(input_file, output_file,
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean pole at time
-    mpx,mpy,fl = pyTMD.iers_mean_pole(mean_pole_file,time_decimal,'2015')
+    mpx,mpy,fl = pyTMD.eop.iers_mean_pole(mean_pole_file,time_decimal,'2015')
     # read IERS daily polar motion values
-    EOP = pyTMD.read_iers_EOP(pole_tide_file)
+    EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
     # interpolate daily polar motion values to t1 using cubic splines
     xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
@@ -336,7 +335,7 @@ def compute_OPT_displacements(input_file, output_file,
     # read ocean pole tide map from Desai (2002)
     ocean_pole_tide_file = pyTMD.utilities.get_data_path(['data',
         'opoleloadcoefcmcor.txt.gz'])
-    iur,iun,iue,ilon,ilat = pyTMD.read_ocean_pole_tide(ocean_pole_tide_file)
+    iur,iun,iue,ilon,ilat = pyTMD.io.ocean_pole_tide(ocean_pole_tide_file)
     # interpolate ocean pole tide map from Desai (2002)
     if (METHOD == 'spline'):
         # use scipy bivariate splines to interpolate to output points

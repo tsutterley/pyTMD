@@ -29,7 +29,7 @@ UPDATE HISTORY:
 """
 import numpy as np
 
-def tidal_ellipse(u,v):
+def tidal_ellipse(u, v):
     """
     Expresses the amplitudes and phases for the u and v components in terms of
     four ellipse parameters using Foreman's formula

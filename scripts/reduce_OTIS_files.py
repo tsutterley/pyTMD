@@ -52,11 +52,10 @@ import os
 import warnings
 import argparse
 import numpy as np
+import pyTMD.io
 import pyTMD.model
 import pyTMD.utilities
 from pyTMD.convert_ll_xy import convert_ll_xy
-from pyTMD.read_tide_model import *
-from pyTMD.output_otis_tides import *
 
 # attempt imports
 try:
@@ -99,12 +98,15 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     # read the OTIS-format tide grid file
     if (model.format == 'ATLAS'):
         # if reading a global solution with localized solutions
-        x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(model.grid_file)
-        xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,variable='depth')
-        mz = create_atlas_mask(x0,y0,mz0,local,variable='depth')
+        x0,y0,hz0,mz0,iob,dt,pmask,local = pyTMD.io.OTIS.read_atlas_grid(
+            model.grid_file)
+        xi,yi,hz = pyTMD.io.OTIS.combine_atlas_model(x0, y0, hz0, pmask,
+            local, variable='depth')
+        mz = pyTMD.io.OTIS.create_atlas_mask(x0, y0, mz0,
+            local, variable='depth')
     else:
         # if reading a pure global solution
-        xi,yi,hz,mz,iob,dt = read_tide_grid(model.grid_file)
+        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(model.grid_file)
 
     # converting bounds x,y from projection to latitude/longitude
     crs1 = get_projection(PROJECTION)
@@ -135,7 +137,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     mz1[:,:] = mz[indy,indx].reshape(ny,nx)
     # output reduced grid to file
     new_grid_file = create_unique_filename(model.grid_file)
-    output_otis_grid(new_grid_file,xlim,ylim,hz1,mz1,iob,dt)
+    pyTMD.io.OTIS.output_otis_grid(new_grid_file,xlim,ylim,hz1,mz1,iob,dt)
     # change the permissions level to MODE
     os.chmod(new_grid_file, MODE)
 
@@ -144,24 +146,27 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     try:
         # get parameters for tide model
         model = pyTMD.model(tide_dir).elevation(TIDE_MODEL)
-    except:
+    except Exception as e:
         pass
     else:
         # read each constituent
-        constituents,nc = read_constituents(model_file['z'])
+        constituents,nc = pyTMD.io.OTIS.read_constituents(model_file['z'])
         z1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         for i,c in enumerate(constituents):
             # read constituent from elevation file
             if (model.format == 'ATLAS'):
-                z0,zlocal=read_atlas_elevation(model_file['z'],i,c)
-                xi,yi,z=combine_atlas_model(x0,y0,z0,pmask,zlocal,variable='z')
+                z0,zlocal = pyTMD.io.OTIS.read_atlas_elevation(
+                    model_file['z'], i, c)
+                xi,yi,z=pyTMD.io.OTIS.combine_atlas_model(x0, y0, z0, pmask,
+                    zlocal, variable='z')
             else:
-                z=read_elevation_file(model_file['z'],i)
+                z = pyTMD.io.OTIS.read_otis_elevation(model_file['z'], i)
             # reduce elevation to new bounds
             z1[:,:,i] = z[indy,indx].reshape(ny,nx)
         # output reduced elevation components
         new_model_file['z'] = create_unique_filename(model_file['z'])
-        output_otis_elevation(new_model_file['z'],z1,xlim,ylim,constituents)
+        pyTMD.io.OTIS.output_otis_elevation(new_model_file['z'], z1,
+            xlim, ylim, constituents)
         # change the permissions level to MODE
         os.chmod(new_model_file['z'], MODE)
 
@@ -170,27 +175,31 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     try:
         # get parameters for tide model
         model = pyTMD.model(tide_dir).current(TIDE_MODEL)
-    except:
+    except Exception as e:
         pass
     else:
         # read each constituent
-        constituents,nc = read_constituents(model_file['u'])
+        constituents,nc = pyTMD.io.OTIS.read_constituents(model_file['u'])
         u1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         v1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         for i,c in enumerate(constituents):
             # read constituent from transport file
             if (model.format == 'ATLAS'):
-                u0,v0,uvlocal=read_atlas_transport(model_file['u'],i,c)
-                xi,yi,u=combine_atlas_model(x0,y0,u0,pmask,uvlocal,variable='u')
-                xi,yi,v=combine_atlas_model(x0,y0,v0,pmask,uvlocal,variable='v')
+                u0,v0,uvlocal = pyTMD.io.OTIS.read_atlas_transport(
+                    model_file['u'], i, c)
+                xi,yi,u = pyTMD.io.OTIS.combine_atlas_model(x0, y0, u0, pmask,
+                    uvlocal, variable='u')
+                xi,yi,v = pyTMD.io.OTIS.combine_atlas_model(x0, y0, v0, pmask,
+                    uvlocal, variable='v')
             else:
-                u,v=read_transport_file(model_file['u'],i)
+                u,v = pyTMD.io.OTIS.read_otis_transport(model_file['u'],i)
             # reduce transport components to new bounds
             u1[:,:,i] = u[indy,indx].reshape(ny,nx)
             v1[:,:,i] = v[indy,indx].reshape(ny,nx)
         # output reduced transport components
         new_model_file['uv'] = create_unique_filename(model_file['u'])
-        output_otis_transport(new_model_file['u'],u1,v1,xlim,ylim,constituents)
+        pyTMD.io.OTIS.output_otis_transport(new_model_file['u'], u1, v1,
+            xlim, ylim, constituents)
         # change the permissions level to MODE
         os.chmod(new_model_file['u'], MODE)
 

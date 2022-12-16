@@ -1,14 +1,15 @@
-=======
-time.py
-=======
+====
+time
+====
 
 Utilities for calculating time operations
 
  - Can convert delta time from seconds since an epoch to time since a different epoch
  - Can calculate the time in days since epoch from calendar dates
+ - Calculates the difference between dynamic time and universal time (`TT` - `UT1`) following Richard Ray's ``PERTH3`` algorithms
  - Can count the number of leap seconds between a given GPS time and UTC
  - Syncs leap second files with NIST servers
- - Updates differences between universal time (UT) and dynamic time (TT)
+ - Updates differences between universal time (`UT`) and dynamic time (`TT`)
 
 Calling Sequence
 ----------------
@@ -62,6 +63,8 @@ General Methods
 .. autofunction:: pyTMD.time.convert_calendar_decimal
 
 .. autofunction:: pyTMD.time.convert_julian
+
+.. autofunction:: pyTMD.time.interpolate_delta_time
 
 .. autofunction:: pyTMD.time.count_leap_seconds
 
