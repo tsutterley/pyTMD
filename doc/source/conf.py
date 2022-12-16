@@ -72,11 +72,14 @@ html_show_copyright = True
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-html_theme_options = {}
+html_theme_options = {
+    "logo_only": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+html_logo = "_assets/pyTMD_logo.png"
 html_static_path = ['_static']
 repository_url = f"https://github.com/tsutterley/pyTMD"
 html_context = {
