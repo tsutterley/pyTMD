@@ -57,7 +57,11 @@ def load_constituent(c):
     References
     ----------
     .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
+        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
+        19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # constituents array that are included in tidal program
     cindex = ['m2','s2','k1','o1','n2','p1','k2','q1','2n2','mu2','nu2','l2',

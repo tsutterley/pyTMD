@@ -61,7 +61,11 @@ def map(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     References
     ----------
     .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
+        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
+        19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # number of points and number of constituents
     npts,nc = np.shape(hc)
@@ -114,7 +118,11 @@ def drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     References
     ----------
     .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
+        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
+        19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     nt = len(t)
     # load the nodal corrections
@@ -166,7 +174,11 @@ def time_series(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     References
     ----------
     .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
+        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
+        19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     nt = len(t)
     # load the nodal corrections
@@ -219,10 +231,12 @@ def infer_minor(t, zmajor, constituents, **kwargs):
     References
     ----------
     .. [1] A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
-    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides"
-        US Coast and Geodetic Survey, Special Publication, 98, (1958).
-    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
-        time series", Advances in Water Resources, 12, (1989).
+    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
+        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
+    .. [3] Foreman and Henry, "The harmonic analysis of tidal model time
+        series," *Advances in Water Resources*, 12(3), 109--120, (1989).
+        `doi: 10.1016/0309-1708(89)90017-1
+        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -441,8 +455,16 @@ def equilibrium_tide(t, lat):
 
     References
     ----------
-    .. [1] Cartwright & Tayler, Geophys. J. R.A.S., 23, 45, 1971.
-    .. [2] Cartwright & Edden, Geophys. J. R.A.S., 33, 253, 1973.
+    .. [1] D. E. Cartwright and R. J. Tayler,
+        "New Computations of the Tide-generating Potential,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
+        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+    .. [2] D. E. Cartwright and A. C. Edden,
+        "Corrected Tables of Tidal Harmonics,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # longitude of moon
     # longitude of sun

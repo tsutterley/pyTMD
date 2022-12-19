@@ -56,8 +56,9 @@ def read_iers_EOP(input_file):
 
     References
     ----------
-    [Petit2010] G. Petit, and B. Luzum, (eds.), IERS Conventions (2010),
-        IERS Technical Note No. 36, BKG (2010)
+    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("always")

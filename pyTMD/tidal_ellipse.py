@@ -56,9 +56,9 @@ def tidal_ellipse(u, v):
     References
     ----------
     .. [1] Foreman and Henry, "The harmonic analysis of tidal model time
-        series", Advances in Water Resources, 12(3), 109-120, (1989).
-        https://doi.org/10.1016/0309-1708(89)90017-1
-
+        series", *Advances in Water Resources*, 12(3), 109-120, (1989).
+        `doi: 10.1016/0309-1708(89)90017-1
+        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
     # change to polar coordinates
     t1p = u.real - v.imag
