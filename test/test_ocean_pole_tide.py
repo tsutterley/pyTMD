@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 u"""
-test_ocean_pole_tide.py (08/2020)
+test_ocean_pole_tide.py
+Written by Tyler Sutterley (12/2022)
+
+UPDATE HISTORY:
+    Updated 12/2022: single implicit import of pyTMD
+        use constants class for ellipsoidal parameters
+    Updated 07/2022: define variable formats of test inputs
+    Updated 05/2022: change to longcomplex for windows compatibility
+    Written 08/2020
 """
 import os
 import re
@@ -22,29 +30,29 @@ def test_ocean_pole_tide(METHOD):
     # degrees to radians and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
-    # earth and physical parameters (IERS)
-    # G = 6.67428e-11# universal constant of gravitation [m^3/(kg*s^2)]
+    # earth and physical parameters for ellipsoid
+    units = pyTMD.constants('IERS')
     G = 6.673e-11# test universal constant of gravitation [m^3/(kg*s^2)]
-    GM = 3.986004418e14# geocentric gravitational constant [m^3/s^2]
-    a_axis = 6378136.6# equatorial radius of the Earth [m]
-    flat = 1.0/298.257223563# flattening of the ellipsoid
-    omega = 7.292115e-5# mean rotation rate of the Earth [arcseconds/s]
-    rho_w = 1025.0# density of sea water [kg/m^3]
-    ge = 9.7803278# mean equatorial gravitational acceleration [m/s^2]
-    # Linear eccentricity and first numerical eccentricity
-    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
-    ecc1 = lin_ecc/a_axis
+    # mean equatorial gravitational acceleration [m/s^2]
+    ge = 9.7803278
+    # density of sea water [kg/m^3]
+    rho_w = 1025.0
     # tidal love number differential (1 + kl - hl) for pole tide frequencies
     gamma = 0.6870 + 0.0036j
 
     # pole tide displacement scale factor
-    Hp = np.sqrt(8.0*np.pi/15.0)*(omega**2*a_axis**4)/GM
-    K = 4.0*np.pi*G*rho_w*Hp*a_axis/(3.0*ge)
-    K1 = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
+    Hp = np.sqrt(8.0*np.pi/15.0)*(units.omega**2*units.a_axis**4)/units.GM
+    K = 4.0*np.pi*G*rho_w*Hp*units.a_axis/(3.0*ge)
+    K1 = 4.0*np.pi*G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
+
     # determine differences with values from test data
     eps = np.finfo(np.float16).eps
-    assert (np.abs(Hp - 2.8577142980e+04) < eps)
-    assert (np.abs(K - 5.3394043696e+03) < eps)
+    a_validation = 6.3781366000e+06
+    Hp_validation = 2.8577142980e+04
+    K_validation = 5.3394043696e+03
+    assert (np.abs(units.a_axis - a_validation) < eps)
+    assert (np.abs(Hp - Hp_validation) < eps)
+    assert (np.abs(K - K_validation) < eps)
 
     # read test file for values
     ocean_pole_test_file = os.path.join(filepath,'opoleloadcmcor.test')
@@ -56,6 +64,7 @@ def test_ocean_pole_tide(METHOD):
     # mean pole coordinates for test
     xmean = np.array([5.4e-2, 8.30e-4])
     ymean = np.array([3.57e-1, 3.95e-3])
+    # test date in Modified Julian Days
     t0 = 5.1544e4
     # coordinates for test
     lon,lat = (232.25,-43.75)

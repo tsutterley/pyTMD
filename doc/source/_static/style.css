@@ -14,3 +14,12 @@
     visibility: visible;
     margin-right: -0.7em;
 }
+
+/* fix for property line spacing
+* https://github.com/rtfd/sphinx_rtd_theme/issues/1301
+*/
+.property {
+    display: block !important;
+    padding-right: 8px;
+    max-width: 100%;
+}
