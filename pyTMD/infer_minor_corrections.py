@@ -79,9 +79,11 @@ def infer_minor_corrections(t, zmajor, constituents, **kwargs):
     ----------
     .. [1] A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
     .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides"
-        US Coast and Geodetic Survey, Special Publication, 98, (1958).
-    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal model
-        time series", Advances in Water Resources, 12, (1989).
+        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
+    .. [3] Foreman and Henry, "The harmonic analysis of tidal model time
+        series," *Advances in Water Resources*, 12(3), 109--120, (1989).
+        `doi: 10.1016/0309-1708(89)90017-1
+        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
     warnings.filterwarnings("always")
     warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)

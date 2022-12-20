@@ -272,8 +272,9 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
 
     References
     ----------
-    .. [1] Petit, G. and Luzum, B. (eds.), IERS Conventions (2010),
-        IERS Technical Note No. 36, BKG (2010)
+    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # set default keyword arguments
     kwargs.setdefault('fill_value', np.nan)
@@ -355,8 +356,9 @@ def iers_daily_EOP(input_file):
 
     References
     ----------
-    .. [1] Petit, G. and Luzum, B. (eds.), IERS Conventions (2010),
-        IERS Technical Note No. 36, BKG (2010)
+    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # tilde-expansion of input file
     input_file = os.path.expanduser(input_file)

@@ -6,6 +6,7 @@ Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
     http://maia.usno.navy.mil/conventions/chapter7.php
+    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
 
 INPUTS:
     csv file with columns for spatial and temporal coordinates
@@ -79,6 +80,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of pyTMD tools
+        use constants class for ellipsoidal parameters
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
@@ -161,6 +163,7 @@ def compute_OPT_displacements(input_file, output_file,
     TIME=None,
     TIME_STANDARD='UTC',
     PROJECTION='4326',
+    ELLIPSOID='WGS84',
     METHOD='spline',
     VERBOSE=False,
     MODE=0o775):
@@ -289,17 +292,12 @@ def compute_OPT_displacements(input_file, output_file,
     # degrees to radians and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
-    # earth and physical parameters (IERS and WGS84)
-    G = 6.67428e-11# universal constant of gravitation [m^3/(kg*s^2)]
-    GM = 3.986004418e14# geocentric gravitational constant [m^3/s^2]
-    a_axis = 6378136.6# WGS84 equatorial radius of the Earth [m]
-    flat = 1.0/298.257223563# flattening of the WGS84 ellipsoid
-    omega = 7.292115e-5# mean rotation rate of the Earth [radians/s]
-    rho_w = 1025.0# density of sea water [kg/m^3]
-    ge = 9.7803278# mean equatorial gravitational acceleration [m/s^2]
-    # Linear eccentricity and first numerical eccentricity
-    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
-    ecc1 = lin_ecc/a_axis
+    # earth and physical parameters for ellipsoid
+    units = pyTMD.constants(ELLIPSOID)
+    # mean equatorial gravitational acceleration [m/s^2]
+    ge = 9.7803278
+    # density of sea water [kg/m^3]
+    rho_w = 1025.0
     # tidal love number differential (1 + kl - hl) for pole tide frequencies
     gamma = 0.6870 + 0.0036j
 
@@ -307,14 +305,15 @@ def compute_OPT_displacements(input_file, output_file,
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(lon,lat,h=h,a_axis=a_axis,flat=flat)
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+        a_axis=units.a_axis, flat=units.flat)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
 
     # pole tide displacement scale factor
-    Hp = np.sqrt(8.0*np.pi/15.0)*(omega**2*a_axis**4)/GM
-    K = 4.0*np.pi*G*rho_w*Hp*a_axis/(3.0*ge)
-    K1 = 4.0*np.pi*G*rho_w*Hp*a_axis**3/(3.0*GM)
+    Hp = np.sqrt(8.0*np.pi/15.0)*(units.omega**2*units.a_axis**4)/units.GM
+    K = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis/(3.0*ge)
+    K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
 
     # pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
@@ -443,6 +442,10 @@ def arguments():
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
+    # ellipsoid for calculating load pole tide parameters
+    parser.add_argument('--ellipsoid','-E',
+        type=str, choices=pyTMD._ellipsoids, default='WGS84',
+        help='Ellipsoid for calculating load pole tide parameters')
     # interpolation method
     parser.add_argument('--interpolate','-I',
         metavar='METHOD', type=str, default='spline',
@@ -483,6 +486,7 @@ def main():
         TIME=args.deltatime,
         TIME_STANDARD=args.standard,
         PROJECTION=args.projection,
+        ELLIPSOID=args.ellipsoid,
         METHOD=args.interpolate,
         VERBOSE=args.verbose,
         MODE=args.mode)

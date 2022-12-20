@@ -2,10 +2,11 @@
 u"""
 compute_LPT_displacements.py
 Written by Tyler Sutterley (12/2022)
-Calculates radial pole load tide displacements for an input file
+Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
     http://maia.usno.navy.mil/conventions/chapter7.php
+    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
 
 INPUTS:
     csv file with columns for spatial and temporal coordinates
@@ -67,6 +68,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2022: single implicit import of pyTMD tools
+        use constants class for ellipsoidal parameters
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 10/2022: added delimiter option and datetime parsing for ascii files
@@ -132,7 +134,7 @@ def get_projection(attributes, PROJECTION):
     # no projection can be made
     raise pyproj.exceptions.CRSError
 
-# PURPOSE: compute the pole load tide radial displacements following
+# PURPOSE: compute the load pole tide radial displacements following
 # IERS conventions (2010)
 def compute_LPT_displacements(input_file, output_file,
     FORMAT='csv',
@@ -144,6 +146,7 @@ def compute_LPT_displacements(input_file, output_file,
     TIME=None,
     TIME_STANDARD='UTC',
     PROJECTION='4326',
+    ELLIPSOID='WGS84',
     VERBOSE=False,
     MODE=0o775):
 
@@ -271,30 +274,17 @@ def compute_LPT_displacements(input_file, output_file,
     # degrees to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
-    # earth and physical parameters (IERS and WGS84)
-    GM = 3.986004418e14# geocentric gravitational constant [m^3/s^2]
-    a_axis = 6378136.6# semimajor axis of the WGS84 ellipsoid [m]
-    flat = 1.0/298.257223563# flattening of the WGS84 ellipsoid
-    b_axis = (1.0 - flat)*a_axis# semiminor axis of the WGS84 ellipsoid [m]
-    omega = 7.292115e-5# mean rotation rate of the Earth [radians/s]
+    # earth and physical parameters for ellipsoid
+    units = pyTMD.constants(ELLIPSOID)
     # tidal love number appropriate for the load tide
     hb2 = 0.6207
-    # Linear eccentricity, first and second numerical eccentricity
-    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
-    ecc1 = lin_ecc/a_axis
-    ecc2 = lin_ecc/b_axis
-    # m parameter [omega^2*a^2*b/(GM)]. p. 70, Eqn.(2-137)
-    m = omega**2*((1 -flat)*a_axis**3)/GM
-    # flattening components
-    f_2 = -flat + (5.0/2.0)*m + (1.0/2.0)*flat**2.0 - (26.0/7.0)*flat*m + \
-        (15.0/4.0)*m**2.0
-    f_4 = -(1.0/2.0)*flat**2.0 + (5.0/2.0)*flat*m
 
     # flatten heights
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(lon,lat,h=h,a_axis=a_axis,flat=flat)
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+        a_axis=units.a_axis, flat=units.flat)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
@@ -303,15 +293,8 @@ def compute_LPT_displacements(input_file, output_file,
     phi = lon*dtr
 
     # compute normal gravity at spatial location and elevation of points.
-    # normal gravity at the equator. p. 79, Eqn.(2-186)
-    gamma_a = (GM/(a_axis*b_axis)) * (1.0-(3.0/2.0)*m - (3.0/14.0)*ecc2**2.0*m)
-    # Normal gravity. p. 80, Eqn.(2-199)
-    gamma_0 = gamma_a*(1.0 + f_2*np.cos(theta)**2.0 +
-        f_4*np.sin(np.pi*latitude_geocentric/180.0)**4.0)
     # Normal gravity at height h. p. 82, Eqn.(2-215)
-    gamma_h = gamma_0*(1.0 - \
-        (2.0/a_axis)*(1.0+flat+m-2.0*flat*np.cos(theta)**2.0)*h + \
-        (3.0/a_axis**2.0)*h**2.0)
+    gamma_h = units.gamma_h(theta, h)
 
     # pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
@@ -330,7 +313,7 @@ def compute_LPT_displacements(input_file, output_file,
     my = -(py - mpy)
 
     # calculate radial displacement at time
-    dfactor = -hb2*atr*(omega**2*rr**2)/(2.0*gamma_h)
+    dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
     Srad = np.ma.zeros((len(latitude_geocentric)),fill_value=fill_value)
     Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
     # replace fill values
@@ -426,6 +409,10 @@ def arguments():
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
+    # ellipsoid for calculating load pole tide parameters
+    parser.add_argument('--ellipsoid','-E',
+        type=str, choices=pyTMD._ellipsoids, default='WGS84',
+        help='Ellipsoid for calculating load pole tide parameters')
     # verbose output of processing run
     # print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -461,6 +448,7 @@ def main():
         TIME=args.deltatime,
         TIME_STANDARD=args.standard,
         PROJECTION=args.projection,
+        ELLIPSOID=args.ellipsoid,
         VERBOSE=args.verbose,
         MODE=args.mode)
 

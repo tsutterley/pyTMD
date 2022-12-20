@@ -296,9 +296,9 @@ def convert_calendar_decimal(year, month, day=None, hour=None, minute=None,
 
     References
     ----------
-    .. [1] Dershowitz, N. and E.M. Reingold. 2008.
-        Calendrical Calculations.
-        Cambridge: Cambridge University Press.
+    .. [1] N. Dershowitz, and E. M. Reingold.
+        *Calendrical Calculations*,
+        Cambridge: Cambridge University Press, (2008).
     """
 
     # number of dates
@@ -449,12 +449,12 @@ def convert_julian(JD, **kwargs):
 
     References
     ----------
-    .. [1] "Numerical Recipes in C", by William H. Press,
+    .. [1] W. H. Press, *Numerical Recipes in C*,
         Brian P. Flannery, Saul A. Teukolsky, and William T. Vetterling.
-        Cambridge University Press, 1988 (second printing).
+        Cambridge University Press, (1988).
     .. [2] Hatcher, D. A., "Simple Formulae for Julian Day Numbers and
-        Calendar Dates", Quarterly Journal of the Royal Astronomical
-        Society, 25(1), 1984.
+        Calendar Dates", *Quarterly Journal of the Royal Astronomical
+        Society*, 25(1), 1984.
     """
     # set default keyword arguments
     kwargs.setdefault('astype', None)
@@ -531,7 +531,7 @@ def convert_julian(JD, **kwargs):
 def interpolate_delta_time(delta_file, idays):
     """
     Calculates the difference between universal time (UT) and
-    dynamical time (TT) [Meeus1998]_
+    dynamical time (TT)
 
     Parameters
     ----------
@@ -547,7 +547,7 @@ def interpolate_delta_time(delta_file, idays):
 
     References
     ----------
-    .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     # read delta time file
     dinput = np.loadtxt(os.path.expanduser(delta_file))

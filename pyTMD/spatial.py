@@ -869,7 +869,7 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
 
     References
     ----------
-    .. [1] J Meeus, Astronomical Algorithms, pp. 77-82 (1991)
+    .. [1] J Meeus, *Astronomical Algorithms*, pp. 77--82, (1991).
     """
     if (len(phi1) != len(h1)):
         raise ValueError('phi and h have incompatable dimensions')
@@ -1004,7 +1004,7 @@ def compute_delta_h(a1, f1, a2, f2, lat):
 
     References
     ----------
-    .. [1] J Meeus, Astronomical Algorithms, pp. 77-82 (1991)
+    .. [1] J Meeus, *Astronomical Algorithms*, pp. 77--82, (1991).
     """
     # force phi into range -90 <= phi <= 90
     gt90, = np.nonzero((lat < -90.0) | (lat > 90.0))
@@ -1126,10 +1126,10 @@ def to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563):
     References
     ----------
     .. [1] J Zhu "Exact conversion of Earth-centered, Earth-fixed
-        coordinates to geodetic coordinates"
-        Journal of Guidance, Control, and Dynamics,
-        16(2), 389--391, 1993
-        https://arc.aiaa.org/doi/abs/10.2514/3.21016
+        coordinates to geodetic coordinates,"
+        *Journal of Guidance, Control, and Dynamics*,
+        16(2), 389--391, (1993). `doi: 10.2514/3.21016
+        <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
@@ -1190,9 +1190,8 @@ def scale_areas(lat, flat=1.0/298.257223563, ref=70.0):
 
     References
     ----------
-    .. [1] Snyder, J P (1982) Map Projections used by the U.S. Geological Survey
-        Forward formulas for the ellipsoid.  Geological Survey Bulletin
-        1532, U.S. Government Printing Office.
+    .. [1] J P Snyder, *Map Projections used by the U.S. Geological Survey*,
+        Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
     .. [2] JPL Technical Memorandum 3349-85-101
     """
     # convert latitude from degrees to positive radians

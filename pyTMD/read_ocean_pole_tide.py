@@ -69,11 +69,12 @@ def read_ocean_pole_tide(input_file):
 
     References
     ----------
-    .. [1] S Desai, "Observing the pole tide with satellite altimetry", Journal of
-        Geophysical Research: Oceans, 107(C11), 2002. doi: 10.1029/2001JC001224
+    .. [1] S Desai, "Observing the pole tide with satellite altimetry", *Journal of
+        Geophysical Research: Oceans*, 107(C11), (2002).
+        `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
     .. [2] S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from
-        satellite altimetry", Journal of Geodesy, 89(12), p1233-1243, 2015.
-        doi: 10.1007/s00190-015-0848-7
+        satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015).
+        `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("always")
