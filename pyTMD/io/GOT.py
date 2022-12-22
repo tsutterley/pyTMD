@@ -42,6 +42,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
+        new functions to read and interpolate from constituents class
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_GOT_constants definition
         changed keyword arguments to camel case
@@ -81,10 +82,11 @@ import gzip
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
-# PURPOSE: extract tidal harmonic constants out of GOT model at coordinates
+# PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(ilon, ilat, model_files=None, **kwargs):
     """
     Reads files for Richard Ray's Global Ocean Tide (GOT) models
@@ -156,6 +158,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     npts = len(ilon)
     # number of constituents
     nc = len(model_files)
+    # list of constituents
     constituents = []
 
     # amplitude and phase
@@ -203,7 +206,8 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             hci.mask[:] |= np.isnan(hci.data)
             hci.data[hci.mask] = hci.fill_value
         elif (kwargs['method'] == 'spline'):
-            # interpolate complex form of the constituent with scipy
+            # interpolate complex form of the constituent
+            # use scipy splines to interpolate values
             f1=scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.data.real.T, kx=1, ky=1)
             f2=scipy.interpolate.RectBivariateSpline(lon, lat,
@@ -216,7 +220,8 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             # replace invalid values with fill_value
             hci.data[hci.mask] = hci.fill_value
         else:
-            # use scipy regular grid to interpolate values for a given method
+            # interpolate complex form of the constituent
+            # use scipy regular grid to interpolate values
             r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
                 hc.data, method=kwargs['method'], bounds_error=False,
                 fill_value=hci.fill_value)
@@ -253,10 +258,218 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     # return the interpolated values
     return (amplitude, phase, constituents)
 
-# PURPOSE: wrapper function to extend an array
+# PURPOSE: read harmonic constants from tide models
+def read_constants(model_files=None, **kwargs):
+    """
+    Reads files for Richard Ray's Global Ocean Tide (GOT) models
+
+    Parameters
+    ----------
+    model_files: list or NoneType, default None
+        list of model files for each constituent
+    compressed: bool, default False
+        Input files are gzip compressed
+
+    Returns
+    -------
+    constituents: obj
+        complex form of tide model constituents
+    """
+    # set default keyword arguments
+    kwargs.setdefault('compressed', False)
+
+    # raise warning if model files are entered as a string
+    if isinstance(model_files,str):
+        warnings.warn("Tide model is entered as a string")
+        model_files = [model_files]
+
+    # save output constituents
+    constituents = pyTMD.constituents()
+    # read each model constituent
+    for i, model_file in enumerate(model_files):
+        # check that model file is accessible
+        if not os.access(os.path.expanduser(model_file), os.F_OK):
+            raise FileNotFoundError(os.path.expanduser(model_file))
+        # read constituent from elevation file
+        hc,lon,lat,cons = read_ascii_file(os.path.expanduser(model_file),
+            compressed=kwargs['compressed'])
+        # grid step size of tide model
+        dlon = np.abs(lon[1] - lon[0])
+        # replace original values with extend matrices
+        lon = extend_array(lon, dlon)
+        hc = extend_matrix(hc)
+        # append extended constituent
+        constituents.append(cons, hc)
+        # set model coordinates
+        setattr(constituents, 'longitude', lon)
+        setattr(constituents, 'latitude', lat)
+
+    # return the complex form of the model constituents
+    return constituents
+
+# PURPOSE: interpolate constants from tide models to input coordinates
+def interpolate_constants(ilon, ilat, constituents, **kwargs):
+    """
+    Interpolate constants from GOT tidal models to input coordinates
+
+    Makes initial calculations to run the tide program
+
+    Parameters
+    ----------
+    ilon: float
+        longitude to interpolate
+    ilat: float
+        latitude to interpolate
+    constituents: obj
+        Tide model constituents (complex form)
+    method: str, default 'spline'
+        Interpolation method
+
+            - ``'bilinear'``: quick bilinear interpolation
+            - ``'spline'``: scipy bivariate spline interpolation
+            - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
+    extrapolate: bool, default False
+        Extrapolate model using nearest-neighbors
+    cutoff: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to np.inf to extrapolate for all points
+    scale: float, default 1.0
+        Scaling factor for converting to output units
+
+    Returns
+    -------
+    amplitude: float
+        amplitudes of tidal constituents
+    phase: float
+        phases of tidal constituents
+    """
+    # set default keyword arguments
+    kwargs.setdefault('method', 'spline')
+    kwargs.setdefault('extrapolate', False)
+    kwargs.setdefault('cutoff', 10.0)
+    kwargs.setdefault('scale', 1.0)
+
+    # verify that constituents are valid class instance
+    assert isinstance(constituents, pyTMD.constituents)
+    # extract model coordinates
+    lon = np.copy(constituents.longitude)
+    lat = np.copy(constituents.latitude)
+
+    # adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(ilon)
+    ilat = np.atleast_1d(ilat)
+    # adjust longitudinal convention of input latitude and longitude
+    # to fit tide model convention
+    if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+        # input points convention (-180:180)
+        # tide model convention (0:360)
+        ilon[ilon<0.0] += 360.0
+    elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
+        # input points convention (0:360)
+        # tide model convention (-180:180)
+        ilon[ilon>180.0] -= 360.0
+    # number of points
+    npts = len(ilon)
+    # number of constituents
+    nc = len(constituents.fields)
+
+    # adjust longitudinal convention of input latitude and longitude
+    # to fit tide model convention
+    if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+        # input points convention (-180:180)
+        # tide model convention (0:360)
+        ilon[ilon<0.0] += 360.0
+    elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
+        # input points convention (0:360)
+        # tide model convention (-180:180)
+        ilon[ilon>180.0] -= 360.0
+
+    # amplitude and phase
+    amplitude = np.ma.zeros((npts,nc))
+    amplitude.mask = np.zeros((npts,nc),dtype=bool)
+    ph = np.ma.zeros((npts,nc))
+    ph.mask = np.zeros((npts,nc),dtype=bool)
+    # default complex fill value
+    fill_value = np.ma.default_fill_value(np.dtype(complex))
+    # read and interpolate each constituent
+    for i, c in enumerate(constituents.fields):
+        # get model constituent
+        hc = constituents.get(c)
+        # interpolated complex form of constituent oscillation
+        hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
+        hci.mask = np.zeros((npts),dtype=bool)
+        # interpolate amplitude and phase of the constituent
+        if (kwargs['method'] == 'bilinear'):
+            # replace invalid values with nan
+            hc[hc.mask] = np.nan
+            # use quick bilinear to interpolate values
+            hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype)
+            # replace nan values with fill_value
+            hci.mask[:] |= np.isnan(hci.data)
+            hci.data[hci.mask] = hci.fill_value
+        elif (kwargs['method'] == 'spline'):
+            # replace invalid values with fill value
+            hc[hc.mask] = fill_value
+            # interpolate complex form of the constituent
+            # use scipy splines to interpolate values
+            f1=scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.data.real.T, kx=1, ky=1)
+            f2=scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.data.imag.T, kx=1, ky=1)
+            f3=scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.mask.T, kx=1, ky=1)
+            hci.data.real[:] = f1.ev(ilon,ilat)
+            hci.data.imag[:] = f2.ev(ilon,ilat)
+            hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
+            # replace invalid values with fill_value
+            hci.data[hci.mask] = hci.fill_value
+        else:
+            # replace invalid values with fill value
+            hc[hc.mask] = fill_value
+            # interpolate complex form of the constituent
+            # use scipy regular grid to interpolate values
+            r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
+                hc.data, method=kwargs['method'], bounds_error=False,
+                fill_value=hci.fill_value)
+            r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
+                hc.mask, method=kwargs['method'], bounds_error=False,
+                fill_value=1)
+            hci.data[:] = r1.__call__(np.c_[ilat,ilon])
+            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
+            # replace invalid values with fill_value
+            hci.mask[:] |= (hci.data == hci.fill_value)
+            hci.data[hci.mask] = hci.fill_value
+        # extrapolate data using nearest-neighbors
+        if kwargs['extrapolate'] and np.any(hci.mask):
+            # find invalid data points
+            inv, = np.nonzero(hci.mask)
+            # replace invalid values with nan
+            hc[hc.mask] = np.nan
+            # extrapolate points within cutoff of valid model points
+            hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
+                dtype=hc.dtype, cutoff=kwargs['cutoff'])
+        # convert amplitude from input units to meters
+        amplitude.data[:,i] = np.abs(hci.data)*kwargs['scale']
+        amplitude.mask[:,i] = np.copy(hci.mask)
+        # phase of the constituent in radians
+        ph.data[:,i] = np.arctan2(-np.imag(hci.data),np.real(hci.data))
+        ph.mask[:,i] = np.copy(hci.mask)
+
+    # convert phase to degrees
+    phase = ph*180.0/np.pi
+    phase.data[phase.data < 0] += 360.0
+    # replace data for invalid mask values
+    amplitude.data[amplitude.mask] = amplitude.fill_value
+    phase.data[phase.mask] = phase.fill_value
+    # return the interpolated values
+    return (amplitude, phase)
+
+# PURPOSE: Extend a longitude array
 def extend_array(input_array, step_size):
     """
-    Wrapper function to extend an array
+    Extends a longitude array
 
     Parameters
     ----------
@@ -271,7 +484,7 @@ def extend_array(input_array, step_size):
         extended array
     """
     n = len(input_array)
-    temp = np.zeros((n+3),dtype=input_array.dtype)
+    temp = np.zeros((n+3), dtype=input_array.dtype)
     # extended array [x-1,x0,...,xN,xN+1,xN+2]
     temp[0] = input_array[0] - step_size
     temp[1:-2] = input_array[:]
@@ -279,10 +492,10 @@ def extend_array(input_array, step_size):
     temp[-1] = input_array[-1] + 2.0*step_size
     return temp
 
-# PURPOSE: wrapper function to extend a matrix
+# PURPOSE: Extend a global matrix
 def extend_matrix(input_matrix):
     """
-    Wrapper function to extend a matrix
+    Extends a global matrix
 
     Parameters
     ----------
@@ -294,8 +507,8 @@ def extend_matrix(input_matrix):
     temp: float
         extended matrix
     """
-    ny,nx = np.shape(input_matrix)
-    temp = np.ma.zeros((ny,nx+3),dtype=input_matrix.dtype)
+    ny, nx = np.shape(input_matrix)
+    temp = np.ma.zeros((ny,nx+3), dtype=input_matrix.dtype)
     temp[:,0] = input_matrix[:,-1]
     temp[:,1:-2] = input_matrix[:,:]
     temp[:,-2] = input_matrix[:,0]
@@ -378,4 +591,4 @@ def read_ascii_file(input_file, **kwargs):
     # set masks
     hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
     # return output variables
-    return (hc,lon,lat,cons)
+    return (hc, lon, lat, cons)

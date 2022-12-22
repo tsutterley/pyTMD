@@ -33,6 +33,7 @@ conventions for calculating radial pole tide displacements.
     api_reference/check_tide_points.rst
     api_reference/compute_tide_corrections.rst
     api_reference/constants.rst
+    api_reference/constituents.rst
     api_reference/convert_ll_xy.rst
     api_reference/eop.rst
     api_reference/io/ATLAS.rst

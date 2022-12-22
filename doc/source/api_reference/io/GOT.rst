@@ -20,6 +20,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.GOT.extract_constants
 
+.. autofunction:: pyTMD.io.GOT.read_constants
+
+.. autofunction:: pyTMD.io.GOT.interpolate_constants
+
 .. autofunction:: pyTMD.io.GOT.read_ascii_file
 
 .. autofunction:: pyTMD.io.GOT.extend_array
