@@ -195,6 +195,13 @@ def test_compare_GOT47(METHOD):
         difference =  hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
 
+    # validate iteration within constituents class
+    cons = iter(c1)
+    for field, hc in constituents:
+        # verify constituents
+        assert (field == next(cons))
+        assert np.ma.isMaskedArray(hc)
+
 # PURPOSE: Tests check point program
 def test_check_GOT47():
     lons = np.zeros((10)) + 178.0

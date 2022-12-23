@@ -196,8 +196,6 @@ def test_compare_FES2014(METHOD):
     eps = np.finfo(np.float16).eps
     # calculate differences between methods
     for i,cons in enumerate(c):
-        # verify constituents
-        assert (cons == constituents.fields[i])
         # calculate difference in amplitude and phase
         difference =  hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)

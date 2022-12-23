@@ -24,7 +24,6 @@ from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 from pyTMD.check_tide_points import check_tide_points
 from pyTMD.compute_tide_corrections import compute_tide_corrections
 from pyTMD.constants import constants, _ellipsoids
-from pyTMD.constituents import constituents
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections

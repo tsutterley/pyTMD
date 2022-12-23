@@ -82,7 +82,7 @@ import gzip
 import warnings
 import numpy as np
 import scipy.interpolate
-import pyTMD.constituents
+import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
@@ -114,7 +114,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     compressed: bool, default False
         Input files are gzip compressed
     scale: float, default 1.0
@@ -284,7 +284,7 @@ def read_constants(model_files=None, **kwargs):
         model_files = [model_files]
 
     # save output constituents
-    constituents = pyTMD.constituents()
+    constituents = pyTMD.io.constituents()
     # read each model constituent
     for i, model_file in enumerate(model_files):
         # check that model file is accessible
@@ -333,7 +333,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     scale: float, default 1.0
         Scaling factor for converting to output units
 
@@ -351,7 +351,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     kwargs.setdefault('scale', 1.0)
 
     # verify that constituents are valid class instance
-    assert isinstance(constituents, pyTMD.constituents)
+    assert isinstance(constituents, pyTMD.io.constituents)
     # extract model coordinates
     lon = np.copy(constituents.longitude)
     lat = np.copy(constituents.latitude)
@@ -372,7 +372,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     # number of points
     npts = len(ilon)
     # number of constituents
-    nc = len(constituents.fields)
+    nc = len(constituents)
 
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
@@ -392,7 +392,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     ph.mask = np.zeros((npts,nc),dtype=bool)
     # default complex fill value
     fill_value = np.ma.default_fill_value(np.dtype(complex))
-    # read and interpolate each constituent
+    # interpolate each constituent
     for i, c in enumerate(constituents.fields):
         # get model constituent
         hc = constituents.get(c)
@@ -402,7 +402,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         # interpolate amplitude and phase of the constituent
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
-            hc[hc.mask] = np.nan
+            hc.data[hc.mask] = np.nan
             # use quick bilinear to interpolate values
             hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
                 dtype=hc.dtype)
@@ -411,7 +411,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             hci.data[hci.mask] = hci.fill_value
         elif (kwargs['method'] == 'spline'):
             # replace invalid values with fill value
-            hc[hc.mask] = fill_value
+            hc.data[hc.mask] = fill_value
             # interpolate complex form of the constituent
             # use scipy splines to interpolate values
             f1=scipy.interpolate.RectBivariateSpline(lon, lat,
@@ -427,7 +427,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             hci.data[hci.mask] = hci.fill_value
         else:
             # replace invalid values with fill value
-            hc[hc.mask] = fill_value
+            hc.data[hc.mask] = fill_value
             # interpolate complex form of the constituent
             # use scipy regular grid to interpolate values
             r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
@@ -446,7 +446,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             # find invalid data points
             inv, = np.nonzero(hci.mask)
             # replace invalid values with nan
-            hc[hc.mask] = np.nan
+            hc.data[hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
             hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
                 dtype=hc.dtype, cutoff=kwargs['cutoff'])

@@ -93,7 +93,7 @@ import uuid
 import warnings
 import numpy as np
 import scipy.interpolate
-import pyTMD.constituents
+import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
@@ -148,7 +148,7 @@ def extract_constants(ilon, ilat,
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     compressed: bool, default False
         Input files are gzip compressed
     scale: float, default 1.0
@@ -268,7 +268,7 @@ def extract_constants(ilon, ilat,
     ph = np.ma.zeros((npts, nc))
     ph.mask = np.zeros((npts, nc), dtype=bool)
     # read and interpolate each constituent
-    for i,model_file in enumerate(model_files):
+    for i, model_file in enumerate(model_files):
         # check that model file is accessible
         if not os.access(os.path.expanduser(model_file), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(model_file))
@@ -441,7 +441,7 @@ def read_constants(grid_file=None, model_files=None, **kwargs):
     lon = extend_array(lon, dlon)
     bathymetry = extend_matrix(bathymetry)
     # save output constituents
-    constituents = pyTMD.constituents(
+    constituents = pyTMD.io.constituents(
         longitude=lon,
         latitude=lat,
         bathymetry=bathymetry.data,
@@ -449,7 +449,7 @@ def read_constants(grid_file=None, model_files=None, **kwargs):
         )
 
     # read each model constituent
-    for i,model_file in enumerate(model_files):
+    for i, model_file in enumerate(model_files):
         # check that model file is accessible
         if not os.access(os.path.expanduser(model_file), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(model_file))
@@ -504,7 +504,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     scale: float, default 1.0
         Scaling factor for converting to output units
 
@@ -524,7 +524,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     kwargs.setdefault('cutoff', 10.0)
     kwargs.setdefault('scale', 1.0)
     # verify that constituents are valid class instance
-    assert isinstance(constituents, pyTMD.constituents)
+    assert isinstance(constituents, pyTMD.io.constituents)
     # extract model coordinates
     lon = np.copy(constituents.longitude)
     lat = np.copy(constituents.latitude)
@@ -587,7 +587,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         unit_conv = 1.0
 
     # number of constituents
-    nc = len(constituents.fields)
+    nc = len(constituents)
     # amplitude and phase
     ampl = np.ma.zeros((npts, nc))
     ampl.mask = np.zeros((npts, nc), dtype=bool)
@@ -595,7 +595,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     ph.mask = np.zeros((npts, nc), dtype=bool)
     # default complex fill value
     fill_value = np.ma.default_fill_value(np.dtype(complex))
-    # read and interpolate each constituent
+    # interpolate each constituent
     for i, c in enumerate(constituents.fields):
         # get model constituent
         hc = constituents.get(c)

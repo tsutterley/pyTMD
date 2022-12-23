@@ -90,7 +90,7 @@ import uuid
 import warnings
 import numpy as np
 import scipy.interpolate
-import pyTMD.constituents
+import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
@@ -146,7 +146,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     compressed: bool, default False
         Input files are gzip compressed
     scale: float, default 1.0
@@ -197,7 +197,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=bool)
     # read and interpolate each constituent
-    for i,fi in enumerate(model_files):
+    for i, fi in enumerate(model_files):
         # check that model file is accessible
         if not os.access(os.path.expanduser(fi), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(fi))
@@ -224,7 +224,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         # interpolate amplitude and phase of the constituent
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
-            hc[hc.mask] = np.nan
+            hc.data[hc.mask] = np.nan
             # use quick bilinear to interpolate values
             hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
                 dtype=hc.dtype)
@@ -264,7 +264,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             # find invalid data points
             inv, = np.nonzero(hci.mask)
             # replace invalid values with nan
-            hc[hc.mask] = np.nan
+            hc.data[hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
             hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
                 dtype=hc.dtype, cutoff=kwargs['cutoff'])
@@ -326,9 +326,9 @@ def read_constants(model_files=None, **kwargs):
         model_files = [model_files]
 
     # save output constituents
-    constituents = pyTMD.constituents()
+    constituents = pyTMD.io.constituents()
     # read each model constituent
-    for i,fi in enumerate(model_files):
+    for i, fi in enumerate(model_files):
         # check that model file is accessible
         if not os.access(os.path.expanduser(fi), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(fi))
@@ -340,7 +340,7 @@ def read_constants(model_files=None, **kwargs):
             # FES netCDF4 constituent files
             hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
         # append extended constituent
-        constituents.append(i, hc)
+        constituents.append(str(i), hc)
         # set model coordinates
         setattr(constituents, 'longitude', lon)
         setattr(constituents, 'latitude', lat)
@@ -374,7 +374,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     scale: float, default 1.0
         Scaling factor for converting to output units
 
@@ -391,7 +391,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     kwargs.setdefault('cutoff', 10.0)
     kwargs.setdefault('scale', 1.0)
     # verify that constituents are valid class instance
-    assert isinstance(constituents, pyTMD.constituents)
+    assert isinstance(constituents, pyTMD.io.constituents)
     # extract model coordinates
     lon = np.copy(constituents.longitude)
     lat = np.copy(constituents.latitude)
@@ -412,7 +412,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     # number of points
     npts = len(ilon)
     # number of constituents
-    nc = len(constituents.fields)
+    nc = len(constituents)
 
     # amplitude and phase
     amplitude = np.ma.zeros((npts,nc))
@@ -421,7 +421,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     ph.mask = np.zeros((npts,nc), dtype=bool)
     # default complex fill value
     fill_value = np.ma.default_fill_value(np.dtype(complex))
-    # read and interpolate each constituent
+    # interpolate each constituent
     for i, c in enumerate(constituents.fields):
         # get model constituent
         hc = constituents.get(c)
@@ -448,7 +448,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             f2=scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.data.imag.T, kx=1, ky=1)
             f3=scipy.interpolate.RectBivariateSpline(lon, lat,
-                constituents.mask.T, kx=1, ky=1)
+                hc.mask.T, kx=1, ky=1)
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
             hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
@@ -463,7 +463,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
                 hc.data, method=kwargs['method'], bounds_error=False,
                 fill_value=hci.fill_value)
             r2 = scipy.interpolate.RegularGridInterpolator((lon, lat),
-                constituents.mask, method=kwargs['method'], bounds_error=False,
+                hc.mask, method=kwargs['method'], bounds_error=False,
                 fill_value=1)
             hci.data[:] = r1.__call__(np.c_[ilat,ilon])
             hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
