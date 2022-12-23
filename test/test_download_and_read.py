@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (11/2022)
+test_download_and_read.py (12/2022)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 12/2022: add check for read and interpolate constants
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
     Updated 10/2022: added encoding for reading ascii files
@@ -478,7 +479,7 @@ class Test_CATS2008:
             station_lon[s] = np.float64(lon)
             station_lat[s] = np.float64(lat)
 
-        # compare daily outputs at each station point
+        # compare outputs at each station point
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
             'Cape Roberts','Casey','Doake Ice Rumples','EE4A','EE4B',
             'Eklund Islands','Gerlache C','Groussac','Gurrachaga','Half Moon Is.',
@@ -540,6 +541,93 @@ class Test_CATS2008:
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
+
+    # parameterize type: heights versus currents
+    # parameterize interpolation method
+    parameters = []
+    parameters.append(dict(type='z',model='hf.CATS2008.out',grid='grid_CATS2008'))
+    parameters.append(dict(type='U',model='uv.CATS2008.out',grid='grid_CATS2008'))
+    parameters.append(dict(type='V',model='uv.CATS2008.out',grid='grid_CATS2008'))
+    @pytest.mark.parametrize("parameters", parameters)
+    @pytest.mark.parametrize("METHOD", ['spline'])
+    # PURPOSE: Tests that interpolated results are comparable
+    def test_compare_constituents(self, parameters, METHOD):
+        # model parameters for CATS2008
+        modelpath = os.path.join(filepath,'CATS2008')
+        grid_file = os.path.join(modelpath,parameters['grid'])
+        model_file = os.path.join(modelpath,parameters['model'])
+        TYPE = parameters['type']
+        GRID = 'OTIS'
+        EPSG = 'CATS2008'
+
+        # open Antarctic Tide Gauge (AntTG) database
+        AntTG = 'AntTG_ocean_height_v1.txt'
+        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
+            file_contents = f.read().splitlines()
+        # counts the number of lines in the header
+        count = 0
+        HEADER = True
+        # Reading over header text
+        while HEADER:
+            # check if file line at count starts with matlab comment string
+            HEADER = file_contents[count].startswith('%')
+            # add 1 to counter
+            count += 1
+        # rewind 1 line
+        count -= 1
+        # iterate over number of stations
+        antarctic_stations = (len(file_contents) - count)//10
+        stations = [None]*antarctic_stations
+        shortname = [None]*antarctic_stations
+        station_type = [None]*antarctic_stations
+        station_lon = np.zeros((antarctic_stations))
+        station_lat = np.zeros((antarctic_stations))
+        for s in range(antarctic_stations):
+            i = count + s*10
+            stations[s] = file_contents[i + 1].strip()
+            shortname[s] = file_contents[i + 3].strip()
+            lat,lon,_,_ = file_contents[i + 4].split()
+            station_type[s] = file_contents[i + 6].strip()
+            station_lon[s] = np.float64(lon)
+            station_lat[s] = np.float64(lat)
+
+        # compare outputs at each station point
+        invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
+            'Cape Roberts','Casey','Doake Ice Rumples','EE4A','EE4B',
+            'Eklund Islands','Gerlache C','Groussac','Gurrachaga','Half Moon Is.',
+            'Heard Island','Hobbs Pool','Mawson','McMurdo','Mikkelsen','Palmer',
+            'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
+            'Seymour Is','Terra Nova Bay']
+        # remove coastal stations from the list
+        i = [i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations = len(i)
+        # will verify differences between model outputs are within tolerance
+        eps = np.finfo(np.float16).eps
+
+        # extract amplitude and phase from tide model
+        amp1, ph1, D1, c = pyTMD.io.OTIS.extract_constants(station_lon[i],
+            station_lat[i], grid_file, model_file, EPSG, type=TYPE,
+            method=METHOD, grid=GRID)
+        # calculate complex form of constituent oscillation
+        hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
+
+        # read complex constituents from tide model
+        constituents = pyTMD.io.OTIS.read_constants(grid_file, model_file,
+            EPSG, type=TYPE, grid=GRID)
+        # interpolate constituents to station coordinates
+        amp2, ph2, D2 = pyTMD.io.OTIS.interpolate_constants(station_lon[i],
+            station_lat[i], constituents, EPSG, type=TYPE,
+            method=METHOD)
+        # calculate complex form of constituent oscillation
+        hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
+
+        # calculate differences between methods
+        difference = np.ma.zeros((valid_stations, len(c)))
+        difference.data[:] = hc1.data - hc2.data
+        difference.mask = (hc1.mask | hc2.mask)
+        difference.data[difference.mask] = 0.0
+        if not np.all(difference.mask):
+            assert np.all(np.abs(difference) < eps)
 
     # parameterize interpolation method
     # only use fast interpolation routines
@@ -743,6 +831,76 @@ class Test_AOTIM5_2018:
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
+
+    # parameterize type: heights versus currents
+    # parameterize interpolation method
+    parameters = []
+    parameters.append(dict(type='z',model='h_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='u',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='v',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    @pytest.mark.parametrize("parameters", parameters)
+    @pytest.mark.parametrize("METHOD", ['spline'])
+    # PURPOSE: Tests that interpolated results are comparable
+    def test_compare_constituents(self, parameters, METHOD):
+        # model parameters for AOTIM-5-2018
+        modelpath = os.path.join(filepath,'Arc5km2018')
+        grid_file = os.path.join(modelpath,parameters['grid'])
+        model_file = os.path.join(modelpath,parameters['model'])
+        TYPE = parameters['type']
+        GRID = 'OTIS'
+        EPSG = 'PSNorth'
+
+        # open Arctic Tidal Current Atlas list of records
+        ATLAS = 'List_of_records.txt'
+        with open(os.path.join(filepath,ATLAS),mode='r',encoding='utf8') as f:
+            file_contents = f.read().splitlines()
+        # skip 2 header rows
+        count = 2
+        # iterate over number of stations
+        arctic_stations = len(file_contents) - count
+        stations = [None]*arctic_stations
+        shortname = [None]*arctic_stations
+        station_lon = np.zeros((arctic_stations))
+        station_lat = np.zeros((arctic_stations))
+        for s in range(arctic_stations):
+            line_contents = file_contents[count+s].split()
+            stations[s] = line_contents[1]
+            shortname[s] = line_contents[2]
+            station_lat[s] = np.float64(line_contents[10])
+            station_lon[s] = np.float64(line_contents[11])
+
+        # compare outputs at each station point
+        invalid_list = ['BC1','KS12','KS14','BI3','BI4']
+        # remove coastal stations from the list
+        i = [i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations = len(i)
+        # will verify differences between model outputs are within tolerance
+        eps = np.finfo(np.float16).eps
+
+        # extract amplitude and phase from tide model
+        amp1,ph1,D1,c = pyTMD.io.OTIS.extract_constants(station_lon[i],
+            station_lat[i], grid_file, model_file, EPSG, type=TYPE,
+            method=METHOD, grid=GRID)
+        # calculate complex form of constituent oscillation
+        hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
+
+        # read complex constituents from tide model
+        constituents = pyTMD.io.OTIS.read_constants(grid_file, model_file,
+            EPSG, type=TYPE, grid=GRID)
+        # interpolate constituents to station coordinates
+        amp2,ph2,D2 = pyTMD.io.OTIS.interpolate_constants(station_lon[i],
+            station_lat[i], constituents, EPSG, type=TYPE,
+            method=METHOD)
+        # calculate complex form of constituent oscillation
+        hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
+
+        # calculate differences between methods
+        difference = np.ma.zeros((valid_stations, len(c)))
+        difference.data[:] = hc1.data - hc2.data
+        difference.mask = (hc1.mask | hc2.mask)
+        difference.data[difference.mask] = 0.0
+        if not np.all(difference.mask):
+            assert np.all(np.abs(difference) < eps)
 
     # parameterize interpolation method
     # only use fast interpolation routines

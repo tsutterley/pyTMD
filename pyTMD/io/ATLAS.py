@@ -240,10 +240,10 @@ def extract_constants(ilon, ilat,
     else:
         # use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.data.T, method=kwargs['method'],
+            bathymetry.data, method=kwargs['method'],
             bounds_error=False)
         r2 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.mask.T, method=kwargs['method'],
+            bathymetry.mask, method=kwargs['method'],
             bounds_error=False, fill_value=1)
         D.data[:] = r1.__call__(np.c_[ilat, ilon])
         D.mask[:] = np.ceil(r2.__call__(np.c_[ilat, ilon])).astype(bool)

@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 12/2022: add check for read and interpolate constants
     Updated 09/2021: added test for model definition files
         update check tide points to add compression flags
     Updated 07/2021: added test for invalid tide model name
@@ -144,6 +145,54 @@ def test_verify_GOT47(METHOD):
     difference.data[:] = tide.data - validation
     difference.mask = (tide.mask | validation.mask)
     if not np.all(difference.mask):
+        assert np.all(np.abs(difference) <= eps)
+
+# parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline','nearest'])
+# PURPOSE: Tests that interpolated results are comparable
+def test_compare_GOT47(METHOD):
+    # model parameters for GOT4.7
+    model_directory = os.path.join(filepath,'GOT4.7','grids_oceantide')
+    # perth3 test program infers m4 tidal constituent
+    model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
+        'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
+    GZIP = True
+    SCALE = 1.0
+
+    # read validation dataset
+    with gzip.open(os.path.join(filepath,'perth_output_got4.7.gz'),'r') as fid:
+        file_contents = fid.read().decode('ISO-8859-1').splitlines()
+    # extract latitude, longitude, time (Modified Julian Days) and tide data
+    npts = len(file_contents) - 2
+    latitude = np.zeros((npts))
+    longitude = np.zeros((npts))
+    for i in range(npts):
+        line_contents = file_contents[i+2].split()
+        latitude[i] = np.float64(line_contents[0])
+        longitude[i] = np.float64(line_contents[1])
+
+    # extract amplitude and phase from tide model
+    amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(longitude, latitude,
+        model_file, method=METHOD, compressed=GZIP, scale=SCALE)
+    # calculate complex form of constituent oscillation
+    hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
+
+    # read and interpolate constituents from tide model
+    constituents = pyTMD.io.GOT.read_constants(model_file, compressed=GZIP)
+    amp2, ph2 = pyTMD.io.GOT.interpolate_constants(longitude, latitude,
+        constituents, method=METHOD, scale=SCALE)
+    # calculate complex form of constituent oscillation
+    hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
+
+    # will verify differences between model outputs are within tolerance
+    eps = np.finfo(np.float16).eps
+    # calculate differences between methods
+    for i,cons in enumerate(c1):
+        # verify constituents
+        assert (cons == constituents.fields[i])
+        # calculate difference in amplitude and phase
+        difference =  hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
 
 # PURPOSE: Tests check point program
