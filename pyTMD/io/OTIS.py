@@ -673,6 +673,8 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
             # set model bathymetry and mask
             setattr(constituents, 'bathymetry', hz)
             setattr(constituents, 'mask', mz)
+            # append extended constituent
+            constituents.append(c, z)
 
         elif kwargs['type'] in ('U','u'):
             # read constituent from transport file
@@ -699,6 +701,8 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
             # set model bathymetry and mask
             setattr(constituents, 'bathymetry', hu)
             setattr(constituents, 'mask', mu)
+            # append extended constituent
+            constituents.append(c, u)
 
         elif kwargs['type'] in ('V','v'):
             # read constituent from transport file
@@ -725,6 +729,8 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
             # set model bathymetry and mask
             setattr(constituents, 'bathymetry', hv)
             setattr(constituents, 'mask', mv)
+            # append extended constituent
+            constituents.append(c, v)
 
     # return the complex form of the model constituents
     return constituents

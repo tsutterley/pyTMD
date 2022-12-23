@@ -212,9 +212,12 @@ def extract_constants(ilon, ilat,
 
     # grid step size of tide model
     dlon = lon[1] - lon[0]
+    dlat = lat[1] - lat[0]
     # replace original values with extend arrays/matrices
     lon = extend_array(lon, dlon)
     bathymetry = extend_matrix(bathymetry)
+    # create masks
+    bathymetry.mask = (bathymetry.data == 0)
 
     # number of points
     npts = len(ilon)
@@ -277,6 +280,8 @@ def extract_constants(ilon, ilat,
             constituents.append(cons)
             # replace original values with extend matrices
             z = extend_matrix(z)
+            # update constituent mask with bathymetry mask
+            z.mask[:] |= bathymetry.mask[:]
             # interpolate amplitude and phase of the constituent
             z1 = np.ma.zeros((npts), dtype=z.dtype)
             z1.mask = np.zeros((npts), dtype=bool)
@@ -329,6 +334,8 @@ def extract_constants(ilon, ilat,
             constituents.append(cons)
             # replace original values with extend matrices
             tr = extend_matrix(tr)
+            # update constituent mask with bathymetry mask
+            tr.mask[:] |= bathymetry.mask[:]
             # interpolate amplitude and phase of the constituent
             tr1 = np.ma.zeros((npts), dtype=tr.dtype)
             tr1.mask = np.zeros((npts), dtype=bool)
@@ -456,6 +463,7 @@ def read_constants(grid_file=None, model_files=None, **kwargs):
                 compressed=kwargs['compressed'])
         # replace original values with extend matrices
         hc = extend_matrix(hc)
+        hc.mask[:] |= bathymetry.mask[:]
         # append extended constituent
         constituents.append(cons,  hc)
 
@@ -596,7 +604,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         hci.mask = np.zeros((npts), dtype=bool)
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
-            hc.data[bathymetry.mask] = np.nan
+            hc.data[hc.mask] = np.nan
             hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
                 dtype=hc.dtype)
             # mask invalid values
@@ -604,7 +612,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             hci.data[hci.mask] = hci.fill_value
         elif (kwargs['method'] == 'spline'):
             # replace invalid values with fill value
-            hc.data[bathymetry.mask] = fill_value
+            hc.data[hc.mask] = fill_value
             # use scipy splines to interpolate values
             f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.real.T, kx=1, ky=1)
@@ -617,7 +625,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             hci.data[hci.mask] = hci.fill_value
         else:
             # replace invalid values with fill value
-            hc.data[bathymetry.mask] = fill_value
+            hc.data[hc.mask] = fill_value
             # use scipy regular grid to interpolate values
             r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
                 hc, method=kwargs['method'], bounds_error=False,
@@ -631,7 +639,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             # find invalid data points
             inv, = np.nonzero(hci.mask)
             # replace invalid values with nan
-            hc[constituents.mask] = np.nan
+            hc[hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
             hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
                 dtype=hc.dtype, cutoff=kwargs['cutoff'])
