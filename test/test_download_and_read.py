@@ -444,7 +444,7 @@ class Test_CATS2008:
         modelpath = os.path.join(filepath,'CATS2008')
         grid_file = os.path.join(modelpath,'grid_CATS2008')
         model_file = os.path.join(modelpath,'uv.CATS2008.out')
-        TYPES = ['u','v']
+        TYPES = ['U','V']
         GRID = 'OTIS'
         EPSG = 'CATS2008'
 
@@ -734,8 +734,8 @@ class Test_AOTIM5_2018:
     # parameterize type: heights versus currents
     parameters = []
     parameters.append(dict(type='z',model='h_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='u',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='v',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='U',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='V',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
     @pytest.mark.parametrize("parameters", parameters)
     # PURPOSE: Tests that interpolated results are comparable to Matlab program
     def test_verify_AOTIM5_2018(self, parameters):
@@ -836,8 +836,8 @@ class Test_AOTIM5_2018:
     # parameterize interpolation method
     parameters = []
     parameters.append(dict(type='z',model='h_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='u',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='v',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='U',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='V',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
     @pytest.mark.parametrize("parameters", parameters)
     @pytest.mark.parametrize("METHOD", ['spline'])
     # PURPOSE: Tests that interpolated results are comparable

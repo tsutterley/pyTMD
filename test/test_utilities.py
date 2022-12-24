@@ -36,3 +36,8 @@ def test_even():
     for s,i in zip([2015,1916,591,99,10,3],[2014,1916,590,98,10,2]):
         TEST = pyTMD.utilities.even(s)
         assert (TEST == i)
+
+def test_ceil():
+    for s,i in zip([-2.5, 0.0, 2.5], [-2, 0, 3]):
+        TEST = pyTMD.utilities.ceil(s)
+        assert (TEST == i)

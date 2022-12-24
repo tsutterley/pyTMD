@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (09/2021)
+test_perth3_read.py (12/2022)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -201,6 +201,16 @@ def test_compare_GOT47(METHOD):
         # verify constituents
         assert (field == next(cons))
         assert np.ma.isMaskedArray(hc)
+        # validate amplitude and phase functions
+        amp = constituents.amplitude(field)
+        phase = constituents.phase(field)
+        assert np.ma.isMaskedArray(amp)
+        assert np.ma.isMaskedArray(phase)
+        # calculate complex form of constituent oscillation
+        hcomplex = amp*np.exp(-1j*phase*np.pi/180.0)
+        # calculate difference in amplitude and phase
+        difference = hc - hcomplex
+        assert np.all(np.abs(difference) <= eps)
 
 # PURPOSE: Tests check point program
 def test_check_GOT47():

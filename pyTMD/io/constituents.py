@@ -4,9 +4,15 @@ constituents.py
 Written by Tyler Sutterley (12/2022)
 Basic tide model constituent class
 
+PYTHON DEPENDENCIES:
+    numpy: Scientific Computing Tools For Python
+        https://numpy.org
+        https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
+
 UPDATE HISTORY:
     Written 12/2022
 """
+import numpy as np
 
 class constituents:
     """
@@ -94,6 +100,51 @@ class constituents:
         setattr(self, field, constituent)
         return self
 
+    def amplitude(self, field):
+        """
+        Calculate the amplitude of a tide model constituent
+
+        Parameters
+        ----------
+        field: str
+            Tide model constituent name
+
+        Returns
+        -------
+        amp: float
+            Tide model constituent amplitude
+        """
+        constituent = getattr(self, field)
+        # calculate constituent amplitude
+        amp = np.abs(constituent)
+        # update mask and fill values
+        amp.mask = np.copy(constituent.mask)
+        amp.data[amp.mask] = amp.fill_value
+        return amp
+
+    def phase(self, field):
+        """
+        Calculate the phase of a tide model constituent
+
+        Parameters
+        ----------
+        field: str
+            Tide model constituent name
+
+        Returns
+        -------
+        ph: float
+            Tide model constituent phase (degrees)
+        """
+        constituent = getattr(self, field)
+        # calculate constituent phase and convert to degrees
+        ph = 180.0*np.arctan2(-np.imag(constituent), np.real(constituent))/np.pi
+        ph.data[ph.data < 0] += 360.0
+        # update mask and fill values
+        ph.mask = np.copy(constituent.mask)
+        ph.data[ph.mask] = ph.fill_value
+        return ph
+
     def __len__(self):
         """Number of constituents
         """
@@ -110,8 +161,8 @@ class constituents:
         """
         try:
             field = self.fields[self.__index__]
-        except IndexError as esc:
-            raise StopIteration from esc
+        except IndexError as exc:
+            raise StopIteration from exc
         # get the model constituent
         constituent = getattr(self, field)
         self.__index__ += 1
