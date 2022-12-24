@@ -527,11 +527,11 @@ class Test_CATS2008:
         # compute tidal ellipse parameters for python program
         test = {}
         test['umajor'],test['uminor'],test['uincl'],test['uphase'] = \
-            pyTMD.tidal_ellipse(hc1['u'],hc1['v'])
+            pyTMD.tidal_ellipse(hc1['U'],hc1['V'])
         # compute tidal ellipse parameters for TMD matlab program
         valid = {}
         valid['umajor'],valid['uminor'],valid['uincl'],valid['uphase'] = \
-            octave.TideEl(hc2['u'],hc2['v'],nout=4)
+            octave.TideEl(hc2['U'],hc2['V'],nout=4)
 
         # calculate differences between matlab and python version
         for key in ['umajor','uminor','uincl','uphase']:
