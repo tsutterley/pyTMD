@@ -109,6 +109,13 @@ def test_parse_date_string():
     assert np.all(epoch == [2000,1,1,12,0,0])
     assert (to_secs == 0.0)
 
+# PURPOSE: test isoformat
+def test_isoformat():
+    time_string = '2000-01-01'
+    output = pyTMD.utilities.isoformat(time_string)
+    validation = '2000-01-01T00:00:00'
+    assert output == validation
+
 # PURPOSE: verify forward and backwards delta time conversions
 @pytest.mark.parametrize("delta_time", np.random.randint(1,31536000,size=4))
 def test_delta_time(delta_time, gps_epoch=1198800018.0):

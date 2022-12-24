@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
+        new functions to read and interpolate from constituents class
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 07/2022: fix setting of masked array data to NaN
@@ -92,6 +93,7 @@ import uuid
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
 
@@ -105,7 +107,7 @@ except (ImportError, ModuleNotFoundError) as e:
 # ignore warnings
 warnings.filterwarnings("ignore")
 
-# PURPOSE: extract tidal harmonic constants from tide models at coordinates
+# PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(ilon, ilat,
     grid_file=None,
     model_files=None,
@@ -146,7 +148,7 @@ def extract_constants(ilon, ilat,
     cutoff: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     compressed: bool, default False
         Input files are gzip compressed
     scale: float, default 1.0
@@ -161,7 +163,7 @@ def extract_constants(ilon, ilat,
     D: float
         bathymetry of tide model
     constituents: list
-        list of model constituents
+        Tide model constituent names
     """
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
@@ -241,10 +243,11 @@ def extract_constants(ilon, ilat,
     else:
         # use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.data, method=kwargs['method'], bounds_error=False)
+            bathymetry.data, method=kwargs['method'],
+            bounds_error=False)
         r2 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.mask, method=kwargs['method'], bounds_error=False,
-            fill_value=1)
+            bathymetry.mask, method=kwargs['method'],
+            bounds_error=False, fill_value=1)
         D.data[:] = r1.__call__(np.c_[ilat, ilon])
         D.mask[:] = np.ceil(r2.__call__(np.c_[ilat, ilon])).astype(bool)
 
@@ -265,16 +268,16 @@ def extract_constants(ilon, ilat,
     ph = np.ma.zeros((npts, nc))
     ph.mask = np.zeros((npts, nc), dtype=bool)
     # read and interpolate each constituent
-    for i,model_file in enumerate(model_files):
+    for i, model_file in enumerate(model_files):
         # check that model file is accessible
         if not os.access(os.path.expanduser(model_file), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(model_file))
         if (kwargs['type'] == 'z'):
             # read constituent from elevation file
-            z,con = read_netcdf_elevation(model_file,
+            z, cons = read_netcdf_elevation(model_file,
                 compressed=kwargs['compressed'])
             # append constituent to list
-            constituents.append(con)
+            constituents.append(cons)
             # replace original values with extend matrices
             z = extend_matrix(z)
             # update constituent mask with bathymetry mask
@@ -325,10 +328,10 @@ def extract_constants(ilon, ilat,
             ph.mask[:,i] = np.copy(z1.mask)
         elif kwargs['type'] in ('U','u','V','v'):
             # read constituent from transport file
-            tr,con = read_netcdf_transport(model_file, kwargs['type'],
+            tr, cons = read_netcdf_transport(model_file, kwargs['type'],
                 compressed=kwargs['compressed'])
             # append constituent to list
-            constituents.append(con)
+            constituents.append(cons)
             # replace original values with extend matrices
             tr = extend_matrix(tr)
             # update constituent mask with bathymetry mask
@@ -339,12 +342,13 @@ def extract_constants(ilon, ilat,
             if (kwargs['method'] == 'bilinear'):
                 # replace invalid values with nan
                 tr.data[tr.mask] = np.nan
-                tr1.data[:]=bilinear_interp(lon, lat, tr, ilon, ilat,
+                tr1.data[:] = bilinear_interp(lon, lat, tr, ilon, ilat,
                     dtype=tr.dtype)
                 # mask invalid values
                 tr1.mask[:] |= np.copy(D.mask)
                 tr1.data[tr1.mask] = tr1.fill_value
             elif (kwargs['method'] == 'spline'):
+                # use scipy splines to interpolate values
                 f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
                     tr.data.real.T, kx=1, ky=1)
                 f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
@@ -353,7 +357,7 @@ def extract_constants(ilon, ilat,
                 tr1.data.imag = f2.ev(ilon,ilat)
                 # mask invalid values
                 tr1.mask[:] |= np.copy(D.mask)
-                tr1.data[tr1.mask] = z1.fill_value
+                tr1.data[tr1.mask] = tr1.fill_value
             else:
                 # use scipy regular grid to interpolate values
                 r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
@@ -387,10 +391,277 @@ def extract_constants(ilon, ilat,
     # return the interpolated values
     return (amplitude, phase, D, constituents)
 
-# PURPOSE: wrapper function to extend an array
+# PURPOSE: read harmonic constants from tide models
+def read_constants(grid_file=None, model_files=None, **kwargs):
+    """
+    Reads files for ATLAS netCDF4 tidal models
+
+    Parameters
+    ----------
+    grid_file: str or NoneType, default None
+        grid file for model
+    model_files: list or NoneType, default None
+        list of model files for each constituent
+    type: str, default 'z'
+        Tidal variable to read
+
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+    compressed: bool, default False
+        Input files are gzip compressed
+
+    Returns
+    -------
+    constituents: obj
+        complex form of tide model constituents
+    """
+    # set default keyword arguments
+    kwargs.setdefault('type', 'z')
+    kwargs.setdefault('compressed', True)
+
+    # raise warning if model files are entered as a string
+    if isinstance(model_files,str):
+        warnings.warn("Tide model is entered as a string")
+        model_files = [model_files]
+
+    # check that grid file is accessible
+    if not os.access(os.path.expanduser(grid_file), os.F_OK):
+        raise FileNotFoundError(os.path.expanduser(grid_file))
+
+    # read the tide grid file for bathymetry and spatial coordinates
+    lon, lat, bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
+        compressed=kwargs['compressed'])
+
+    # grid step size of tide model
+    dlon = lon[1] - lon[0]
+    # replace original values with extend arrays/matrices
+    lon = extend_array(lon, dlon)
+    bathymetry = extend_matrix(bathymetry)
+    # save output constituents
+    constituents = pyTMD.io.constituents(
+        longitude=lon,
+        latitude=lat,
+        bathymetry=bathymetry.data,
+        mask=bathymetry.mask
+        )
+
+    # read each model constituent
+    for i, model_file in enumerate(model_files):
+        # check that model file is accessible
+        if not os.access(os.path.expanduser(model_file), os.F_OK):
+            raise FileNotFoundError(os.path.expanduser(model_file))
+        if (kwargs['type'] == 'z'):
+            # read constituent from elevation file
+            hc, cons = read_netcdf_elevation(model_file,
+                compressed=kwargs['compressed'])
+        elif kwargs['type'] in ('U','u','V','v'):
+            # read constituent from transport file
+            hc, cons = read_netcdf_transport(model_file, kwargs['type'],
+                compressed=kwargs['compressed'])
+        # replace original values with extend matrices
+        hc = extend_matrix(hc)
+        hc.mask[:] |= bathymetry.mask[:]
+        # append extended constituent
+        constituents.append(cons,  hc)
+
+    # return the complex form of the model constituents
+    return constituents
+
+# PURPOSE: interpolate constants from tide models to input coordinates
+def interpolate_constants(ilon, ilat, constituents, **kwargs):
+    """
+    Interpolate constants from ATLAS tidal models to input coordinates
+
+    Makes initial calculations to run the tide program
+
+    Parameters
+    ----------
+    ilon: float
+        longitude to interpolate
+    ilat: float
+        latitude to interpolate
+    constituents: obj
+        Tide model constituents (complex form)
+    type: str, default 'z'
+        Tidal variable to read
+
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+    method: str, default 'spline'
+        Interpolation method
+
+            - ``'bilinear'``: quick bilinear interpolation
+            - ``'spline'``: scipy bivariate spline interpolation
+            - ``'linear'``, ``'nearest'``: scipy regular grid interpolations
+    extrapolate: bool, default False
+        Extrapolate model using nearest-neighbors
+    cutoff: float, default 10.0
+        Extrapolation cutoff in kilometers
+
+        Set to ``np.inf`` to extrapolate for all points
+    scale: float, default 1.0
+        Scaling factor for converting to output units
+
+    Returns
+    -------
+    amplitude: float
+        amplitudes of tidal constituents
+    phase: float
+        phases of tidal constituents
+    D: float
+        bathymetry of tide model
+    """
+    # set default keyword arguments
+    kwargs.setdefault('type', 'z')
+    kwargs.setdefault('method', 'spline')
+    kwargs.setdefault('extrapolate', False)
+    kwargs.setdefault('cutoff', 10.0)
+    kwargs.setdefault('scale', 1.0)
+    # verify that constituents are valid class instance
+    assert isinstance(constituents, pyTMD.io.constituents)
+    # extract model coordinates
+    lon = np.copy(constituents.longitude)
+    lat = np.copy(constituents.latitude)
+
+    # adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(ilon)
+    ilat = np.atleast_1d(ilat)
+    # adjust longitudinal convention of input latitude and longitude
+    # to fit tide model convention
+    if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+        # input points convention (-180:180)
+        # tide model convention (0:360)
+        ilon[ilon < 0.0] += 360.0
+    elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
+        # input points convention (0:360)
+        # tide model convention (-180:180)
+        ilon[ilon > 180.0] -= 360.0
+
+    # number of points
+    npts = len(ilon)
+    # create masked array of model bathymetry
+    bathymetry = np.ma.array(constituents.bathymetry,
+        mask=constituents.mask, fill_value=0.0)
+    # interpolate bathymetry and mask to output points
+    D = np.ma.zeros((npts))
+    D.mask = np.zeros((npts), dtype=bool)
+    if (kwargs['method'] == 'bilinear'):
+        # replace invalid values with nan
+        bathymetry.data[bathymetry.mask] = np.nan
+        # use quick bilinear to interpolate values
+        D.data[:] = bilinear_interp(lon, lat, bathymetry, ilon, ilat)
+        # replace nan values with fill_value
+        D.mask[:] = np.isnan(D.data)
+        D.data[D.mask] = D.fill_value
+    elif (kwargs['method'] == 'spline'):
+        # use scipy bivariate splines to interpolate values
+        f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
+            bathymetry.data.T, kx=1, ky=1)
+        f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
+            bathymetry.mask.T, kx=1, ky=1)
+        D.data[:] = f1.ev(ilon,ilat)
+        D.mask[:] = np.ceil(f2.ev(ilon,ilat)).astype(bool)
+    else:
+        # use scipy regular grid to interpolate values for a given method
+        r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
+            bathymetry.data, method=kwargs['method'],
+            bounds_error=False)
+        r2 = scipy.interpolate.RegularGridInterpolator((lat, lon),
+            bathymetry.mask, method=kwargs['method'],
+            bounds_error=False, fill_value=1)
+        D.data[:] = r1.__call__(np.c_[ilat, ilon])
+        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat, ilon])).astype(bool)
+
+    # u and v are velocities in cm/s
+    if kwargs['type'] in ('v','u'):
+        unit_conv = (D.data/100.0)
+    # h is elevation values in m
+    # U and V are transports in m^2/s
+    elif kwargs['type'] in ('z','V','U'):
+        unit_conv = 1.0
+
+    # number of constituents
+    nc = len(constituents)
+    # amplitude and phase
+    ampl = np.ma.zeros((npts, nc))
+    ampl.mask = np.zeros((npts, nc), dtype=bool)
+    ph = np.ma.zeros((npts, nc))
+    ph.mask = np.zeros((npts, nc), dtype=bool)
+    # default complex fill value
+    fill_value = np.ma.default_fill_value(np.dtype(complex))
+    # interpolate each constituent
+    for i, c in enumerate(constituents.fields):
+        # get model constituent
+        hc = constituents.get(c)
+        # interpolate amplitude and phase of the constituent
+        hci = np.ma.zeros((npts), dtype=hc.dtype)
+        hci.mask = np.zeros((npts), dtype=bool)
+        if (kwargs['method'] == 'bilinear'):
+            # replace invalid values with nan
+            hc.data[hc.mask] = np.nan
+            hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype)
+            # mask invalid values
+            hci.mask[:] |= np.copy(D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        elif (kwargs['method'] == 'spline'):
+            # replace invalid values with fill value
+            hc.data[hc.mask] = fill_value
+            # use scipy splines to interpolate values
+            f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.real.T, kx=1, ky=1)
+            f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
+                hc.imag.T, kx=1, ky=1)
+            hci.data.real = f1.ev(ilon,ilat)
+            hci.data.imag = f2.ev(ilon,ilat)
+            # mask invalid values
+            hci.mask[:] |= np.copy(D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        else:
+            # replace invalid values with fill value
+            hc.data[hc.mask] = fill_value
+            # use scipy regular grid to interpolate values
+            r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
+                hc, method=kwargs['method'], bounds_error=False,
+                fill_value=hci.fill_value)
+            hci.data[:] = r1.__call__(np.c_[ilat, ilon])
+            # mask invalid values
+            hci.mask[:] |= np.copy(D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        # extrapolate data using nearest-neighbors
+        if kwargs['extrapolate'] and np.any(hci.mask):
+            # find invalid data points
+            inv, = np.nonzero(hci.mask)
+            # replace invalid values with nan
+            hc[hc.mask] = np.nan
+            # extrapolate points within cutoff of valid model points
+            hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
+                dtype=hc.dtype, cutoff=kwargs['cutoff'])
+        # convert units
+        # amplitude and phase of the constituent
+        ampl.data[:,i] = np.abs(hci.data)/unit_conv
+        ampl.mask[:,i] = np.copy(hci.mask)
+        ph.data[:,i] = np.arctan2(-np.imag(hci.data), np.real(hci.data))
+        ph.mask[:,i] = np.copy(hci.mask)
+
+    # convert amplitude from input units to meters
+    amplitude = ampl*kwargs['scale']
+    # convert phase to degrees
+    phase = ph*180.0/np.pi
+    phase[phase < 0] += 360.0
+    # return the interpolated values
+    return (amplitude, phase, D)
+
+# PURPOSE: Extend a longitude array
 def extend_array(input_array, step_size):
     """
-    Wrapper function to extend an array
+    Extends a longitude array
 
     Parameters
     ----------
@@ -412,10 +683,10 @@ def extend_array(input_array, step_size):
     temp[-1] = input_array[-1] + step_size
     return temp
 
-# PURPOSE: wrapper function to extend a matrix
+# PURPOSE: Extend a global matrix
 def extend_matrix(input_matrix):
     """
-    Wrapper function to extend a matrix
+    Extends a global matrix
 
     Parameters
     ----------
@@ -427,7 +698,7 @@ def extend_matrix(input_matrix):
     temp: float
         extended matrix
     """
-    ny,nx = np.shape(input_matrix)
+    ny, nx = np.shape(input_matrix)
     temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
     temp[:,0] = input_matrix[:,-1]
     temp[:,1:-1] = input_matrix[:,:]
@@ -471,9 +742,9 @@ def read_netcdf_grid(input_file, variable, **kwargs):
     if kwargs['compressed']:
         # read gzipped netCDF4 file
         f = gzip.open(os.path.expanduser(input_file), 'rb')
-        fileID=netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
+        fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID=netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
     # variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size

@@ -39,6 +39,7 @@ conventions for calculating radial pole tide displacements.
     api_reference/io/FES.rst
     api_reference/io/GOT.rst
     api_reference/io/OTIS.rst
+    api_reference/io/constituents.rst
     api_reference/io/ocean_pole_tide.rst
     api_reference/load_constituent.rst
     api_reference/load_nodal_corrections.rst

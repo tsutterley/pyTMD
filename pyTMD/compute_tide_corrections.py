@@ -292,12 +292,14 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
             model.model_file, model.projection, type=model.type,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             grid=model.format, apply_flexure=APPLY_FLEXURE)
+        # use delta time at 2000.0 to match TMD outputs
         deltat = np.zeros_like(t)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
             model.model_file, type=model.type, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
+        # use delta time at 2000.0 to match TMD outputs
         deltat = np.zeros_like(t)
     elif (model.format == 'GOT'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,

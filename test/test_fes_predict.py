@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (09/2021)
+test_fes_predict.py (12/2022)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 12/2022: add check for read and interpolate constants
     Updated 09/2021: update check tide points to add compression flags
     Updated 05/2021: added test for check point program
     Updated 03/2021: use pytest fixture to setup and teardown model data
@@ -121,7 +122,7 @@ def test_verify_FES2014():
     # extract amplitude and phase from tide model
     amp,ph = pyTMD.io.FES.extract_constants(longitude,
         latitude, model_file, type=TYPE, version=VERSION,
-        method='spline', compressed=True, scale=SCALE,)
+        method='spline', compressed=True, scale=SCALE)
     # interpolate delta times from calendar dates to tide time
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
     deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
@@ -147,6 +148,56 @@ def test_verify_FES2014():
     difference.data[:] = tide.data - validation
     difference.mask = np.copy(tide.mask)
     if not np.all(difference.mask):
+        assert np.all(np.abs(difference) <= eps)
+
+# parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline'])
+# PURPOSE: Tests that interpolated results are comparable
+def test_compare_FES2014(METHOD):
+    # model parameters for FES2014
+    model_directory = os.path.join(filepath,'fes2014','ocean_tide')
+    # constituent files included in test
+    model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
+        'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
+        'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
+    c = ['2n2','k1','k2','m2','m4','mf','mm','msqm','mtm','n2','o1',
+        'p1','q1','s1','s2']
+    VERSION = 'FES2014'
+    TYPE = 'z'
+    SCALE = 1.0
+
+    # read validation dataset
+    # extract time (Modified Julian Days), latitude, longitude, and tide data
+    names = ('CNES','Hour','Latitude','Longitude','Short_tide','LP_tide',
+        'Pure_tide','Geo_tide','Rad_tide')
+    formats = ('f','i','f','f','f','f','f','f','f')
+    file_contents = np.loadtxt(os.path.join(filepath,'fes_slev.txt.gz'),
+        skiprows=1,dtype=dict(names=names,formats=formats))
+    longitude = file_contents['Longitude']
+    latitude = file_contents['Latitude']
+
+    # extract amplitude and phase from tide model
+    amp1, ph1 = pyTMD.io.FES.extract_constants(longitude,
+        latitude, model_file, type=TYPE, version=VERSION,
+        method=METHOD, compressed=True, scale=SCALE)
+    # calculate complex form of constituent oscillation
+    hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
+
+    # read and interpolate constituents from tide model
+    constituents = pyTMD.io.FES.read_constants(model_file,
+        type=TYPE, version=VERSION, compressed=True)
+    amp2, ph2 = pyTMD.io.FES.interpolate_constants(longitude, latitude,
+        constituents, method=METHOD, scale=SCALE)
+    # calculate complex form of constituent oscillation
+    hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
+
+    # will verify differences between model outputs are within tolerance
+    eps = np.finfo(np.float16).eps
+    # calculate differences between methods
+    for i,cons in enumerate(c):
+        # calculate difference in amplitude and phase
+        difference =  hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
 
 # PURPOSE: test definition file functionality

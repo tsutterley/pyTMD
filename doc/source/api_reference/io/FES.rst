@@ -27,6 +27,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.FES.extract_constants
 
+.. autofunction:: pyTMD.io.FES.read_constants
+
+.. autofunction:: pyTMD.io.FES.interpolate_constants
+
 .. autofunction:: pyTMD.io.FES.read_ascii_file
 
 .. autofunction:: pyTMD.io.FES.read_netcdf_file

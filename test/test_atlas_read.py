@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (11/2022)
+test_atlas_read.py (12/2022)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 12/2022: add check for read and interpolate constants
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 09/2021: added test for model definition files
     Updated 03/2021: use pytest fixture to setup and teardown model data
@@ -158,6 +159,55 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
         ph_diff = ph[:,i] - val[f'{cons}_ph']
         assert np.all(np.abs(amp_diff) <= amp_eps)
         assert np.all(np.abs(ph_diff) <= ph_eps)
+
+# parameterize interpolation method
+@pytest.mark.parametrize("METHOD", ['spline'])
+# PURPOSE: Tests that interpolated results are comparable
+def test_compare_TPXO9_v2(METHOD):
+    # model parameters for TPXO9-atlas-v2
+    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
+    # model grid file
+    grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
+    # constituent files included in test
+    model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
+        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    model_file = [os.path.join(model_directory,m) for m in model_files]
+    TYPE = 'z'
+    SCALE = 1.0
+    GZIP = True
+
+    # read validation dataset (m2, s2, k1, o1)
+    names = ('Lat', 'Lon', 'm2_amp', 'm2_ph', 's2_amp', 's2_ph',
+        'k1_amp', 'k1_ph', 'o1_amp', 'o1_ph')
+    formats = ('f','f','f','f','f','f','f','f','f','f')
+    val = np.loadtxt(os.path.join(filepath,'extract_HC_sample_out.gz'),
+        skiprows=3,dtype=dict(names=names,formats=formats))
+
+    # extract amplitude and phase from tide model
+    amp1, ph1, D1, c1 = pyTMD.io.ATLAS.extract_constants(
+        val['Lon'], val['Lat'], grid_file, model_file, type=TYPE,
+        method=METHOD, scale=SCALE, compressed=GZIP)
+    # calculate complex form of constituent oscillation
+    hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
+
+    # read and interpolate constituents from tide model
+    constituents = pyTMD.io.ATLAS.read_constants(grid_file, model_file,
+        type=TYPE, compressed=GZIP)
+    amp2, ph2, D2 = pyTMD.io.ATLAS.interpolate_constants(
+        val['Lon'], val['Lat'], constituents, type=TYPE,
+        method=METHOD, scale=SCALE)
+    # calculate complex form of constituent oscillation
+    hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
+
+    # will verify differences between model outputs are within tolerance
+    eps = np.finfo(np.float16).eps
+    # calculate differences between methods
+    for i,cons in enumerate(c1):
+        # verify constituents
+        assert (cons == constituents.fields[i])
+        # calculate difference in amplitude and phase
+        difference =  hc1[:,i] - hc2[:,i]
+        assert np.all(np.abs(difference) <= eps)
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['bilinear'])

@@ -20,6 +20,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.ATLAS.extract_constants
 
+.. autofunction:: pyTMD.io.ATLAS.read_constants
+
+.. autofunction:: pyTMD.io.ATLAS.interpolate_constants
+
 .. autofunction:: pyTMD.io.ATLAS.read_netcdf_grid
 
 .. autofunction:: pyTMD.io.ATLAS.read_netcdf_elevation
