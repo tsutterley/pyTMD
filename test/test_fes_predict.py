@@ -195,9 +195,24 @@ def test_compare_FES2014(METHOD):
     # will verify differences between model outputs are within tolerance
     eps = np.finfo(np.float16).eps
     # calculate differences between methods
-    for i,cons in enumerate(c):
+    for i, cons in enumerate(c):
         # calculate difference in amplitude and phase
         difference =  hc1[:,i] - hc2[:,i]
+        assert np.all(np.abs(difference) <= eps)
+
+    # validate iteration within constituents class
+    for field, hc in constituents:
+        # verify constituents
+        assert np.ma.isMaskedArray(hc)
+        # validate amplitude and phase functions
+        amp = constituents.amplitude(field)
+        phase = constituents.phase(field)
+        assert np.ma.isMaskedArray(amp)
+        assert np.ma.isMaskedArray(phase)
+        # calculate complex form of constituent oscillation
+        hcomplex = amp*np.exp(-1j*phase*np.pi/180.0)
+        # calculate difference in amplitude and phase
+        difference = hc - hcomplex
         assert np.all(np.abs(difference) <= eps)
 
 # PURPOSE: test definition file functionality
@@ -219,3 +234,11 @@ def test_definition_file(MODEL):
     m = pyTMD.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
+
+# PURPOSE: test extend function
+def test_extend_array():
+    dlon = 1
+    lon = np.arange(0, 360, dlon)
+    valid = np.arange(-dlon, 360 + dlon, dlon)
+    test = pyTMD.io.FES.extend_array(lon, dlon)
+    assert np.all(test == valid)

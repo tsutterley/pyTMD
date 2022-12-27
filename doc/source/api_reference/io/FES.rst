@@ -34,3 +34,9 @@ Calling Sequence
 .. autofunction:: pyTMD.io.FES.read_ascii_file
 
 .. autofunction:: pyTMD.io.FES.read_netcdf_file
+
+.. autofunction:: pyTMD.io.FES.output_netcdf_file
+
+.. autofunction:: pyTMD.io.FES.extend_array
+
+.. autofunction:: pyTMD.io.FES.extend_matrix

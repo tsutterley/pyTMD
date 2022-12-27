@@ -402,3 +402,11 @@ def test_definition_file(MODEL):
     m = pyTMD.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
+
+# PURPOSE: test extend function
+def test_extend_array():
+    dlon = 1
+    lon = np.arange(0, 360, dlon)
+    valid = np.arange(-dlon, 360 + dlon, dlon)
+    test = pyTMD.io.ATLAS.extend_array(lon, dlon)
+    assert np.all(test == valid)

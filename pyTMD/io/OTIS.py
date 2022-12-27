@@ -243,7 +243,7 @@ def extract_constants(ilon, ilat,
     # if global: extend limits
     global_grid = False
     # replace original values with extend arrays/matrices
-    if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
+    if np.isclose(xi[-1] - xi[0], 360.0 - dx) & (EPSG == '4326'):
         xi = extend_array(xi, dx)
         # set global grid flag
         global_grid = True
