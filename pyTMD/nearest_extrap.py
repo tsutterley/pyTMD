@@ -45,13 +45,11 @@ UPDATE HISTORY:
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 12/2020
 """
-import numpy as np
-import scipy.spatial
-import pyTMD.spatial
+import warnings
+import pyTMD.interpolate
 
 # PURPOSE: Nearest-neighbor extrapolation of valid data to output data
-def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
-    dtype=np.float64, cutoff=np.inf, EPSG='4326'):
+def nearest_extrap(*args, **kwargs):
     """
     Nearest-neighbor extrapolation of valid model data
 
@@ -81,99 +79,11 @@ def nearest_extrap(x, y, data, XI, YI, fill_value=np.nan,
     DATA: float
         interpolated data
     """
-    # verify output dimensions
-    XI = np.atleast_1d(XI)
-    YI = np.atleast_1d(YI)
-    # extrapolate valid data values to data
-    npts = len(XI)
-    # return none if no invalid points
-    if (npts == 0):
-        return
-
-    # allocate to output extrapolate data array
-    DATA = np.ma.zeros((npts), dtype=dtype, fill_value=fill_value)
-    DATA.mask = np.ones((npts), dtype=bool)
-    # initially set all data to fill value
-    DATA.data[:] = data.fill_value
-
-    # create combined valid mask
-    valid_mask = (~data.mask) & np.isfinite(data.data)
-    # reduce to model points within bounds of input points
-    valid_bounds = np.ones_like(data.mask, dtype=bool)
-
-    # calculate coordinates for nearest-neighbors
-    if (EPSG == '4326'):
-        # global or regional equirectangular model
-        # calculate meshgrid of model coordinates
-        gridlon,gridlat = np.meshgrid(x,y)
-        # ellipsoidal major axis in kilometers
-        a_axis = 6378.137
-        # calculate Cartesian coordinates of input grid
-        gridx,gridy,gridz = pyTMD.spatial.to_cartesian(gridlon,
-            gridlat, a_axis=a_axis)
-        # calculate Cartesian coordinates of output coordinates
-        xs,ys,zs = pyTMD.spatial.to_cartesian(XI, YI, a_axis=a_axis)
-        # range of output points in cartesian coordinates
-        xmin,xmax = (np.min(xs), np.max(xs))
-        ymin,ymax = (np.min(ys), np.max(ys))
-        zmin,zmax = (np.min(zs), np.max(zs))
-        # reduce to model points within bounds of input points
-        valid_bounds = np.ones_like(data.mask, dtype=bool)
-        valid_bounds &= (gridx >= (xmin-2.0*cutoff))
-        valid_bounds &= (gridx <= (xmax+2.0*cutoff))
-        valid_bounds &= (gridy >= (ymin-2.0*cutoff))
-        valid_bounds &= (gridy <= (ymax+2.0*cutoff))
-        valid_bounds &= (gridz >= (zmin-2.0*cutoff))
-        valid_bounds &= (gridz <= (zmax+2.0*cutoff))
-        # check if there are any valid points within the input bounds
-        if not np.any(valid_mask & valid_bounds):
-            # return filled masked array
-            return DATA
-        # find where input grid is valid and close to output points
-        indy,indx = np.nonzero(valid_mask & valid_bounds)
-        # create KD-tree of valid points
-        tree = scipy.spatial.cKDTree(np.c_[gridx[indy,indx],
-            gridy[indy,indx], gridz[indy,indx]])
-        # flattened valid data array
-        flattened = data.data[indy,indx]
-        # output coordinates
-        points = np.c_[xs,ys,zs]
-    else:
-        # projected model
-        # calculate meshgrid of model coordinates
-        gridx,gridy = np.meshgrid(x,y)
-        # range of output points
-        xmin,xmax = (np.min(XI),np.max(XI))
-        ymin,ymax = (np.min(YI),np.max(YI))
-        # reduce to model points within bounds of input points
-        valid_bounds = np.ones_like(data.mask, dtype=bool)
-        valid_bounds &= (gridx >= (xmin-2.0*cutoff))
-        valid_bounds &= (gridx <= (xmax+2.0*cutoff))
-        valid_bounds &= (gridy >= (ymin-2.0*cutoff))
-        valid_bounds &= (gridy <= (ymax+2.0*cutoff))
-        # check if there are any valid points within the input bounds
-        if not np.any(valid_mask & valid_bounds):
-            # return filled masked array
-            return DATA
-        # find where input grid is valid and close to output points
-        indy,indx = np.nonzero(valid_mask & valid_bounds)
-        # flattened model coordinates
-        tree = scipy.spatial.cKDTree(np.c_[gridx[indy,indx],
-            gridy[indy,indx]])
-        # flattened valid data array
-        flattened = data.data[indy,indx]
-        # output coordinates
-        points = np.c_[XI,YI]
-
-    # query output data points and find nearest neighbor within cutoff
-    dd,ii = tree.query(points, k=1, distance_upper_bound=cutoff)
-    # spatially extrapolate using nearest neighbors
-    if np.any(np.isfinite(dd)):
-        ind, = np.nonzero(np.isfinite(dd))
-        DATA.data[ind] = flattened[ii[ind]]
-        DATA.mask[ind] = False
-    # return extrapolated values
-    return DATA
+    # raise warnings for deprecation of module
+    warnings.filterwarnings("always")
+    warnings.warn("Deprecated. Please use pyTMD.interpolate instead",DeprecationWarning)
+    # call renamed version to not break workflows
+    return pyTMD.interpolate.extrapolate(*args, **kwargs)
 
 # PURPOSE: calculate Euclidean distances between points
 def distance_matrix(c1, c2):
@@ -192,10 +102,8 @@ def distance_matrix(c1, c2):
     c: float
         Euclidean distance
     """
-    # decompose Euclidean distance: (x-y)^2 = x^2 - 2xy + y^2
-    dx2 = np.sum(c1**2)
-    dxy = np.dot(c1[np.newaxis,:], c2.T)
-    dy2 = np.sum(c2**2, axis=1)
-    # calculate Euclidean distance
-    D, = np.sqrt(dx2 - 2.0*dxy + dy2)
-    return D
+    # raise warnings for deprecation of module
+    warnings.filterwarnings("always")
+    warnings.warn("Deprecated. Please use pyTMD.interpolate instead",DeprecationWarning)
+    # call renamed version to not break workflows
+    return pyTMD.interpolate._distance(c1, c2)

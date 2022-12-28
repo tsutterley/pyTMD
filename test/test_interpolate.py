@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 u"""
-test_interpolate.py (03/2021)
+test_interpolate.py (12/2022)
 Test the interpolation and extrapolation routines
 
 UPDATE HISTORY:
+    Updated 12/2022: refactored interpolation routines into new module
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Written 03/2021
 """
@@ -12,11 +13,9 @@ import inspect
 import pytest
 import numpy as np
 import scipy.io
-import scipy.interpolate
+import pyTMD.interpolate
 import pyTMD.spatial
 import pyTMD.utilities
-import pyTMD.bilinear_interp
-import pyTMD.nearest_extrap
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -108,17 +107,14 @@ def test_interpolate(METHOD, N=324):
     # use interpolation routines to get values
     if (METHOD == 'bilinear'):
         # use quick bilinear to interpolate values
-        test = pyTMD.bilinear_interp(LON,LAT,FI,lon,lat)
+        test = pyTMD.interpolate.bilinear(LON,LAT,FI,lon,lat)
     elif (METHOD == 'spline'):
         # use scipy bivariate splines to interpolate values
-        f1 = scipy.interpolate.RectBivariateSpline(LON,LAT,
-            FI.T,kx=1,ky=1)
-        test = f1.ev(lon,lat)
+        test = pyTMD.interpolate.spline(LON,LAT,FI,lon,lat,kx=1,ky=1)
     else:
         # use scipy regular grid to interpolate values
-        r1 = scipy.interpolate.RegularGridInterpolator((LAT,LON),FI,
+        test = pyTMD.interpolate.regulargrid(LAT,LON,FI,lon,lat,
             method=METHOD,bounds_error=False)
-        test = r1.__call__(np.c_[lat,lon])
     # verify that coordinates are within tolerance
     eps = np.finfo(np.float16).eps
     assert np.all(np.isclose(val,test,atol=eps))
@@ -168,9 +164,9 @@ def test_extrapolation_checks(N=324):
     FI.mask = np.ones((ny,nx),dtype=bool)
     # use nearest neighbors extrapolation to points
     # in case where there are no valid grid points
-    test = pyTMD.nearest_extrap(LON,LAT,FI,lon,lat,EPSG='4326')
+    test = pyTMD.interpolate.extrapolate(LON,LAT,FI,lon,lat,EPSG='4326')
     assert(np.all(test.mask))
     # use nearest neighbors extrapolation
     # in case where there are no points to be extrapolated
-    test = pyTMD.nearest_extrap(LON,LAT,FI,[],[])
+    test = pyTMD.interpolate.extrapolate(LON,LAT,FI,[],[])
     assert np.logical_not(test)

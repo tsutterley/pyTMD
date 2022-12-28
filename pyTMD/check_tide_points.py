@@ -43,16 +43,17 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    model.py: retrieves tide model parameters for named tide models
     convert_ll_xy.py: convert lat/lon points to and from projected coordinates
+    io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     io/ATLAS.py: extract tidal harmonic constants from ATLAS netcdf models
     io/GOT.py: extract tidal harmonic constants from GSFC GOT models
     io/FES.py: extract tidal harmonic constants from FES tide models
-    bilinear_interp.py: bilinear interpolation of data to coordinates
+    interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
     Updated 12/2022: refactored tide read programs under io
+        refactored bilinear interpolation routine
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
@@ -73,7 +74,7 @@ import scipy.interpolate
 import pyTMD.io
 import pyTMD.io.model
 import pyTMD.convert_ll_xy
-from pyTMD.bilinear_interp import bilinear_interp
+import pyTMD.interpolate
 
 # attempt imports
 try:
@@ -197,7 +198,7 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
     # interpolate masks
     if (METHOD == 'bilinear'):
         # replace invalid values with nan
-        mz1 = bilinear_interp(xi,yi,mz,X,Y)
+        mz1 = pyTMD.interpolate.bilinear(xi,yi,mz,X,Y)
         mask = np.floor(mz1).astype(mz.dtype)
     elif (METHOD == 'spline'):
         f1=scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)

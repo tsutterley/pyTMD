@@ -12,6 +12,7 @@ matplotlib and cartopy
 Documentation is available at https://pytmd.readthedocs.io
 """
 import pyTMD.eop
+import pyTMD.interpolate
 import pyTMD.predict
 import pyTMD.spatial
 import pyTMD.time
@@ -19,7 +20,6 @@ import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
-from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 from pyTMD.check_tide_points import check_tide_points
 from pyTMD.compute_tide_corrections import compute_tide_corrections
@@ -27,15 +27,16 @@ from pyTMD.constants import constants, _ellipsoids
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
-from pyTMD.nearest_extrap import nearest_extrap
 from pyTMD.tidal_ellipse import tidal_ellipse
 
 # deprecated modules
+from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.calc_delta_time import calc_delta_time
 from pyTMD.compute_equilibrium_tide import compute_equilibrium_tide
 from pyTMD.iers_mean_pole import iers_mean_pole
 from pyTMD.infer_minor_corrections import infer_minor_corrections
 from pyTMD.model import model
+from pyTMD.nearest_extrap import nearest_extrap
 from pyTMD.output_otis_tides import output_otis_grid, output_otis_elevation, output_otis_transport
 from pyTMD.read_tide_model import extract_tidal_constants
 from pyTMD.read_netcdf_model import extract_netcdf_constants

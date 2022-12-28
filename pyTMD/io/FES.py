@@ -52,13 +52,13 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
-    bilinear_interp.py: bilinear interpolation of data to coordinates
-    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
         new functions to output FES formatted netCDF4 files
+        refactored interpolation routines into new module
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_FES_constants definition
@@ -92,11 +92,9 @@ import logging
 import datetime
 import warnings
 import numpy as np
-import scipy.interpolate
 import pyTMD.version
+import pyTMD.interpolate
 import pyTMD.io.constituents
-from pyTMD.bilinear_interp import bilinear_interp
-from pyTMD.nearest_extrap import nearest_extrap
 from pyTMD.utilities import get_git_revision_hash
 
 # attempt imports
@@ -234,15 +232,12 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
                   (ilat < lat.min()) | (ilat > lat.max())
 
-        # interpolated complex form of constituent oscillation
-        hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
-        hci.mask = np.zeros((npts),dtype=bool)
         # interpolate amplitude and phase of the constituent
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
             hc.data[hc.mask] = np.nan
             # use quick bilinear to interpolate values
-            hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
+            hci = pyTMD.interpolate.bilinear(lon, lat, hc, ilon, ilat,
                 dtype=hc.dtype)
             # replace nan values with fill_value
             hci.mask[:] |= np.isnan(hci.data)
@@ -250,28 +245,20 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         elif (kwargs['method'] == 'spline'):
             # interpolate complex form of the constituent
             # use scipy splines to interpolate values
-            f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.data.real.T, kx=1, ky=1)
-            f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.data.imag.T, kx=1, ky=1)
-            f3 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.mask.T, kx=1, ky=1)
-            hci.data.real[:] = f1.ev(ilon,ilat)
-            hci.data.imag[:] = f2.ev(ilon,ilat)
-            hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
+            hci = pyTMD.interpolate.spline(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype,
+                reducer=np.ceil,
+                kx=1, ky=1)
             # replace invalid values with fill_value
             hci.data[hci.mask] = hci.fill_value
         else:
             # interpolate complex form of the constituent
             # use scipy regular grid to interpolate values
-            r1 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.data, method=kwargs['method'], bounds_error=False,
-                fill_value=hci.fill_value)
-            r2 = scipy.interpolate.RegularGridInterpolator((lat,lon),
-                hc.mask, method=kwargs['method'], bounds_error=False,
-                fill_value=1)
-            hci.data[:] = r1.__call__(np.c_[ilat,ilon])
-            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
+            hci = pyTMD.interpolate.regulargrid(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype,
+                method=kwargs['method'],
+                reducer=np.ceil,
+                bounds_error=False)
             # replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
@@ -282,8 +269,9 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             # replace invalid values with nan
             hc.data[hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
-            hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
-                dtype=hc.dtype, cutoff=kwargs['cutoff'])
+            hci[inv] = pyTMD.interpolate.extrapolate(lon, lat, hc,
+                ilon[inv], ilat[inv], dtype=hc.dtype,
+                cutoff=kwargs['cutoff'])
         # convert amplitude from input units to meters
         amplitude.data[:,i] = np.abs(hci.data)*kwargs['scale']
         amplitude.mask[:,i] = np.copy(hci.mask)
@@ -453,15 +441,13 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     for i, c in enumerate(constituents.fields):
         # get model constituent
         hc = constituents.get(c)
-        # interpolated complex form of constituent oscillation
-        hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
-        hci.mask = np.zeros((npts),dtype=bool)
         # interpolate amplitude and phase of the constituent
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
             hc.data[hc.mask] = np.nan
             # use quick bilinear to interpolate values
-            hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
+            hci = pyTMD.interpolate.bilinear(lon, lat, hc, ilon, ilat,
+                fill_value=fill_value,
                 dtype=hc.dtype)
             # replace nan values with fill_value
             hci.mask[:] |= np.isnan(hci.data)
@@ -471,15 +457,11 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             hc.data[hc.mask] = fill_value
             # interpolate complex form of the constituent
             # use scipy splines to interpolate values
-            f1=scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.data.real.T, kx=1, ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.data.imag.T, kx=1, ky=1)
-            f3=scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.mask.T, kx=1, ky=1)
-            hci.data.real[:] = f1.ev(ilon,ilat)
-            hci.data.imag[:] = f2.ev(ilon,ilat)
-            hci.mask[:] = f3.ev(ilon,ilat).astype(bool)
+            hci = pyTMD.interpolate.spline(lon, lat, hc, ilon, ilat,
+                fill_value=fill_value,
+                dtype=hc.dtype,
+                reducer=np.ceil,
+                kx=1, ky=1)
             # replace invalid values with fill_value
             hci.data[hci.mask] = hci.fill_value
         else:
@@ -487,14 +469,12 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             hc.data[hc.mask] = fill_value
             # interpolate complex form of the constituent
             # use scipy regular grid to interpolate values
-            r1 = scipy.interpolate.RegularGridInterpolator((lon, lat),
-                hc.data, method=kwargs['method'], bounds_error=False,
-                fill_value=hci.fill_value)
-            r2 = scipy.interpolate.RegularGridInterpolator((lon, lat),
-                hc.mask, method=kwargs['method'], bounds_error=False,
-                fill_value=1)
-            hci.data[:] = r1.__call__(np.c_[ilat,ilon])
-            hci.mask[:] = np.ceil(r2.__call__(np.c_[ilat,ilon])).astype(bool)
+            hci = pyTMD.interpolate.regulargrid(lon, lat, hc, ilon, ilat,
+                fill_value=fill_value,
+                dtype=hc.dtype,
+                method=kwargs['method'],
+                reducer=np.ceil,
+                bounds_error=False)
             # replace invalid values with fill_value
             hci.mask[:] |= (hci.data == hci.fill_value)
             hci.data[hci.mask] = hci.fill_value
@@ -505,7 +485,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             # replace invalid values with nan
             hc.data[hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
-            hci[inv] = nearest_extrap(lon, lat, hc,
+            hci[inv] = pyTMD.interpolate.extrapolate(lon, lat, hc,
                 ilon[inv], ilat[inv], dtype=hc.dtype,
                 cutoff=kwargs['cutoff'])
         # convert amplitude from input units to meters
