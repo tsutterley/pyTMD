@@ -192,7 +192,7 @@ def test_compare_GOT47(METHOD):
         # verify constituents
         assert (cons == constituents.fields[i])
         # calculate difference in amplitude and phase
-        difference =  hc1[:,i] - hc2[:,i]
+        difference = hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
 
     # validate iteration within constituents class

@@ -197,7 +197,7 @@ def test_compare_FES2014(METHOD):
     # calculate differences between methods
     for i, cons in enumerate(c):
         # calculate difference in amplitude and phase
-        difference =  hc1[:,i] - hc2[:,i]
+        difference = hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
 
     # validate iteration within constituents class

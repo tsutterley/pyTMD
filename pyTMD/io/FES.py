@@ -189,8 +189,8 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         model_files = [model_files]
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # number of points
     npts = len(ilon)
     # number of constituents
@@ -232,7 +232,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             hc = extend_matrix(hc)
         # determine if any input points are outside of the model bounds
         invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
-                (ilat < lat.min()) | (ilat > lat.max())
+                  (ilat < lat.min()) | (ilat > lat.max())
 
         # interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
@@ -422,8 +422,8 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     lat = np.copy(constituents.latitude)
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -436,7 +436,7 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         ilon[ilon>180.0] -= 360.0
     # determine if any input points are outside of the model bounds
     invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
-            (ilat < lat.min()) | (ilat > lat.max())
+              (ilat < lat.min()) | (ilat > lat.max())
 
     # number of points
     npts = len(ilon)

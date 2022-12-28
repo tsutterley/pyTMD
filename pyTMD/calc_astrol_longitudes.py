@@ -148,7 +148,7 @@ def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
         # mean longitude of sun
         h = 280.4661 + 0.98564736 * T
         # mean longitude of lunar perigee
-        p =  83.3535 + 0.11140353 * T
+        p = 83.3535 + 0.11140353 * T
         # mean longitude of ascending lunar node
         N = 125.0445 - 0.05295377 * T
         # solar perigee at epoch 2000
