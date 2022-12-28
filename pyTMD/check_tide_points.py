@@ -71,7 +71,7 @@ import numpy as np
 import scipy.interpolate
 
 import pyTMD.io
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.convert_ll_xy
 from pyTMD.bilinear_interp import bilinear_interp
 
@@ -134,9 +134,9 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.model(DIRECTORY).from_file(DEFINITION_FILE)
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.model(DIRECTORY, format=ATLAS_FORMAT,
+        model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).elevation(MODEL)
 
     # input shape of data

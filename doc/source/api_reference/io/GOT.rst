@@ -26,6 +26,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.GOT.read_ascii_file
 
+.. autofunction:: pyTMD.io.GOT.read_netcdf_file
+
+.. autofunction:: pyTMD.io.GOT.output_netcdf_file
+
 .. autofunction:: pyTMD.io.GOT.extend_array
 
 .. autofunction:: pyTMD.io.GOT.extend_matrix

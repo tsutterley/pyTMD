@@ -35,6 +35,8 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
+    netCDF4: Python interface to the netCDF C library
+         https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
     bilinear_interp.py: bilinear interpolation of data to coordinates
@@ -43,6 +45,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
+        new functions to read and write GOT netCDF4 files
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_GOT_constants definition
         changed keyword arguments to camel case
@@ -79,12 +82,27 @@ import os
 import re
 import copy
 import gzip
+import uuid
+import logging
+import datetime
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.version
 import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
+from pyTMD.utilities import get_git_revision_hash
+
+# attempt imports
+try:
+    import netCDF4
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("netCDF4 not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(ilon, ilat, model_files=None, **kwargs):
@@ -115,6 +133,11 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         Extrapolation cutoff in kilometers
 
         Set to ``np.inf`` to extrapolate for all points
+    grid: str, default 'ascii'
+        Tide model file type to read
+
+            - ``'ascii'``: traditional GOT ascii format
+            - ``'netcdf'``: GOT netCDF4 format
     compressed: bool, default False
         Input files are gzip compressed
     scale: float, default 1.0
@@ -133,6 +156,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
+    kwargs.setdefault('grid', 'ascii')
     kwargs.setdefault('compressed', False)
     kwargs.setdefault('scale', 1.0)
     # raise warnings for deprecated keyword arguments
@@ -152,8 +176,8 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         model_files = [model_files]
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # number of points
     npts = len(ilon)
     # number of constituents
@@ -172,8 +196,14 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         if not os.access(os.path.expanduser(model_file), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(model_file))
         # read constituent from elevation file
-        hc,lon,lat,cons = read_ascii_file(os.path.expanduser(model_file),
-            compressed=kwargs['compressed'])
+        if (kwargs['grid'] == 'ascii'):
+            hc, lon, lat, cons = read_ascii_file(
+                os.path.expanduser(model_file),
+                compressed=kwargs['compressed'])
+        elif (kwargs['grid'] == 'netcdf'):
+            hc, lon, lat, cons = read_netcdf_file(
+                os.path.expanduser(model_file),
+                compressed=kwargs['compressed'])
         # append to the list of constituents
         constituents.append(cons)
         # adjust longitudinal convention of input latitude and longitude
@@ -267,6 +297,11 @@ def read_constants(model_files=None, **kwargs):
     ----------
     model_files: list or NoneType, default None
         list of model files for each constituent
+    grid: str, default 'ascii'
+        Tide model file type to read
+
+            - ``'ascii'``: traditional GOT ascii format
+            - ``'netcdf'``: GOT netCDF4 format
     compressed: bool, default False
         Input files are gzip compressed
 
@@ -276,6 +311,7 @@ def read_constants(model_files=None, **kwargs):
         complex form of tide model constituents
     """
     # set default keyword arguments
+    kwargs.setdefault('grid', 'ascii')
     kwargs.setdefault('compressed', False)
 
     # raise warning if model files are entered as a string
@@ -291,8 +327,14 @@ def read_constants(model_files=None, **kwargs):
         if not os.access(os.path.expanduser(model_file), os.F_OK):
             raise FileNotFoundError(os.path.expanduser(model_file))
         # read constituent from elevation file
-        hc,lon,lat,cons = read_ascii_file(os.path.expanduser(model_file),
-            compressed=kwargs['compressed'])
+        if (kwargs['grid'] == 'ascii'):
+            hc, lon, lat, cons = read_ascii_file(
+                os.path.expanduser(model_file),
+                compressed=kwargs['compressed'])
+        elif (kwargs['grid'] == 'netcdf'):
+            hc, lon, lat, cons = read_netcdf_file(
+                os.path.expanduser(model_file),
+                compressed=kwargs['compressed'])
         # grid step size of tide model
         dlon = np.abs(lon[1] - lon[0])
         # replace original values with extend matrices
@@ -357,8 +399,8 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     lat = np.copy(constituents.latitude)
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -592,3 +634,130 @@ def read_ascii_file(input_file, **kwargs):
     hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
     # return output variables
     return (hc, lon, lat, cons)
+
+# PURPOSE: read GOT netCDF4 tide model files
+def read_netcdf_file(input_file, **kwargs):
+    """
+    Read Richard Ray's Global Ocean Tide (GOT) netCDF4 model file
+
+    Parameters
+    ----------
+    input_file: str
+        model file
+    compressed: bool, default False
+        Input file is gzip compressed
+
+    Returns
+    -------
+    hc: complex
+        complex form of tidal constituent oscillation
+    lon: float
+        longitude of tidal model
+    lat: float
+        latitude of tidal model
+    cons: str
+        tidal constituent ID
+    """
+    # set default keyword arguments
+    kwargs.setdefault('compressed', False)
+    # read the netcdf format tide elevation file
+    if kwargs['compressed']:
+        # read gzipped netCDF4 file
+        f = gzip.open(os.path.expanduser(input_file),'rb')
+        fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
+    else:
+        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+    # variable dimensions
+    lon = fileID.variables['longitude'][:]
+    lat = fileID.variables['latitude'][:]
+    # get amplitude and phase components
+    amp = fileID.variables['amplitude'][:]
+    ph = fileID.variables['phase'][:]
+    # extract constituent from attribute
+    cons = fileID.Constituent.lower()
+    # close the file
+    fileID.close()
+    f.close() if kwargs['compressed'] else None
+    # calculate complex form of constituent oscillation
+    mask = (amp.data == amp.fill_value) | \
+        (ph.data == ph.fill_value) | \
+        np.isnan(amp.data) | np.isnan(ph.data)
+    hc = np.ma.array(amp*np.exp(-1j*ph*np.pi/180.0), mask=mask,
+        fill_value=np.ma.default_fill_value(np.dtype(complex)))
+    # return output variables
+    return (hc, lon, lat, cons)
+
+# PURPOSE: output tidal constituent file in GOT format
+def output_netcdf_file(FILE, hc, lon, lat, constituent):
+    """
+    Writes tidal constituent files in GOT netCDF format
+
+    Parameters
+    ----------
+    FILE: str
+        output GOT model file name
+    hc: complex
+        Eulerian form of tidal constituent
+    lon: float
+        longitude coordinates
+    lat: float
+        latitude coordinates
+    constituent: str
+        tidal constituent ID
+    """
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    # define the NetCDF dimensions
+    fileID.createDimension('longitude', len(lon))
+    fileID.createDimension('latitude', len(lat))
+    # calculate amplitude and phase
+    amp = np.abs(hc)
+    ph = 180.0*np.arctan2(-np.imag(hc), np.real(hc))/np.pi
+    ph.data[ph.data < 0] += 360.0
+    # update masks and fill values
+    amp.mask = np.copy(hc.mask)
+    amp.data[amp.mask] = amp.fill_value
+    ph.mask = np.copy(hc.mask)
+    ph.data[ph.mask] = ph.fill_value
+    # defining the NetCDF variables
+    nc = {}
+    nc['longitude'] = fileID.createVariable('longitude', lon.dtype,
+        ('longitude',))
+    nc['latitude'] = fileID.createVariable('latitude', lat.dtype,
+        ('latitude',))
+    nc['amplitude'] = fileID.createVariable('amplitude', amp.dtype,
+        ('latitude','longitude',), fill_value=amp.fill_value, zlib=True)
+    nc['phase'] = fileID.createVariable('phase', ph.dtype,
+        ('latitude','longitude',), fill_value=ph.fill_value, zlib=True)
+    # filling the NetCDF variables
+    nc['longitude'][:] = lon[:]
+    nc['latitude'][:] = lat[:]
+    nc['amplitude'][:] = amp[:]
+    nc['phase'][:] = ph[:]
+    # set variable attributes for coordinates
+    nc['longitude'].setncattr('units', 'degrees_east')
+    nc['longitude'].setncattr('long_name', 'longitude')
+    nc['latitude'].setncattr('units', 'degrees_north')
+    nc['latitude'].setncattr('long_name', 'latitude')
+    # set variable attributes
+    nc['amplitude'].setncattr('units', 'cm')
+    nc['amplitude'].setncattr('long_name', 'Tide amplitude')
+    nc['phase'].setncattr('units', 'degrees')
+    nc['phase'].setncattr('long_name', 'Greenwich tide phase lag')
+    # add global attributes
+    fileID.title = 'GOT tide file'
+    fileID.authors = 'Richard Ray'
+    fileID.institution = 'NASA Goddard Space Flight Center'
+    # add attribute for tidal constituent ID
+    fileID.Constituent = constituent.upper()
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    fileID.software_revision = get_git_revision_hash()
+    # Output NetCDF structure information
+    logging.info(FILE)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()

@@ -112,7 +112,7 @@ import warnings
 import numpy as np
 import pyTMD.io
 import pyTMD.time
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.predict
 import pyTMD.spatial
 import pyTMD.utilities
@@ -210,9 +210,9 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.model(DIRECTORY).from_file(DEFINITION_FILE)
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.model(DIRECTORY, format=ATLAS_FORMAT,
+        model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).elevation(MODEL)
 
     # determine input data type based on variable dimensions

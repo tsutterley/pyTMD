@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
+        new functions to output ATLAS formatted netCDF4 files
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 07/2022: fix setting of masked array data to NaN
@@ -90,12 +91,16 @@ import os
 import copy
 import gzip
 import uuid
+import logging
+import datetime
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.version
 import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
+from pyTMD.utilities import get_git_revision_hash
 
 # attempt imports
 try:
@@ -197,8 +202,8 @@ def extract_constants(ilon, ilat,
         compressed=kwargs['compressed'])
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -213,11 +218,19 @@ def extract_constants(ilon, ilat,
     # grid step size of tide model
     dlon = lon[1] - lon[0]
     dlat = lat[1] - lat[0]
+    # if global: extend limits
+    global_grid = False
     # replace original values with extend arrays/matrices
-    lon = extend_array(lon, dlon)
-    bathymetry = extend_matrix(bathymetry)
+    if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+        lon = extend_array(lon, dlon)
+        bathymetry = extend_matrix(bathymetry)
+        # set global grid flag
+        global_grid = True
     # create masks
     bathymetry.mask = (bathymetry.data == 0)
+    # determine if any input points are outside of the model bounds
+    invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
+              (ilat < lat.min()) | (ilat > lat.max())
 
     # number of points
     npts = len(ilon)
@@ -279,7 +292,8 @@ def extract_constants(ilon, ilat,
             # append constituent to list
             constituents.append(cons)
             # replace original values with extend matrices
-            z = extend_matrix(z)
+            if global_grid:
+                z = extend_matrix(z)
             # update constituent mask with bathymetry mask
             z.mask[:] |= bathymetry.mask[:]
             # interpolate amplitude and phase of the constituent
@@ -333,7 +347,8 @@ def extract_constants(ilon, ilat,
             # append constituent to list
             constituents.append(cons)
             # replace original values with extend matrices
-            tr = extend_matrix(tr)
+            if global_grid:
+                tr = extend_matrix(tr)
             # update constituent mask with bathymetry mask
             tr.mask[:] |= bathymetry.mask[:]
             # interpolate amplitude and phase of the constituent
@@ -382,6 +397,9 @@ def extract_constants(ilon, ilat,
             ampl.mask[:,i] = np.copy(tr1.mask)
             ph.data[:,i] = np.arctan2(-np.imag(tr1.data), np.real(tr1.data))
             ph.mask[:,i] = np.copy(tr1.mask)
+        # update mask to invalidate points outside model domain
+        ampl.mask[:,i] |= invalid
+        ph.mask[:,i] |= invalid
 
     # convert amplitude from input units to meters
     amplitude = ampl*kwargs['scale']
@@ -530,8 +548,8 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     lat = np.copy(constituents.latitude)
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -542,6 +560,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         # input points convention (0:360)
         # tide model convention (-180:180)
         ilon[ilon > 180.0] -= 360.0
+    # determine if any input points are outside of the model bounds
+    invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
+              (ilat < lat.min()) | (ilat > lat.max())
 
     # number of points
     npts = len(ilon)
@@ -649,6 +670,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         ampl.mask[:,i] = np.copy(hci.mask)
         ph.data[:,i] = np.arctan2(-np.imag(hci.data), np.real(hci.data))
         ph.mask[:,i] = np.copy(hci.mask)
+        # update mask to invalidate points outside model domain
+        ampl.mask[:,i] |= invalid
+        ph.mask[:,i] |= invalid
 
     # convert amplitude from input units to meters
     amplitude = ampl*kwargs['scale']
@@ -879,3 +903,268 @@ def read_netcdf_transport(input_file, variable, **kwargs):
     f.close() if kwargs['compressed'] else None
     # return the transport components and constituent
     return (tr, con.strip())
+
+# PURPOSE: output grid file in ATLAS netCDF format
+def output_netcdf_grid(FILE, hz, hu, hv,
+                       lon_z, lat_z, lon_u,
+                       lat_u, lon_v, lat_v):
+    """
+    Writes grid files in ATLAS netCDF format
+
+    Parameters
+    ----------
+    FILE: str
+        output ATLAS grid file name
+    hz: float
+        model bathymetry at z-nodes
+    hu: float
+        model bathymetry at u-nodes
+    hv: float
+        model bathymetry at v-nodes
+    lon_z: float
+        longitude coordinates at z-nodes
+    lat_z: float
+        latitude coordinates at z-nodes
+    lon_u: float
+        longitude coordinates at u-nodes
+    lat_u: float
+        latitude coordinates at u-nodes
+    lon_v: float
+        longitude coordinates at v-nodes
+    lat_v: float
+        latitude coordinates at v-nodes
+    """
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    # define the NetCDF dimensions
+    ny, nx = np.shape(hz)
+    fileID.createDimension('nx', nx)
+    fileID.createDimension('ny', ny)
+    # defining the NetCDF variables
+    nc = {}
+    nc['lon_z'] = fileID.createVariable('lon_z', lon_z.dtype, ('nx',))
+    nc['lat_z'] = fileID.createVariable('lat_z', lat_z.dtype, ('ny',))
+    nc['lon_u'] = fileID.createVariable('lon_u', lon_u.dtype, ('nx',))
+    nc['lat_u'] = fileID.createVariable('lat_u', lat_u.dtype, ('ny',))
+    nc['lon_v'] = fileID.createVariable('lon_v', lon_v.dtype, ('nx',))
+    nc['lat_v'] = fileID.createVariable('lat_v', lat_v.dtype, ('ny',))
+    nc['hz'] = fileID.createVariable('hz', hz.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    nc['hu'] = fileID.createVariable('hu', hu.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    nc['hv'] = fileID.createVariable('hv', hv.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    # filling the NetCDF variables
+    nc['lon_z'][:] = lon_z[:]
+    nc['lat_z'][:] = lat_z[:]
+    nc['lon_u'][:] = lon_u[:]
+    nc['lat_u'][:] = lat_u[:]
+    nc['lon_v'][:] = lon_v[:]
+    nc['lat_v'][:] = lat_v[:]
+    nc['hz'][:] = hz[:]
+    nc['hu'][:] = hu[:]
+    nc['hv'][:] = hv[:]
+    # define variable attributes
+    for TYPE in ('z','u','v'):
+        # set variable attributes for coordinates
+        nc[f'lon_{TYPE}'].setncattr('units', 'degrees_east')
+        long_name = f'longitude of {TYPE.upper()} nodes'
+        nc[f'lon_{TYPE}'].setncattr('long_name', long_name)
+        nc[f'lat_{TYPE}'].setncattr('units', 'degrees_north')
+        long_name = f'latitude of {TYPE.upper()} nodes'
+        nc[f'lat_{TYPE}'].setncattr('long_name', long_name)
+        # set variable attributes for bathymetry
+        long_name = f'Bathymetry at {TYPE.upper()} nodes'
+        nc[f'h{TYPE}'].setncattr('units', 'meters')
+        nc[f'h{TYPE}'].setncattr('long_name', long_name)
+        nc[f'h{TYPE}'].setncattr('field', 'bath, scalar')
+    # add global attributes
+    fileID.title = "ATLAS bathymetry file"
+    fileID.type = "OTIS grid file"
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    fileID.software_revision = get_git_revision_hash()
+    # Output NetCDF structure information
+    logging.info(FILE)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()
+
+# PURPOSE: output elevation file in ATLAS netCDF format
+def output_netcdf_elevation(FILE, h, lon_z, lat_z, constituent):
+    """
+    Writes elevation files in ATLAS netCDF format
+
+    Parameters
+    ----------
+    FILE: str
+        output ATLAS elevation file name
+    h: complex
+        Eulerian form of tidal elevation oscillation
+    lon_z: float
+        longitude coordinates at z-nodes
+    lat_z: float
+        latitude coordinates at z-nodes
+    constituent: str
+        tidal constituent ID
+    """
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    # define the NetCDF dimensions
+    ny, nx = np.shape(h)
+    fileID.createDimension('nx', nx)
+    fileID.createDimension('ny', ny)
+    fileID.createDimension('nct', 4)
+    # defining the NetCDF variables
+    nc = {}
+    nc['lon_z'] = fileID.createVariable('lon_z', lon_z.dtype, ('nx',))
+    nc['lat_z'] = fileID.createVariable('lat_z', lat_z.dtype, ('ny',))
+    nc['hRe'] = fileID.createVariable('hRe', h.real.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    nc['hIm'] = fileID.createVariable('hIm', h.imag.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    # filling the NetCDF variables
+    nc['lon_z'][:] = lon_z[:]
+    nc['lat_z'][:] = lat_z[:]
+    nc['hRe'][:] = h.real[:]
+    nc['hIm'][:] = h.imag[:]
+    # define variable attributes
+    complexpart = dict(Re='Real part', Im='Imag part')
+    # set variable attributes for coordinates
+    nc['lon_z'].setncattr('units', 'degrees_east')
+    nc['lon_z'].setncattr('long_name', 'longitude of Z nodes')
+    nc['lat_z'].setncattr('units', 'degrees_north')
+    nc['lat_z'].setncattr('long_name', 'latitude of Z nodes')
+    # set variable attributes for tidal constituents
+    for COMP in ('Re','Im'):
+        key = f'h{COMP}'
+        long_name = f'Tidal elevation complex amplitude, {complexpart[COMP]}'
+        field = (f'{COMP}(h), scalar; '
+            f'amp=abs(hRe+i*hIm); '
+            f'GMT phase=atan2(-hIm,hRe)/pi*180;')
+        # set variable attributes
+        nc[key].setncattr('units', 'millimeter')
+        nc[key].setncattr('long_name', long_name)
+        nc[key].setncattr('field', field)
+    # define and fill constituent ID
+    nc['con'] = fileID.createVariable('con', 'S1', ('nct',))
+    con = [char.encode('utf8') for char in constituent.ljust(4)]
+    nc['con'][:] = np.array(con, dtype='S1')
+    nc['con'].setncattr('_Encoding', 'utf8')
+    nc['con'].setncattr('long_name', "tidal constituent")
+    # add global attributes
+    fileID.title = "ATLAS tidal elevation file"
+    fileID.type = "OTIS elevation file"
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    fileID.software_revision = get_git_revision_hash()
+    # Output NetCDF structure information
+    logging.info(FILE)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()
+
+# PURPOSE: output transport file in ATLAS netCDF format
+def output_netcdf_transport(FILE, u, v, lon_u, lat_u,
+                            lon_v, lat_v, constituent):
+    """
+    Writes transport files in ATLAS netCDF format
+
+    Parameters
+    ----------
+    FILE: str
+        output ATLAS transport file name
+    u: complex
+        Eulerian form of tidal zonal transport oscillation
+    v: complex
+        Eulerian form of tidal meridional transport oscillation
+    lon_u: float
+        longitude coordinates at u-nodes
+    lat_u: float
+        latitude coordinates at u-nodes
+    lon_v: float
+        longitude coordinates at v-nodes
+    lat_v: float
+        latitude coordinates at v-nodes
+    constituents: str
+        tidal constituent ID
+    """
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    # define the NetCDF dimensions
+    ny, nx = np.shape(u)
+    fileID.createDimension('nx', nx)
+    fileID.createDimension('ny', ny)
+    fileID.createDimension('nct', 4)
+    # defining the NetCDF variables
+    nc = {}
+    nc['lon_u'] = fileID.createVariable('lon_u', lon_u.dtype, ('nx',))
+    nc['lat_u'] = fileID.createVariable('lat_u', lat_u.dtype, ('ny',))
+    nc['lon_v'] = fileID.createVariable('lon_v', lon_v.dtype, ('nx',))
+    nc['lat_v'] = fileID.createVariable('lat_v', lat_v.dtype, ('ny',))
+    nc['uRe'] = fileID.createVariable('uRe', u.real.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    nc['uIm'] = fileID.createVariable('uIm', u.imag.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    nc['vRe'] = fileID.createVariable('vRe', v.real.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    nc['vIm'] = fileID.createVariable('vIm', v.imag.dtype, ('ny','nx',),
+        fill_value=0, zlib=True)
+    # filling the NetCDF variables
+    nc['lon_u'][:] = lon_u[:]
+    nc['lat_u'][:] = lat_u[:]
+    nc['lon_v'][:] = lon_v[:]
+    nc['lat_v'][:] = lat_v[:]
+    nc['uRe'][:] = u.real[:]
+    nc['uIm'][:] = u.imag[:]
+    nc['vRe'][:] = v.real[:]
+    nc['vIm'][:] = v.imag[:]
+    # define variable attributes
+    direction = dict(u='WE', v='SN')
+    complexpart = dict(Re='Real part', Im='Imag part')
+    for TYPE in ('u','v'):
+        # set variable attributes for coordinates
+        nc[f'lon_{TYPE}'].setncattr('units', 'degrees_east')
+        long_name = f'longitude of {TYPE.upper()} nodes'
+        nc[f'lon_{TYPE}'].setncattr('long_name', long_name)
+        nc[f'lat_{TYPE}'].setncattr('units', 'degrees_north')
+        long_name = f'latitude of {TYPE.upper()} nodes'
+        nc[f'lat_{TYPE}'].setncattr('long_name', long_name)
+        # set variable attributes for tidal constituents
+        for COMP in ('Re','Im'):
+            key = f'{TYPE}{COMP}'
+            long_name = (f'Tidal {direction[TYPE]} transport '
+                f'complex amplitude, {complexpart[COMP]}')
+            field = (f'{COMP}({TYPE}), scalar; '
+                f'amp=abs({TYPE}Re+i*{TYPE}Im); '
+                f'GMT phase=atan2(-{TYPE}Im,{TYPE}Re)/pi*180;')
+            # set variable attributes
+            nc[key].setncattr('units', 'centimeter^2/sec')
+            nc[key].setncattr('long_name', long_name)
+            nc[key].setncattr('field', field)
+    # define and fill constituent ID
+    nc['con'] = fileID.createVariable('con', 'S1', ('nct',))
+    con = [char.encode('utf8') for char in constituent.ljust(4)]
+    nc['con'][:] = np.array(con, dtype='S1')
+    nc['con'].setncattr('_Encoding', 'utf8')
+    nc['con'].setncattr('long_name', "tidal constituent")
+    # add global attributes
+    fileID.title = "ATLAS tidal SN and WE transports file"
+    fileID.type = "OTIS transport file"
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    fileID.software_revision = get_git_revision_hash()
+    # Output NetCDF structure information
+    logging.info(FILE)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()

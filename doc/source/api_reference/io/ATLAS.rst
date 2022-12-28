@@ -30,6 +30,12 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.ATLAS.read_netcdf_transport
 
+.. autofunction:: pyTMD.io.ATLAS.output_netcdf_grid
+
+.. autofunction:: pyTMD.io.ATLAS.output_netcdf_elevation
+
+.. autofunction:: pyTMD.io.ATLAS.output_netcdf_transport
+
 .. autofunction:: pyTMD.io.ATLAS.extend_array
 
 .. autofunction:: pyTMD.io.ATLAS.extend_matrix

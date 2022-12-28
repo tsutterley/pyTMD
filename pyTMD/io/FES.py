@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
+        new functions to output FES formatted netCDF4 files
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: reformat arguments to extract_FES_constants definition
@@ -87,12 +88,16 @@ import os
 import copy
 import gzip
 import uuid
+import logging
+import datetime
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.version
 import pyTMD.io.constituents
 from pyTMD.bilinear_interp import bilinear_interp
 from pyTMD.nearest_extrap import nearest_extrap
+from pyTMD.utilities import get_git_revision_hash
 
 # attempt imports
 try:
@@ -184,8 +189,8 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         model_files = [model_files]
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # number of points
     npts = len(ilon)
     # number of constituents
@@ -218,6 +223,17 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             # input points convention (0:360)
             # tide model convention (-180:180)
             ilon[ilon>180.0] -= 360.0
+
+        # grid step size of tide model
+        dlon = lon[1] - lon[0]
+        # replace original values with extend arrays/matrices
+        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+            lon = extend_array(lon, dlon)
+            hc = extend_matrix(hc)
+        # determine if any input points are outside of the model bounds
+        invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
+                  (ilat < lat.min()) | (ilat > lat.max())
+
         # interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
         hci.mask = np.zeros((npts),dtype=bool)
@@ -234,11 +250,11 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         elif (kwargs['method'] == 'spline'):
             # interpolate complex form of the constituent
             # use scipy splines to interpolate values
-            f1=scipy.interpolate.RectBivariateSpline(lon, lat,
+            f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.data.real.T, kx=1, ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(lon, lat,
+            f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.data.imag.T, kx=1, ky=1)
-            f3=scipy.interpolate.RectBivariateSpline(lon, lat,
+            f3 = scipy.interpolate.RectBivariateSpline(lon, lat,
                 hc.mask.T, kx=1, ky=1)
             hci.data.real[:] = f1.ev(ilon,ilat)
             hci.data.imag[:] = f2.ev(ilon,ilat)
@@ -274,6 +290,9 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
         # phase of the constituent in radians
         ph.data[:,i] = np.arctan2(-np.imag(hci.data),np.real(hci.data))
         ph.mask[:,i] = np.copy(hci.mask)
+        # update mask to invalidate points outside model domain
+        amplitude.mask[:,i] |= invalid
+        ph.mask[:,i] |= invalid
 
     # convert phase to degrees
     phase = ph*180.0/np.pi
@@ -339,6 +358,12 @@ def read_constants(model_files=None, **kwargs):
         elif kwargs['version'] in ('FES2012','FES2014','EOT20'):
             # FES netCDF4 constituent files
             hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
+        # grid step size of tide model
+        dlon = lon[1] - lon[0]
+        # replace original values with extend arrays/matrices
+        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+            lon = extend_array(lon, dlon)
+            hc = extend_matrix(hc)
         # append extended constituent
         constituents.append(str(i), hc)
         # set model coordinates
@@ -397,8 +422,8 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     lat = np.copy(constituents.latitude)
 
     # adjust dimensions of input coordinates to be iterable
-    ilon = np.atleast_1d(ilon)
-    ilat = np.atleast_1d(ilat)
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -409,11 +434,14 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         # input points convention (0:360)
         # tide model convention (-180:180)
         ilon[ilon>180.0] -= 360.0
+    # determine if any input points are outside of the model bounds
+    invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
+              (ilat < lat.min()) | (ilat > lat.max())
+
     # number of points
     npts = len(ilon)
     # number of constituents
     nc = len(constituents)
-
     # amplitude and phase
     amplitude = np.ma.zeros((npts,nc))
     amplitude.mask = np.zeros((npts,nc), dtype=bool)
@@ -486,6 +514,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         # phase of the constituent in radians
         ph.data[:,i] = np.arctan2(-np.imag(hci.data),np.real(hci.data))
         ph.mask[:,i] = np.copy(hci.mask)
+        # update mask to invalidate points outside model domain
+        amplitude.mask[:,i] |= invalid
+        ph.mask[:,i] |= invalid
 
     # convert phase to degrees
     phase = ph*180.0/np.pi
@@ -495,6 +526,53 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     phase.data[phase.mask] = phase.fill_value
     # return the interpolated values
     return (amplitude, phase)
+
+# PURPOSE: Extend a longitude array
+def extend_array(input_array, step_size):
+    """
+    Extends a longitude array
+
+    Parameters
+    ----------
+    input_array: float
+        array to extend
+    step_size: float
+        step size between elements of array
+
+    Returns
+    -------
+    temp: float
+        extended array
+    """
+    n = len(input_array)
+    temp = np.zeros((n+2), dtype=input_array.dtype)
+    # extended array [x-1,x0,...,xN,xN+1]
+    temp[0] = input_array[0] - step_size
+    temp[1:-1] = input_array[:]
+    temp[-1] = input_array[-1] + step_size
+    return temp
+
+# PURPOSE: Extend a global matrix
+def extend_matrix(input_matrix):
+    """
+    Extends a global matrix
+
+    Parameters
+    ----------
+    input_matrix: float
+        matrix to extend
+
+    Returns
+    -------
+    temp: float
+        extended matrix
+    """
+    ny, nx = np.shape(input_matrix)
+    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
+    temp[:,0] = input_matrix[:,-1]
+    temp[:,1:-1] = input_matrix[:,:]
+    temp[:,-1] = input_matrix[:,0]
+    return temp
 
 # PURPOSE: read FES ascii tide model grid files
 def read_ascii_file(input_file, **kwargs):
@@ -540,7 +618,7 @@ def read_ascii_file(input_file, **kwargs):
     fill_value = np.float64(masked_values[0])
     # create output variables
     lat = np.linspace(latmin, latmax, nlat)
-    lon = np.linspace(lonmin,lonmax,nlon)
+    lon = np.linspace(lonmin, lonmax, nlon)
     amp = np.ma.zeros((nlat,nlon), fill_value=fill_value, dtype=np.float32)
     ph = np.ma.zeros((nlat,nlon), fill_value=fill_value, dtype=np.float32)
     # create masks for output variables (0=valid)
@@ -621,14 +699,17 @@ def read_netcdf_file(input_file, **kwargs):
         lat = fileID.variables['lat'][:]
     # amplitude and phase components for each type
     if (kwargs['type'] == 'z'):
-        amp = fileID.variables['amplitude'][:]
-        ph = fileID.variables['phase'][:]
+        amp_key = 'amplitude'
+        phase_key = 'phase'
     elif (kwargs['type'] == 'u'):
-        amp = fileID.variables['Ua'][:]
-        ph = fileID.variables['Ug'][:]
+        amp_key = 'Ua'
+        phase_key = 'Ug'
     elif (kwargs['type'] == 'v'):
-        amp = fileID.variables['Va'][:]
-        ph = fileID.variables['Vg'][:]
+        amp_key = 'Va'
+        phase_key = 'Vg'
+    # get amplitude and phase components
+    amp = fileID.variables[amp_key][:]
+    ph = fileID.variables[phase_key][:]
     # close the file
     fileID.close()
     f.close() if kwargs['compressed'] else None
@@ -640,3 +721,103 @@ def read_netcdf_file(input_file, **kwargs):
         fill_value=np.ma.default_fill_value(np.dtype(complex)))
     # return output variables
     return (hc, lon, lat)
+
+# PURPOSE: output tidal constituent file in FES2014 format
+def output_netcdf_file(FILE, hc, lon, lat, constituent, **kwargs):
+    """
+    Writes tidal constituent files in FES2014 netCDF format
+
+    Parameters
+    ----------
+    FILE: str
+        output FES model file name
+    hc: complex
+        Eulerian form of tidal constituent
+    lon: float
+        longitude coordinates
+    lat: float
+        latitude coordinates
+    constituent: str
+        tidal constituent ID
+    type: str or NoneType, default None
+        Tidal variable to output
+
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'v'``: vertical transport velocities
+    """
+    # set default keyword arguments
+    kwargs.setdefault('type', None)
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    # define the NetCDF dimensions
+    fileID.createDimension('lon', len(lon))
+    fileID.createDimension('lat', len(lat))
+    fileID.createDimension('nct', 4)
+    # calculate amplitude and phase
+    amp = np.abs(hc)
+    ph = 180.0*np.arctan2(-np.imag(hc), np.real(hc))/np.pi
+    # update masks and fill values
+    amp.mask = np.copy(hc.mask)
+    amp.data[amp.mask] = amp.fill_value
+    ph.mask = np.copy(hc.mask)
+    ph.data[ph.mask] = ph.fill_value
+    # set variable names and units for type
+    if (kwargs['type'] == 'z'):
+        amp_key = 'amplitude'
+        phase_key = 'phase'
+        units = 'cm'
+    elif (kwargs['type'] == 'u'):
+        amp_key = 'Ua'
+        phase_key = 'Ug'
+        units = 'cm/s'
+    elif (kwargs['type'] == 'v'):
+        amp_key = 'Va'
+        phase_key = 'Vg'
+        units = 'cm/s'
+    # defining the NetCDF variables
+    nc = {}
+    nc['lon'] = fileID.createVariable('lon', lon.dtype, ('lon',))
+    nc['lat'] = fileID.createVariable('lat', lat.dtype, ('lat',))
+    nc[amp_key] = fileID.createVariable(amp_key, amp.dtype,
+        ('lat','lon',), fill_value=amp.fill_value, zlib=True)
+    nc[phase_key] = fileID.createVariable(phase_key, ph.dtype,
+        ('lat','lon',), fill_value=ph.fill_value, zlib=True)
+    # filling the NetCDF variables
+    nc['lon'][:] = lon[:]
+    nc['lat'][:] = lat[:]
+    nc['amplitude'][:] = amp[:]
+    nc[phase_key][:] = ph[:]
+    # set variable attributes for coordinates
+    nc['lon'].setncattr('axis', 'X')
+    nc['lon'].setncattr('units', 'degrees_east')
+    nc['lon'].setncattr('long_name', 'longitude')
+    nc['lat'].setncattr('axis', 'Y')
+    nc['lat'].setncattr('units', 'degrees_north')
+    nc['lat'].setncattr('long_name', 'latitude')
+    # set variable attributes
+    nc[amp_key].setncattr('units', units)
+    long_name = f'Tide amplitude at {constituent} frequency'
+    nc[amp_key].setncattr('long_name', long_name)
+    nc[phase_key].setncattr('units', 'degrees')
+    long_name = f'Tide phase at {constituent} frequency'
+    nc[phase_key].setncattr('long_name', long_name)
+    # define and fill constituent ID
+    nc['con'] = fileID.createVariable('con', 'S1', ('nct',))
+    con = [char.encode('utf8') for char in constituent.ljust(4)]
+    nc['con'][:] = np.array(con, dtype='S1')
+    nc['con'].setncattr('_Encoding', 'utf8')
+    nc['con'].setncattr('long_name', "tidal constituent")
+    # add global attributes
+    fileID.title = "FES tide file"
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    fileID.software_revision = get_git_revision_hash()
+    # Output NetCDF structure information
+    logging.info(FILE)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()

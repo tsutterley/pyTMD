@@ -5,7 +5,7 @@ Return correction for minor constituents based on Richard Ray's PERTH3 code
     PERTH: PREdict Tidal Heights
 
 CALLING SEQUENCE:
-    dh = predict.infer_minor(t,zmajor,constituents)
+    dh = infer_minor_corrections(t,zmajor,constituents)
 
 INPUTS:
     t: days relative to Jan 1, 1992 (48622 MJD)

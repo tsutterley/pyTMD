@@ -35,7 +35,7 @@ import posixpath
 import numpy as np
 import pyTMD.io
 import pyTMD.time
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.utilities
 import pyTMD.predict
 import pyTMD.check_tide_points
@@ -57,7 +57,7 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     # model parameters for FES2014
-    model = pyTMD.model(filepath,compressed=True,
+    model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('FES2014')
     # recursively create model directory
     os.makedirs(model.model_directory)
@@ -195,16 +195,31 @@ def test_compare_FES2014(METHOD):
     # will verify differences between model outputs are within tolerance
     eps = np.finfo(np.float16).eps
     # calculate differences between methods
-    for i,cons in enumerate(c):
+    for i, cons in enumerate(c):
         # calculate difference in amplitude and phase
-        difference =  hc1[:,i] - hc2[:,i]
+        difference = hc1[:,i] - hc2[:,i]
+        assert np.all(np.abs(difference) <= eps)
+
+    # validate iteration within constituents class
+    for field, hc in constituents:
+        # verify constituents
+        assert np.ma.isMaskedArray(hc)
+        # validate amplitude and phase functions
+        amp = constituents.amplitude(field)
+        phase = constituents.phase(field)
+        assert np.ma.isMaskedArray(amp)
+        assert np.ma.isMaskedArray(phase)
+        # calculate complex form of constituent oscillation
+        hcomplex = amp*np.exp(-1j*phase*np.pi/180.0)
+        # calculate difference in amplitude and phase
+        difference = hc - hcomplex
         assert np.all(np.abs(difference) <= eps)
 
 # PURPOSE: test definition file functionality
 @pytest.mark.parametrize("MODEL", ['FES2014'])
 def test_definition_file(MODEL):
     # get model parameters
-    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    model = pyTMD.io.model(filepath,compressed=True).elevation(MODEL)
     # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','model_file','compressed','type','scale','version']
@@ -216,6 +231,14 @@ def test_definition_file(MODEL):
             fid.write('{0}\t{1}\n'.format(attr,val))
     fid.seek(0)
     # use model definition file as input
-    m = pyTMD.model().from_file(fid)
+    m = pyTMD.io.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
+
+# PURPOSE: test extend function
+def test_extend_array():
+    dlon = 1
+    lon = np.arange(0, 360, dlon)
+    valid = np.arange(-dlon, 360 + dlon, dlon)
+    test = pyTMD.io.FES.extend_array(lon, dlon)
+    assert np.all(test == valid)

@@ -225,9 +225,12 @@ def extract_constants(ilon, ilat,
         xi,yi,hz,mz,iob,dt = read_otis_grid(grid_file)
     # invert tide mask to be True for invalid points
     mz = np.logical_not(mz).astype(mz.dtype)
+
     # adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_ll_xy(np.atleast_1d(ilon), np.atleast_1d(ilat), EPSG, 'F')
+    x,y = convert_ll_xy(ilon, ilat, EPSG, 'F')
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -243,7 +246,7 @@ def extract_constants(ilon, ilat,
     # if global: extend limits
     global_grid = False
     # replace original values with extend arrays/matrices
-    if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
+    if np.isclose(xi[-1] - xi[0], 360.0 - dx) & (EPSG == '4326'):
         xi = extend_array(xi, dx)
         # set global grid flag
         global_grid = True
@@ -834,8 +837,10 @@ def interpolate_constants(ilon, ilat, constituents,
     yi = np.copy(constituents.y)
 
     # adjust dimensions of input coordinates to be iterable
+    ilon = np.atleast_1d(np.copy(ilon))
+    ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_ll_xy(np.atleast_1d(ilon), np.atleast_1d(ilat), EPSG, 'F')
+    x,y = convert_ll_xy(ilon, ilat, EPSG, 'F')
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(x) < np.min(xi)) & (EPSG == '4326'):

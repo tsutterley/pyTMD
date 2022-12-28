@@ -960,7 +960,7 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
             for i in range(0, itmax+1):
                 sinu2 = np.sin(u2)
                 fu2 = k0 * np.cos(u2) + k1 / np.tan(u2) - k2
-                fu2p =  -1 * (k0 * sinu2 + k1 / (sinu2 * sinu2))
+                fu2p = -1 * (k0 * sinu2 + k1 / (sinu2 * sinu2))
                 if (np.abs(fu2p) < eps):
                     break
                 else:
