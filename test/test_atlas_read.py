@@ -37,7 +37,7 @@ import posixpath
 import numpy as np
 import pyTMD.io
 import pyTMD.time
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.utilities
 
 # current file path
@@ -87,7 +87,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     # model parameters for TPXO9-atlas-v2
-    model = pyTMD.model(filepath,format='netcdf',compressed=True,
+    model = pyTMD.io.model(filepath,format='netcdf',compressed=True,
         verify=False).elevation('TPXO9-atlas-v2')
     # recursively create model directory
     os.makedirs(model.model_directory)
@@ -216,7 +216,7 @@ def test_compare_TPXO9_v2(METHOD):
 # PURPOSE: Tests that interpolated results are comparable to OTPS2 program
 def test_verify_TPXO8(METHOD, EXTRAPOLATE):
     # model parameters for TPXO8-atlas
-    model = pyTMD.model(filepath,compressed=False).elevation('TPXO8-atlas')
+    model = pyTMD.io.model(filepath,compressed=False).elevation('TPXO8-atlas')
     # constituents for test
     constituents = ['m2','s2']
 
@@ -387,7 +387,7 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
 @pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2'])
 def test_definition_file(MODEL):
     # get model parameters
-    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    model = pyTMD.io.model(filepath,compressed=True).elevation(MODEL)
     # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','grid_file','model_file','compressed','type','scale']
@@ -399,7 +399,7 @@ def test_definition_file(MODEL):
             fid.write('{0}\t{1}\n'.format(attr,val))
     fid.seek(0)
     # use model definition file as input
-    m = pyTMD.model().from_file(fid)
+    m = pyTMD.io.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
 

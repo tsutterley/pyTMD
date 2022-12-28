@@ -39,7 +39,7 @@ import matplotlib.colorbar
 import matplotlib.animation
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import pyTMD.model
+import pyTMD.io.model
 
 # attempt imports
 try:
@@ -84,8 +84,8 @@ class widgets:
         )
 
         # dropdown menu for setting tide model
-        model_list = sorted(pyTMD.model.ocean_elevation() +
-            pyTMD.model.load_elevation())
+        model_list = sorted(pyTMD.io.model.ocean_elevation() +
+            pyTMD.io.model.load_elevation())
         self.model = ipywidgets.Dropdown(
             options=model_list,
             value='GOT4.10',
@@ -128,7 +128,7 @@ class widgets:
     def set_atlas(self, sender):
         """function for updating ATLAS widget visibility
         """
-        if (self.model.value in pyTMD.model.ATLAS()):
+        if (self.model.value in pyTMD.io.model.ATLAS()):
             self.atlas.layout.display = 'inline-flex'
 
 # define projections for ipyleaflet tiles

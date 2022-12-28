@@ -201,9 +201,9 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.model(tide_dir).from_file(DEFINITION_FILE)
+        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.model(tide_dir, format=ATLAS_FORMAT,
+        model = pyTMD.io.model(tide_dir, format=ATLAS_FORMAT,
             compressed=GZIP).current(TIDE_MODEL)
 
     # invalid value
@@ -427,7 +427,7 @@ def arguments():
         default=os.getcwd(),
         help='Working data directory')
     # tide model to use
-    choices = sorted(pyTMD.model.ocean_current())
+    choices = sorted(pyTMD.io.model.ocean_current())
     group.add_argument('--tide','-T',
         metavar='TIDE', type=str,
         choices=choices,

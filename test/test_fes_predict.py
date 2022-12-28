@@ -35,7 +35,7 @@ import posixpath
 import numpy as np
 import pyTMD.io
 import pyTMD.time
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.utilities
 import pyTMD.predict
 import pyTMD.check_tide_points
@@ -57,7 +57,7 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     # model parameters for FES2014
-    model = pyTMD.model(filepath,compressed=True,
+    model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('FES2014')
     # recursively create model directory
     os.makedirs(model.model_directory)
@@ -219,7 +219,7 @@ def test_compare_FES2014(METHOD):
 @pytest.mark.parametrize("MODEL", ['FES2014'])
 def test_definition_file(MODEL):
     # get model parameters
-    model = pyTMD.model(filepath,compressed=True).elevation(MODEL)
+    model = pyTMD.io.model(filepath,compressed=True).elevation(MODEL)
     # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','model_file','compressed','type','scale','version']
@@ -231,7 +231,7 @@ def test_definition_file(MODEL):
             fid.write('{0}\t{1}\n'.format(attr,val))
     fid.seek(0)
     # use model definition file as input
-    m = pyTMD.model().from_file(fid)
+    m = pyTMD.io.model().from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
 

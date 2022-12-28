@@ -53,7 +53,7 @@ import warnings
 import argparse
 import numpy as np
 import pyTMD.io
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.utilities
 from pyTMD.convert_ll_xy import convert_ll_xy
 
@@ -90,7 +90,7 @@ def get_projection(PROJECTION):
 def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     PROJECTION='4326', MODE=0o775):
     # get parameters for tide model
-    model = pyTMD.model(directory=tide_dir).elevation(TIDE_MODEL)
+    model = pyTMD.io.model(directory=tide_dir).elevation(TIDE_MODEL)
     # directionaries with input and output files
     model_file = {}
     new_model_file = {}
@@ -145,7 +145,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     # reduce elevation files to bounds
     try:
         # get parameters for tide model
-        model = pyTMD.model(tide_dir).elevation(TIDE_MODEL)
+        model = pyTMD.io.model(tide_dir).elevation(TIDE_MODEL)
     except Exception as e:
         pass
     else:
@@ -174,7 +174,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     # reduce transport files to bounds
     try:
         # get parameters for tide model
-        model = pyTMD.model(tide_dir).current(TIDE_MODEL)
+        model = pyTMD.io.model(tide_dir).current(TIDE_MODEL)
     except Exception as e:
         pass
     else:

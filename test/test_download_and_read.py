@@ -49,7 +49,7 @@ import warnings
 import posixpath
 import numpy as np
 import pyTMD.io
-import pyTMD.model
+import pyTMD.io.model
 import pyTMD.predict
 import pyTMD.time
 import pyTMD.utilities
@@ -654,7 +654,7 @@ class Test_CATS2008:
     @pytest.mark.parametrize("MODEL", ['CATS2008'])
     def test_definition_file(self, MODEL):
         # get model parameters
-        model = pyTMD.model(filepath).elevation(MODEL)
+        model = pyTMD.io.model(filepath).elevation(MODEL)
         # create model definition file
         fid = io.StringIO()
         attrs = ['name','format','grid_file','model_file','type','projection']
@@ -666,7 +666,7 @@ class Test_CATS2008:
                 fid.write('{0}\t{1}\n'.format(attr,val))
         fid.seek(0)
         # use model definition file as input
-        m = pyTMD.model().from_file(fid)
+        m = pyTMD.io.model().from_file(fid)
         for attr in attrs:
             assert getattr(model,attr) == getattr(m,attr)
 
@@ -931,7 +931,7 @@ class Test_AOTIM5_2018:
     @pytest.mark.parametrize("MODEL", ['AOTIM-5-2018'])
     def test_definition_file(self, MODEL):
         # get model parameters
-        model = pyTMD.model(filepath).elevation(MODEL)
+        model = pyTMD.io.model(filepath).elevation(MODEL)
         # create model definition file
         fid = io.StringIO()
         attrs = ['name','format','grid_file','model_file','type','projection']
@@ -943,7 +943,7 @@ class Test_AOTIM5_2018:
                 fid.write('{0}\t{1}\n'.format(attr,val))
         fid.seek(0)
         # use model definition file as input
-        m = pyTMD.model().from_file(fid)
+        m = pyTMD.io.model().from_file(fid)
         for attr in attrs:
             assert getattr(model,attr) == getattr(m,attr)
 
