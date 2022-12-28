@@ -622,7 +622,7 @@ class Test_CATS2008:
         hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
         # calculate differences between methods
-        difference = np.ma.zeros((valid_stations, len(c)))
+        difference = np.ma.zeros((valid_stations, len(c)), dtype=np.complex128)
         difference.data[:] = hc1.data - hc2.data
         difference.mask = (hc1.mask | hc2.mask)
         difference.data[difference.mask] = 0.0
@@ -895,7 +895,7 @@ class Test_AOTIM5_2018:
         hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
         # calculate differences between methods
-        difference = np.ma.zeros((valid_stations, len(c)))
+        difference = np.ma.zeros((valid_stations, len(c)), dtype=np.complex128)
         difference.data[:] = hc1.data - hc2.data
         difference.mask = (hc1.mask | hc2.mask)
         difference.data[difference.mask] = 0.0

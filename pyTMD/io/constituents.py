@@ -116,7 +116,7 @@ class constituents:
         """
         constituent = getattr(self, field)
         # calculate constituent amplitude
-        amp = np.abs(constituent)
+        amp = np.sqrt(constituent.real**2 + constituent.imag**2)
         # update mask and fill values
         amp.mask = np.copy(constituent.mask)
         amp.data[amp.mask] = amp.fill_value
@@ -138,7 +138,7 @@ class constituents:
         """
         constituent = getattr(self, field)
         # calculate constituent phase and convert to degrees
-        ph = 180.0*np.arctan2(-np.imag(constituent), np.real(constituent))/np.pi
+        ph = 180.0*np.arctan2(-constituent.imag, constituent.real)/np.pi
         ph.data[ph.data < 0] += 360.0
         # update mask and fill values
         ph.mask = np.copy(constituent.mask)

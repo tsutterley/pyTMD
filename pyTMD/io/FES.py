@@ -450,7 +450,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     # default complex fill value
     fill_value = np.ma.default_fill_value(np.dtype(complex))
     # interpolate each constituent
-    for i, hc in enumerate(constituents):
+    for i, c in enumerate(constituents.fields):
+        # get model constituent
+        hc = constituents.get(c)
         # interpolated complex form of constituent oscillation
         hci = np.ma.zeros((npts), dtype=hc.dtype, fill_value=hc.fill_value)
         hci.mask = np.zeros((npts),dtype=bool)
