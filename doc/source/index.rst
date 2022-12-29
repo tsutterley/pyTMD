@@ -71,3 +71,10 @@ conventions for calculating radial pole tide displacements.
     api_reference/compute_OPT_displacements.rst
     api_reference/compute_tidal_currents.rst
     api_reference/compute_tidal_elevations.rst
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Release Notes
+
+    release_notes/Release-Notes.rst
