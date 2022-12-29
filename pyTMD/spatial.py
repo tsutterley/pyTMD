@@ -62,7 +62,6 @@ import warnings
 import numpy as np
 import dateutil.parser
 import pyTMD.version
-from pyTMD.utilities import get_git_revision_hash
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
@@ -691,7 +690,6 @@ def to_netCDF4(output, attributes, filename, **kwargs):
     # add attributes for software information
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
-    fileID.software_revision = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
@@ -740,7 +738,6 @@ def to_HDF5(output, attributes, filename, **kwargs):
     # add attributes for software information
     fileID.attrs['software_reference'] = pyTMD.version.project_name
     fileID.attrs['software_version'] = pyTMD.version.full_version
-    fileID.attrs['software_revision'] = get_git_revision_hash()
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file

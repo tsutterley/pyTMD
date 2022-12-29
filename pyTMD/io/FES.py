@@ -95,7 +95,6 @@ import numpy as np
 import pyTMD.version
 import pyTMD.interpolate
 import pyTMD.io.constituents
-from pyTMD.utilities import get_git_revision_hash
 
 # attempt imports
 try:
@@ -795,7 +794,6 @@ def output_netcdf_file(FILE, hc, lon, lat, constituent, **kwargs):
     # add attributes for software information
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
-    fileID.software_revision = get_git_revision_hash()
     # Output NetCDF structure information
     logging.info(FILE)
     logging.info(list(fileID.variables.keys()))

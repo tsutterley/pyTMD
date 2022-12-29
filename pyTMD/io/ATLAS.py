@@ -98,7 +98,6 @@ import numpy as np
 import pyTMD.version
 import pyTMD.io.constituents
 import pyTMD.interpolate
-from pyTMD.utilities import get_git_revision_hash
 
 # attempt imports
 try:
@@ -910,7 +909,6 @@ def output_netcdf_grid(FILE, hz, hu, hv,
     # add attributes for software information
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
-    fileID.software_revision = get_git_revision_hash()
     # Output NetCDF structure information
     logging.info(FILE)
     logging.info(list(fileID.variables.keys()))
@@ -987,7 +985,6 @@ def output_netcdf_elevation(FILE, h, lon_z, lat_z, constituent):
     # add attributes for software information
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
-    fileID.software_revision = get_git_revision_hash()
     # Output NetCDF structure information
     logging.info(FILE)
     logging.info(list(fileID.variables.keys()))
@@ -1086,7 +1083,6 @@ def output_netcdf_transport(FILE, u, v, lon_u, lat_u,
     # add attributes for software information
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
-    fileID.software_revision = get_git_revision_hash()
     # Output NetCDF structure information
     logging.info(FILE)
     logging.info(list(fileID.variables.keys()))
