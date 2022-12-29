@@ -28,13 +28,13 @@ conventions for calculating radial pole tide displacements.
     :hidden:
     :caption: API Reference
 
-    api_reference/bilinear_interp.rst
     api_reference/calc_astrol_longitudes.rst
     api_reference/check_tide_points.rst
     api_reference/compute_tide_corrections.rst
     api_reference/constants.rst
     api_reference/convert_ll_xy.rst
     api_reference/eop.rst
+    api_reference/interpolate.rst
     api_reference/io/ATLAS.rst
     api_reference/io/FES.rst
     api_reference/io/GOT.rst
@@ -44,7 +44,6 @@ conventions for calculating radial pole tide displacements.
     api_reference/io/ocean_pole_tide.rst
     api_reference/load_constituent.rst
     api_reference/load_nodal_corrections.rst
-    api_reference/nearest_extrap.rst
     api_reference/predict.rst
     api_reference/spatial.rst
     api_reference/tidal_ellipse.rst

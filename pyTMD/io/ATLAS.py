@@ -52,13 +52,13 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
-    bilinear_interp.py: bilinear interpolation of data to coordinates
-    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
         new functions to output ATLAS formatted netCDF4 files
+        refactored interpolation routines into new module
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 07/2022: fix setting of masked array data to NaN
@@ -95,11 +95,9 @@ import logging
 import datetime
 import warnings
 import numpy as np
-import scipy.interpolate
 import pyTMD.version
 import pyTMD.io.constituents
-from pyTMD.bilinear_interp import bilinear_interp
-from pyTMD.nearest_extrap import nearest_extrap
+import pyTMD.interpolate
 from pyTMD.utilities import get_git_revision_hash
 
 # attempt imports
@@ -217,7 +215,6 @@ def extract_constants(ilon, ilat,
 
     # grid step size of tide model
     dlon = lon[1] - lon[0]
-    dlat = lat[1] - lat[0]
     # if global: extend limits
     global_grid = False
     # replace original values with extend arrays/matrices
@@ -235,40 +232,30 @@ def extract_constants(ilon, ilat,
     # number of points
     npts = len(ilon)
     # interpolate bathymetry and mask to output points
-    D = np.ma.zeros((npts))
-    D.mask = np.zeros((npts), dtype=bool)
     if (kwargs['method'] == 'bilinear'):
         # replace invalid values with nan
         bathymetry.data[bathymetry.mask] = np.nan
         # use quick bilinear to interpolate values
-        D.data[:] = bilinear_interp(lon, lat, bathymetry, ilon, ilat)
+        D = pyTMD.interpolate.bilinear(lon, lat, bathymetry, ilon, ilat,
+            fill_value=np.ma.default_fill_value(np.dtype(float)))
         # replace nan values with fill_value
-        D.mask[:] = np.isnan(D.data)
+        D.mask[:] |= np.isnan(D.data)
         D.data[D.mask] = D.fill_value
     elif (kwargs['method'] == 'spline'):
         # use scipy bivariate splines to interpolate values
-        f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
-            bathymetry.data.T, kx=1, ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
-            bathymetry.mask.T, kx=1, ky=1)
-        D.data[:] = f1.ev(ilon,ilat)
-        D.mask[:] = np.ceil(f2.ev(ilon,ilat)).astype(bool)
+        D = pyTMD.interpolate.spline(lon, lat, bathymetry, ilon, ilat,
+            reducer=np.ceil, kx=1, ky=1)
     else:
         # use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.data, method=kwargs['method'],
-            bounds_error=False)
-        r2 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.mask, method=kwargs['method'],
-            bounds_error=False, fill_value=1)
-        D.data[:] = r1.__call__(np.c_[ilat, ilon])
-        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat, ilon])).astype(bool)
+        D = pyTMD.interpolate.regulargrid(lon, lat, bathymetry, ilon, ilat,
+            method=kwargs['method'], reducer=np.ceil, bounds_error=False)
 
     # u and v are velocities in cm/s
     if kwargs['type'] in ('v','u'):
         unit_conv = (D.data/100.0)
+    # h is elevation values in m
     # U and V are transports in m^2/s
-    elif kwargs['type'] in ('V','U'):
+    elif kwargs['type'] in ('z','V','U'):
         unit_conv = 1.0
 
     # number of constituents
@@ -287,116 +274,63 @@ def extract_constants(ilon, ilat,
             raise FileNotFoundError(os.path.expanduser(model_file))
         if (kwargs['type'] == 'z'):
             # read constituent from elevation file
-            z, cons = read_netcdf_elevation(model_file,
+            hc, cons = read_netcdf_elevation(model_file,
                 compressed=kwargs['compressed'])
-            # append constituent to list
-            constituents.append(cons)
-            # replace original values with extend matrices
-            if global_grid:
-                z = extend_matrix(z)
-            # update constituent mask with bathymetry mask
-            z.mask[:] |= bathymetry.mask[:]
-            # interpolate amplitude and phase of the constituent
-            z1 = np.ma.zeros((npts), dtype=z.dtype)
-            z1.mask = np.zeros((npts), dtype=bool)
-            if (kwargs['method'] == 'bilinear'):
-                # replace invalid values with nan
-                z.data[z.mask] = np.nan
-                z1.data[:] = bilinear_interp(lon, lat, z, ilon, ilat,
-                    dtype=z.dtype)
-                # mask invalid values
-                z1.mask[:] |= np.copy(D.mask)
-                z1.data[z1.mask] = z1.fill_value
-            elif (kwargs['method'] == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                    z.data.real.T, kx=1, ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                    z.data.imag.T, kx=1, ky=1)
-                z1.data.real = f1.ev(ilon,ilat)
-                z1.data.imag = f2.ev(ilon,ilat)
-                # mask invalid values
-                z1.mask[:] |= np.copy(D.mask)
-                z1.data[z1.mask] = z1.fill_value
-            else:
-                # use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-                    z.data, method=kwargs['method'], bounds_error=False,
-                    fill_value=z1.fill_value)
-                z1.data[:] = r1.__call__(np.c_[ilat, ilon])
-                # mask invalid values
-                z1.mask[:] |= np.copy(D.mask)
-                z1.data[z1.mask] = z1.fill_value
-            # extrapolate data using nearest-neighbors
-            if kwargs['extrapolate'] and np.any(z1.mask):
-                # find invalid data points
-                inv, = np.nonzero(z1.mask)
-                # replace invalid values with nan
-                z.data[z.mask] = np.nan
-                # extrapolate points within cutoff of valid model points
-                z1[inv] = nearest_extrap(lon, lat, z, ilon[inv], ilat[inv],
-                    dtype=z.dtype, cutoff=kwargs['cutoff'])
-            # amplitude and phase of the constituent
-            ampl.data[:,i] = np.abs(z1.data)
-            ampl.mask[:,i] = np.copy(z1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(z1.data), np.real(z1.data))
-            ph.mask[:,i] = np.copy(z1.mask)
         elif kwargs['type'] in ('U','u','V','v'):
             # read constituent from transport file
-            tr, cons = read_netcdf_transport(model_file, kwargs['type'],
+            hc, cons = read_netcdf_transport(model_file, kwargs['type'],
                 compressed=kwargs['compressed'])
-            # append constituent to list
-            constituents.append(cons)
-            # replace original values with extend matrices
-            if global_grid:
-                tr = extend_matrix(tr)
-            # update constituent mask with bathymetry mask
-            tr.mask[:] |= bathymetry.mask[:]
-            # interpolate amplitude and phase of the constituent
-            tr1 = np.ma.zeros((npts), dtype=tr.dtype)
-            tr1.mask = np.zeros((npts), dtype=bool)
-            if (kwargs['method'] == 'bilinear'):
-                # replace invalid values with nan
-                tr.data[tr.mask] = np.nan
-                tr1.data[:] = bilinear_interp(lon, lat, tr, ilon, ilat,
-                    dtype=tr.dtype)
-                # mask invalid values
-                tr1.mask[:] |= np.copy(D.mask)
-                tr1.data[tr1.mask] = tr1.fill_value
-            elif (kwargs['method'] == 'spline'):
-                # use scipy splines to interpolate values
-                f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                    tr.data.real.T, kx=1, ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                    tr.data.imag.T, kx=1, ky=1)
-                tr1.data.real = f1.ev(ilon,ilat)
-                tr1.data.imag = f2.ev(ilon,ilat)
-                # mask invalid values
-                tr1.mask[:] |= np.copy(D.mask)
-                tr1.data[tr1.mask] = tr1.fill_value
-            else:
-                # use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-                    tr.data, method=kwargs['method'], bounds_error=False,
-                    fill_value=tr1.fill_value)
-                tr1.data[:] = r1.__call__(np.c_[ilat, ilon])
-                # mask invalid values
-                tr1.mask[:] |= np.copy(D.mask)
-                tr1.data[tr1.mask] = tr1.fill_value
-            # extrapolate data using nearest-neighbors
-            if kwargs['extrapolate'] and np.any(tr1.mask):
-                # find invalid data points
-                inv, = np.nonzero(tr1.mask)
-                # replace invalid values with nan
-                tr.data[tr.mask] = np.nan
-                # extrapolate points within cutoff of valid model points
-                tr1[inv] = nearest_extrap(lon, lat, tr, ilon[inv], ilat[inv],
-                    dtype=tr.dtype, cutoff=kwargs['cutoff'])
-            # convert units
-            # amplitude and phase of the constituent
-            ampl.data[:,i] = np.abs(tr1.data)/unit_conv
-            ampl.mask[:,i] = np.copy(tr1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(tr1.data), np.real(tr1.data))
-            ph.mask[:,i] = np.copy(tr1.mask)
+        # append constituent to list
+        constituents.append(cons)
+        # replace original values with extend matrices
+        if global_grid:
+            hc = extend_matrix(hc)
+        # update constituent mask with bathymetry mask
+        hc.mask[:] |= bathymetry.mask[:]
+        # interpolate amplitude and phase of the constituent
+        if (kwargs['method'] == 'bilinear'):
+            # replace invalid values with nan
+            hc.data[hc.mask] = np.nan
+            hci = pyTMD.interpolate.bilinear(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype)
+            # mask invalid values
+            hci.mask[:] |= np.copy(D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        elif (kwargs['method'] == 'spline'):
+            # use scipy bivariate splines to interpolate values
+            hci = pyTMD.interpolate.spline(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype,
+                reducer=np.ceil,
+                kx=1, ky=1)
+            # mask invalid values
+            hci.mask[:] |= np.copy(D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        else:
+            # use scipy regular grid to interpolate values
+            hci = pyTMD.interpolate.regulargrid(lon, lat, hc, ilon, ilat,
+                dtype=hc.dtype,
+                method=kwargs['method'],
+                reducer=np.ceil,
+                bounds_error=False)
+            # mask invalid values
+            hci.mask[:] |= np.copy(D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        # extrapolate data using nearest-neighbors
+        if kwargs['extrapolate'] and np.any(hci.mask):
+            # find invalid data points
+            inv, = np.nonzero(hci.mask)
+            # replace invalid values with nan
+            hc.data[hc.mask] = np.nan
+            # extrapolate points within cutoff of valid model points
+            hci[inv] = pyTMD.interpolate.extrapolate(lon, lat, hc,
+                ilon[inv], ilat[inv], dtype=hc.dtype,
+                cutoff=kwargs['cutoff'])
+        # convert units
+        # amplitude and phase of the constituent
+        ampl.data[:,i] = np.abs(hci.data)/unit_conv
+        ampl.mask[:,i] = np.copy(hci.mask)
+        ph.data[:,i] = np.arctan2(-np.imag(hci.data), np.real(hci.data))
+        ph.mask[:,i] = np.copy(hci.mask)
         # update mask to invalidate points outside model domain
         ampl.mask[:,i] |= invalid
         ph.mask[:,i] |= invalid
@@ -570,34 +504,23 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     bathymetry = np.ma.array(constituents.bathymetry,
         mask=constituents.mask, fill_value=0.0)
     # interpolate bathymetry and mask to output points
-    D = np.ma.zeros((npts))
-    D.mask = np.zeros((npts), dtype=bool)
     if (kwargs['method'] == 'bilinear'):
         # replace invalid values with nan
         bathymetry.data[bathymetry.mask] = np.nan
         # use quick bilinear to interpolate values
-        D.data[:] = bilinear_interp(lon, lat, bathymetry, ilon, ilat)
+        D = pyTMD.interpolate.bilinear(lon, lat, bathymetry, ilon, ilat,
+            fill_value=np.ma.default_fill_value(np.dtype(float)))
         # replace nan values with fill_value
-        D.mask[:] = np.isnan(D.data)
+        D.mask[:] |= np.isnan(D.data)
         D.data[D.mask] = D.fill_value
     elif (kwargs['method'] == 'spline'):
         # use scipy bivariate splines to interpolate values
-        f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
-            bathymetry.data.T, kx=1, ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
-            bathymetry.mask.T, kx=1, ky=1)
-        D.data[:] = f1.ev(ilon,ilat)
-        D.mask[:] = np.ceil(f2.ev(ilon,ilat)).astype(bool)
+        D = pyTMD.interpolate.spline(lon, lat, bathymetry, ilon, ilat,
+            reducer=np.ceil, kx=1, ky=1)
     else:
         # use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.data, method=kwargs['method'],
-            bounds_error=False)
-        r2 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-            bathymetry.mask, method=kwargs['method'],
-            bounds_error=False, fill_value=1)
-        D.data[:] = r1.__call__(np.c_[ilat, ilon])
-        D.mask[:] = np.ceil(r2.__call__(np.c_[ilat, ilon])).astype(bool)
+        D = pyTMD.interpolate.regulargrid(lon, lat, bathymetry, ilon, ilat,
+            method=kwargs['method'], reducer=np.ceil, bounds_error=False)
 
     # u and v are velocities in cm/s
     if kwargs['type'] in ('v','u'):
@@ -621,12 +544,11 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
         # get model constituent
         hc = constituents.get(c)
         # interpolate amplitude and phase of the constituent
-        hci = np.ma.zeros((npts), dtype=hc.dtype)
-        hci.mask = np.zeros((npts), dtype=bool)
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
             hc.data[hc.mask] = np.nan
-            hci.data[:] = bilinear_interp(lon, lat, hc, ilon, ilat,
+            hci = pyTMD.interpolate.bilinear(lon, lat, hc, ilon, ilat,
+                fill_value=fill_value,
                 dtype=hc.dtype)
             # mask invalid values
             hci.mask[:] |= np.copy(D.mask)
@@ -635,12 +557,11 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             # replace invalid values with fill value
             hc.data[hc.mask] = fill_value
             # use scipy splines to interpolate values
-            f1 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.real.T, kx=1, ky=1)
-            f2 = scipy.interpolate.RectBivariateSpline(lon, lat,
-                hc.imag.T, kx=1, ky=1)
-            hci.data.real = f1.ev(ilon,ilat)
-            hci.data.imag = f2.ev(ilon,ilat)
+            hci = pyTMD.interpolate.spline(lon, lat, hc, ilon, ilat,
+                fill_value=fill_value,
+                dtype=hc.dtype,
+                reducer=np.ceil,
+                kx=1, ky=1)
             # mask invalid values
             hci.mask[:] |= np.copy(D.mask)
             hci.data[hci.mask] = hci.fill_value
@@ -648,10 +569,12 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             # replace invalid values with fill value
             hc.data[hc.mask] = fill_value
             # use scipy regular grid to interpolate values
-            r1 = scipy.interpolate.RegularGridInterpolator((lat, lon),
-                hc, method=kwargs['method'], bounds_error=False,
-                fill_value=hci.fill_value)
-            hci.data[:] = r1.__call__(np.c_[ilat, ilon])
+            hci = pyTMD.interpolate.regulargrid(lon, lat, hc, ilon, ilat,
+                fill_value=fill_value,
+                dtype=hc.dtype,
+                method=kwargs['method'],
+                reducer=np.ceil,
+                bounds_error=False)
             # mask invalid values
             hci.mask[:] |= np.copy(D.mask)
             hci.data[hci.mask] = hci.fill_value
@@ -662,8 +585,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
             # replace invalid values with nan
             hc[hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
-            hci[inv] = nearest_extrap(lon, lat, hc, ilon[inv], ilat[inv],
-                dtype=hc.dtype, cutoff=kwargs['cutoff'])
+            hci[inv] = pyTMD.interpolate.extrapolate(lon, lat, hc,
+                ilon[inv], ilat[inv], dtype=hc.dtype,
+                cutoff=kwargs['cutoff'])
         # convert units
         # amplitude and phase of the constituent
         ampl.data[:,i] = np.abs(hci.data)/unit_conv

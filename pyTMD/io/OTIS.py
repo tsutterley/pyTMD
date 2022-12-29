@@ -56,12 +56,12 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates
-    bilinear_interp.py: bilinear interpolation of data to coordinates
-    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
+        refactored interpolation routines into new module
     Updated 11/2022: place some imports within try/except statements
         fix variable reads for ATLAS compact data formats
         use f-strings for formatting verbose or ascii output
@@ -111,10 +111,9 @@ import struct
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.interpolate
 import pyTMD.io.constituents
 from pyTMD.convert_ll_xy import convert_ll_xy
-from pyTMD.bilinear_interp import bilinear_interp
-from pyTMD.nearest_extrap import nearest_extrap
 
 # attempt imports
 try:
@@ -267,7 +266,8 @@ def extract_constants(ilon, ilat,
             hz = extend_matrix(hz)
             mz = extend_matrix(mz)
         # masks zero values
-        hz = np.ma.array(hz, mask=(hz==0))
+        mask = (hz == 0) | mz.astype(bool)
+        bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # create current masks and bathymetry estimates
         mz,mu,mv = Muv(hz)
@@ -279,9 +279,10 @@ def extract_constants(ilon, ilat,
             hu = extend_matrix(hu)
             mu = extend_matrix(mu)
         # masks zero values
-        hu = np.ma.array(hu, mask=(hu==0))
+        mask = (hu == 0) | mu.astype(bool)
+        bathymetry = np.ma.array(hu, mask=mask)
         # x coordinates for u transports
-        xu = xi - dx/2.0
+        xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # create current masks and bathymetry estimates
         mz,mu,mv = Muv(hz)
@@ -293,71 +294,36 @@ def extract_constants(ilon, ilat,
             hv = extend_matrix(hv)
             mv = extend_matrix(mv)
         # masks zero values
-        hv = np.ma.array(hv, mask=(hv==0))
+        mask = (hv == 0) | mv.astype(bool)
+        bathymetry = np.ma.array(hv, mask=mask)
         # y coordinates for v transports
-        yv = yi - dy/2.0
+        yi -= dy/2.0
 
-    # interpolate depth and mask to output points
+    # interpolate bathymetry and mask to output points
     if (kwargs['method'] == 'bilinear'):
+        # replace invalid values with nan
+        bathymetry.data[bathymetry.mask] = np.nan
         # use quick bilinear to interpolate values
-        if (kwargs['type'] == 'z'):
-            D = bilinear_interp(xi, yi, hz, x, y)
-            mz1 = bilinear_interp(xi, yi, mz, x, y)
-            mz1 = np.ceil(mz1).astype(mz.dtype)
-        elif kwargs['type'] in ('u','U'):
-            D = bilinear_interp(xu, yi, hu, x, y)
-            mu1 = bilinear_interp(xu, yi, mu, x, y)
-            mu1 = np.ceil(mu1).astype(mu.dtype)
-        elif kwargs['type'] in ('v','V'):
-            D = bilinear_interp(xi, yv, hv, x, y)
-            mv1 = bilinear_interp(xi, yv, mv, x, y)
-            mv1 = np.ceil(mv1).astype(mz.dtype)
+        D = pyTMD.interpolate.bilinear(xi, yi, bathymetry, x, y,
+            fill_value=np.ma.default_fill_value(np.dtype(float)))
+        # replace nan values with fill_value
+        D.mask[:] |= np.isnan(D.data)
+        D.data[D.mask] = D.fill_value
     elif (kwargs['method'] == 'spline'):
         # use scipy bivariate splines to interpolate values
-        if (kwargs['type'] == 'z'):
-            f1=scipy.interpolate.RectBivariateSpline(xi, yi, hz.T, kx=1, ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(xi, yi, mz.T, kx=1, ky=1)
-            D = f1.ev(x,y)
-            mz1 = np.ceil(f2.ev(x,y)).astype(mz.dtype)
-        elif kwargs['type'] in ('u','U'):
-            f1=scipy.interpolate.RectBivariateSpline(xu, yi, hu.T, kx=1, ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(xu, yi, mu.T, kx=1, ky=1)
-            D = f1.ev(x,y)
-            mu1 = np.ceil(f2.ev(x,y)).astype(mu.dtype)
-        elif kwargs['type'] in ('v','V'):
-            f1=scipy.interpolate.RectBivariateSpline(xi, yv, hv.T, kx=1, ky=1)
-            f2=scipy.interpolate.RectBivariateSpline(xi, yv, mv.T, kx=1, ky=1)
-            D = f1.ev(x,y)
-            mv1 = np.ceil(f2.ev(x,y)).astype(mv.dtype)
+        D = pyTMD.interpolate.spline(xi, yi, bathymetry, x, y,
+            reducer=np.ceil, kx=1, ky=1)
     else:
         # use scipy regular grid to interpolate values for a given method
-        if (kwargs['type'] == 'z'):
-            r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), hz,
-                method=kwargs['method'], bounds_error=False)
-            r2 = scipy.interpolate.RegularGridInterpolator((yi,xi), mz,
-                method=kwargs['method'], bounds_error=False, fill_value=0)
-            D = r1.__call__(np.c_[y,x])
-            mz1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mz.dtype)
-        elif kwargs['type'] in ('u','U'):
-            r1 = scipy.interpolate.RegularGridInterpolator((yi,xu), hu,
-                method=kwargs['method'], bounds_error=False)
-            r2 = scipy.interpolate.RegularGridInterpolator((yi,xu), mu,
-                method=kwargs['method'], bounds_error=False, fill_value=0)
-            D = r1.__call__(np.c_[y,x])
-            mu1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mu.dtype)
-        elif kwargs['type'] in ('v','V'):
-            r1 = scipy.interpolate.RegularGridInterpolator((yv,xi), hv,
-                method=kwargs['method'], bounds_error=False)
-            r2 = scipy.interpolate.RegularGridInterpolator((yv,xi), mv,
-                method=kwargs['method'], bounds_error=False, fill_value=0)
-            D = r1.__call__(np.c_[y,x])
-            mv1 = np.ceil(r2.__call__(np.c_[y,x])).astype(mv.dtype)
+        D = pyTMD.interpolate.regulargrid(xi, yi, bathymetry, x, y,
+            method=kwargs['method'], reducer=np.ceil, bounds_error=False)
 
     # u and v: velocities in cm/s
     if kwargs['type'] in ('v','u'):
         unit_conv = (D/100.0)
-    # U and V: transports in m^2/s
-    elif kwargs['type'] in ('V','U'):
+    # h is elevation values in m
+    # U and V are transports in m^2/s
+    elif kwargs['type'] in ('z','V','U'):
         unit_conv = 1.0
 
     # read and interpolate each constituent
@@ -376,203 +342,98 @@ def extract_constants(ilon, ilat,
     # read and interpolate each constituent
     for i,c in enumerate(constituents):
         if (kwargs['type'] == 'z'):
-            # read constituent from elevation file
+            # read z constituent from elevation file
             if (kwargs['grid'] == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
-                xi,yi,z = combine_atlas_model(x0, y0, z0, pmask, zlocal,
+                xi,yi,hc = combine_atlas_model(x0, y0, z0, pmask, zlocal,
                     variable='z')
             elif (kwargs['grid'] == 'ESR'):
-                z = read_netcdf_file(model_file, i, variable='z')
+                hc = read_netcdf_file(model_file, i, variable='z')
                 # apply flexure scaling
                 if kwargs['apply_flexure']:
-                    z *= sf
+                    hc *= sf
             elif isinstance(model_file,list):
-                z = read_otis_elevation(model_file[i], 0)
+                hc = read_otis_elevation(model_file[i], 0)
             else:
-                z = read_otis_elevation(model_file, i)
-            # replace original values with extend matrices
-            if global_grid:
-                z = extend_matrix(z)
-            # copy mask to elevation
-            z.mask |= mz.astype(bool)
-            # interpolate amplitude and phase of the constituent
-            z1 = np.ma.zeros((npts), dtype=z.dtype)
-            if (kwargs['method'] == 'bilinear'):
-                # replace zero values with nan
-                z.data[(z==0) | z.mask] = np.nan
-                # use quick bilinear to interpolate values
-                z1.data[:] = bilinear_interp(xi, yi, z, x, y,
-                    dtype=np.longcomplex)
-                # replace nan values with fill_value
-                z1.mask = (np.isnan(z1.data) | (mz1.astype(bool)))
-                z1.data[z1.mask] = z1.fill_value
-            elif (kwargs['method'] == 'spline'):
-                # use scipy bivariate splines to interpolate values
-                f1 = scipy.interpolate.RectBivariateSpline(xi,yi,
-                    z.real.T, kx=1, ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xi,yi,
-                    z.imag.T, kx=1, ky=1)
-                z1.data.real = f1.ev(x,y)
-                z1.data.imag = f2.ev(x,y)
-                # replace zero values with fill_value
-                z1.mask = (mz1.astype(bool))
-                z1.data[z1.mask] = z1.fill_value
-            else:
-                # use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), z,
-                    method=kwargs['method'],
-                    bounds_error=False,
-                    fill_value=z1.fill_value)
-                z1 = np.ma.zeros((npts), dtype=z.dtype)
-                z1.data[:] = r1.__call__(np.c_[y,x])
-                # replace invalid values with fill_value
-                z1.mask = (z1.data == z1.fill_value) | (mz1.astype(bool))
-                z1.data[z1.mask] = z1.fill_value
-            # extrapolate data using nearest-neighbors
-            if kwargs['extrapolate'] and np.any(z1.mask):
-                # find invalid data points
-                inv, = np.nonzero(z1.mask)
-                # replace zero values with nan
-                z.data[(z==0) | z.mask] = np.nan
-                # extrapolate points within cutoff of valid model points
-                z1[inv] = nearest_extrap(xi, yi, z, x[inv], y[inv],
-                    dtype=np.longcomplex,
-                    cutoff=kwargs['cutoff'],
-                    EPSG=EPSG)
-            # amplitude and phase of the constituent
-            amplitude.data[:,i] = np.abs(z1.data)
-            amplitude.mask[:,i] = np.copy(z1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(z1.data), np.real(z1.data))
-            ph.mask[:,i] = np.copy(z1.mask)
+                hc = read_otis_elevation(model_file, i)
         elif kwargs['type'] in ('U','u'):
-            # read constituent from transport file
+            # read u constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
-                xi,yi,u = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
+                xi,yi,hc = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
                     variable='u')
             elif (kwargs['grid'] == 'ESR'):
-                u = read_netcdf_file(model_file, i, variable='u')
+                hc = read_netcdf_file(model_file, i, variable='u')
             elif isinstance(model_file,list):
-                u,v = read_otis_transport(model_file[i], 0)
+                hc,v = read_otis_transport(model_file[i], 0)
             else:
-                u,v = read_otis_transport(model_file, i)
-            # replace original values with extend matrices
-            if global_grid:
-                u = extend_matrix(u)
-            # copy mask to u transports
-            u.mask |= mu.astype(bool)
-            # interpolate amplitude and phase of the constituent
-            u1 = np.ma.zeros((npts), dtype=u.dtype)
-            if (kwargs['method'] == 'bilinear'):
-                # replace zero values with nan
-                u.data[(u==0) | u.mask] = np.nan
-                # use quick bilinear to interpolate values
-                u1.data[:] = bilinear_interp(xu, yi, u, x, y,
-                    dtype=np.longcomplex)
-                # replace nan values with fill_value
-                u1.mask = (np.isnan(u1.data) | (mu1.astype(bool)))
-                u1.data[u1.mask] = u1.fill_value
-            elif (kwargs['method'] == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(xu, yi,
-                    u.real.T, kx=1, ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xu, yi,
-                    u.imag.T, kx=1, ky=1)
-                u1.data.real = f1.ev(x,y)
-                u1.data.imag = f2.ev(x,y)
-                # replace zero values with fill_value
-                u1.mask = (mu1.astype(bool))
-                u1.data[u1.mask] = u1.fill_value
-            else:
-                # use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yi,xu), u,
-                    method=kwargs['method'], bounds_error=False,
-                    fill_value=u1.fill_value)
-                u1.data[:] = r1.__call__(np.c_[y,x])
-                # replace invalid values with fill_value
-                u1.mask = (u1.data == u1.fill_value) | (mu1.astype(bool))
-                u1.data[u1.mask] = u1.fill_value
-            # extrapolate data using nearest-neighbors
-            if kwargs['extrapolate'] and np.any(u1.mask):
-                # find invalid data points
-                inv, = np.nonzero(u1.mask)
-                # replace zero values with nan
-                u.data[(u==0) | u.mask] = np.nan
-                # extrapolate points within cutoff of valid model points
-                u1[inv] = nearest_extrap(xu, yi, u, x[inv], y[inv],
-                    dtype=np.longcomplex,
-                    cutoff=kwargs['cutoff'],
-                    EPSG=EPSG)
-            # convert units
-            # amplitude and phase of the constituent
-            amplitude.data[:,i] = np.abs(u1.data)/unit_conv
-            amplitude.mask[:,i] = np.copy(u1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(u1), np.real(u1))
-            ph.mask[:,i] = np.copy(u1.mask)
+                hc,v = read_otis_transport(model_file, i)
         elif kwargs['type'] in ('V','v'):
-            # read constituent from transport file
+            # read v constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
-                xi,yi,v = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
+                xi,yi,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
             elif (kwargs['grid'] == 'ESR'):
-                v = read_netcdf_file(model_file, i, type='v')
+                hc = read_netcdf_file(model_file, i, type='v')
             elif isinstance(model_file,list):
-                u,v = read_otis_transport(model_file[i], 0)
+                u,hc = read_otis_transport(model_file[i], 0)
             else:
-                u,v = read_otis_transport(model_file, i)
-            # replace original values with extend matrices
-            if global_grid:
-                v = extend_matrix(v)
-            # copy mask to v transports
-            v.mask |= mv.astype(bool)
-            # interpolate amplitude and phase of the constituent
-            v1 = np.ma.zeros((npts), dtype=v.dtype)
-            if (kwargs['method'] == 'bilinear'):
-                # replace zero values with nan
-                v.data[(v==0) | v.mask] = np.nan
-                # use quick bilinear to interpolate values
-                v1.data[:] = bilinear_interp(xi, yv, v, x, y,
-                    dtype=np.longcomplex)
-                # replace nan values with fill_value
-                v1.mask = (np.isnan(v1.data) | (mv1.astype(bool)))
-                v1.data[v1.mask] = v1.fill_value
-            elif (kwargs['method'] == 'spline'):
-                f1 = scipy.interpolate.RectBivariateSpline(xi, yv,
-                    v.real.T, kx=1, ky=1)
-                f2 = scipy.interpolate.RectBivariateSpline(xi, yv,
-                    v.imag.T, kx=1, ky=1)
-                v1.data.real = f1.ev(x,y)
-                v1.data.imag = f2.ev(x,y)
-                # replace zero values with fill_value
-                v1.mask = (mv1.astype(bool))
-                v1.data[v1.mask] = v1.fill_value
-            else:
-                # use scipy regular grid to interpolate values
-                r1 = scipy.interpolate.RegularGridInterpolator((yv,xi), v,
-                    method=kwargs['method'],
-                    bounds_error=False,
-                    fill_value=v1.fill_value)
-                v1.data[:] = r1.__call__(np.c_[y,x])
-                # replace invalid values with fill_value
-                v1.mask = (v1.data == v1.fill_value) | (mv1.astype(bool))
-                v1.data[v1.mask] = v1.fill_value
-            # extrapolate data using nearest-neighbors
-            if kwargs['extrapolate'] and np.any(v1.mask):
-                # find invalid data points
-                inv, = np.nonzero(v1.mask)
-                # replace zero values with nan
-                v.data[(v==0) | v.mask] = np.nan
-                # extrapolate points within cutoff of valid model points
-                v1[inv] = nearest_extrap(xi, yv, v, x[inv], y[inv],
-                    dtype=np.longcomplex,
-                    cutoff=kwargs['cutoff'],
-                    EPSG=EPSG)
-            # convert units
-            # amplitude and phase of the constituent
-            amplitude.data[:,i] = np.abs(v1.data)/unit_conv
-            amplitude.mask[:,i] = np.copy(v1.mask)
-            ph.data[:,i] = np.arctan2(-np.imag(v1), np.real(v1))
-            ph.mask[:,i] = np.copy(v1.mask)
+                u,hc = read_otis_transport(model_file, i)
+
+        # replace original values with extend matrices
+        if global_grid:
+            hc = extend_matrix(hc)
+        # copy mask to elevation
+        hc.mask |= bathymetry.mask
+
+        # interpolate amplitude and phase of the constituent
+        if (kwargs['method'] == 'bilinear'):
+            # replace zero values with nan
+            hc.data[(hc==0) | hc.mask] = np.nan
+            # use quick bilinear to interpolate values
+            hci = pyTMD.interpolate.bilinear(xi, yi, hc, x, y,
+                dtype=hc.dtype)
+            # replace nan values with fill_value
+            hci.mask = (np.isnan(hci.data) | D.mask)
+            hci.data[hci.mask] = hci.fill_value
+        elif (kwargs['method'] == 'spline'):
+            # use scipy bivariate splines to interpolate values
+            hci = pyTMD.interpolate.spline(xi, yi, hc, x, y,
+                dtype=hc.dtype,
+                reducer=np.ceil,
+                kx=1, ky=1)
+            # replace zero values with fill_value
+            hci.mask |= D.mask
+            hci.data[hci.mask] = hci.fill_value
+        else:
+            # use scipy regular grid to interpolate values
+            hci = pyTMD.interpolate.regulargrid(xi, yi, hc, x, y,
+                fill_value=hc.fill_value,
+                dtype=hc.dtype,
+                method=kwargs['method'],
+                reducer=np.ceil,
+                bounds_error=False)
+            # replace invalid values with fill_value
+            hci.mask = (hci.data == hci.fill_value) | D.mask
+            hci.data[hci.mask] = hci.fill_value
+        # extrapolate data using nearest-neighbors
+        if kwargs['extrapolate'] and np.any(hci.mask):
+            # find invalid data points
+            inv, = np.nonzero(hci.mask)
+            # replace zero values with nan
+            hc.data[(hc==0) | hc.mask] = np.nan
+            # extrapolate points within cutoff of valid model points
+            hci[inv] = pyTMD.interpolate.extrapolate(xi, yi, hc,
+                x[inv], y[inv], dtype=hc.dtype,
+                cutoff=kwargs['cutoff'],
+                EPSG=EPSG)
+        # convert units
+        # amplitude and phase of the constituent
+        amplitude.data[:,i] = np.abs(hci.data)/unit_conv
+        amplitude.mask[:,i] = np.copy(hci.mask)
+        ph.data[:,i] = np.arctan2(-np.imag(hci), np.real(hci))
+        ph.mask[:,i] = np.copy(hci.mask)
         # update mask to invalidate points outside model domain
         ph.mask[:,i] |= invalid
         amplitude.mask[:,i] |= invalid
@@ -663,10 +524,8 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
             hz = extend_matrix(hz)
             mz = extend_matrix(mz)
         # masks zero values
-        hz = np.ma.array(hz, mask=(hz==0))
-        # save output constituents
-        constituents = pyTMD.io.constituents(x=xi, y=yi,
-            bathymetry=hz, mask=mz)
+        mask = (hz == 0) | mz.astype(bool)
+        bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # create current masks and bathymetry estimates
         mz,mu,mv = Muv(hz)
@@ -678,12 +537,10 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
             hu = extend_matrix(hu)
             mu = extend_matrix(mu)
         # masks zero values
-        hu = np.ma.array(hu, mask=(hu==0))
+        mask = (hu == 0) | mu.astype(bool)
+        bathymetry = np.ma.array(hu, mask=mask)
         # x coordinates for u transports
-        xu = xi - dx/2.0
-        # save output constituents
-        constituents = pyTMD.io.constituents(x=xu, y=yi,
-            bathymetry=hu, mask=mu)
+        xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # create current masks and bathymetry estimates
         mz,mu,mv = Muv(hz)
@@ -695,18 +552,19 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
             hv = extend_matrix(hv)
             mv = extend_matrix(mv)
         # masks zero values
-        hv = np.ma.array(hv, mask=(hv==0))
+        mask = (hv == 0) | mv.astype(bool)
+        bathymetry = np.ma.array(hv, mask=mask)
         # y coordinates for v transports
-        yv = yi - dy/2.0
-        # save output constituents
-        constituents = pyTMD.io.constituents(x=xi, y=yv,
-            bathymetry=hv, mask=mv)
+        yi -= dy/2.0
 
     # read each constituent
     if isinstance(model_file, list):
         cons = [read_constituents(m)[0].pop() for m in model_file]
     else:
         cons,_ = read_constituents(model_file, grid=kwargs['grid'])
+    # save output constituents
+    constituents = pyTMD.io.constituents(x=xi, y=yi,
+        bathymetry=bathymetry.data, mask=mask)
 
     # read each model constituent
     for i,c in enumerate(cons):
@@ -850,30 +708,21 @@ def interpolate_constants(ilon, ilat, constituents,
     # determine if any input points are outside of the model bounds
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
 
+    # input model bathymetry
+    bathymetry = np.ma.array(constituents.bathymetry)
+    bathymetry.mask = np.copy(constituents.mask)
     # interpolate depth and mask to output points
     if (kwargs['method'] == 'bilinear'):
         # use quick bilinear to interpolate values
-        D = bilinear_interp(xi, yi, constituents.bathymetry, x, y)
-        mask = bilinear_interp(xi, yi, constituents.mask, x, y)
-        mask = np.ceil(mask).astype(constituents.mask.dtype)
+        D = pyTMD.interpolate.bilinear(xi, yi, bathymetry, x, y)
     elif (kwargs['method'] == 'spline'):
         # use scipy bivariate splines to interpolate values
-        f1 = scipy.interpolate.RectBivariateSpline(xi, yi,
-            constituents.bathymetry.T, kx=1, ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(xi, yi,
-            constituents.mask.T, kx=1, ky=1)
-        D = f1.ev(x,y)
-        mask = np.ceil(f2.ev(x,y)).astype(constituents.mask.dtype)
+        D = pyTMD.interpolate.spline(xi, yi, bathymetry, x, y,
+            reducer=np.ceil, kx=1, ky=1)
     else:
         # use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),
-            constituents.bathymetry.T, method=kwargs['method'],
-            bounds_error=False)
-        r2 = scipy.interpolate.RegularGridInterpolator((yi,xi),
-            constituents.mask.T, method=kwargs['method'],
-            bounds_error=False, fill_value=0)
-        D = r1.__call__(np.c_[y,x])
-        mask = np.ceil(r2.__call__(np.c_[y,x])).astype(constituents.mask.dtype)
+        D = pyTMD.interpolate.regulargrid(xi, yi, bathymetry, x, y,
+            method=kwargs['method'], reducer=np.ceil, bounds_error=False)
 
     # u and v: velocities in cm/s
     if kwargs['type'] in ('v','u'):
@@ -898,39 +747,37 @@ def interpolate_constants(ilon, ilat, constituents,
         # get model constituent
         hc = constituents.get(c)
         # interpolate amplitude and phase of the constituent
-        hci = np.ma.zeros((npts), dtype=hc.dtype)
         if (kwargs['method'] == 'bilinear'):
             # replace zero values with nan
             hc.data[(hc.data == 0) | hc.mask] = np.nan
             # use quick bilinear to interpolate values
-            hci.data[:] = bilinear_interp(xi, yi, hc, x, y,
-                dtype=np.longcomplex)
+            hci = pyTMD.interpolate.bilinear(xi, yi, hc, x, y,
+                dtype=hc.dtype)
             # replace nan values with fill_value
-            hci.mask = (np.isnan(hci.data) | (mask.astype(bool)))
+            hci.mask = np.isnan(hci.data) | D.mask
             hci.data[hci.mask] = hci.fill_value
         elif (kwargs['method'] == 'spline'):
             # replace zero values with fill value
-            hc.data[(hc.data == 0) | hc.mask] = fill_value
-            f1 = scipy.interpolate.RectBivariateSpline(xi, yi,
-                hc.real.T, kx=1, ky=1)
-            f2 = scipy.interpolate.RectBivariateSpline(xi, yi,
-                hc.imag.T, kx=1, ky=1)
-            hci.data.real = f1.ev(x,y)
-            hci.data.imag = f2.ev(x,y)
+            hci = pyTMD.interpolate.spline(xi, yi, hc, x, y,
+                fill_value=fill_value,
+                dtype=hc.dtype,
+                reducer=np.ceil,
+                kx=1, ky=1)
             # replace zero values with fill_value
-            hci.mask = (mask.astype(bool))
+            hci.mask = D.mask
             hci.data[hci.mask] = hci.fill_value
         else:
             # replace zero values with fill value
             hc.data[(hc.data == 0) | hc.mask] = fill_value
             # use scipy regular grid to interpolate values
-            r1 = scipy.interpolate.RegularGridInterpolator((yi,xi), hc,
+            hci = pyTMD.interpolate.regulargrid(xi, yi, hc, x, y,
+                fill_value=fill_value,
+                dtype=hc.dtype,
                 method=kwargs['method'],
-                bounds_error=False,
-                fill_value=hci.fill_value)
-            hci.data[:] = r1.__call__(np.c_[y,x])
+                reducer=np.ceil,
+                bounds_error=False)
             # replace invalid values with fill_value
-            hci.mask = (hci.data == hci.fill_value) | (mask.astype(bool))
+            hci.mask = (hci.data == hci.fill_value) | D.mask
             hci.data[hci.mask] = hci.fill_value
         # extrapolate data using nearest-neighbors
         if kwargs['extrapolate'] and np.any(hci.mask):
@@ -939,8 +786,8 @@ def interpolate_constants(ilon, ilat, constituents,
             # replace zero values with nan
             hc.data[(hc==0) | hc.mask] = np.nan
             # extrapolate points within cutoff of valid model points
-            hci[inv] = nearest_extrap(xi, yi, hc, x[inv], y[inv],
-                dtype=np.longcomplex,
+            hci[inv] = pyTMD.interpolate.extrapolate(xi, yi, hc,
+                x[inv], y[inv], dtype=hc.dtype,
                 cutoff=kwargs['cutoff'],
                 EPSG=EPSG)
         # convert units

@@ -218,13 +218,13 @@ Interpolation
 #############
 
 For converting from model coordinates, ``pyTMD`` uses spatial interpolation routines from `scipy <https://docs.scipy.org/doc/scipy/reference/interpolate.html>`_
-along with a built-in `bilinear <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/bilinear_interp.py>`_ interpolation routine.
+along with a built-in `bilinear <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/interpolate.py>`_ interpolation routine.
 The default interpolator uses a `biharmonic spline <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RectBivariateSpline.html>`_
 function to interpolate from the model coordinate system to the output coordinates.
 There are options to use nearest and linear interpolators with the
 `regular grid <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RegularGridInterpolator.html>`_ function.
 For coastal or near-grounded points, the model can be extrapolated using a
-`nearest-neighbor <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/nearest_extrap.py>`_ routine.
+`nearest-neighbor <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/interpolate.py>`_ routine.
 The default maximum extrapolation distance is 10 kilometers.
 This default distance may not be a large enough extrapolation for some applications and models.
 The extrapolation cutoff can be set to any distance in kilometers, but should be used with caution in cases such as narrow fjords or ice sheet grounding zones [Padman2018]_.
