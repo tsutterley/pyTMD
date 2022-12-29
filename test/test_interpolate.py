@@ -113,7 +113,7 @@ def test_interpolate(METHOD, N=324):
         test = pyTMD.interpolate.spline(LON,LAT,FI,lon,lat,kx=1,ky=1)
     else:
         # use scipy regular grid to interpolate values
-        test = pyTMD.interpolate.regulargrid(LAT,LON,FI,lon,lat,
+        test = pyTMD.interpolate.regulargrid(LON,LAT,FI,lon,lat,
             method=METHOD,bounds_error=False)
     # verify that coordinates are within tolerance
     eps = np.finfo(np.float16).eps
@@ -142,7 +142,7 @@ def test_extrapolate(N=324):
     FI.data[:] = franke_3d(X,Y,Z)
     FI.mask = np.zeros((ny,nx),dtype=bool)
     # use nearest neighbors extrapolation to points
-    test = pyTMD.nearest_extrap(LON,LAT,FI,lon,lat,EPSG='4326')
+    test = pyTMD.interpolate.extrapolate(LON,LAT,FI,lon,lat,EPSG='4326')
     # verify that coordinates are within tolerance
     assert np.all(np.isclose(val,test,atol=0.1))
 

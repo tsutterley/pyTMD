@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (12/2022)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -22,13 +22,13 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    model.py: retrieves tide model parameters for named tide models
+    io/model.py: retrieves tide model parameters for named tide models
+    io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     utilities.py: download and management utilities for syncing files
-    read_tide_model.py: extract tidal harmonic constants out of a tidal model
     convert_ll_xy.py: converts lat/lon points to and from projected coordinates
-    output_otis_tides.py: writes OTIS-format tide files
 
 UPDATE HISTORY:
+    Updated 12/2022: refactored OTIS model input and output
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 05/2022: updated keyword arguments to read tide model programs
@@ -53,7 +53,6 @@ import warnings
 import argparse
 import numpy as np
 import pyTMD.io
-import pyTMD.io.model
 import pyTMD.utilities
 from pyTMD.convert_ll_xy import convert_ll_xy
 

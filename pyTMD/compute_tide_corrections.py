@@ -59,7 +59,6 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
-    model.py: retrieves tide model parameters for named tide models
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
@@ -67,12 +66,12 @@ PROGRAM DEPENDENCIES:
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
     predict.py: predict tide values using harmonic constants
+    io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
-    io/ATLAS.py: extract tidal harmonic constants from ATLAS netcdf models
+    io/ATLAS.py: extract tidal harmonic constants from netcdf models
     io/GOT.py: extract tidal harmonic constants from GSFC GOT models
     io/FES.py: extract tidal harmonic constants from FES tide models
-    bilinear_interp.py: bilinear interpolation of data to coordinates
-    nearest_extrap.py: nearest-neighbor extrapolation of data to coordinates
+    interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
     Updated 12/2022: refactored tide read and prediction programs

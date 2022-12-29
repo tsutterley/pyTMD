@@ -153,7 +153,7 @@ def spline(ilon, ilat, idata, lon, lat,
     data = np.ma.zeros((npts), dtype=dtype, fill_value=fill_value)
     data.mask = np.ones((npts), dtype=bool)
     # construct splines for input data and mask
-    if isinstance(idata.dtype, np.complexfloating):
+    if np.iscomplexobj(idata):
         s1 = scipy.interpolate.RectBivariateSpline(ilon, ilat,
             idata.data.real.T, **kwargs)
         s2 = scipy.interpolate.RectBivariateSpline(ilon, ilat,
