@@ -51,7 +51,7 @@ def map(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
@@ -108,7 +108,7 @@ def drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
@@ -164,7 +164,7 @@ def time_series(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default ''
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
@@ -221,7 +221,7 @@ def infer_minor(t, zmajor, constituents, **kwargs):
     deltat: float, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------

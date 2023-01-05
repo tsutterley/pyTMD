@@ -52,7 +52,7 @@ import pyTMD.utilities
 # PURPOSE: create an opener for box with a supplied user access token
 def build_opener(token, context=ssl.SSLContext(), redirect=True):
     """
-    build urllib opener for box with supplied user access token
+    Build ``urllib`` opener for box with supplied user access token
 
     Arguments
     ---------

@@ -496,7 +496,7 @@ def from_geotiff(filename, **kwargs):
     compression: str or NoneType, default None
         file compression type
     bounds: list or NoneType, default bounds
-        extent of the file to read: [xmin, xmax, ymin, ymax]
+        extent of the file to read: ``[xmin, xmax, ymin, ymax]``
     """
     # set default keyword arguments
     kwargs.setdefault('compression',None)
@@ -763,8 +763,11 @@ def to_geotiff(output, attributes, filename, **kwargs):
         full path of output geotiff file
     varname: str, default 'data'
         output variable name
-    driver: str, default GTiff'
+    driver: str, default 'cog'
         GDAL driver
+
+            - ``'GTiff'``: GeoTIFF
+            - ``'cog'``: Cloud Optimized GeoTIFF
     dtype: obj, default osgeo.gdal.GDT_Float64
         GDAL data type
     options: list, default ['COMPRESS=LZW']
@@ -772,7 +775,7 @@ def to_geotiff(output, attributes, filename, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('varname','data')
-    kwargs.setdefault('driver',"GTiff")
+    kwargs.setdefault('driver','cog')
     kwargs.setdefault('dtype',osgeo.gdal.GDT_Float64)
     kwargs.setdefault('options',['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
@@ -1045,9 +1048,11 @@ def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
         height above ellipsoid (or sphere)
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
+
         for spherical coordinates set to radius of the Earth
     flat: float, default 1.0/298.257223563
         ellipsoidal flattening
+
         for spherical coordinates set to 0
     """
     # verify axes

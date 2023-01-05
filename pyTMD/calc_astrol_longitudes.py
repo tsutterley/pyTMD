@@ -69,7 +69,8 @@ def polynomial_sum(coefficients, t):
 # PURPOSE: compute the basic astronomical mean longitudes
 def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
     """
-    Computes the basic astronomical mean longitudes: s, h, p, N and PP
+    Computes the basic astronomical mean longitudes:
+    `s`, `h`, `p`, `N` and `PP`
 
     Parameters
     ----------
@@ -78,7 +79,7 @@ def calc_astrol_longitudes(MJD, MEEUS=False, ASTRO5=False):
     MEEUS: bool, default False
         use additional coefficients from Meeus Astronomical Algorithms
     ASTRO5: bool, default False
-        use Meeus Astronomical coefficients as implemented in ASTRO5
+        use Meeus Astronomical coefficients as implemented in ``ASTRO5``
 
     Returns
     -------

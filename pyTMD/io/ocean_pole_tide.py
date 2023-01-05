@@ -54,7 +54,7 @@ def ocean_pole_tide(input_file):
     Parameters
     ----------
     input_file: str
-        IERS 0.5x0.5 map of ocean pole tide coefficients
+        IERS map of ocean pole tide coefficients
 
     Returns
     -------

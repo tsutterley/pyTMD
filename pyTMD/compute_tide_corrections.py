@@ -187,7 +187,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
     CUTOFF: float, default 10.0
         Extrapolation cutoff in kilometers
 
-        Set to np.inf to extrapolate for all points
+        Set to ``np.inf`` to extrapolate for all points
     APPLY_FLEXURE: bool, default False
         Apply ice flexure scaling factor to height constituents
 
