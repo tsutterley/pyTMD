@@ -20,13 +20,13 @@ the output ocean, load and pole tide variables as shown in the flowcharts below:
     :align: center
 
     digraph {
-        S [label="Spatial Coordinates" shape=box style="filled" color="darkorchid"]
-        E [label="Temporal Values" shape=box style="filled" color="darkorchid"]
-        M [label="Tide Model" shape=box style="filled" color="darkorchid"]
+        S [label="Spatial Coordinates" shape=box style="filled" color="#7570b3"]
+        E [label="Temporal Values" shape=box style="filled" color="#7570b3"]
+        M [label="Tide Model" shape=box style="filled" color="#7570b3"]
         T [label="pyTMD" shape=box style="filled" color="gray"]
-        P [label="Tide Predictions" shape=box style="filled" color="mediumseagreen"]
-        H [label="Tide Heights" shape=box style="filled" color="mediumseagreen"]
-        C [label="Average Tidal Currents" shape=box style="filled" color="mediumseagreen"]
+        P [label="Tide Predictions" shape=box style="filled" color="#1b9e77"]
+        H [label="Tide Heights" shape=box style="filled" color="#1b9e77"]
+        C [label="Average Tidal Currents" shape=box style="filled" color="#1b9e77"]
         S -> T
         E -> T
         M -> T
@@ -40,10 +40,10 @@ the output ocean, load and pole tide variables as shown in the flowcharts below:
     :align: center
 
     digraph {
-        S [label="Spatial Coordinates" shape=box style="filled" color="darkorchid"]
-        E [label="Temporal Values" shape=box style="filled" color="darkorchid"]
+        S [label="Spatial Coordinates" shape=box style="filled" color="#7570b3"]
+        E [label="Temporal Values" shape=box style="filled" color="#7570b3"]
         T [label="pyTMD" shape=box style="filled" color="gray"]
-        P [label="Pole Tide Displacements" shape=box style="filled" color="mediumseagreen"]
+        P [label="Pole Tide Displacements" shape=box style="filled" color="#1b9e77"]
         S -> T
         E -> T
         T -> P

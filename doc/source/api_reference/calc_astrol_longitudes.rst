@@ -19,3 +19,5 @@ Calling Sequence
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/calc_astrol_longitudes.py
 
 .. autofunction:: pyTMD.calc_astrol_longitudes
+
+.. autofunction:: pyTMD.calc_astrol_longitudes.polynomial_sum

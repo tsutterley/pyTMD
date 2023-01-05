@@ -274,6 +274,8 @@ def extrapolate(ilon, ilat, idata, lon, lat,
         Output data type
     cutoff: float, default np.inf
         return only neighbors within distance [km]
+
+        Set to ``np.inf`` to extrapolate for all points
     EPSG: str, default '4326'
         projection of tide model data
 
