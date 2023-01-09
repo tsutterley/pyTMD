@@ -44,7 +44,7 @@ def output_otis_grid(*args):
         time step
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     return pyTMD.io.OTIS.output_otis_grid(*args)
 
@@ -67,7 +67,7 @@ def output_otis_elevation(*args):
         tidal constituent IDs
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     return pyTMD.io.OTIS.output_otis_elevation(*args)
 
@@ -92,6 +92,6 @@ def output_otis_transport(*args):
         tidal constituent IDs
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     return pyTMD.io.OTIS.output_otis_transport(*args)

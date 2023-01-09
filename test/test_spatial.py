@@ -6,7 +6,6 @@ Verify file read and write with spatial utilities
 import os
 import ssl
 import pytest
-import warnings
 import inspect
 import numpy as np
 import pyTMD.spatial

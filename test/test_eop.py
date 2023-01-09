@@ -5,7 +5,6 @@ Verify Earth Orientation Parameter (EOP) functions
 """
 import os
 import pytest
-import warnings
 import numpy as np
 import scipy.interpolate
 import pyTMD.eop

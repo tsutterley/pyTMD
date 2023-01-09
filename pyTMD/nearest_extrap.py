@@ -80,7 +80,7 @@ def nearest_extrap(*args, **kwargs):
         interpolated data
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.interpolate instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.interpolate.extrapolate(*args, **kwargs)
@@ -103,7 +103,7 @@ def distance_matrix(c1, c2):
         Euclidean distance
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.interpolate instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.interpolate._distance(c1, c2)

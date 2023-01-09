@@ -4,7 +4,6 @@ test_leap_seconds.py (08/2020)
 """
 import os
 import pytest
-import warnings
 import pyTMD.time
 import pyTMD.utilities
 

@@ -125,7 +125,7 @@ def extract_GOT_constants(ilon, ilat, model_files=None, **kwargs):
         list of model constituents
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
 
     # set default keyword arguments
@@ -146,7 +146,7 @@ def extract_GOT_constants(ilon, ilat, model_files=None, **kwargs):
             kwargs[new] = copy.copy(kwargs[old])
 
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.GOT.extract_constants(ilon, ilat,
@@ -170,7 +170,7 @@ def extend_array(input_array, step_size):
         extended array
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.GOT.extend_array(input_array, step_size)
@@ -191,7 +191,7 @@ def extend_matrix(input_matrix):
         extended matrix
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.GOT.extend_matrix(input_matrix)
@@ -220,7 +220,7 @@ def read_GOT_grid(input_file, **kwargs):
         tidal constituent ID
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.GOT.read_ascii_file(input_file, **kwargs)

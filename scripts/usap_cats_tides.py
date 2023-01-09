@@ -125,7 +125,7 @@ def main():
     args,_ = parser.parse_known_args()
 
     # warn user that USAP requires a reCAPTCHA check
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. USAP now requires captcha",DeprecationWarning)
     # check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://www.usap-dc.org'):

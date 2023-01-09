@@ -150,7 +150,7 @@ def extract_netcdf_constants(ilon, ilat,
         list of model constituents
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
 
     # set default keyword arguments
@@ -172,7 +172,7 @@ def extract_netcdf_constants(ilon, ilat,
             kwargs[new] = copy.copy(kwargs[old])
 
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.ATLAS.extract_constants(ilon, ilat,
@@ -196,7 +196,7 @@ def extend_array(input_array, step_size):
         extended array
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.ATLAS.extend_array(input_array, step_size)
@@ -217,7 +217,7 @@ def extend_matrix(input_matrix):
         extended matrix
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.ATLAS.extend_matrix(input_matrix)
@@ -253,7 +253,7 @@ def read_netcdf_grid(input_file, variable, **kwargs):
         model bathymetry
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.ATLAS.read_netcdf_grid(input_file, variable, **kwargs)
@@ -279,7 +279,7 @@ def read_elevation_file(input_file, **kwargs):
         tidal constituent ID
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.ATLAS.read_netcdf_elevation(input_file, **kwargs)
@@ -313,7 +313,7 @@ def read_transport_file(input_file, variable, **kwargs):
         tidal constituent ID
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.ATLAS.read_netcdf_transport(input_file, variable, **kwargs)

@@ -85,7 +85,7 @@ def infer_minor_corrections(t, zmajor, constituents, **kwargs):
         `doi: 10.1016/0309-1708(89)90017-1
         <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)

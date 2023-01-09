@@ -45,27 +45,23 @@ import pyTMD.io.model
 try:
     import IPython
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("IPython not available")
-    warnings.warn("Some functions will throw an exception if called")
+    warnings.filterwarnings("module")
+    warnings.warn("IPython not available", ImportWarning)
 try:
     import ipyleaflet
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("ipyleaflet not available")
-    warnings.warn("Some functions will throw an exception if called")
+    warnings.filterwarnings("module")
+    warnings.warn("ipyleaflet not available", ImportWarning)
 try:
     import ipywidgets
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("ipywidgets not available")
-    warnings.warn("Some functions will throw an exception if called")
+    warnings.filterwarnings("module")
+    warnings.warn("ipywidgets not available", ImportWarning)
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("pyproj not available")
-    warnings.warn("Some functions will throw an exception if called")
+    warnings.filterwarnings("module")
+    warnings.warn("pyproj not available", ImportWarning)
 # ignore warnings
 warnings.filterwarnings("ignore")
 

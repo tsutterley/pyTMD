@@ -144,7 +144,7 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
         phases of tidal constituents
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
 
     # set default keyword arguments
@@ -188,7 +188,7 @@ def read_ascii_file(input_file, **kwargs):
     lat: latitude of tidal model
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.FES.read_ascii_file(input_file, **kwargs)
@@ -223,7 +223,7 @@ def read_netcdf_file(input_file, **kwargs):
         latitude of tidal model
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.FES.read_netcdf_file(input_file, **kwargs)

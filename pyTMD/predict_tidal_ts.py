@@ -79,7 +79,7 @@ def predict_tidal_ts(*args, **kwargs):
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
+    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.predict.time_series(*args, **kwargs)
