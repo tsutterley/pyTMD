@@ -18,5 +18,5 @@ dependencies:
   - python>=3.6
   - python-dateutil
   - pyyaml
-  - scipy
+  - scipy==1.9.3
   - setuptools_scm

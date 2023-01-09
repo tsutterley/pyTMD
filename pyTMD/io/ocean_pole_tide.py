@@ -123,7 +123,7 @@ def ocean_pole_tide(input_file):
     un = extend_matrix(un)
     ue = extend_matrix(ue)
     # return values
-    return (ur,un,ue,glon,glat)
+    return (ur, un, ue, glon, glat)
 
 # PURPOSE: wrapper function to extend an array
 def extend_array(input_array,step_size):
