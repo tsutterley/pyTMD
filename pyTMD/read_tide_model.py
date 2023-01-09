@@ -177,7 +177,9 @@ def extract_tidal_constants(ilon, ilat,
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
 
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
@@ -196,9 +198,6 @@ def extract_tidal_constants(ilon, ilat,
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
-    # raise warnings for deprecation of module
-    warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.extract_constants(ilon, ilat,
         grid_file=grid_file, model_file=model_file, EPSG=EPSG,
@@ -223,7 +222,9 @@ def extend_array(input_array, step_size):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.extend_array(input_array, step_size)
 
@@ -244,7 +245,9 @@ def extend_matrix(input_matrix):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.extend_matrix(input_matrix)
 
@@ -275,7 +278,9 @@ def read_tide_grid(input_file):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_otis_grid(input_file)
 
@@ -313,7 +318,9 @@ def read_atlas_grid(input_file):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_atlas_grid(input_file)
 
@@ -343,7 +350,9 @@ def read_netcdf_grid(input_file):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_netcdf_grid(input_file)
 
@@ -372,7 +381,9 @@ def read_constituents(input_file, grid='OTIS'):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_constituents(input_file, grid=grid)
 
@@ -396,7 +407,9 @@ def read_elevation_file(input_file,ic):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_otis_elevation(input_file, ic)
 
@@ -427,7 +440,9 @@ def read_atlas_elevation(input_file, ic, constituent):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_atlas_elevation(input_file, ic, constituent)
 
@@ -453,7 +468,9 @@ def read_transport_file(input_file,ic):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_otis_transport(input_file, ic)
 
@@ -487,7 +504,9 @@ def read_atlas_transport(input_file, ic, constituent):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_atlas_transport(input_file, ic, constituent)
 
@@ -525,7 +544,9 @@ def create_atlas_mask(xi, yi, mz, local, variable=None):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.create_atlas_mask(xi, yi, mz, local,
         variable=variable)
@@ -558,7 +579,9 @@ def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.interpolate_atlas_model(xi, yi, zi, spacing=spacing)
 
@@ -599,7 +622,9 @@ def combine_atlas_model(xi, yi, zi, pmask, local, variable=None):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.combine_atlas_model(xi, yi, zi, pmask, local,
         variable=variable)
@@ -632,7 +657,9 @@ def read_netcdf_file(input_file, ic, variable=None):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.read_netcdf_file(input_file, ic, variable=variable)
 
@@ -644,7 +671,9 @@ def Muv(hz):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.Muv(hz)
 
@@ -655,6 +684,8 @@ def Huv(hz):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.OTIS.Huv(hz)

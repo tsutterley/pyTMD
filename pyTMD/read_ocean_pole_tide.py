@@ -78,5 +78,7 @@ def read_ocean_pole_tide(input_file):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     return pyTMD.io.ocean_pole_tide(input_file)

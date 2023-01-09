@@ -81,6 +81,8 @@ def predict_tide(*args, **kwargs):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.predict instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.predict.map(*args, **kwargs)

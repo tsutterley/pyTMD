@@ -61,6 +61,8 @@ def calc_delta_time(delta_file, idays):
     .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.time instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.time instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.time.interpolate_delta_time(delta_file, idays)

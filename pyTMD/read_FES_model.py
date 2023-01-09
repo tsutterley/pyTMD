@@ -145,7 +145,9 @@ def extract_FES_constants(ilon, ilat, model_files=None, **kwargs):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
 
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
@@ -189,7 +191,9 @@ def read_ascii_file(input_file, **kwargs):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.FES.read_ascii_file(input_file, **kwargs)
 
@@ -224,6 +228,8 @@ def read_netcdf_file(input_file, **kwargs):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.io instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.io instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.io.FES.read_netcdf_file(input_file, **kwargs)

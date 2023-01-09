@@ -69,6 +69,8 @@ def bilinear_interp(*args, **kwargs):
     """
     # raise warnings for deprecation of module
     warnings.filterwarnings("module")
-    warnings.warn("Deprecated. Please use pyTMD.interpolate instead",DeprecationWarning)
+    warnings.warn("Deprecated. Please use pyTMD.interpolate instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.interpolate.bilinear(*args, **kwargs)
