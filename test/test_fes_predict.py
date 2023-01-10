@@ -30,7 +30,6 @@ import boto3
 import shutil
 import pytest
 import inspect
-import warnings
 import posixpath
 import numpy as np
 import pyTMD.io

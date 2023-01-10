@@ -6,7 +6,6 @@ Verify file read and write with spatial utilities
 import os
 import ssl
 import pytest
-import warnings
 import inspect
 import numpy as np
 import pyTMD.spatial
@@ -217,7 +216,7 @@ def test_HDF5():
 # PURPOSE: test the read and write of geotiff files
 def test_geotiff(username, password):
     # build urllib2 opener for NSIDC with NASA Earthdata credentials
-    pyTMD.utilities.build_opener(username, password, context=ssl.SSLContext(),
+    pyTMD.utilities.build_opener(username, password,
         password_manager=True, get_ca_certs=False, redirect=False,
         authorization_header=False, urs='https://urs.earthdata.nasa.gov')
     # download NASA Operation IceBridge DMS L3 Photogrammetric DEM
@@ -239,7 +238,8 @@ def test_geotiff(username, password):
     # create test geotiff file
     output_file = os.path.join(filepath,'test.tif')
     output = {'data':dinput['data'].astype(np.float64)}
-    pyTMD.spatial.to_geotiff(output, attrib, output_file, verbose=True)
+    pyTMD.spatial.to_geotiff(output, attrib, output_file,
+        driver='GTiff', verbose=True)
     # check that data is valid
     test = pyTMD.spatial.from_geotiff(output_file, verbose=True)
     eps = np.finfo(np.float32).eps

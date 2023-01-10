@@ -14,7 +14,6 @@ UPDATE HISTORY:
 import os
 import re
 import inspect
-import warnings
 import pytest
 import numpy as np
 import scipy.interpolate

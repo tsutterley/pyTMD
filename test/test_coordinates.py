@@ -3,7 +3,6 @@ u"""
 test_coordinates.py (08/2020)
 Verify forward and backwards coordinate conversions
 """
-import warnings
 import pytest
 import numpy as np
 import pyTMD.convert_ll_xy

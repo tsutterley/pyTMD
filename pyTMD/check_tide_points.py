@@ -80,9 +80,8 @@ import pyTMD.interpolate
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("pyproj not available")
-    warnings.warn("Some functions will throw an exception if called")
+    warnings.filterwarnings("module")
+    warnings.warn("pyproj not available", ImportWarning)
 # ignore warnings
 warnings.filterwarnings("ignore")
 

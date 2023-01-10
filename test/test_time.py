@@ -5,7 +5,6 @@ Verify time conversion functions
 """
 import os
 import pytest
-import warnings
 import numpy as np
 import pyTMD.time
 import pyTMD.utilities

@@ -6,7 +6,6 @@ Verify file utility functions
 import io
 import gzip
 import pytest
-import warnings
 import posixpath
 import pyTMD.utilities
 

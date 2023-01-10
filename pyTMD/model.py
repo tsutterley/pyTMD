@@ -30,6 +30,8 @@ class model(pyTMD.io.model):
     # inherit model class
     def __init__(self, *args, **kwargs):
         # raise warnings for deprecation of module
-        warnings.filterwarnings("always")
-        warnings.warn("Deprecated. Please use pyTMD.io instead", DeprecationWarning)
+        warnings.filterwarnings("module")
+        warnings.warn("Deprecated. Please use pyTMD.io instead",
+            DeprecationWarning)
+        warnings.filterwarnings("ignore")
         super().__init__(*args, **kwargs)

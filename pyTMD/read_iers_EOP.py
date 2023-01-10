@@ -61,7 +61,9 @@ def read_iers_EOP(input_file):
         `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.eop instead",DeprecationWarning)
+    warnings.filterwarnings("module")
+    warnings.warn("Deprecated. Please use pyTMD.eop instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.eop.iers_daily_EOP(input_file)

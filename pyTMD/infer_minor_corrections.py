@@ -85,13 +85,15 @@ def infer_minor_corrections(t, zmajor, constituents, **kwargs):
         `doi: 10.1016/0309-1708(89)90017-1
         <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)
+    warnings.filterwarnings("module")
+    warnings.warn("Deprecated. Please use pyTMD.predict instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
     # raise warnings for deprecated keyword arguments
-    deprecated_keywords = dict(DELTAT='deltat',CORRECTIONS='corrections')
+    deprecated_keywords = dict(DELTAT='deltat', CORRECTIONS='corrections')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
             warnings.warn(f"""Deprecated keyword argument {old}.

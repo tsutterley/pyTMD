@@ -55,7 +55,9 @@ def compute_equilibrium_tide(t, lat):
         <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # raise warnings for deprecation of module
-    warnings.filterwarnings("always")
-    warnings.warn("Deprecated. Please use pyTMD.predict instead",DeprecationWarning)
+    warnings.filterwarnings("module")
+    warnings.warn("Deprecated. Please use pyTMD.predict instead",
+        DeprecationWarning)
+    warnings.filterwarnings("ignore")
     # call renamed version to not break workflows
     return pyTMD.predict.equilibrium_tide(t, lat)
