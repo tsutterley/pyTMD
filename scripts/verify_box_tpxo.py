@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (01/2023)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -31,6 +31,7 @@ REFERENCE:
     https://developer.box.com/guides/
 
 UPDATE HISTORY:
+    Updated 01/2023: use default context from utilities module
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
     Updated 12/2021: added TPXO9-atlas-v5 to list of available tide models
@@ -42,7 +43,6 @@ from __future__ import print_function
 
 import os
 import re
-import ssl
 import json
 import logging
 import argparse
@@ -50,7 +50,8 @@ import posixpath
 import pyTMD.utilities
 
 # PURPOSE: create an opener for box with a supplied user access token
-def build_opener(token, context=ssl.SSLContext(), redirect=True):
+def build_opener(token, context=pyTMD.utilities._default_ssl_context,
+    redirect=True):
     """
     Build ``urllib`` opener for box with supplied user access token
 
@@ -75,7 +76,7 @@ def build_opener(token, context=ssl.SSLContext(), redirect=True):
     # create "opener" (OpenerDirector instance)
     opener = pyTMD.utilities.urllib2.build_opener(*handler)
     # add Authorization header to opener
-    opener.addheaders = [("Authorization",f"Bearer {token}")]
+    opener.addheaders = [("Authorization", f"Bearer {token}")]
     # Now all calls to urllib2.urlopen use our opener.
     pyTMD.utilities.urllib2.install_opener(opener)
     return opener
@@ -85,7 +86,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
     CURRENTS=False, MODE=None):
 
     # create logger for verbosity level
-    logger = pyTMD.utilities.build_logger(__name__,level=logging.INFO)
+    logger = pyTMD.utilities.build_logger(__name__, level=logging.INFO)
 
     # check if local directory exists and recursively create if not
     if (TIDE_MODEL == 'TPXO9-atlas'):

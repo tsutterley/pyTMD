@@ -557,8 +557,8 @@ def check_connection(HOST, context=_default_ssl_context):
     # attempt to connect to http host
     try:
         urllib2.urlopen(HOST, timeout=20, context=context)
-    except urllib2.URLError:
-        raise RuntimeError('Check internet connection')
+    except urllib2.URLError as exc:
+        raise RuntimeError('Check internet connection') from exc
     else:
         return True
 
