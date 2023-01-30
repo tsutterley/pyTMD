@@ -355,7 +355,7 @@ def from_netCDF4(filename, **kwargs):
             except (ValueError,AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
-    if 'grid_mapping' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and 'grid_mapping' in dinput['attributes']['data'].keys():
         # try getting the attribute
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
@@ -461,7 +461,7 @@ def from_HDF5(filename, **kwargs):
             except (KeyError,AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
-    if 'grid_mapping' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and 'grid_mapping' in dinput['attributes']['data'].keys():
         # try getting the attribute
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
@@ -854,14 +854,14 @@ def default_field_mapping(variables):
     field_mapping: dict
         Field mappings for netCDF4/HDF5 read functions
     """
-    # convert from list to iterator
-    var = iter(copy.copy(variables))
     # get each variable name and add to field mapping dictionary
     field_mapping = {}
-    field_mapping['time'] = next(var, None)
-    field_mapping['y'] = next(var, None)
-    field_mapping['x'] = next(var, None)
-    field_mapping['data'] = next(var, None)
+    for i,var in enumerate(['time','y','x','data']):
+        try:
+            field_mapping[var] = copy.copy(variables[i])
+        except IndexError as exc:
+            pass
+    # return the field mapping
     return field_mapping
 
 def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
