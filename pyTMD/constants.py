@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (01/2023)
 
 Gravitational and ellipsoidal parameters
 
@@ -37,6 +37,7 @@ REFERENCE:
         https://iers-conventions.obspm.fr/content/tn36.pdf
 
 UPDATE HISTORY:
+    Updated 01/2023: include main ellipsoid attributes in docstring
     Written 12/2022
 """
 import numpy as np
@@ -67,7 +68,6 @@ class constants(object):
             - ``'INTER'``: International
             - ``'KRASS'``: Krassovsky (USSR)
             - ``'MAIRY'``: Modified Airy (Ireland 1965/1975)
-            - ```HGH80```: Hughes 1980 Ellipsoid
             - ``'TOPEX'``: TOPEX/POSEIDON ellipsoid
             - ``'EGM96'``: EGM 1996 gravity model
             - ``'IERS'``: IERS Numerical Standards (2010)
@@ -77,14 +77,16 @@ class constants(object):
             - ``'MKS'``: meters, kilograms, seconds
             - ``'CGS'``: centimeters, grams, seconds
 
-    References
+    Attributes
     ----------
-    .. [1] B. Hofmann-Wellenhof and H. Moritz, *Physical Geodesy*, 2nd Edition,
-        403 pp., (2006). `doi: 10.1007/978-3-211-33545-1
-        <https://doi.org/10.1007/978-3-211-33545-1>`_
-    .. [2] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+    a_axis: float
+        Semi-major axis of the ellipsoid
+    flat: float
+        Flattening of the ellipsoid
+    omega: float
+        Angular velocity of the Earth
+    GM: float
+        Geocentric gravitational constant
     """
     np.seterr(invalid='ignore')
     def __init__(self, ellipsoid='WGS84', units='MKS'):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (01/2023)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -63,6 +63,7 @@ PROGRAM DEPENDENCIES:
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
     Updated 12/2022: single implicit import of pyTMD tools
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
@@ -171,11 +172,13 @@ def compute_LPET_elevations(input_file, output_file,
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
             delimiter=DELIMITER, header=HEADER, parse_dates=parse_dates)
     elif (FORMAT == 'netCDF4'):
-        dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        dinput = pyTMD.spatial.from_netCDF4(input_file,
+            field_mapping=field_mapping)
     elif (FORMAT == 'HDF5'):
-        dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        dinput = pyTMD.spatial.from_HDF5(input_file,
+            field_mapping=field_mapping)
     elif (FORMAT == 'geotiff'):
         dinput = pyTMD.spatial.from_geotiff(input_file)
         # copy global geotiff attributes for projection and grid parameters
