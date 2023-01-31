@@ -68,6 +68,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
+        added data type keyword for netCDF4 output
     Updated 12/2022: single implicit import of pyTMD tools
         use constants class for ellipsoidal parameters
     Updated 11/2022: place some imports within try/except statements
@@ -345,7 +346,7 @@ def compute_LPT_displacements(input_file, output_file,
             delimiter=DELIMITER, header=False,
             columns=['time','lat','lon','tide_pole'])
     elif (FORMAT == 'netCDF4'):
-        pyTMD.spatial.to_netCDF4(output, attrib, output_file)
+        pyTMD.spatial.to_netCDF4(output, attrib, output_file, data_type=TYPE)
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):

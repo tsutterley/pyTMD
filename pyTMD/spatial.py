@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
+        split netCDF4 output into separate functions for grid and drift types
     Updated 12/2022: add software information to output HDF5 and netCDF4
     Updated 11/2022: place some imports within try/except statements
         added encoding for writing ascii files
@@ -652,7 +653,34 @@ def to_ascii(output, attributes, filename, **kwargs):
 
 def to_netCDF4(output, attributes, filename, **kwargs):
     """
-    Write data to a netCDF4 file
+    Wrapper function for writing data to a netCDF4 file
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str
+        full path of output netCDF4 file
+    data_type: str, default 'drift'
+        Input data type
+
+            - ``'time series'``
+            - ``'drift'``
+            - ``'grid'``
+    """
+    # default arguments
+    kwargs.setdefault('data_type', 'drift')
+    if kwargs['data_type'] in ('drift','time series'):
+        kwargs.pop('data_type')
+        _drift_netCDF4(output, attributes, filename, **kwargs)
+    elif kwargs['data_type'] in ('grid',):
+        _grid_netCDF4(output, attributes, filename, **kwargs)
+
+def _drift_netCDF4(output, attributes, filename, **kwargs):
+    """
+    Write drift data to a netCDF4 file
 
     Parameters
     ----------
@@ -674,6 +702,64 @@ def to_netCDF4(output, attributes, filename, **kwargs):
             nc[key] = fileID.createVariable(key, val.dtype, ('time',),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
             attributes[key].pop('_FillValue')
+        elif val.shape:
+            nc[key] = fileID.createVariable(key, val.dtype, ('time',))
+        else:
+            nc[key] = fileID.createVariable(key, val.dtype, ())
+        # filling NetCDF variables
+        nc[key][:] = val
+        # Defining attributes for variable
+        for att_name,att_val in attributes[key].items():
+            nc[key].setncattr(att_name,att_val)
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    # add file-level attributes if applicable
+    if 'ROOT' in attributes.keys():
+        # Defining attributes for file
+        for att_name,att_val in attributes['ROOT'].items():
+            fileID.setncattr(att_name,att_val)
+    # Output NetCDF structure information
+    logging.info(filename)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()
+
+def _grid_netCDF4(output, attributes, filename, **kwargs):
+    """
+    Write gridded data to a netCDF4 file
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str
+        full path of output netCDF4 file
+    """
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(filename),'w',format="NETCDF4")
+    # input data fields
+    fields = sorted(set(output.keys()) - set(['time','lon','lat']))
+    # Defining the NetCDF dimensions
+    ny,nx,nt = output[fields[0]].shape
+    fileID.createDimension('y', ny)
+    fileID.createDimension('x', nx)
+    fileID.createDimension('time', nt)
+    # defining the NetCDF variables
+    nc = {}
+    for key,val in output.items():
+        if '_FillValue' in attributes[key].keys():
+            nc[key] = fileID.createVariable(key, val.dtype, ('y','x','time'),
+                fill_value=attributes[key]['_FillValue'], zlib=True)
+            attributes[key].pop('_FillValue')
+        elif (val.ndim == 3):
+            nc[key] = fileID.createVariable(key, val.dtype, ('y','x','time'))
+        elif (val.ndim == 2):
+            nc[key] = fileID.createVariable(key, val.dtype, ('y','x'))
         elif val.shape:
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
         else:
