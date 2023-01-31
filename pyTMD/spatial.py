@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (01/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
     Updated 12/2022: add software information to output HDF5 and netCDF4
     Updated 11/2022: place some imports within try/except statements
         added encoding for writing ascii files
@@ -354,7 +355,7 @@ def from_netCDF4(filename, **kwargs):
             except (ValueError,AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
-    if 'grid_mapping' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and 'grid_mapping' in dinput['attributes']['data'].keys():
         # try getting the attribute
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
@@ -460,7 +461,7 @@ def from_HDF5(filename, **kwargs):
             except (KeyError,AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
-    if 'grid_mapping' in dinput['attributes']['data'].keys():
+    if 'data' in dinput.keys() and 'grid_mapping' in dinput['attributes']['data'].keys():
         # try getting the attribute
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
@@ -832,6 +833,36 @@ def expand_dims(obj, varname='data'):
         obj[varname] = np.atleast_3d(obj[varname])
     # return reformed spatial dictionary
     return obj
+
+def default_field_mapping(variables):
+    """
+    Builds field mappings from a variable list
+
+
+    Parameters
+    ----------
+    variables: list
+        Variables from argument parser
+
+            - ``time``
+            - ``yname``
+            - ``xname``
+            - ``varname``
+
+    Returns
+    -------
+    field_mapping: dict
+        Field mappings for netCDF4/HDF5 read functions
+    """
+    # get each variable name and add to field mapping dictionary
+    field_mapping = {}
+    for i,var in enumerate(['time','y','x','data']):
+        try:
+            field_mapping[var] = copy.copy(variables[i])
+        except IndexError as exc:
+            pass
+    # return the field mapping
+    return field_mapping
 
 def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
     """

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (01/2023)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -79,6 +79,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
     Updated 12/2022: single implicit import of pyTMD tools
         use constants class for ellipsoidal parameters
     Updated 11/2022: place some imports within try/except statements
@@ -206,11 +207,13 @@ def compute_OPT_displacements(input_file, output_file,
         dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
             delimiter=DELIMITER, header=HEADER, parse_dates=parse_dates)
     elif (FORMAT == 'netCDF4'):
-        dinput = pyTMD.spatial.from_netCDF4(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        dinput = pyTMD.spatial.from_netCDF4(input_file,
+            field_mapping=field_mapping)
     elif (FORMAT == 'HDF5'):
-        dinput = pyTMD.spatial.from_HDF5(input_file, timename=VARIABLES[0],
-            xname=VARIABLES[2], yname=VARIABLES[1], varname=VARIABLES[3])
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        dinput = pyTMD.spatial.from_HDF5(input_file,
+            field_mapping=field_mapping)
     elif (FORMAT == 'geotiff'):
         dinput = pyTMD.spatial.from_geotiff(input_file)
         # copy global geotiff attributes for projection and grid parameters

@@ -252,6 +252,19 @@ def test_geotiff(username, password):
     os.remove(input_file)
     os.remove(output_file)
 
+# PURPOSE: test the default field mapping function
+def test_field_mapping():
+    # test without data variable
+    variables = ['delta_time','latitude','longitude']
+    field_mapping = pyTMD.spatial.default_field_mapping(variables)
+    validation = dict(time='delta_time', y='latitude', x='longitude')
+    assert field_mapping == validation
+    # test with data variable
+    variables = ['time','y','x','height']
+    field_mapping = pyTMD.spatial.default_field_mapping(variables)
+    validation = dict(time='time', y='y', x='x', data='height')
+    assert field_mapping == validation
+
 # PURPOSE: test ellipsoid conversion
 def test_convert_ellipsoid():
     # semimajor axis (a) and flattening (f) for TP and WGS84 ellipsoids
