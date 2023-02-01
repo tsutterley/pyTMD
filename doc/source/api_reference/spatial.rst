@@ -54,6 +54,8 @@ General Methods
 
 .. autofunction:: pyTMD.spatial._grid_netCDF4
 
+.. autofunction:: pyTMD.spatial._time_series_netCDF4
+
 .. autofunction:: pyTMD.spatial.to_HDF5
 
 .. autofunction:: pyTMD.spatial.to_geotiff

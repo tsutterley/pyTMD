@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (02/2023)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -63,6 +63,7 @@ PROGRAM DEPENDENCIES:
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
     Updated 12/2022: single implicit import of pyTMD tools
@@ -194,19 +195,23 @@ def compute_LPET_elevations(input_file, output_file,
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):
-        ny,nx = (len(dinput['y']),len(dinput['x']))
-        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        lon,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+        ny, nx = (len(dinput['y']), len(dinput['x']))
+        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
+        lon, lat = transformer.transform(gridx, gridy)
     elif (TYPE == 'drift'):
-        lon,lat = transformer.transform(dinput['x'].flatten(),
-            dinput['y'].flatten())
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    elif (TYPE == 'time series'):
+        nstation = len(dinput['y'].flatten())
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    # flatten latitudes
+    phi = lat.flatten()
 
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
-        epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     # convert time to seconds
     delta_time = to_secs*dinput['time'].flatten()
 
@@ -260,13 +265,18 @@ def compute_LPET_elevations(input_file, output_file,
     if (TYPE == 'grid'):
         tide_lpe = np.zeros((ny,nx,nt))
         for i in range(nt):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time[i] + deltat[i], lat)
+            lpet = pyTMD.predict.equilibrium_tide(tide_time[i] + deltat[i], phi)
             tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
     elif (TYPE == 'drift'):
-        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time + deltat, lat)
+        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time + deltat, phi)
+    elif (TYPE == 'time series'):
+        tide_lpe = np.zeros((nstation,nt))
+        for s in range(nstation):
+            lpet = pyTMD.predict.equilibrium_tide(tide_time + deltat, phi[s])
+            tide_lpe[s,:] = np.copy(lpet)
 
     # output to file
-    output = dict(time=tide_time,lon=lon,lat=lat,tide_lpe=tide_lpe)
+    output = dict(time=tide_time, lon=lon, lat=lat, tide_lpe=tide_lpe)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
@@ -317,9 +327,10 @@ def arguments():
     # input data type
     # drift: drift buoys or satellite/airborne altimetry (time per data point)
     # grid: spatial grids or images (single time for all data points)
+    # time series: station locations with multiple time values
     parser.add_argument('--type','-t',
         type=str, default='drift',
-        choices=('drift','grid'),
+        choices=('drift','grid','time series'),
         help='Input data type')
     # time epoch (default Modified Julian Days)
     # in form "time-units since yyyy-mm-dd hh:mm:ss"
