@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (01/2023)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 01/2023: use debug level logging instead of import warnings
     Updated 11/2022: place more imports within try/except statements
     Updated 08/2022: place some imports behind try/except statements
     Updated 05/2022: include world copy jump in webmercator maps
@@ -28,8 +29,8 @@ import io
 import os
 import copy
 import base64
+import logging
 import datetime
-import warnings
 import numpy as np
 import matplotlib
 matplotlib.rcParams['axes.linewidth'] = 2.0
@@ -45,25 +46,19 @@ import pyTMD.io.model
 try:
     import IPython
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("module")
-    warnings.warn("IPython not available", ImportWarning)
+    logging.debug("IPython not available")
 try:
     import ipyleaflet
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("module")
-    warnings.warn("ipyleaflet not available", ImportWarning)
+    logging.debug("ipyleaflet not available")
 try:
     import ipywidgets
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("module")
-    warnings.warn("ipywidgets not available", ImportWarning)
+    logging.debug("ipywidgets not available")
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("module")
-    warnings.warn("pyproj not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.debug("pyproj not available")
 
 class widgets:
     def __init__(self, **kwargs):

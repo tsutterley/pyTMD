@@ -92,6 +92,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
+        added data type keyword for netCDF4 output
     Updated 12/2022: single implicit import of pyTMD tools
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
@@ -392,7 +393,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             delimiter=DELIMITER, header=False,
             columns=['time','lat','lon','u','v'])
     elif (FORMAT == 'netCDF4'):
-        pyTMD.spatial.to_netCDF4(output, attrib, output_file)
+        pyTMD.spatial.to_netCDF4(output, attrib, output_file, data_type=TYPE)
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
@@ -430,8 +431,7 @@ def arguments():
     # tide model to use
     choices = sorted(pyTMD.io.model.ocean_current())
     group.add_argument('--tide','-T',
-        metavar='TIDE', type=str,
-        choices=choices,
+        type=str, choices=choices,
         help='Tide model to use in calculating currents')
     parser.add_argument('--atlas-format',
         type=str, choices=('OTIS','netcdf'), default='netcdf',
