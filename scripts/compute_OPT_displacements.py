@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (02/2023)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -79,6 +79,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
     Updated 12/2022: single implicit import of pyTMD tools
@@ -229,19 +230,21 @@ def compute_OPT_displacements(input_file, output_file,
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):
-        ny,nx = (len(dinput['y']),len(dinput['x']))
-        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        lon,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+        ny, nx = (len(dinput['y']), len(dinput['x']))
+        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
+        lon, lat = transformer.transform(gridx, gridy)
     elif (TYPE == 'drift'):
-        lon,lat = transformer.transform(dinput['x'].flatten(),
-            dinput['y'].flatten())
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    elif (TYPE == 'time series'):
+        nstation = len(dinput['y'].flatten())
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
 
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
-        epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     # convert time to seconds
     delta_time = to_secs*dinput['time'].flatten()
 
@@ -308,7 +311,7 @@ def compute_OPT_displacements(input_file, output_file,
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon.flatten(), lat.flatten(), h=h,
         a_axis=units.a_axis, flat=units.flat)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
@@ -333,6 +336,7 @@ def compute_OPT_displacements(input_file, output_file,
     # calculate differentials from mean pole positions
     mx = px - mpx
     my = -(py - mpy)
+    print(mpx, mpy, px, py)
 
     # read ocean pole tide map from Desai (2002)
     ocean_pole_tide_file = pyTMD.utilities.get_data_path(['data',
@@ -346,13 +350,13 @@ def compute_OPT_displacements(input_file, output_file,
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
         UR = np.zeros((len(latitude_geocentric)),dtype=np.longcomplex)
-        UR.real = f1.ev(lon,latitude_geocentric)
-        UR.imag = f2.ev(lon,latitude_geocentric)
+        UR.real = f1.ev(lon.flatten(), latitude_geocentric)
+        UR.imag = f2.ev(lon.flatten(), latitude_geocentric)
     else:
         # use scipy regular grid to interpolate values for a given method
         r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
             iur[:,::-1], method=METHOD)
-        UR = r1.__call__(np.c_[lon,latitude_geocentric])
+        UR = r1.__call__(np.c_[lon.flatten(), latitude_geocentric])
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -363,17 +367,25 @@ def compute_OPT_displacements(input_file, output_file,
                 (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag)
             # reform grid
             Urad.data[:,:,i] = np.reshape(URAD, (ny,nx))
-            Urad.mask[:,:,i] = np.isnan(URAD)
+            Urad.mask[:,:,i] = np.isnan(Urad.data[:,:,i])
     elif (TYPE == 'drift'):
         Urad = np.ma.zeros((nt),fill_value=fill_value)
         Urad.data[:] = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
             (my*gamma.real - mx*gamma.imag)*UR.imag)
         Urad.mask = np.isnan(Urad.data)
+    elif (TYPE == 'time series'):
+        Urad = np.ma.zeros((nstation,nt),fill_value=fill_value)
+        Urad.mask = np.zeros((nstation,nt),dtype=bool)
+        for s in range(nstation):
+            URAD = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real[s] +
+                (my*gamma.real - mx*gamma.imag)*UR.imag[s])
+            Urad.data[s,:] = np.copy(URAD)
+            Urad.mask[s,:] = np.isnan(Urad.data[s,:])
     # replace invalid data with fill values
     Urad.data[Urad.mask] = Urad.fill_value
 
     # output to file
-    output = dict(time=MJD,lon=lon,lat=lat,tide_oc_pole=Urad)
+    output = dict(time=MJD, lon=lon, lat=lat, tide_oc_pole=Urad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
@@ -424,9 +436,10 @@ def arguments():
     # input data type
     # drift: drift buoys or satellite/airborne altimetry (time per data point)
     # grid: spatial grids or images (single time for all data points)
+    # time series: station locations with multiple time values
     parser.add_argument('--type','-t',
         type=str, default='drift',
-        choices=('drift','grid'),
+        choices=('drift','grid','time series'),
         help='Input data type')
     # time epoch (default Modified Julian Days)
     # in form "time-units since yyyy-mm-dd hh:mm:ss"

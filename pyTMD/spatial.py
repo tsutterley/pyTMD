@@ -672,27 +672,47 @@ def to_netCDF4(output, attributes, filename, **kwargs):
     """
     # default arguments
     kwargs.setdefault('data_type', 'drift')
-    if kwargs['data_type'] in ('drift','time series'):
+    # opening NetCDF file for writing
+    fileID = netCDF4.Dataset(os.path.expanduser(filename),'w',format="NETCDF4")
+    if kwargs['data_type'] in ('drift',):
         kwargs.pop('data_type')
-        _drift_netCDF4(output, attributes, filename, **kwargs)
+        _drift_netCDF4(fileID, output, attributes, **kwargs)
     elif kwargs['data_type'] in ('grid',):
-        _grid_netCDF4(output, attributes, filename, **kwargs)
+        kwargs.pop('data_type')
+        _grid_netCDF4(fileID, output, attributes, **kwargs)
+    elif  kwargs['data_type'] in ('time series',):
+        kwargs.pop('data_type')
+        _time_series_netCDF4(fileID, output, attributes, **kwargs)
+    # add attribute for date created
+    fileID.date_created = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    fileID.software_reference = pyTMD.version.project_name
+    fileID.software_version = pyTMD.version.full_version
+    # add file-level attributes if applicable
+    if 'ROOT' in attributes.keys():
+        # Defining attributes for file
+        for att_name,att_val in attributes['ROOT'].items():
+            fileID.setncattr(att_name,att_val)
+    # Output NetCDF structure information
+    logging.info(filename)
+    logging.info(list(fileID.variables.keys()))
+    # Closing the NetCDF file
+    fileID.close()
 
-def _drift_netCDF4(output, attributes, filename, **kwargs):
+def _drift_netCDF4(fileID, output, attributes, **kwargs):
     """
-    Write drift data to a netCDF4 file
+    Write drift data variables to a netCDF4 file object
 
     Parameters
     ----------
+    fileID: obj
+        open netCDF4 file object
     output: dict
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
-        full path of output netCDF4 file
     """
-    # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(filename),'w',format="NETCDF4")
+
     # Defining the NetCDF dimensions
     fileID.createDimension('time', len(np.atleast_1d(output['time'])))
     # defining the NetCDF variables
@@ -711,37 +731,20 @@ def _drift_netCDF4(output, attributes, filename, **kwargs):
         # Defining attributes for variable
         for att_name,att_val in attributes[key].items():
             nc[key].setncattr(att_name,att_val)
-    # add attribute for date created
-    fileID.date_created = datetime.datetime.now().isoformat()
-    # add attributes for software information
-    fileID.software_reference = pyTMD.version.project_name
-    fileID.software_version = pyTMD.version.full_version
-    # add file-level attributes if applicable
-    if 'ROOT' in attributes.keys():
-        # Defining attributes for file
-        for att_name,att_val in attributes['ROOT'].items():
-            fileID.setncattr(att_name,att_val)
-    # Output NetCDF structure information
-    logging.info(filename)
-    logging.info(list(fileID.variables.keys()))
-    # Closing the NetCDF file
-    fileID.close()
 
-def _grid_netCDF4(output, attributes, filename, **kwargs):
+def _grid_netCDF4(fileID, output, attributes, **kwargs):
     """
-    Write gridded data to a netCDF4 file
+    Write gridded data variables to a netCDF4 file object
 
     Parameters
     ----------
+    fileID: obj
+        open netCDF4 file object
     output: dict
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
-        full path of output netCDF4 file
     """
-    # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(filename),'w',format="NETCDF4")
     # input data fields
     fields = sorted(set(output.keys()) - set(['time','lon','lat']))
     # Defining the NetCDF dimensions
@@ -769,21 +772,46 @@ def _grid_netCDF4(output, attributes, filename, **kwargs):
         # Defining attributes for variable
         for att_name,att_val in attributes[key].items():
             nc[key].setncattr(att_name,att_val)
-    # add attribute for date created
-    fileID.date_created = datetime.datetime.now().isoformat()
-    # add attributes for software information
-    fileID.software_reference = pyTMD.version.project_name
-    fileID.software_version = pyTMD.version.full_version
-    # add file-level attributes if applicable
-    if 'ROOT' in attributes.keys():
-        # Defining attributes for file
-        for att_name,att_val in attributes['ROOT'].items():
-            fileID.setncattr(att_name,att_val)
-    # Output NetCDF structure information
-    logging.info(filename)
-    logging.info(list(fileID.variables.keys()))
-    # Closing the NetCDF file
-    fileID.close()
+
+def _time_series_netCDF4(fileID, output, attributes, **kwargs):
+    """
+    Write time series data variables to a netCDF4 file object
+
+    Parameters
+    ----------
+    fileID: obj
+        open netCDF4 file object
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    """
+    # input data fields
+    fields = sorted(set(output.keys()) - set(['time','lon','lat']))
+    # Defining the NetCDF dimensions
+    nstation,nt = output[fields[0]].shape
+    fileID.createDimension('station', nstation)
+    fileID.createDimension('time', nt)
+    # defining the NetCDF variables
+    nc = {}
+    for key,val in output.items():
+        if '_FillValue' in attributes[key].keys():
+            nc[key] = fileID.createVariable(key, val.dtype, ('station','time'),
+                fill_value=attributes[key]['_FillValue'], zlib=True)
+            attributes[key].pop('_FillValue')
+        elif (val.ndim == 2):
+            nc[key] = fileID.createVariable(key, val.dtype, ('station','time'))
+        elif (key == 'time'):
+            nc[key] = fileID.createVariable(key, val.dtype, ('time',))
+        elif val.shape:
+            nc[key] = fileID.createVariable(key, val.dtype, ('station',))
+        else:
+            nc[key] = fileID.createVariable(key, val.dtype, ())
+        # filling NetCDF variables
+        nc[key][:] = val
+        # Defining attributes for variable
+        for att_name,att_val in attributes[key].items():
+            nc[key].setncattr(att_name,att_val)
 
 def to_HDF5(output, attributes, filename, **kwargs):
     """

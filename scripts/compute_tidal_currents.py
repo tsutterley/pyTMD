@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (02/2023)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -91,6 +91,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
     Updated 12/2022: single implicit import of pyTMD tools
@@ -270,18 +271,21 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):
-        ny,nx = (len(dinput['y']),len(dinput['x']))
-        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        lon,lat = transformer.transform(gridx,gridy)
+        ny, nx = (len(dinput['y']), len(dinput['x']))
+        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
+        lon, lat = transformer.transform(gridx, gridy)
     elif (TYPE == 'drift'):
-        lon,lat = transformer.transform(dinput['x'],dinput['y'])
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    elif (TYPE == 'time series'):
+        nstation = len(dinput['y'])
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
 
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
-        epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     # convert time to seconds
     if (TIME_STANDARD.lower() != 'datetime'):
         delta_time = to_secs*dinput['time'].flatten()
@@ -332,7 +336,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
     # python dictionary with output data
-    output = {'time':tide_time,'lon':lon,'lat':lat}
+    output = {'time':tide_time, 'lon':lon, 'lat':lat}
     # iterate over u and v currents
     for t in model.type:
         # read tidal constants and interpolate to grid points
@@ -384,6 +388,17 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             minor = pyTMD.predict.infer_minor(tide_time, hc, c,
                 deltat=deltat, corrections=model.format)
             output[t].data[:] += minor.data[:]
+        elif (TYPE == 'time series'):
+            output[t] = np.ma.zeros((nstation,nt),fill_value=fill_value)
+            output[t].mask = np.zeros((nstation,nt),dtype=bool)
+            for s in range(nstation):
+                # calculate constituent oscillation for station
+                TIDE = pyTMD.predict.time_series(tide_time, hc[s,None,:], c,
+                    deltat=deltat, corrections=model.format)
+                MINOR = pyTMD.predict.infer_minor(tide_time, hc[s,None,:], c,
+                    deltat=deltat, corrections=model.format)
+                output[t].data[s,:] = TIDE.data[:] + MINOR.data[:]
+                output[t].mask[s,:] = (TIDE.mask | MINOR.mask)
         # replace invalid values with fill value
         output[t].data[output[t].mask] = output[t].fill_value
 
@@ -462,9 +477,10 @@ def arguments():
     # input data type
     # drift: drift buoys or satellite/airborne altimetry (time per data point)
     # grid: spatial grids or images (single time for all data points)
+    # time series: station locations with multiple time values
     parser.add_argument('--type','-t',
         type=str, default='drift',
-        choices=('drift','grid'),
+        choices=('drift','grid','time series'),
         help='Input data type')
     # time epoch (default Modified Julian Days)
     # in form "time-units since yyyy-mm-dd hh:mm:ss"

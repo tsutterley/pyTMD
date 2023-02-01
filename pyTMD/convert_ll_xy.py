@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 convert_ll_xy.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (02/2023)
 Wrapper function to convert lat/lon points to and from projected coordinates
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 02/2023: use named exception before passing to custom
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -93,7 +94,7 @@ def convert_ll_xy(i1,i2,PROJ,BF,EPSG=4326):
     # run named conversion program and return values
     try:
         o1, o2 = conversion_functions[PROJ](i1, i2, BF, EPSG=EPSG)
-    except Exception as e:
+    except KeyError as exc:
         pass
     else:
         return (o1, o2)
@@ -101,7 +102,7 @@ def convert_ll_xy(i1,i2,PROJ,BF,EPSG=4326):
     # run custom conversion program and return values
     try:
         o1, o2 = convert_projection(i1, i2, PROJ, BF, EPSG=EPSG)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return (o1, o2)

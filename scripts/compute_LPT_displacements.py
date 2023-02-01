@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (02/2023)
 Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -67,6 +67,7 @@ PROGRAM DEPENDENCIES:
     eop.py: utilities for calculating Earth Orientation Parameters (EOP)
 
 UPDATE HISTORY:
+    Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
     Updated 12/2022: single implicit import of pyTMD tools
@@ -211,19 +212,21 @@ def compute_LPT_displacements(input_file, output_file,
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     if (TYPE == 'grid'):
-        ny,nx = (len(dinput['y']),len(dinput['x']))
-        gridx,gridy = np.meshgrid(dinput['x'],dinput['y'])
-        lon,lat = transformer.transform(gridx.flatten(),gridy.flatten())
+        ny, nx = (len(dinput['y']), len(dinput['x']))
+        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
+        lon, lat = transformer.transform(gridx, gridy)
     elif (TYPE == 'drift'):
-        lon,lat = transformer.transform(dinput['x'].flatten(),
-            dinput['y'].flatten())
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    elif (TYPE == 'time series'):
+        nstation = len(dinput['y'].flatten())
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
 
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = dinput['attributes']['time']['units']
-        epoch1,to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1,to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     # convert time to seconds
     delta_time = to_secs*dinput['time'].flatten()
 
@@ -286,18 +289,19 @@ def compute_LPT_displacements(input_file, output_file,
     h = dinput['data'].flatten() if ('data' in dinput.keys()) else 0.0
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon.flatten(), lat.flatten(), h=h,
         a_axis=units.a_axis, flat=units.flat)
     rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
     # geocentric colatitude and longitude in radians
     theta = dtr*(90.0 - latitude_geocentric)
-    phi = lon*dtr
+    phi = dtr*lon.flatten()
 
     # compute normal gravity at spatial location and elevation of points.
     # Normal gravity at height h. p. 82, Eqn.(2-215)
     gamma_h = units.gamma_h(theta, h)
+    dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
 
     # pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
@@ -316,31 +320,30 @@ def compute_LPT_displacements(input_file, output_file,
     my = -(py - mpy)
 
     # calculate radial displacement at time
-    dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
-    Srad = np.ma.zeros((len(latitude_geocentric)),fill_value=fill_value)
-    Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
-    # replace fill values
-    Srad.mask = np.isnan(Srad.data)
-    Srad.data[Srad.mask] = Srad.fill_value
-
-    # calculate radial displacement at time
     if (TYPE == 'grid'):
         Srad = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
         Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            SRAD=dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
+            SRAD = dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
             # reform grid
-            Srad.data[:,:,i]=np.reshape(SRAD, (ny,nx))
-            Srad.mask[:,:,i]=np.isnan(SRAD)
+            Srad.data[:,:,i] = np.reshape(SRAD, (ny,nx))
+            Srad.mask[:,:,i] = np.isnan(Srad.data[:,:,i])
     elif (TYPE == 'drift'):
         Srad = np.ma.zeros((nt),fill_value=fill_value)
         Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi)+my*np.sin(phi))
         Srad.mask = np.isnan(Srad.data)
+    elif (TYPE == 'time series'):
+        Srad = np.ma.zeros((nstation,nt),fill_value=fill_value)
+        Srad.mask = np.zeros((nstation,nt),dtype=bool)
+        for s in range(nstation):
+            SRAD = dfactor[s]*np.sin(2.0*theta[s])*(mx*np.cos(phi[s])+my*np.sin(phi[s]))
+            Srad.data[s,:] = np.copy(SRAD)
+            Srad.mask[s,:] = np.isnan(Srad.data[s,:])
     # replace invalid data with fill values
     Srad.data[Srad.mask] = Srad.fill_value
 
     # output to file
-    output = dict(time=MJD,lon=lon,lat=lat,tide_pole=Srad)
+    output = dict(time=MJD, lon=lon, lat=lat, tide_pole=Srad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
@@ -391,9 +394,10 @@ def arguments():
     # input data type
     # drift: drift buoys or satellite/airborne altimetry (time per data point)
     # grid: spatial grids or images (single time for all data points)
+    # time series: station locations with multiple time values
     parser.add_argument('--type','-t',
         type=str, default='drift',
-        choices=('drift','grid'),
+        choices=('drift','grid','time series'),
         help='Input data type')
     # time epoch (default Modified Julian Days)
     # in form "time-units since yyyy-mm-dd hh:mm:ss"
