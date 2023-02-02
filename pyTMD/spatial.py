@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (02/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,8 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 02/2023: use outputs from constants class for WGS84 parameters
+        include more possible dimension names for gridded and drift outputs
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         split netCDF4 output into separate functions for grid and drift types
     Updated 12/2022: add software information to output HDF5 and netCDF4
@@ -63,6 +65,7 @@ import datetime
 import warnings
 import numpy as np
 import dateutil.parser
+from pyTMD.constants import constants
 import pyTMD.version
 # attempt imports
 try:
@@ -746,7 +749,8 @@ def _grid_netCDF4(fileID, output, attributes, **kwargs):
         python dictionary of output attributes
     """
     # input data fields
-    fields = sorted(set(output.keys()) - set(['time','lon','lat']))
+    dimensions = ['time','lon','lat','t','x','y']
+    fields = sorted(set(output.keys()) - set(dimensions))
     # Defining the NetCDF dimensions
     ny,nx,nt = output[fields[0]].shape
     fileID.createDimension('y', ny)
@@ -763,7 +767,11 @@ def _grid_netCDF4(fileID, output, attributes, **kwargs):
             nc[key] = fileID.createVariable(key, val.dtype, ('y','x','time'))
         elif (val.ndim == 2):
             nc[key] = fileID.createVariable(key, val.dtype, ('y','x'))
-        elif val.shape:
+        elif val.shape and (len(val) == ny):
+            nc[key] = fileID.createVariable(key, val.dtype, ('y',))
+        elif val.shape and (len(val) == nx):
+            nc[key] = fileID.createVariable(key, val.dtype, ('x',))
+        elif val.shape and (len(val) == nt):
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
         else:
             nc[key] = fileID.createVariable(key, val.dtype, ())
@@ -787,7 +795,8 @@ def _time_series_netCDF4(fileID, output, attributes, **kwargs):
         python dictionary of output attributes
     """
     # input data fields
-    fields = sorted(set(output.keys()) - set(['time','lon','lat']))
+    dimensions = ['time','lon','lat','t','x','y']
+    fields = sorted(set(output.keys()) - set(dimensions))
     # Defining the NetCDF dimensions
     nstation,nt = output[fields[0]].shape
     fileID.createDimension('station', nstation)
@@ -801,9 +810,9 @@ def _time_series_netCDF4(fileID, output, attributes, **kwargs):
             attributes[key].pop('_FillValue')
         elif (val.ndim == 2):
             nc[key] = fileID.createVariable(key, val.dtype, ('station','time'))
-        elif (key == 'time'):
+        elif val.shape and (len(val) == nt):
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
-        elif val.shape:
+        elif val.shape and (len(val) == nstation):
             nc[key] = fileID.createVariable(key, val.dtype, ('station',))
         else:
             nc[key] = fileID.createVariable(key, val.dtype, ())
@@ -1172,11 +1181,14 @@ def wrap_longitudes(lon):
     lon: float
         longitude (degrees east)
     """
-    phi = np.arctan2(np.sin(lon*np.pi/180.0),np.cos(lon*np.pi/180.0))
+    phi = np.arctan2(np.sin(lon*np.pi/180.0), np.cos(lon*np.pi/180.0))
     # convert phi from radians to degrees
     return phi*180.0/np.pi
 
-def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
+# get WGS84 parameters
+_wgs84 = constants(ellipsoid='WGS84', units='MKS')
+
+def to_cartesian(lon, lat, h=0.0, a_axis=_wgs84.a_axis, flat=_wgs84.flat):
     """
     Converts geodetic coordinates to Cartesian coordinates
 
@@ -1218,7 +1230,7 @@ def to_cartesian(lon,lat,h=0.0,a_axis=6378137.0,flat=1.0/298.257223563):
     # return the cartesian coordinates
     return (X,Y,Z)
 
-def to_sphere(x,y,z):
+def to_sphere(x, y, z):
     """
     Convert from cartesian coordinates to spherical coordinates
 
@@ -1249,7 +1261,7 @@ def to_sphere(x,y,z):
     # return latitude, longitude and radius
     return (lon,lat,rad)
 
-def to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563):
+def to_geodetic(x, y, z, a_axis=_wgs84.a_axis, flat=_wgs84.flat):
     """
     Convert from cartesian coordinates to geodetic coordinates
     using a closed form solution
@@ -1313,7 +1325,7 @@ def to_geodetic(x,y,z,a_axis=6378137.0,flat=1.0/298.257223563):
     # return latitude, longitude and height
     return (lon,lat,h)
 
-def scale_areas(lat, flat=1.0/298.257223563, ref=70.0):
+def scale_areas(lat, flat=_wgs84.flat, ref=70.0):
     """
     Calculates area scaling factors for a polar stereographic projection
     including special case of at the exact pole

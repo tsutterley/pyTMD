@@ -26,6 +26,7 @@ compute_OPT_displacements.py
     --type -t : @after
         * ``'drift'``: drift buoys or satellite/airborne altimetry (time per data point)
         * ``'grid'``: spatial grids or images (single time for all data points)
+        * ``'time series'``: station locations with multiple time values
 
     --epoch -e : @after
         * ``'days since 1858-11-17T00:00:00'`` (default Modified Julian Days)
