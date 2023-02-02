@@ -4,7 +4,6 @@ test_spatial.py (11/2020)
 Verify file read and write with spatial utilities
 """
 import os
-import ssl
 import pytest
 import inspect
 import numpy as np
@@ -69,6 +68,7 @@ def test_ascii():
     output['x'] = np.random.randint(-180,180,size=n_time)
     output['data'] = np.random.randn(n_time)
     output['time'] = np.random.randint(0,31557600,size=n_time)
+
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files
     attrib = {}
@@ -112,15 +112,31 @@ def test_ascii():
     os.remove(output_file)
 
 # PURPOSE: test the read and write of netCDF4 files
-def test_netCDF4():
-    # number of data points
-    n_time = 3000
-    # create a test dataset
+@pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
+def test_netCDF4(TYPE):
+    # create a test dataset for data type
     output = {}
-    output['y'] = np.random.randint(-90,90,size=n_time)
-    output['x'] = np.random.randint(-180,180,size=n_time)
-    output['data'] = np.random.randn(n_time)
-    output['time'] = np.random.randint(0,31557600,size=n_time)
+    if (TYPE == 'drift'):
+        # number of data points
+        n_time = 3000
+        output['y'] = np.random.randint(-90,90,size=n_time)
+        output['x'] = np.random.randint(-180,180,size=n_time)
+        output['data'] = np.random.randn(n_time)
+        output['time'] = np.random.randint(0,31557600,size=n_time)
+    elif (TYPE == 'grid'):
+        # number of data points
+        n_lat,n_lon,n_time = (181,361,100)
+        output['y'] = np.linspace(-90,90,n_lat)
+        output['x'] = np.linspace(-180,180,n_lon)
+        output['data'] = np.random.randn(n_lat,n_lon,n_time)
+        output['time'] = np.random.randint(0,31557600,size=n_time)
+    elif (TYPE == 'time series'):
+        n_station,n_time = (300,100)
+        output['y'] = np.random.randint(-90,90,size=n_station)
+        output['x'] = np.random.randint(-180,180,size=n_station)
+        output['data'] = np.random.randn(n_station,n_time)
+        output['time'] = np.random.randint(0,31557600,size=n_time)
+
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files
     attrib = {}
@@ -144,7 +160,8 @@ def test_netCDF4():
 
     # create test netCDF4 file
     output_file = os.path.join(filepath,'test.nc')
-    pyTMD.spatial.to_netCDF4(output, attrib, output_file, verbose=True)
+    pyTMD.spatial.to_netCDF4(output, attrib, output_file,
+        data_type=TYPE, verbose=True)
     # read test netCDF4 file (change case to find test function)
     input_file = os.path.join(filepath,'TEST.nc')
     test = pyTMD.spatial.from_netCDF4(input_file, timename='time',
@@ -163,15 +180,31 @@ def test_netCDF4():
     os.remove(output_file)
 
 # PURPOSE: test the read and write of HDF5 files
-def test_HDF5():
-    # number of data points
-    n_time = 3000
-    # create a test dataset
+@pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
+def test_HDF5(TYPE):
+    # create a test dataset for data type
     output = {}
-    output['y'] = np.random.randint(-90,90,size=n_time)
-    output['x'] = np.random.randint(-180,180,size=n_time)
-    output['data'] = np.random.randn(n_time)
-    output['time'] = np.random.randint(0,31557600,size=n_time)
+    if (TYPE == 'drift'):
+        # number of data points
+        n_time = 3000
+        output['y'] = np.random.randint(-90,90,size=n_time)
+        output['x'] = np.random.randint(-180,180,size=n_time)
+        output['data'] = np.random.randn(n_time)
+        output['time'] = np.random.randint(0,31557600,size=n_time)
+    elif (TYPE == 'grid'):
+        # number of data points
+        n_lat,n_lon,n_time = (181,361,100)
+        output['y'] = np.linspace(-90,90,n_lat)
+        output['x'] = np.linspace(-180,180,n_lon)
+        output['data'] = np.random.randn(n_lat,n_lon,n_time)
+        output['time'] = np.random.randint(0,31557600,size=n_time)
+    elif (TYPE == 'time series'):
+        n_station,n_time = (300,100)
+        output['y'] = np.random.randint(-90,90,size=n_station)
+        output['x'] = np.random.randint(-180,180,size=n_station)
+        output['data'] = np.random.randn(n_station,n_time)
+        output['time'] = np.random.randint(0,31557600,size=n_time)
+
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files
     attrib = {}
@@ -264,6 +297,11 @@ def test_field_mapping():
     field_mapping = pyTMD.spatial.default_field_mapping(variables)
     validation = dict(time='time', y='y', x='x', data='height')
     assert field_mapping == validation
+
+# PURPOSE: test ellipsoidal parameters within spatial module
+def test_ellipsoid_parameters():
+    assert pyTMD.spatial._wgs84.a_axis == 6378137.0
+    assert pyTMD.spatial._wgs84.flat == (1.0/298.257223563)
 
 # PURPOSE: test ellipsoid conversion
 def test_convert_ellipsoid():
