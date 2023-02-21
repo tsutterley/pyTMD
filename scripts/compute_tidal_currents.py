@@ -142,7 +142,7 @@ import pyTMD
 # attempt imports
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     warnings.filterwarnings("module")
     warnings.warn("pyproj not available", ImportWarning)
 # ignore warnings

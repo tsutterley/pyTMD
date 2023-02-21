@@ -99,7 +99,7 @@ import pyTMD.io.constituents
 # attempt imports
 try:
     import netCDF4
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     warnings.filterwarnings("module")
     warnings.warn("netCDF4 not available", ImportWarning)
 # ignore warnings
