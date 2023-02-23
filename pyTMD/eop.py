@@ -54,7 +54,7 @@ def update_mean_pole(verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return
@@ -64,7 +64,7 @@ def update_mean_pole(verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_http(HOST, timeout=20, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return
@@ -97,7 +97,7 @@ def calculate_mean_pole(verbose=False, mode=0o775):
     FILE = 'eopc01.1900-now.dat'
     try:
         remote_buffer = pull_pole_coordinates(FILE, verbose=verbose)
-    except Exception as e:
+    except Exception as exc:
         return
 
     # read contents from input file object
@@ -155,7 +155,7 @@ def pull_pole_coordinates(FILE, verbose=False):
     HOST = ['ftp.iers.org','products','eop','long-term','c01',FILE]
     try:
         buffer = pyTMD.utilities.from_ftp(HOST, verbose=verbose, timeout=20)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return buffer
@@ -164,7 +164,7 @@ def pull_pole_coordinates(FILE, verbose=False):
     HOST = ['hpiers.obspm.fr','iers','eop','eopc01',FILE]
     try:
         buffer = pyTMD.utilities.from_ftp(HOST, verbose=verbose, timeout=20)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return buffer
@@ -173,7 +173,7 @@ def pull_pole_coordinates(FILE, verbose=False):
     HOST = ['http://hpiers.obspm.fr','eoppc','eop','eopc01',FILE]
     try:
         buffer = pyTMD.utilities.from_http(HOST, verbose=verbose, timeout=20)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return buffer
@@ -213,7 +213,7 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_http(HOST, timeout=5, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return
@@ -228,7 +228,7 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
         try:
             pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
                 hash=HASH, verbose=verbose, mode=mode)
-        except Exception as e:
+        except Exception as exc:
             pass
         else:
             return
@@ -239,7 +239,7 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_cddis(HOST, username=username, password=password,
             timeout=20, local=LOCAL, hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         return

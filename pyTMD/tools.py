@@ -45,19 +45,19 @@ import pyTMD.io.model
 # attempt imports
 try:
     import IPython
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     logging.debug("IPython not available")
 try:
     import ipyleaflet
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     logging.debug("ipyleaflet not available")
 try:
     import ipywidgets
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     logging.debug("ipywidgets not available")
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     logging.debug("pyproj not available")
 
 class widgets:

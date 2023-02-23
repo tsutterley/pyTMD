@@ -658,7 +658,7 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
         pyTMD.utilities.check_ftp_connection(HOST[0])
         pyTMD.utilities.from_ftp(HOST, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         pass
     else:
@@ -669,7 +669,7 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_http(REMOTE, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         pass
     else:
@@ -821,7 +821,7 @@ def merge_bulletin_a_files(username=None,password=None,
     # try connecting to IERS http servers and merge Bulletin-A files
     try:
         iers_delta_time(COPY, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         os.remove(COPY) if os.access(COPY, os.F_OK) else None
         pass
@@ -832,7 +832,7 @@ def merge_bulletin_a_files(username=None,password=None,
     # try connecting to IERS ftp servers and merge Bulletin-A files
     try:
         iers_ftp_delta_time(COPY, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         os.remove(COPY) if os.access(COPY, os.F_OK) else None
         pass
@@ -844,7 +844,7 @@ def merge_bulletin_a_files(username=None,password=None,
     try:
         cddis_delta_time(COPY, username=username, password=password,
             verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         os.remove(COPY) if os.access(COPY, os.F_OK) else None
         pass
@@ -1169,7 +1169,7 @@ def update_bulletin_a(timeout=20, verbose=False, mode=0o775):
     try:
         pyTMD.utilities.from_http(REMOTE, timeout=timeout, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         pass
     else:
@@ -1216,7 +1216,7 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     try:
         pyTMD.utilities.from_http(HOST,timeout=5,local=LOCAL,hash=HASH,
             verbose=verbose,mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         pass
     else:
@@ -1233,7 +1233,7 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
             pyTMD.utilities.check_ftp_connection(HOST[0])
             pyTMD.utilities.from_ftp(HOST,timeout=20,local=LOCAL,hash=HASH,
                 verbose=verbose,mode=mode)
-        except Exception as e:
+        except Exception as exc:
             logging.debug(traceback.format_exc())
             pass
         else:
@@ -1245,7 +1245,7 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     try:
         pyTMD.utilities.from_cddis(HOST,username=username,password=password,
             timeout=20,local=LOCAL,hash=HASH,verbose=verbose,mode=mode)
-    except Exception as e:
+    except Exception as exc:
         logging.debug(traceback.format_exc())
         pass
     else:

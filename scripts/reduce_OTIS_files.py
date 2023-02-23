@@ -59,7 +59,7 @@ from pyTMD.convert_ll_xy import convert_ll_xy
 # attempt imports
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     warnings.filterwarnings("module")
     warnings.warn("pyproj not available", ImportWarning)
 # ignore warnings
@@ -144,7 +144,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     try:
         # get parameters for tide model
         model = pyTMD.io.model(tide_dir).elevation(TIDE_MODEL)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         # read each constituent
@@ -173,7 +173,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     try:
         # get parameters for tide model
         model = pyTMD.io.model(tide_dir).current(TIDE_MODEL)
-    except Exception as e:
+    except Exception as exc:
         pass
     else:
         # read each constituent

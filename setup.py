@@ -41,7 +41,7 @@ gdal_output = [None] * 4
 try:
     for i, flag in enumerate(("--cflags", "--libs", "--datadir", "--version")):
         gdal_output[i] = check_output(['gdal-config', flag]).strip()
-except Exception as e:
+except Exception as exc:
     log.warning('Failed to get options via gdal-config')
 else:
     log.info(f"GDAL version from via gdal-config: {gdal_output[3]}")
@@ -62,7 +62,7 @@ try:
         hdf5_output[i] = check_output(cmd).strip()
     # parse HDF5 version from h5dump
     hdf5_version = hdf5_output[1].split().pop(2)
-except Exception as e:
+except Exception as exc:
     log.warning('Failed to get HDF5 options')
 else:
     log.info(f"HDF5 version from via h5dump: {hdf5_version}")
