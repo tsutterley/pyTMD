@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
         new functions to output ATLAS formatted netCDF4 files
@@ -87,6 +88,8 @@ UPDATE HISTORY:
     Updated 06/2020: use argmin and argmax in bilinear interpolation
     Written 09/2019
 """
+from __future__ import division, annotations
+
 import os
 import copy
 import gzip
@@ -109,10 +112,12 @@ except (ImportError, ModuleNotFoundError) as exc:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
-def extract_constants(ilon, ilat,
-    grid_file=None,
-    model_files=None,
-    **kwargs):
+def extract_constants(
+        ilon: np.ndarray, ilat: np.ndarray,
+        grid_file: str | None = None,
+        model_files: str | list | None = None,
+        **kwargs
+    ):
     """
     Reads files for ATLAS netCDF4 tidal models
 
@@ -122,9 +127,9 @@ def extract_constants(ilon, ilat,
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude to interpolate
-    ilat: float
+    ilat: np.ndarray
         latitude to interpolate
     grid_file: str or NoneType, default None
         grid file for model
@@ -157,11 +162,11 @@ def extract_constants(ilon, ilat,
 
     Returns
     -------
-    amplitude: float
+    amplitude: np.ndarray
         amplitudes of tidal constituents
-    phase: float
+    phase: np.ndarray
         phases of tidal constituents
-    D: float
+    D: np.ndarray
         bathymetry of tide model
     constituents: list
         Tide model constituent names
@@ -185,7 +190,7 @@ def extract_constants(ilon, ilat,
             kwargs[new] = copy.copy(kwargs[old])
 
     # raise warning if model files are entered as a string
-    if isinstance(model_files,str):
+    if isinstance(model_files, str):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -342,7 +347,11 @@ def extract_constants(ilon, ilat,
     return (amplitude, phase, D, constituents)
 
 # PURPOSE: read harmonic constants from tide models
-def read_constants(grid_file=None, model_files=None, **kwargs):
+def read_constants(
+        grid_file: str | None = None,
+        model_files: str | list | None = None,
+        **kwargs
+    ):
     """
     Reads files for ATLAS netCDF4 tidal models
 
@@ -373,7 +382,7 @@ def read_constants(grid_file=None, model_files=None, **kwargs):
     kwargs.setdefault('compressed', True)
 
     # raise warning if model files are entered as a string
-    if isinstance(model_files,str):
+    if isinstance(model_files, str):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -421,7 +430,12 @@ def read_constants(grid_file=None, model_files=None, **kwargs):
     return constituents
 
 # PURPOSE: interpolate constants from tide models to input coordinates
-def interpolate_constants(ilon, ilat, constituents, **kwargs):
+def interpolate_constants(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        constituents,
+        **kwargs
+    ):
     """
     Interpolate constants from ATLAS tidal models to input coordinates
 
@@ -429,9 +443,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude to interpolate
-    ilat: float
+    ilat: np.ndarray
         latitude to interpolate
     constituents: obj
         Tide model constituents (complex form)
@@ -460,11 +474,11 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
 
     Returns
     -------
-    amplitude: float
+    amplitude: np.ndarray
         amplitudes of tidal constituents
-    phase: float
+    phase: np.ndarray
         phases of tidal constituents
-    D: float
+    D: np.ndarray
         bathymetry of tide model
     """
     # set default keyword arguments
@@ -605,20 +619,20 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     return (amplitude, phase, D)
 
 # PURPOSE: Extend a longitude array
-def extend_array(input_array, step_size):
+def extend_array(input_array: np.ndarray, step_size: float):
     """
     Extends a longitude array
 
     Parameters
     ----------
-    input_array: float
+    input_array: np.ndarray
         array to extend
     step_size: float
         step size between elements of array
 
     Returns
     -------
-    temp: float
+    temp: np.ndarray
         extended array
     """
     n = len(input_array)
@@ -630,18 +644,18 @@ def extend_array(input_array, step_size):
     return temp
 
 # PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix):
+def extend_matrix(input_matrix: np.ndarray):
     """
     Extends a global matrix
 
     Parameters
     ----------
-    input_matrix: float
+    input_matrix: np.ndarray
         matrix to extend
 
     Returns
     -------
-    temp: float
+    temp: np.ndarray
         extended matrix
     """
     ny, nx = np.shape(input_matrix)
@@ -652,7 +666,11 @@ def extend_matrix(input_matrix):
     return temp
 
 # PURPOSE: read grid file
-def read_netcdf_grid(input_file, variable, **kwargs):
+def read_netcdf_grid(
+        input_file: str,
+        variable: str,
+        **kwargs
+    ):
     """
     Read grid file to extract model coordinates and bathymetry
 
@@ -674,11 +692,11 @@ def read_netcdf_grid(input_file, variable, **kwargs):
 
     Returns
     -------
-    lon: float
+    lon: np.ndarray
         longitudinal coordinates of input grid
-    lat: float
+    lat: np.ndarray
         latitudinal coordinates of input grid
-    bathymetry: float
+    bathymetry: np.ndarray
         model bathymetry
     """
     # set default keyword arguments
@@ -724,7 +742,10 @@ def read_netcdf_grid(input_file, variable, **kwargs):
 
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
-def read_netcdf_elevation(input_file, **kwargs):
+def read_netcdf_elevation(
+        input_file: str,
+        **kwargs
+    ):
     """
     Read elevation file to extract real and imaginary components for constituent
 
@@ -737,7 +758,7 @@ def read_netcdf_elevation(input_file, **kwargs):
 
     Returns
     -------
-    h: float
+    h: np.ndarray
         tidal elevation
     con: str
         tidal constituent ID
@@ -770,7 +791,11 @@ def read_netcdf_elevation(input_file, **kwargs):
 
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
-def read_netcdf_transport(input_file, variable, **kwargs):
+def read_netcdf_transport(
+        input_file: str,
+        variable: str,
+        **kwargs
+    ):
     """
     Read transport file to extract real and imaginary components for constituent
 
@@ -791,7 +816,7 @@ def read_netcdf_transport(input_file, variable, **kwargs):
 
     Returns
     -------
-    tr: float
+    tr: np.ndarray
         tidal transport
     con: str
         tidal constituent ID
@@ -827,9 +852,18 @@ def read_netcdf_transport(input_file, variable, **kwargs):
     return (tr, con.strip())
 
 # PURPOSE: output grid file in ATLAS netCDF format
-def output_netcdf_grid(FILE, hz, hu, hv,
-                       lon_z, lat_z, lon_u,
-                       lat_u, lon_v, lat_v):
+def output_netcdf_grid(
+        FILE: str,
+        hz: np.ndarray,
+        hu: np.ndarray,
+        hv: np.ndarray,
+        lon_z: np.ndarray,
+        lat_z: np.ndarray,
+        lon_u: np.ndarray,
+        lat_u: np.ndarray,
+        lon_v: np.ndarray,
+        lat_v: np.ndarray
+    ):
     """
     Writes grid files in ATLAS netCDF format
 
@@ -837,23 +871,23 @@ def output_netcdf_grid(FILE, hz, hu, hv,
     ----------
     FILE: str
         output ATLAS grid file name
-    hz: float
+    hz: np.ndarray
         model bathymetry at z-nodes
-    hu: float
+    hu: np.ndarray
         model bathymetry at u-nodes
-    hv: float
+    hv: np.ndarray
         model bathymetry at v-nodes
-    lon_z: float
+    lon_z: np.ndarray
         longitude coordinates at z-nodes
-    lat_z: float
+    lat_z: np.ndarray
         latitude coordinates at z-nodes
-    lon_u: float
+    lon_u: np.ndarray
         longitude coordinates at u-nodes
-    lat_u: float
+    lat_u: np.ndarray
         latitude coordinates at u-nodes
-    lon_v: float
+    lon_v: np.ndarray
         longitude coordinates at v-nodes
-    lat_v: float
+    lat_v: np.ndarray
         latitude coordinates at v-nodes
     """
     # opening NetCDF file for writing
@@ -915,7 +949,13 @@ def output_netcdf_grid(FILE, hz, hu, hv,
     fileID.close()
 
 # PURPOSE: output elevation file in ATLAS netCDF format
-def output_netcdf_elevation(FILE, h, lon_z, lat_z, constituent):
+def output_netcdf_elevation(
+        FILE: str,
+        h: np.ndarray,
+        lon_z: np.ndarray,
+        lat_z: np.ndarray,
+        constituent: str
+    ):
     """
     Writes elevation files in ATLAS netCDF format
 
@@ -923,11 +963,11 @@ def output_netcdf_elevation(FILE, h, lon_z, lat_z, constituent):
     ----------
     FILE: str
         output ATLAS elevation file name
-    h: complex
+    h: np.ndarray
         Eulerian form of tidal elevation oscillation
-    lon_z: float
+    lon_z: np.ndarray
         longitude coordinates at z-nodes
-    lat_z: float
+    lat_z: np.ndarray
         latitude coordinates at z-nodes
     constituent: str
         tidal constituent ID
@@ -956,7 +996,7 @@ def output_netcdf_elevation(FILE, h, lon_z, lat_z, constituent):
     complexpart = dict(Re='Real part', Im='Imag part')
     # set variable attributes for coordinates
     nc['lon_z'].setncattr('units', 'degrees_east')
-    nc['lon_z'].setncattr('long_name', 'longitude of Z nodes')
+    nc['lon_z'].setncattr('long_name', 'longitude of Z nofloatdes')
     nc['lat_z'].setncattr('units', 'degrees_north')
     nc['lat_z'].setncattr('long_name', 'latitude of Z nodes')
     # set variable attributes for tidal constituents
@@ -991,8 +1031,16 @@ def output_netcdf_elevation(FILE, h, lon_z, lat_z, constituent):
     fileID.close()
 
 # PURPOSE: output transport file in ATLAS netCDF format
-def output_netcdf_transport(FILE, u, v, lon_u, lat_u,
-                            lon_v, lat_v, constituent):
+def output_netcdf_transport(
+        FILE: str,
+        u: np.ndarray,
+        v: np.ndarray,
+        lon_u: np.ndarray,
+        lat_u: np.ndarray,
+        lon_v: np.ndarray,
+        lat_v: np.ndarray,
+        constituent: str
+    ):
     """
     Writes transport files in ATLAS netCDF format
 
@@ -1000,17 +1048,17 @@ def output_netcdf_transport(FILE, u, v, lon_u, lat_u,
     ----------
     FILE: str
         output ATLAS transport file name
-    u: complex
+    u: np.ndarray
         Eulerian form of tidal zonal transport oscillation
-    v: complex
+    v: np.ndarray
         Eulerian form of tidal meridional transport oscillation
-    lon_u: float
+    lon_u: np.ndarray
         longitude coordinates at u-nodes
-    lat_u: float
+    lat_u: np.ndarray
         latitude coordinates at u-nodes
-    lon_v: float
+    lon_v: np.ndarray
         longitude coordinates at v-nodes
-    lat_v: float
+    lat_v: np.ndarray
         latitude coordinates at v-nodes
     constituents: str
         tidal constituent ID

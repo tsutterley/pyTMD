@@ -14,38 +14,46 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Written 12/2022
 """
+from __future__ import annotations
+
 import numpy as np
 import scipy.spatial
 import scipy.interpolate
 import pyTMD.spatial
 
 # PURPOSE: bilinear interpolation of input data to output data
-def bilinear(ilon, ilat, idata, lon, lat,
-             fill_value=np.nan,
-             dtype=np.float64):
+def bilinear(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        idata: np.ndarray,
+        lon: np.ndarray,
+        lat: np.ndarray,
+        fill_value: float = np.nan,
+        dtype: str | np.dtype = np.float64
+    ):
     """
     Bilinear interpolation of input data to output coordinates
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude of tidal model
-    ilat: float
+    ilat: np.ndarray
         latitude of tidal model
-    idata: float
+    idata: np.ndarray
         tide model data
-    lat: float
+    lat: np.ndarray
         output latitude
-    lon: float
+    lon: np.ndarray
         output longitude
     fill_value: float, default np.nan
         invalid value
-    dtype: obj, default np.float64
+    dtype: np.dtype, default np.float64
         output data type
 
     Returns
     -------
-    data: float
+    data: np.ndarray
         interpolated data
     """
     # verify that input data is masked array
@@ -99,11 +107,18 @@ def bilinear(ilon, ilat, idata, lon, lat,
     # return interpolated values
     return data
 
-def spline(ilon, ilat, idata, lon, lat,
-           fill_value=None,
-           dtype=np.float64,
-           reducer=np.ceil,
-           **kwargs):
+
+def spline(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        idata: np.ndarray,
+        lon: np.ndarray,
+        lat: np.ndarray,
+        fill_value: float = None,
+        dtype: str | np.dtype = np.float64,
+        reducer=np.ceil,
+        **kwargs
+    ):
     """
     `Bivariate spline interpolation
     <https://docs.scipy.org/doc/scipy/reference/generated/
@@ -112,19 +127,19 @@ def spline(ilon, ilat, idata, lon, lat,
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude of tidal model
-    ilat: float
+    ilat: np.ndarray
         latitude of tidal model
-    idata: float
+    idata: np.ndarray
         tide model data
-    lat: float
+    lat: np.ndarray
         output latitude
-    lon: float
+    lon: np.ndarray
         output longitude
     fill_value: float or NoneType, default None
         invalid value
-    dtype: obj, default np.float64
+    dtype: np.dtype, default np.float64
         output data type
     reducer: obj, default np.ceil
         operation for converting mask to boolean
@@ -137,7 +152,7 @@ def spline(ilon, ilat, idata, lon, lat,
 
     Returns
     -------
-    data: float
+    data: np.ndarray
         interpolated data
     """
     # set default keyword arguments
@@ -175,11 +190,17 @@ def spline(ilon, ilat, idata, lon, lat,
     # return interpolated values
     return data
 
-def regulargrid(ilon, ilat, idata, lon, lat,
-                fill_value=None,
-                dtype=np.float64,
-                reducer=np.ceil,
-                **kwargs):
+def regulargrid(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        idata: np.ndarray,
+        lon: np.ndarray,
+        lat: np.ndarray,
+        fill_value: float = None,
+        dtype: str | np.dtype = np.float64,
+        reducer=np.ceil,
+        **kwargs
+    ):
     """
     `Regular grid interpolation
     <https://docs.scipy.org/doc/scipy/reference/generated/
@@ -188,19 +209,19 @@ def regulargrid(ilon, ilat, idata, lon, lat,
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude of tidal model
-    ilat: float
+    ilat: np.ndarray
         latitude of tidal model
-    idata: float
+    idata: np.ndarray
         tide model data
-    lat: float
+    lat: np.ndarray
         output latitude
-    lon: float
+    lon: np.ndarray
         output longitude
     fill_value: float or NoneType, default None
         invalid value
-    dtype: obj, default np.float64
+    dtype: np.dtype, default np.float64
         output data type
     reducer: obj, default np.ceil
         operation for converting mask to boolean
@@ -219,7 +240,7 @@ def regulargrid(ilon, ilat, idata, lon, lat,
 
     Returns
     -------
-    data: float
+    data: np.ndarray
         interpolated data
     """
     # set default keyword arguments
@@ -246,11 +267,18 @@ def regulargrid(ilon, ilat, idata, lon, lat,
     return data
 
 # PURPOSE: Nearest-neighbor extrapolation of valid data to output data
-def extrapolate(ilon, ilat, idata, lon, lat,
-                fill_value=np.nan,
-                dtype=np.float64,
-                cutoff=np.inf,
-                EPSG='4326'):
+def extrapolate(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        idata: np.ndarray,
+        lon: np.ndarray,
+        lat: np.ndarray,
+        fill_value: float = None,
+        dtype: str | np.dtype = np.float64,
+        cutoff: int | float = np.inf,
+        EPSG: str or int = '4326',
+        **kwargs
+    ):
     """
     Nearest-neighbor (`NN`) extrapolation of valid model data using `kd-trees
     <https://docs.scipy.org/doc/scipy/reference/generated/
@@ -258,19 +286,19 @@ def extrapolate(ilon, ilat, idata, lon, lat,
 
     Parameters
     ----------
-    x: float
+    x: np.ndarray
         x-coordinates of tidal model
-    y: float
+    y: np.ndarray
         y-coordinates of tidal model
-    data: float
+    data: np.ndarray
         Tide model data
-    XI: float
+    XI: np.ndarray
         Output x-coordinates
-    YI: float
+    YI: np.ndarray
         Output y-coordinates
     fill_value: float, default np.nan
         Invalid value
-    dtype: obj, default np.float64
+    dtype: np.dtype, default np.float64
         Output data type
     cutoff: float, default np.inf
         return only neighbors within distance [km]
@@ -281,7 +309,7 @@ def extrapolate(ilon, ilat, idata, lon, lat,
 
     Returns
     -------
-    DATA: float
+    DATA: np.ndarray
         interpolated data
     """
     # verify output dimensions
@@ -380,20 +408,20 @@ def extrapolate(ilon, ilat, idata, lon, lat,
     return data
 
 # PURPOSE: calculate Euclidean distances between points
-def _distance(c1, c2):
+def _distance(c1: np.ndarray, c2: np.ndarray):
     """
     Calculate Euclidean distances between points
 
     Parameters
     ----------
-    c1: float
+    c1: np.ndarray
         first set of coordinates
-    c2: float
+    c2: np.ndarray
         second set of coordinates
 
     Returns
     -------
-    c: float
+    c: np.ndarray
         Euclidean distance
     """
     # decompose Euclidean distance: (x-y)^2 = x^2 - 2xy + y^2

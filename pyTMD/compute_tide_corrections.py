@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -62,7 +62,7 @@ PROGRAM DEPENDENCIES:
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
-    convert_ll_xy.py: convert lat/lon points to and from projected coordinates
+    convert_crs.py: convert points to and from Coordinates Reference Systems
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
     predict.py: predict tide values using harmonic constants
@@ -74,6 +74,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactored tide read and prediction programs
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
@@ -104,7 +105,7 @@ UPDATE HISTORY:
     Updated 03/2020: added TYPE, TIME, FILL_VALUE and METHOD options
     Written 03/2020
 """
-from __future__ import print_function
+from __future__ import print_function, annotations
 
 import os
 import warnings
@@ -126,20 +127,33 @@ except (ImportError, ModuleNotFoundError) as exc:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
-def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
-    ATLAS_FORMAT='netcdf', GZIP=False, DEFINITION_FILE=None, EPSG=3031,
-    EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='UTC', METHOD='spline',
-    EXTRAPOLATE=False, CUTOFF=10.0, APPLY_FLEXURE=False, FILL_VALUE=np.nan):
+def compute_tide_corrections(
+        x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
+        DIRECTORY: str | None = None,
+        MODEL: str | None = None,
+        ATLAS_FORMAT: str = 'netcdf',
+        GZIP: bool = False,
+        DEFINITION_FILE: str | None = None,
+        EPSG: str | int = 3031,
+        EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
+        TYPE: str or None = 'drift',
+        TIME: str = 'UTC',
+        METHOD: str = 'spline',
+        EXTRAPOLATE: bool = False,
+        CUTOFF: int | float=10.0,
+        APPLY_FLEXURE: bool = False,
+        FILL_VALUE: float = np.nan
+    ):
     """
     Compute tides at points and times using tidal harmonics
 
     Parameters
     ----------
-    x: float
+    x: np.ndarray
         x-coordinates in projection EPSG
-    y: float
+    y: np.ndarray
         y-coordinates in projection EPSG
-    delta_time: float
+    delta_time: np.ndarray
         seconds since EPOCH or datetime array
     DIRECTORY: str or NoneType, default None
         working data directory for tide models
@@ -183,7 +197,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
 
     EXTRAPOLATE: bool, default False
         Extrapolate with nearest-neighbors
-    CUTOFF: float, default 10.0
+    CUTOFF: int or float, default 10.0
         Extrapolation cutoff in kilometers
 
         Set to ``np.inf`` to extrapolate for all points
@@ -196,7 +210,7 @@ def compute_tide_corrections(x, y, delta_time, DIRECTORY=None, MODEL=None,
 
     Returns
     -------
-    tide: float
+    tide: np.ndarray
         tidal elevation at coordinates and time in meters
     """
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (02/2023)
+Written by Tyler Sutterley (03/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 02/2023: use outputs from constants class for WGS84 parameters
         include more possible dimension names for gridded and drift outputs
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
@@ -53,6 +54,8 @@ UPDATE HISTORY:
         add functions to read from and write to geotiff image formats
     Written 09/2020
 """
+from __future__ import annotations
+
 import os
 import re
 import io
@@ -86,7 +89,7 @@ except (ImportError, ModuleNotFoundError) as exc:
 # ignore warnings
 warnings.filterwarnings("ignore")
 
-def case_insensitive_filename(filename):
+def case_insensitive_filename(filename: str) -> str:
     """
     Searches a directory for a filename without case dependence
 
@@ -106,17 +109,17 @@ def case_insensitive_filename(filename):
         filename = os.path.join(directory,f.pop())
     return os.path.expanduser(filename)
 
-def data_type(x, y, t):
+def data_type(x: np.ndarray, y: np.ndarray, t: np.ndarray) -> str:
     """
     Determines input data type based on variable dimensions
 
     Parameters
     ----------
-    x: float
+    x: np.ndarray
         x-dimension coordinates
-    y: float
+    y: np.ndarray
         y-dimension coordinates
-    t: float
+    t: np.ndarray
         time-dimension coordinates
 
     Returns
@@ -141,7 +144,7 @@ def data_type(x, y, t):
     else:
         raise ValueError('Unknown data type')
 
-def from_file(filename, format, **kwargs):
+def from_file(filename: str, format: str, **kwargs):
     """
     Wrapper function for reading data from an input format
 
@@ -167,7 +170,7 @@ def from_file(filename, format, **kwargs):
         raise ValueError(f'Invalid format {format}')
     return dinput
 
-def from_ascii(filename, **kwargs):
+def from_ascii(filename: str, **kwargs):
     """
     Read data from an ascii file
 
@@ -278,7 +281,7 @@ def from_ascii(filename, **kwargs):
     # return the spatial variables
     return dinput
 
-def from_netCDF4(filename, **kwargs):
+def from_netCDF4(filename: str, **kwargs):
     """
     Read data from a netCDF4 file
 
@@ -382,7 +385,7 @@ def from_netCDF4(filename, **kwargs):
     # return the spatial variables
     return dinput
 
-def from_HDF5(filename, **kwargs):
+def from_HDF5(filename: str, **kwargs):
     """
     Read data from a HDF5 file
 
@@ -487,7 +490,7 @@ def from_HDF5(filename, **kwargs):
     # return the spatial variables
     return dinput
 
-def from_geotiff(filename, **kwargs):
+def from_geotiff(filename: str, **kwargs):
     """
     Read data from a geotiff file
 
@@ -587,7 +590,7 @@ def from_geotiff(filename, **kwargs):
     # return the spatial variables
     return dinput
 
-def to_ascii(output, attributes, filename, **kwargs):
+def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
     """
     Write data to an ascii file
 
@@ -654,7 +657,7 @@ def to_ascii(output, attributes, filename, **kwargs):
     # close the output file
     fid.close()
 
-def to_netCDF4(output, attributes, filename, **kwargs):
+def to_netCDF4(output: dict, attributes: dict, filename: str, **kwargs):
     """
     Wrapper function for writing data to a netCDF4 file
 
@@ -702,7 +705,7 @@ def to_netCDF4(output, attributes, filename, **kwargs):
     # Closing the NetCDF file
     fileID.close()
 
-def _drift_netCDF4(fileID, output, attributes, **kwargs):
+def _drift_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
     Write drift data variables to a netCDF4 file object
 
@@ -735,7 +738,7 @@ def _drift_netCDF4(fileID, output, attributes, **kwargs):
         for att_name,att_val in attributes[key].items():
             nc[key].setncattr(att_name,att_val)
 
-def _grid_netCDF4(fileID, output, attributes, **kwargs):
+def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
     Write gridded data variables to a netCDF4 file object
 
@@ -781,7 +784,7 @@ def _grid_netCDF4(fileID, output, attributes, **kwargs):
         for att_name,att_val in attributes[key].items():
             nc[key].setncattr(att_name,att_val)
 
-def _time_series_netCDF4(fileID, output, attributes, **kwargs):
+def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
     Write time series data variables to a netCDF4 file object
 
@@ -822,7 +825,7 @@ def _time_series_netCDF4(fileID, output, attributes, **kwargs):
         for att_name,att_val in attributes[key].items():
             nc[key].setncattr(att_name,att_val)
 
-def to_HDF5(output, attributes, filename, **kwargs):
+def to_HDF5(output: dict, attributes: dict, filename: str, **kwargs):
     """
     Write data to a HDF5 file
 
@@ -870,7 +873,7 @@ def to_HDF5(output, attributes, filename, **kwargs):
     # Closing the HDF5 file
     fileID.close()
 
-def to_geotiff(output, attributes, filename, **kwargs):
+def to_geotiff(output: dict, attributes: dict, filename: str, **kwargs):
     """
     Write data to a geotiff file
 
@@ -932,7 +935,7 @@ def to_geotiff(output, attributes, filename, **kwargs):
     # close dataset
     ds.FlushCache()
 
-def expand_dims(obj, varname='data'):
+def expand_dims(obj: dict, varname: str = 'data'):
     """
     Add a singleton dimension to a spatial dictionary if non-existent
 
@@ -957,7 +960,7 @@ def expand_dims(obj, varname='data'):
     # return reformed spatial dictionary
     return obj
 
-def default_field_mapping(variables):
+def default_field_mapping(variables: list | np.ndarray):
     """
     Builds field mappings from a variable list
 
@@ -987,15 +990,24 @@ def default_field_mapping(variables):
     # return the field mapping
     return field_mapping
 
-def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
+def convert_ellipsoid(
+        phi1: np.ndarray,
+        h1: np.ndarray,
+        a1: float,
+        f1: float,
+        a2: float,
+        f2: float,
+        eps: float = 1e-12,
+        itmax: int = 10
+    ):
     """
     Convert latitudes and heights to a different ellipsoid using Newton-Raphson
 
     Parameters
     ----------
-    phi1: float
+    phi1: np.ndarray
         latitude of input ellipsoid in degrees
-    h1: float
+    h1: np.ndarray
         height above input ellipsoid in meters
     a1: float
         semi-major axis of input ellipsoid
@@ -1013,9 +1025,9 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
 
     Returns
     -------
-    phi2: float
+    phi2: np.ndarray
         latitude of output ellipsoid in degrees
-    h2: float
+    h2: np.ndarray
         height above output ellipsoid in meters
 
     References
@@ -1130,7 +1142,13 @@ def convert_ellipsoid(phi1, h1, a1, f1, a2, f2, eps=1e-12, itmax=10):
     # return the latitude and height
     return (phi2, h2)
 
-def compute_delta_h(a1, f1, a2, f2, lat):
+def compute_delta_h(
+        a1: float,
+        f1: float,
+        a2: float,
+        f2: float,
+        lat: np.ndarray
+    ):
     """
     Compute difference in elevation for two ellipsoids at a given
         latitude using a simplified empirical equation
@@ -1145,12 +1163,12 @@ def compute_delta_h(a1, f1, a2, f2, lat):
         semi-major axis of output ellipsoid
     f2: float
         flattening of output ellipsoid
-    lat: float
+    lat: np.ndarray
         latitudes (degrees north)
 
     Returns
     -------
-    delta_h: float
+    delta_h: np.ndarray
         difference in elevation for two ellipsoids
 
     References
@@ -1172,13 +1190,13 @@ def compute_delta_h(a1, f1, a2, f2, lat):
     delta_h = -(delta_a*np.cos(phi)**2 + delta_b*np.sin(phi)**2)
     return delta_h
 
-def wrap_longitudes(lon):
+def wrap_longitudes(lon: float | np.ndarray):
     """
     Wraps longitudes to range from -180 to +180
 
     Parameters
     ----------
-    lon: float
+    lon: float or np.ndarray
         longitude (degrees east)
     """
     phi = np.arctan2(np.sin(lon*np.pi/180.0), np.cos(lon*np.pi/180.0))
@@ -1188,17 +1206,23 @@ def wrap_longitudes(lon):
 # get WGS84 parameters
 _wgs84 = constants(ellipsoid='WGS84', units='MKS')
 
-def to_cartesian(lon, lat, h=0.0, a_axis=_wgs84.a_axis, flat=_wgs84.flat):
+def to_cartesian(
+        lon: np.ndarray,
+        lat: np.ndarray,
+        h: float | np.ndarray = 0.0,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat
+    ):
     """
     Converts geodetic coordinates to Cartesian coordinates
 
     Parameters
     ----------
-    lon: float
+    lon: np.ndarray
         longitude (degrees east)
-    lat: float
+    lat: np.ndarray
         latitude (degrees north)
-    h: float, default 0.0
+    h: float or np.ndarray, default 0.0
         height above ellipsoid (or sphere)
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1228,19 +1252,19 @@ def to_cartesian(lon, lat, h=0.0, a_axis=_wgs84.a_axis, flat=_wgs84.flat):
     Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(lon*dtr)
     Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
     # return the cartesian coordinates
-    return (X,Y,Z)
+    return (X, Y, Z)
 
-def to_sphere(x, y, z):
+def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     """
     Convert from cartesian coordinates to spherical coordinates
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     """
     # calculate radius
@@ -1259,9 +1283,15 @@ def to_sphere(x, y, z):
     lat = 90.0 - (180.0*th/np.pi)
     np.clip(lat, -90, 90, out=lat)
     # return latitude, longitude and radius
-    return (lon,lat,rad)
+    return (lon, lat, rad)
 
-def to_geodetic(x, y, z, a_axis=_wgs84.a_axis, flat=_wgs84.flat):
+def to_geodetic(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat
+    ):
     """
     Convert from cartesian coordinates to geodetic coordinates
     using a closed form solution
@@ -1323,16 +1353,20 @@ def to_geodetic(x, y, z, a_axis=_wgs84.a_axis, flat=_wgs84.flat):
         lat = np.arctan2(zi,((1.0-e12)*wi))/dtr
         h = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z-zi)**2.0)
     # return latitude, longitude and height
-    return (lon,lat,h)
+    return (lon, lat, h)
 
-def scale_areas(lat, flat=_wgs84.flat, ref=70.0):
+def scale_areas(
+        lat: np.ndarray,
+        flat: float=_wgs84.flat,
+        ref: float=70.0
+    ):
     """
     Calculates area scaling factors for a polar stereographic projection
     including special case of at the exact pole
 
     Parameters
     ----------
-    lat: float,
+    lat: np.ndarray
         latitude (degrees north)
     flat: float, default 1.0/298.257223563
         ellipsoidal flattening
@@ -1341,7 +1375,7 @@ def scale_areas(lat, flat=_wgs84.flat, ref=70.0):
 
     Returns
     -------
-    scale: float
+    scale: np.ndarray
         area scaling factors at input latitudes
 
     References

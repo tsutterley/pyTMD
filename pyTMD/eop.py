@@ -20,13 +20,15 @@ UPDATE HISTORY:
     Updated 03/2021: replaced numpy bool/int to prevent deprecation warnings
     Written 11/2020
 """
+from __future__ import annotations
+
 import os
 import logging
 import numpy as np
 import pyTMD.utilities
 
 # PURPOSE: connects to servers and downloads mean pole files
-def update_mean_pole(verbose=False, mode=0o775):
+def update_mean_pole(verbose: bool = False, mode: oct = 0o775):
     """
     Connects to servers to download mean-pole.tab files from HPIERS servers
 
@@ -73,7 +75,7 @@ def update_mean_pole(verbose=False, mode=0o775):
     raise RuntimeError(f'Unable to download {FILE}')
 
 # PURPOSE: read table of IERS pole coordinates and calculate Gaussian average
-def calculate_mean_pole(verbose=False, mode=0o775):
+def calculate_mean_pole(verbose: bool = False, mode: oct = 0o775):
     """
     Calculates the mean pole coordinates x and y are obtained by a
     Gaussian-weighted average of the IERS pole coordinates
@@ -129,7 +131,7 @@ def calculate_mean_pole(verbose=False, mode=0o775):
     os.chmod(LOCAL, mode)
 
 # PURPOSE: connects to servers and downloads IERS pole coordinates files
-def pull_pole_coordinates(FILE, verbose=False):
+def pull_pole_coordinates(FILE: str, verbose: bool = False):
     """
     Connects to servers and downloads IERS pole coordinate files
 
@@ -182,7 +184,13 @@ def pull_pole_coordinates(FILE, verbose=False):
     raise RuntimeError(f'Unable to download {FILE}')
 
 # PURPOSE: connects to servers and downloads finals files
-def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
+def update_finals_file(
+        username: str or None = None,
+        password: str or None = None,
+        timeout: int or None = 20,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to servers and downloads finals EOP files
 
@@ -199,6 +207,8 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
         NASA Earthdata username
     password: str or NoneType, default None
         NASA Earthdata password
+    timeout: int or NoneType, default 20
+        timeout in seconds for blocking operations
     verbose: bool, default False
         print file information about output file
     mode: oct, default 0o775
@@ -211,8 +221,13 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
     # try downloading from US Naval Oceanography Portal
     HOST = ['http://maia.usno.navy.mil','ser7','finals.all']
     try:
-        pyTMD.utilities.from_http(HOST, timeout=5, local=LOCAL,
-            hash=HASH, verbose=verbose, mode=mode)
+        pyTMD.utilities.from_http(HOST,
+            timeout=timeout,
+            local=LOCAL,
+            hash=HASH,
+            verbose=verbose,
+            mode=mode
+        )
     except Exception as exc:
         pass
     else:
@@ -226,8 +241,12 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
     server.append(['cddis.gsfc.nasa.gov','products','iers','finals.all'])
     for HOST in server:
         try:
-            pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
-                hash=HASH, verbose=verbose, mode=mode)
+            pyTMD.utilities.from_ftp(HOST,
+                timeout=timeout,
+                local=LOCAL,
+                hash=HASH,
+                verbose=verbose,
+                mode=mode)
         except Exception as exc:
             pass
         else:
@@ -237,15 +256,27 @@ def update_finals_file(username=None, password=None, verbose=False, mode=0o775):
     # using NASA Earthdata credentials stored in netrc file
     HOST = ['https://cddis.nasa.gov','archive','products','iers','finals.all']
     try:
-        pyTMD.utilities.from_cddis(HOST, username=username, password=password,
-            timeout=20, local=LOCAL, hash=HASH, verbose=verbose, mode=mode)
+        pyTMD.utilities.from_cddis(HOST,
+            username=username,
+            password=password,
+            timeout=timeout,
+            local=LOCAL,
+            hash=HASH,
+            verbose=verbose,
+            mode=mode
+        )
     except Exception as exc:
         pass
     else:
         return
 
 # read table of mean pole values, calculate angular coordinates at epoch
-def iers_mean_pole(input_file, input_epoch, version, **kwargs):
+def iers_mean_pole(
+        input_file: str,
+        input_epoch: np.ndarray,
+        version: str,
+        **kwargs
+    ):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
 
@@ -253,7 +284,7 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     ----------
     input_file: str
         Full path to mean-pole.tab file provided by IERS
-    input_epoch: float
+    input_epoch: np.ndarray
         Dates for the angular coordinates of the Conventional Mean Pole
         in decimal years
     version: str
@@ -263,11 +294,11 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
 
     Returns
     -------
-    x: float
+    x: np.ndarray
         Angular coordinate x of conventional mean pole
-    y: float
+    y: np.ndarray
         Angular coordinate y of conventional mean pole
-    flag: bool
+    flag: np.ndarray
         epoch is valid for version and version number is valid
 
     References
@@ -290,7 +321,7 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     table = np.copy(table[jj,:])
     end_time = table[-1,0] + 0.2
     # final shape of the table
-    nrows, ncols = np.shape(table)
+    nrows, *_ = np.shape(table)
     # allocate for output arrays
     x = np.full_like(input_epoch, kwargs['fill_value'])
     y = np.full_like(input_epoch, kwargs['fill_value'])
@@ -336,7 +367,7 @@ def iers_mean_pole(input_file, input_epoch, version, **kwargs):
     return (x, y, flag)
 
 # PURPOSE: read daily earth orientation parameters (EOP) file from IERS
-def iers_daily_EOP(input_file):
+def iers_daily_EOP(input_file: str):
     """
     Read daily earth orientation parameters (EOP) file from IERS
 
@@ -347,11 +378,11 @@ def iers_daily_EOP(input_file):
 
     Returns
     -------
-    MJD: float
+    MJD: np.ndarray
         modified Julian date of EOP measurements
-    x: float
+    x: np.ndarray
         Angular coordinate x [arcsec]
-    y: float
+    y: np.ndarray
         Angular coordinate y [arcsec]
 
     References

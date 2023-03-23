@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
@@ -22,6 +23,8 @@ UPDATE HISTORY:
         added atl10 attributes for tidal elevation files
     Written 09/2021
 """
+from __future__ import annotations
+
 import os
 import re
 import io
@@ -132,7 +135,7 @@ class model:
         self.verify = copy.copy(kwargs['verify'])
         self.version = None
 
-    def grid(self, m):
+    def grid(self, m: str):
         """
         Create a model object from known tide grid files
 
@@ -232,7 +235,7 @@ class model:
         # return the model parameters
         return self
 
-    def elevation(self, m):
+    def elevation(self, m: str):
         """
         Create a model object from known tidal elevation models
 
@@ -967,7 +970,7 @@ class model:
         # return the model parameters
         return self
 
-    def current(self, m):
+    def current(self, m: str):
         """
         Create a model object from known tidal current models
 
@@ -1246,21 +1249,21 @@ class model:
         return self
 
     @property
-    def gzip(self):
+    def gzip(self) -> str:
         """
         Returns suffix for gzip compression
         """
         return '.gz' if self.compressed else ''
 
     @property
-    def suffix(self):
+    def suffix(self) -> str:
         """
         Returns format suffix for netCDF4 ATLAS files
         """
         return '.nc' if (self.format == 'netcdf') else ''
 
     @staticmethod
-    def global_ocean():
+    def global_ocean() -> list:
         """
         Returns list of global ocean tide elevation models
         """
@@ -1269,7 +1272,7 @@ class model:
             'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
 
     @staticmethod
-    def global_load():
+    def global_load() -> list:
         """
         Returns list of global load tide elevation models
         """
@@ -1277,7 +1280,7 @@ class model:
             'GOT4.10_load','FES2014_load','EOT20_load']
 
     @staticmethod
-    def global_current():
+    def global_current() -> list:
         """
         Returns list of global tidal current models
         """
@@ -1286,28 +1289,28 @@ class model:
             'TPXO9.1','TPXO8-atlas','TPXO7.2','FES2014']
 
     @staticmethod
-    def antarctic_ocean():
+    def antarctic_ocean() -> list:
         """
         Returns list of Antarctic ocean tide elevation models
         """
         return ['CATS0201','CATS2008','CATS2022']
 
     @staticmethod
-    def antarctic_load():
+    def antarctic_load() -> list:
         """
         Returns list of Antarctic load tide elevation models
         """
         return ['CATS2008_load']
 
     @staticmethod
-    def antarctic_current():
+    def antarctic_current() -> list:
         """
         Returns list of Antarctic tidal current models
         """
         return ['CATS0201','CATS2008','CATS2022']
 
     @staticmethod
-    def arctic_ocean():
+    def arctic_ocean() -> list:
         """
         Returns list of Arctic ocean tide elevation models
         """
@@ -1315,14 +1318,14 @@ class model:
             'Gr1kmTM','Gr1km-v2']
 
     @staticmethod
-    def arctic_load():
+    def arctic_load() -> list:
         """
         Returns list of Arctic load tide elevation models
         """
         return []
 
     @staticmethod
-    def arctic_current():
+    def arctic_current() -> list:
         """
         Returns list of Arctic tidal current models
         """
@@ -1330,7 +1333,7 @@ class model:
             'Gr1kmTM','Gr1km-v2']
 
     @staticmethod
-    def ocean_elevation():
+    def ocean_elevation() -> list:
         """
         Returns list of ocean tide elevation models
         """
@@ -1341,7 +1344,7 @@ class model:
             'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
 
     @staticmethod
-    def load_elevation():
+    def load_elevation() -> list:
         """
         Returns list of load tide elevation models
         """
@@ -1349,7 +1352,7 @@ class model:
             'GOT4.8_load','GOT4.10_load','FES2014_load','EOT20_load']
 
     @staticmethod
-    def ocean_current():
+    def ocean_current() -> list:
         """
         Returns list of tidal current models
         """
@@ -1360,7 +1363,7 @@ class model:
             'Arc2kmTM','Gr1kmTM','Gr1km-v2','FES2014']
 
     @staticmethod
-    def OTIS():
+    def OTIS() -> list:
         """
         Returns list of OTIS format models
         """
@@ -1369,21 +1372,21 @@ class model:
             'AOTIM-5-2018','Arc2kmTM','Gr1kmTM','Gr1km-v2']
 
     @staticmethod
-    def ATLAS_compact():
+    def ATLAS_compact() -> list:
         """
         Returns list of ATLAS compact format models
         """
         return ['TPXO8-atlas']
 
     @staticmethod
-    def ESR():
+    def ESR() -> list:
         """
         Returns list of ESR format models
         """
         return ['CATS2022']
 
     @staticmethod
-    def ATLAS():
+    def ATLAS() -> list:
         """
         Returns list of ATLAS format models
         """
@@ -1391,7 +1394,7 @@ class model:
             'TPXO9-atlas-v4','TPXO9-atlas-v5']
 
     @staticmethod
-    def GOT():
+    def GOT() -> list:
         """
         Returns list of GOT format models
         """
@@ -1399,13 +1402,13 @@ class model:
             'GOT4.10','GOT4.10_load']
 
     @staticmethod
-    def FES():
+    def FES() -> list:
         """
         Returns list of FES format models
         """
         return ['FES2014','FES2014_load','EOT20','EOT20_load']
 
-    def pathfinder(self, model_file):
+    def pathfinder(self, model_file: str | list):
         """
         Completes file paths and appends file and gzip suffixes
 
@@ -1428,7 +1431,7 @@ class model:
         # return the complete output path
         return output_file
 
-    def from_file(self, definition_file):
+    def from_file(self, definition_file: str):
         """
         Create a model object from an input definition file
 
@@ -1492,7 +1495,7 @@ class model:
         # return the model parameters
         return temp
 
-    def from_dict(self, d):
+    def from_dict(self, d: dict):
         """
         Create a model object from a python dictionary
 
@@ -1506,7 +1509,7 @@ class model:
         # return the model parameters
         return self
 
-    def to_bool(self, val):
+    def to_bool(self, val: str) -> bool:
         """
         Converts strings of True/False to a boolean values
 

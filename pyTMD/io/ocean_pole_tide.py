@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ocean_pole_tide.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
@@ -31,6 +31,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor ocean pole tide read programs under io
     Updated 04/2022: updated docstrings to numpy documentation format
         use longcomplex data format to be windows compliant
@@ -41,13 +42,15 @@ UPDATE HISTORY:
     Updated 12/2018: Compatibility updates for Python3
     Written 09/2017
 """
+from __future__ import annotations
+
 import os
 import re
 import gzip
 import numpy as np
 
 # PURPOSE: read real and imaginary ocean pole tide coefficients
-def ocean_pole_tide(input_file):
+def ocean_pole_tide(input_file: str):
     """
     Read real and imaginary ocean pole tide coefficients
 
@@ -58,15 +61,15 @@ def ocean_pole_tide(input_file):
 
     Returns
     -------
-    ur: float
+    ur: np.ndarray
         radial ocean pole tide coefficients
-    un: float
+    un: np.ndarray
         north ocean pole tide coefficients
-    ue: float
+    ue: np.ndarray
         east ocean pole tide coefficients
-    glon: float
+    glon: np.ndarray
         ocean grid longitude
-    glat: float
+    glat: np.ndarray
         ocean grid latitude
 
     References
@@ -125,43 +128,48 @@ def ocean_pole_tide(input_file):
     # return values
     return (ur, un, ue, glon, glat)
 
-# PURPOSE: wrapper function to extend an array
-def extend_array(input_array,step_size):
+# PURPOSE: Extend a longitude array
+def extend_array(input_array: np.ndarray, step_size: float):
     """
-    Wrapper function to extend an array
+    Extends a longitude array
 
     Parameters
     ----------
-    input_array: array to extend
-    step_size: step size between elements of array
+    input_array: np.ndarray
+        array to extend
+    step_size: float
+        step size between elements of array
 
     Returns
     -------
-    temp: extended array
+    temp: np.ndarray
+        extended array
     """
     n = len(input_array)
-    temp = np.zeros((n+2),dtype=input_array.dtype)
+    temp = np.zeros((n+2), dtype=input_array.dtype)
     # extended array [x-1,x0,...,xN,xN+1]
     temp[0] = input_array[0] - step_size
     temp[1:-1] = input_array[:]
     temp[-1] = input_array[-1] + step_size
     return temp
 
-# PURPOSE: wrapper function to extend a matrix
-def extend_matrix(input_matrix):
+# PURPOSE: Extend a global matrix
+def extend_matrix(input_matrix: np.ndarray):
     """
-    Wrapper function to extend a matrix
+    Extends a global matrix
 
     Parameters
     ----------
-    input_matrix: matrix to extend
+    input_matrix: np.ndarray
+        matrix to extend
 
     Returns
     -------
-    temp: extended matrix
+    temp: np.ndarray
+        extended matrix
     """
     nx,ny = np.shape(input_matrix)
-    temp = np.zeros((nx+2,ny),dtype=input_matrix.dtype)
+    temp = np.zeros((nx+2,ny), dtype=input_matrix.dtype)
     temp[0,:] = input_matrix[-1,:]
     temp[1:-1,:] = input_matrix[:,:]
     temp[-1,:] = input_matrix[0,:]

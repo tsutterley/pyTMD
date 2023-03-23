@@ -201,7 +201,7 @@ Spatial Coordinates
 The default coordinate system in ``pyTMD`` is WGS84 geodetic coordinates in latitude and longitude.
 ``pyTMD`` uses `pyproj <https://pypi.org/project/pyproj/>`_ to convert from different coordinate systems and datums.
 Some regional tide models are projected in a different coordinate system.
-For these cases, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_ll_xy.py>`_.
+For these cases, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_crs.py>`_.
 
 OTIS models may be projected into a separate coordinate system. The available OTIS projections within ``pyTMD`` are
 

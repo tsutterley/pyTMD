@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,8 +10,11 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Written 12/2022
 """
+from __future__ import division, annotations
+
 import numpy as np
 
 class constituents:
@@ -31,7 +34,7 @@ class constituents:
         for key, val in kwargs.items():
             setattr(self, key, val)
 
-    def append(self, field, constituent):
+    def append(self, field: str, constituent: np.ndarray):
         """
         Append a tide model constituent
 
@@ -39,7 +42,7 @@ class constituents:
         ----------
         field: str
             Tide model constituent name
-        constituent: float
+        constituent: np.ndarray
             Tide model constituent (complex form)
         """
         # append field
@@ -47,7 +50,7 @@ class constituents:
         setattr(self, field, constituent)
         return self
 
-    def get(self, field):
+    def get(self, field: str):
         """
         Get a tide model constituent
 
@@ -58,12 +61,12 @@ class constituents:
 
         Returns
         -------
-        constituent: float
+        constituent: np.ndarray
             Tide model constituent (complex form)
         """
         return getattr(self, field)
 
-    def pop(self, field):
+    def pop(self, field: str):
         """
         Retrieve a tide model constituent and remove from list
 
@@ -74,7 +77,7 @@ class constituents:
 
         Returns
         -------
-        constituent: float
+        constituent: np.ndarray
             Tide model constituent (complex form)
         """
         self.fields.remove(field)
@@ -82,7 +85,7 @@ class constituents:
         delattr(self, field)
         return constituent
 
-    def update(self, field, constituent):
+    def update(self, field: str, constituent: np.ndarray):
         """
         Update a tide model constituent
 
@@ -90,7 +93,7 @@ class constituents:
         ----------
         field: str
             Tide model constituent name
-        constituent: float
+        constituent: np.ndarray
             Tide model constituent (complex form)
         """
         # raise exception if field not in list
@@ -100,7 +103,7 @@ class constituents:
         setattr(self, field, constituent)
         return self
 
-    def amplitude(self, field):
+    def amplitude(self, field: str):
         """
         Calculate the amplitude of a tide model constituent
 
@@ -111,7 +114,7 @@ class constituents:
 
         Returns
         -------
-        amp: float
+        amp: np.ndarray
             Tide model constituent amplitude
         """
         constituent = getattr(self, field)
@@ -122,7 +125,7 @@ class constituents:
         amp.data[amp.mask] = amp.fill_value
         return amp
 
-    def phase(self, field):
+    def phase(self, field: str):
         """
         Calculate the phase of a tide model constituent
 

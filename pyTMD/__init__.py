@@ -23,11 +23,17 @@ from pyTMD import io
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 from pyTMD.check_tide_points import check_tide_points
 from pyTMD.compute_tide_corrections import compute_tide_corrections
-from pyTMD.constants import constants, _ellipsoids
-from pyTMD.convert_ll_xy import convert_ll_xy
+from pyTMD.constants import (
+    constants,
+    _ellipsoids
+)
+from pyTMD.convert_crs import convert_crs
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 from pyTMD.tidal_ellipse import tidal_ellipse
+
+# Deprecated functions
+from pyTMD.convert_ll_xy import convert_ll_xy
 
 # get semantic version from setuptools-scm
 __version__ = pyTMD.version.version

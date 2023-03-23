@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -43,7 +43,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    convert_ll_xy.py: convert lat/lon points to and from projected coordinates
+    convert_crs.py: convert points to and from Coordinates Reference Systems
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     io/ATLAS.py: extract tidal harmonic constants from ATLAS netcdf models
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactored tide read programs under io
         refactored bilinear interpolation routine
     Updated 11/2022: place some imports within try/except statements
@@ -64,7 +65,7 @@ UPDATE HISTORY:
     Updated 06/2021: add try/except for input projection strings
     Written 05/2021
 """
-from __future__ import print_function
+from __future__ import print_function, annotations
 
 import os
 import warnings
@@ -73,7 +74,7 @@ import scipy.interpolate
 
 import pyTMD.io
 import pyTMD.io.model
-import pyTMD.convert_ll_xy
+import pyTMD.convert_crs
 import pyTMD.interpolate
 
 # attempt imports
@@ -86,21 +87,27 @@ except (ImportError, ModuleNotFoundError) as exc:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
-def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
-    ATLAS_FORMAT='netcdf', GZIP=False, DEFINITION_FILE=None,
-    EPSG=3031, METHOD='spline'):
+def check_tide_points(x: np.ndarray, y: np.ndarray,
+        DIRECTORY: str | None = None,
+        MODEL: str | None = None,
+        ATLAS_FORMAT: str = 'netcdf',
+        GZIP: bool = False,
+        DEFINITION_FILE: str | None = None,
+        EPSG: str | int = 3031,
+        METHOD: str = 'spline'
+    ):
     """
     Check if points are within a tide model domain
 
     Parameters
     ----------
-    x: float
+    x: np.ndarray
         x-coordinates in projection EPSG
-    y: float
+    y: np.ndarray
         y-coordinates in projection EPSG
     DIRECTORY: str or NoneType, default None
         working data directory for tide models
-    MODEL:  str or NoneType, default None
+    MODEL: str or NoneType, default None
         Tide model to use
     ATLAS_FORMAT: str, default 'netcdf'
         ATLAS tide model format
@@ -111,9 +118,9 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
         Tide model files are gzip compressed
     DEFINITION_FILE: str or NoneType, default None
         Tide model definition file for use
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: str or int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
-    METHOD: str
+    METHOD: str, default 'spline'
         interpolation method
 
             - ```bilinear```: quick bilinear interpolation
@@ -141,30 +148,33 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
 
     # input shape of data
     idim = np.shape(x)
-    # converting x,y from EPSG to latitude/longitude
+    # converting x,y from input coordinate reference system
     try:
         # EPSG projection code string or int
         crs1 = pyproj.CRS.from_epsg(int(EPSG))
     except (ValueError,pyproj.exceptions.CRSError):
         # Projection SRS string
         crs1 = pyproj.CRS.from_string(EPSG)
+    # convert to latitude and longitude
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(np.atleast_1d(x).flatten(),
-        np.atleast_1d(y).flatten())
+    lon, lat = transformer.transform(
+        np.atleast_1d(x).flatten(), np.atleast_1d(y).flatten()
+    )
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
         # if reading a single OTIS solution
-        xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(model.grid_file)
+        xi, yi, hz, mz, iob, dt = pyTMD.io.OTIS.read_otis_grid(
+            model.grid_file)
         # invert model mask
         mz = np.logical_not(mz)
         # adjust dimensions of input coordinates to be iterable
         # run wrapper function to convert coordinate systems of input lat/lon
-        X,Y = pyTMD.convert_ll_xy(lon,lat,model.projection,'F')
+        X, Y = pyTMD.convert_crs(lon, lat, model.projection, 'F')
     elif (model.format == 'netcdf'):
         # if reading a netCDF OTIS atlas solution
-        xi,yi,hz = pyTMD.io.ATLAS.read_netcdf_grid(model.grid_file,
+        xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(model.grid_file,
             compressed=model.compressed, type=model.type)
         # copy bathymetry mask
         mz = np.copy(hz.mask)
@@ -174,39 +184,40 @@ def check_tide_points(x, y, DIRECTORY=None, MODEL=None,
         X[lt0] += 360.0
     elif (model.format == 'GOT'):
         # if reading a NASA GOT solution
-        hc,xi,yi,c = pyTMD.io.GOT.read_ascii_file(model.model_file[0],
-            compressed=model.compressed)
+        hc, xi, yi, c = pyTMD.io.GOT.read_ascii_file(
+            model.model_file[0], compressed=model.compressed)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
         # copy latitude and longitude and adjust longitudes
-        X,Y = np.copy([lon,lat]).astype(np.float64)
+        X, Y = np.copy([lon,lat]).astype(np.float64)
         lt0, = np.nonzero(X < 0)
         X[lt0] += 360.0
     elif (model.format == 'FES'):
         # if reading a FES netCDF solution
-        hc,xi,yi = pyTMD.io.FES.read_netcdf_file(model.model_file[0],
-            compressed=model.compressed, type=model.type,
-            version=model.version)
+        hc, xi, yi = pyTMD.io.FES.read_netcdf_file(
+            model.model_file[0], compressed=model.compressed,
+            type=model.type, version=model.version)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
         # copy latitude and longitude and adjust longitudes
-        X,Y = np.copy([lon,lat]).astype(np.float64)
+        X, Y = np.copy([lon,lat]).astype(np.float64)
         lt0, = np.nonzero(X < 0)
         X[lt0] += 360.0
 
     # interpolate masks
     if (METHOD == 'bilinear'):
         # replace invalid values with nan
-        mz1 = pyTMD.interpolate.bilinear(xi,yi,mz,X,Y)
+        mz1 = pyTMD.interpolate.bilinear(xi, yi, mz, X, Y)
         mask = np.floor(mz1).astype(mz.dtype)
     elif (METHOD == 'spline'):
-        f1=scipy.interpolate.RectBivariateSpline(xi,yi,mz.T,kx=1,ky=1)
-        mask = np.floor(f1.ev(X,Y)).astype(mz.dtype)
+        f1 = scipy.interpolate.RectBivariateSpline(xi, yi, mz.T,
+            kx=1, ky=1)
+        mask = np.floor(f1.ev(X, Y)).astype(mz.dtype)
     else:
         # use scipy regular grid to interpolate values
-        r1 = scipy.interpolate.RegularGridInterpolator((yi,xi),mz,
-            method=METHOD,bounds_error=False,fill_value=1)
-        mask = np.floor(r1.__call__(np.c_[y,x])).astype(mz.dtype)
+        r1 = scipy.interpolate.RegularGridInterpolator((yi, xi), mz,
+            method=METHOD, bounds_error=False, fill_value=1)
+        mask = np.floor(r1.__call__(np.c_[y, x])).astype(mz.dtype)
 
     # reshape to original dimensions
     valid = np.logical_not(mask).reshape(idim).astype(mz.dtype)

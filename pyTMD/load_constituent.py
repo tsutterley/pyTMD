@@ -110,4 +110,4 @@ def load_constituent(c):
     else:
         amplitude = 0.0; phase = 0.0; omega = 0.0; alpha = 0.0; species = 0
     # return the values for the constituent
-    return (amplitude,phase,omega,alpha,species)
+    return (amplitude, phase, omega, alpha, species)

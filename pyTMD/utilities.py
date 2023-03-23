@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (03/2023)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 01/2023: updated SSL context to fix some deprecation warnings
     Updated 11/2022: added list program for IERS Bulletin-A https server
         use f-strings for formatting verbose or ascii output
@@ -30,7 +31,7 @@ UPDATE HISTORY:
     Updated 08/2020: add GSFC CDDIS opener, login and download functions
     Written 08/2020
 """
-from __future__ import print_function, division
+from __future__ import print_function, division, annotations
 
 import sys
 import os
@@ -61,26 +62,26 @@ else:
     import urllib.request as urllib2
 
 # PURPOSE: get absolute path within a package from a relative path
-def get_data_path(relpath):
+def get_data_path(relpath: list | str):
     """
     Get the absolute path within a package from a relative path
 
     Parameters
     ----------
-    relpath: str,
+    relpath: list or str
         relative path
     """
     # current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     filepath = os.path.dirname(os.path.abspath(filename))
-    if isinstance(relpath,list):
+    if isinstance(relpath, list):
         # use *splat operator to extract from list
         return os.path.join(filepath,*relpath)
-    elif isinstance(relpath,str):
+    elif isinstance(relpath, str):
         return os.path.join(filepath,relpath)
 
 # PURPOSE: platform independent file opener
-def file_opener(filename):
+def file_opener(filename: str):
     """
     Platform independent file opener
 
@@ -97,7 +98,10 @@ def file_opener(filename):
         subprocess.call(["xdg-open", os.path.expanduser(filename)])
 
 # PURPOSE: get the hash value of a file
-def get_hash(local, algorithm='MD5'):
+def get_hash(
+        local: str | io.IOBase,
+        algorithm: str = 'MD5'
+    ):
     """
     Get the hash value from a local file or ``BytesIO`` object
 
@@ -130,7 +134,10 @@ def get_hash(local, algorithm='MD5'):
         return ''
 
 # PURPOSE: get the git hash value
-def get_git_revision_hash(refname='HEAD', short=False):
+def get_git_revision_hash(
+        refname: str = 'HEAD',
+        short: bool = False
+    ):
     """
     Get the ``git`` hash value for a particular reference
 
@@ -167,7 +174,7 @@ def get_git_status():
         return bool(subprocess.check_output(cmd))
 
 # PURPOSE: recursively split a url path
-def url_split(s):
+def url_split(s: str):
     """
     Recursively split a url path into a list
 
@@ -200,7 +207,7 @@ def convert_arg_line_to_args(arg_line):
         yield arg
 
 # PURPOSE: build a logging instance with a specified name
-def build_logger(name, **kwargs):
+def build_logger(name: str, **kwargs):
     """
     Builds a logging instance with the specified name
 
@@ -237,7 +244,7 @@ def build_logger(name, **kwargs):
     return logger
 
 # PURPOSE: convert Roman numerals to (Arabic) integers
-def roman_to_int(roman):
+def roman_to_int(roman: str):
     """
     Converts a string from Roman numerals into an integer (Arabic)
 
@@ -261,7 +268,10 @@ def roman_to_int(roman):
     return output
 
 # PURPOSE: returns the Unix timestamp value for a formatted date string
-def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
+def get_unix_time(
+        time_string: str,
+        format: str = '%Y-%m-%d %H:%M:%S'
+    ):
     """
     Get the Unix timestamp value for a formatted date string
 
@@ -287,7 +297,7 @@ def get_unix_time(time_string, format='%Y-%m-%d %H:%M:%S'):
         return parsed_time.timestamp()
 
 # PURPOSE: output a time string in isoformat
-def isoformat(time_string):
+def isoformat(time_string: str):
     """
     Reformat a date string to ISO formatting
 
@@ -305,7 +315,7 @@ def isoformat(time_string):
         return parsed_time.isoformat()
 
 # PURPOSE: rounds a number to an even number less than or equal to original
-def even(value):
+def even(value: float):
     """
     Rounds a number to an even number less than or equal to original
 
@@ -317,7 +327,7 @@ def even(value):
     return 2*int(value//2)
 
 # PURPOSE: rounds a number upward to its nearest integer
-def ceil(value):
+def ceil(value: float):
     """
     Rounds a number upward to its nearest integer
 
@@ -329,7 +339,12 @@ def ceil(value):
     return -int(-value//1)
 
 # PURPOSE: make a copy of a file with all system information
-def copy(source, destination, move=False, **kwargs):
+def copy(
+        source: str,
+        destination: str,
+        move: bool = False,
+        **kwargs
+    ):
     """
     Copy or move a file with all system information
 
@@ -352,7 +367,11 @@ def copy(source, destination, move=False, **kwargs):
         os.remove(source)
 
 # PURPOSE: check ftp connection
-def check_ftp_connection(HOST, username=None, password=None):
+def check_ftp_connection(
+        HOST: str,
+        username: str | None = None,
+        password: str | None = None
+    ):
     """
     Check internet connection with ftp host
 
@@ -378,8 +397,15 @@ def check_ftp_connection(HOST, username=None, password=None):
         return True
 
 # PURPOSE: list a directory on a ftp host
-def ftp_list(HOST, username=None, password=None, timeout=None,
-    basename=False, pattern=None, sort=False):
+def ftp_list(
+        HOST: str,
+        username: str | None = None,
+        password: str | None = None,
+        timeout: int | None = None,
+        basename: bool = False,
+        pattern: str | None = None,
+        sort: bool = False
+    ):
     """
     List a directory on a ftp host
 
@@ -453,9 +479,18 @@ def ftp_list(HOST, username=None, password=None, timeout=None,
         return (output, mtimes)
 
 # PURPOSE: download a file from a ftp host
-def from_ftp(HOST, username=None, password=None, timeout=None,
-    local=None, hash='', chunk=8192, verbose=False, fid=sys.stdout,
-    mode=0o775):
+def from_ftp(
+        HOST: str,
+        username: str | None = None,
+        password: str | None = None,
+        timeout: int | None = None,
+        local: str | None = None,
+        hash: str = '',
+        chunk: int = 8192,
+        verbose: bool = False,
+        fid=sys.stdout,
+        mode: oct = 0o775
+    ):
     """
     Download a file from a ftp host
 
@@ -543,7 +578,7 @@ def from_ftp(HOST, username=None, password=None, timeout=None,
 _default_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
 
 # PURPOSE: check internet connection
-def check_connection(HOST, context=_default_ssl_context):
+def check_connection(HOST: str, context=_default_ssl_context):
     """
     Check internet connection with http host
 
@@ -563,9 +598,15 @@ def check_connection(HOST, context=_default_ssl_context):
         return True
 
 # PURPOSE: list a directory on an Apache http Server
-def http_list(HOST, timeout=None, context=_default_ssl_context,
-    parser=lxml.etree.HTMLParser(), format='%Y-%m-%d %H:%M',
-    pattern='', sort=False):
+def http_list(
+        HOST: str,
+        timeout: int | None = None,
+        context = _default_ssl_context,
+        parser = lxml.etree.HTMLParser(),
+        format: str = '%Y-%m-%d %H:%M',
+        pattern: str = '',
+        sort: bool = False
+    ):
     """
     List a directory on an Apache http Server
 
@@ -626,9 +667,17 @@ def http_list(HOST, timeout=None, context=_default_ssl_context,
         return (colnames, collastmod)
 
 # PURPOSE: download a file from a http host
-def from_http(HOST, timeout=None, context=_default_ssl_context,
-    local=None, hash='', chunk=16384, verbose=False, fid=sys.stdout,
-    mode=0o775):
+def from_http(
+        HOST: str,
+        timeout: int | None = None,
+        context = _default_ssl_context,
+        local: str | None = None,
+        hash: str = '',
+        chunk: int = 16384,
+        verbose: bool = False,
+        fid = sys.stdout,
+        mode: oct = 0o775
+    ):
     """
     Download a file from a http host
 
@@ -640,8 +689,6 @@ def from_http(HOST, timeout=None, context=_default_ssl_context,
         timeout in seconds for blocking operations
     context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
         SSL context for ``urllib`` opener object
-    timeout: int or NoneType, default None
-        timeout in seconds for blocking operations
     local: str or NoneType, default None
         path to local file
     hash: str, default ''
@@ -703,9 +750,16 @@ def from_http(HOST, timeout=None, context=_default_ssl_context,
         return remote_buffer
 
 # PURPOSE: "login" to NASA Earthdata with supplied credentials
-def build_opener(username, password, context=_default_ssl_context,
-    password_manager=True, get_ca_certs=True, redirect=True,
-    authorization_header=False, urs='https://urs.earthdata.nasa.gov'):
+def build_opener(
+        username: str,
+        password: str,
+        context=_default_ssl_context,
+        password_manager: bool = True,
+        get_ca_certs: bool = True,
+        redirect: bool = True,
+        authorization_header: bool = False,
+        urs: str = 'https://urs.earthdata.nasa.gov'
+    ):
     """
     Build ``urllib`` opener for NASA Earthdata with supplied credentials
 
@@ -779,9 +833,16 @@ def check_credentials():
         return True
 
 # PURPOSE: list a directory on GSFC CDDIS https server
-def cddis_list(HOST, username=None, password=None, build=True,
-    timeout=None, parser=lxml.etree.HTMLParser(), pattern='',
-    sort=False):
+def cddis_list(
+        HOST: str,
+        username: str | None = None,
+        password: str | None = None,
+        build: bool = True,
+        timeout: int | None = None,
+        parser=lxml.etree.HTMLParser(),
+        pattern: str = '',
+        sort: bool = False
+    ):
     """
     List a directory on GSFC CDDIS archive server
 
@@ -861,9 +922,19 @@ def cddis_list(HOST, username=None, password=None, build=True,
         return (colnames, collastmod)
 
 # PURPOSE: download a file from a GSFC CDDIS https server
-def from_cddis(HOST, username=None, password=None, build=True,
-    timeout=None, local=None, hash='', chunk=16384, verbose=False,
-    fid=sys.stdout, mode=0o775):
+def from_cddis(
+        HOST: str,
+        username: str | None = None,
+        password: str | None = None,
+        build: bool = True,
+        timeout: int | None = None,
+        local: str | None = None,
+        hash: str = '',
+        chunk: int = 16384,
+        verbose: bool = False,
+        fid=sys.stdout,
+        mode: oct = 0o775
+    ):
     """
     Download a file from GSFC CDDIS archive server
 
@@ -954,8 +1025,12 @@ def from_cddis(HOST, username=None, password=None, build=True,
         return remote_buffer
 
 # PURPOSE: list a directory on IERS https Server
-def iers_list(HOST, timeout=None, context=_default_ssl_context,
-    parser=lxml.etree.HTMLParser()):
+def iers_list(
+        HOST: str,
+        timeout: int | None = None,
+        context = _default_ssl_context,
+        parser = lxml.etree.HTMLParser()
+    ):
     """
     List a directory on IERS Bulletin-A https server
 

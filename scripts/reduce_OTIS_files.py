@@ -25,9 +25,10 @@ PROGRAM DEPENDENCIES:
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     utilities.py: download and management utilities for syncing files
-    convert_ll_xy.py: converts lat/lon points to and from projected coordinates
+    convert_crs.py: converts lat/lon points to and from projected coordinates
 
 UPDATE HISTORY:
+    Updated 03/2023: new function name for coordinate reference systems
     Updated 12/2022: refactored OTIS model input and output
     Updated 11/2022: place some imports within try/except statements
         use f-strings for formatting verbose or ascii output
@@ -54,7 +55,7 @@ import argparse
 import numpy as np
 import pyTMD.io
 import pyTMD.utilities
-from pyTMD.convert_ll_xy import convert_ll_xy
+from pyTMD.convert_crs import convert_crs
 
 # attempt imports
 try:
@@ -115,7 +116,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     lon,lat = transformer.transform(xbox,ybox)
 
     # convert bounds from latitude/longitude to model coordinates
-    x,y = convert_ll_xy(lon,lat,model.projection,'F')
+    x,y = convert_crs(lon,lat,model.projection,'F')
 
     # find indices to reduce to xmin,xmax,ymin,ymax
     gridx,gridy = np.meshgrid(xi,yi)
