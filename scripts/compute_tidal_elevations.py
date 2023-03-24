@@ -83,7 +83,7 @@ PROGRAM DEPENDENCIES:
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
-    convert_ll_xy.py: convert lat/lon points to and from projected coordinates
+    convert_crs.py: convert points to and from Coordinates Reference Systems
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
     io/model.py: retrieves tide model parameters for named tide models

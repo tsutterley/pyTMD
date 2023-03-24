@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,10 +55,12 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
-    convert_ll_xy.py: converts lat/lon points to and from projected coordinates
+    convert_crs.py: converts lat/lon points to and from projected coordinates
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
+        new function name for converting coordinate reference systems
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
         refactored interpolation routines into new module
@@ -105,6 +107,8 @@ UPDATE HISTORY:
     Updated 07/2018: added different interpolation methods
     Updated 09/2017: Adapted for Python
 """
+from __future__ import division, annotations
+
 import os
 import copy
 import struct
@@ -113,7 +117,7 @@ import numpy as np
 import scipy.interpolate
 import pyTMD.interpolate
 import pyTMD.io.constituents
-from pyTMD.convert_ll_xy import convert_ll_xy
+from pyTMD.convert_crs import convert_crs
 
 # attempt imports
 try:
@@ -125,11 +129,14 @@ except (ImportError, ModuleNotFoundError) as exc:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
-def extract_constants(ilon, ilat,
-    grid_file=None,
-    model_file=None,
-    EPSG=None,
-    **kwargs):
+def extract_constants(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        grid_file: str | None = None,
+        model_file: str | list | None = None,
+        EPSG: str | int | None = None,
+        **kwargs
+    ):
     """
     Reads files from tide models in OTIS and ATLAS-compact formats
 
@@ -139,9 +146,9 @@ def extract_constants(ilon, ilat,
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude to interpolate
-    ilat: float
+    ilat: np.ndarray
         latitude to interpolate
     grid_file: str or NoneType, default None
         grid file for model
@@ -180,11 +187,11 @@ def extract_constants(ilon, ilat,
 
     Returns
     -------
-    amplitude: float
+    amplitude: np.ndarray
         amplitudes of tidal constituents
-    phase: float
+    phase: np.ndarray
         phases of tidal constituents
-    D: float
+    D: np.ndarray
         bathymetry of tide model
     constituents: list
         list of model constituents
@@ -228,7 +235,7 @@ def extract_constants(ilon, ilat,
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_ll_xy(ilon, ilat, EPSG, 'F')
+    x,y = convert_crs(ilon, ilat, EPSG, 'F')
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -447,7 +454,12 @@ def extract_constants(ilon, ilat,
     return (amplitude, phase, D, constituents)
 
 # PURPOSE: read harmonic constants from tide models
-def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
+def read_constants(
+        grid_file: str | None = None,
+        model_file: str | list | None = None,
+        EPSG: str | int | None = None,
+        **kwargs
+    ):
     """
     Reads files from tide models in OTIS and ATLAS-compact formats
 
@@ -634,9 +646,13 @@ def read_constants(grid_file=None, model_file=None, EPSG=None, **kwargs):
     return constituents
 
 # PURPOSE: interpolate constants from tide models to input coordinates
-def interpolate_constants(ilon, ilat, constituents,
-    EPSG=None,
-    **kwargs):
+def interpolate_constants(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        constituents,
+        EPSG: str | int | None = None,
+        **kwargs
+    ):
     """
     Interpolate constants from OTIS/ATLAS-compact tidal models to input
     coordinates
@@ -645,9 +661,9 @@ def interpolate_constants(ilon, ilat, constituents,
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude to interpolate
-    ilat: float
+    ilat: np.ndarray
         latitude to interpolate
     constituents: obj
         Tide model constituents (complex form)
@@ -676,11 +692,11 @@ def interpolate_constants(ilon, ilat, constituents,
 
     Returns
     -------
-    amplitude: float
+    amplitude: np.ndarray
         amplitudes of tidal constituents
-    phase: float
+    phase: np.ndarray
         phases of tidal constituents
-    D: float
+    D: np.ndarray
         bathymetry of tide model
     """
     # set default keyword arguments
@@ -697,7 +713,7 @@ def interpolate_constants(ilon, ilat, constituents,
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_ll_xy(ilon, ilat, EPSG, 'F')
+    x,y = convert_crs(ilon, ilat, EPSG, 'F')
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(x) < np.min(xi)) & (EPSG == '4326'):
@@ -809,20 +825,20 @@ def interpolate_constants(ilon, ilat, constituents,
     return (amplitude, phase, D)
 
 # PURPOSE: Extend a longitude array
-def extend_array(input_array, step_size):
+def extend_array(input_array: np.ndarray, step_size: float):
     """
     Extends a longitude array
 
     Parameters
     ----------
-    input_array: float
+    input_array: np.ndarray
         array to extend
     step_size: float
         step size between elements of array
 
     Returns
     -------
-    temp: float
+    temp: np.ndarray
         extended array
     """
     n = len(input_array)
@@ -834,18 +850,18 @@ def extend_array(input_array, step_size):
     return temp
 
 # PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix):
+def extend_matrix(input_matrix: np.ndarray):
     """
     Extends a global matrix
 
     Parameters
     ----------
-    input_matrix: float
+    input_matrix: np.ndarray
         matrix to extend
 
     Returns
     -------
-    temp: float
+    temp: np.ndarray
         extended matrix
     """
     ny, nx = np.shape(input_matrix)
@@ -856,7 +872,7 @@ def extend_matrix(input_matrix):
     return temp
 
 # PURPOSE: read tide grid file
-def read_otis_grid(input_file):
+def read_otis_grid(input_file: str):
     """
     Read grid file to extract model coordinates, bathymetry, masks and indices
 
@@ -867,17 +883,17 @@ def read_otis_grid(input_file):
 
     Returns
     -------
-    x: float
+    x: np.ndarray
         x-coordinates of input grid
-    y: float
+    y: np.ndarray
         y-coordinates of input grid
-    hz: float
+    hz: np.ndarray
         model bathymetry
-    mz: int
+    mz: np.ndarray
         land/water mask
-    iob: int
+    iob: np.ndarray
         open boundary index
-    dt: float
+    dt: np.ndarray
         time step
     """
     # open the file
@@ -919,7 +935,7 @@ def read_otis_grid(input_file):
     return (x, y, hz, mz, iob, dt)
 
 # PURPOSE: read tide grid file with localized solutions
-def read_atlas_grid(input_file):
+def read_atlas_grid(input_file: str):
     """
     Read ATLAS grid file to extract model coordinates, bathymetry, masks and
     indices for both global and local solutions
@@ -931,19 +947,19 @@ def read_atlas_grid(input_file):
 
     Returns
     -------
-    x: float
+    x: np.ndarray
         x-coordinates of input ATLAS grid
-    y: float
+    y: np.ndarray
         y-coordinates of input ATLAS grid
-    hz: float
+    hz: np.ndarray
         model bathymetry
-    mz: int
+    mz: np.ndarray
         land/water mask
-    iob: int
+    iob: np.ndarray
         open boundary index
     dt: float
         time step
-    pmask: int
+    pmask: np.ndarray
         global mask
     local: dict
         dictionary of local tidal solutions for grid variables
@@ -1020,7 +1036,7 @@ def read_atlas_grid(input_file):
     return (x, y, hz, mz, iob, dt, pmask, local)
 
 # PURPOSE: read grid file
-def read_netcdf_grid(input_file):
+def read_netcdf_grid(input_file: str):
     """
     Read netCDF4 grid file to extract model coordinates, bathymetry,
     masks and flexure scaling factors
@@ -1032,15 +1048,15 @@ def read_netcdf_grid(input_file):
 
     Returns
     -------
-    x: float
+    x: np.ndarray
         x-coordinates of input grid
-    y: float
+    y: np.ndarray
         y-coordinates of input grid
-    hz: float
+    hz: np.ndarray
         model bathymetry
-    mz: int
+    mz: np.ndarray
         land/water mask
-    sf: float
+    sf: np.ndarray
         scaling factor for applying ice flexure
     """
     # read the netcdf format tide grid file
@@ -1063,7 +1079,10 @@ def read_netcdf_grid(input_file):
     return (x, y, hz, mz, sf)
 
 # PURPOSE: read list of constituents from an elevation or transport file
-def read_constituents(input_file, grid='OTIS'):
+def read_constituents(
+        input_file: str,
+        grid: str = 'OTIS'
+    ):
     """
     Read the list of constituents from an elevation or transport file
 
@@ -1106,7 +1125,10 @@ def read_constituents(input_file, grid='OTIS'):
 
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
-def read_otis_elevation(input_file,ic):
+def read_otis_elevation(
+        input_file: str,
+        ic: int
+    ):
     """
     Read elevation file to extract real and imaginary components for constituent
 
@@ -1119,7 +1141,7 @@ def read_otis_elevation(input_file,ic):
 
     Returns
     -------
-    h: float
+    h: np.ndarray
         tidal elevation
     """
     # open the file
@@ -1150,7 +1172,11 @@ def read_otis_elevation(input_file,ic):
 
 # PURPOSE: read elevation file with localized solutions to extract real and
 # imaginary components for constituent
-def read_atlas_elevation(input_file, ic, constituent):
+def read_atlas_elevation(
+        input_file: str,
+        ic: int,
+        constituent: str
+    ):
     """
     Read elevation file with localized solutions to extract real and imaginary
     components for constituent
@@ -1247,7 +1273,10 @@ def read_atlas_elevation(input_file, ic, constituent):
 
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
-def read_otis_transport(input_file,ic):
+def read_otis_transport(
+        input_file: str,
+        ic: int
+    ):
     """
     Read transport file to extract real and imaginary components for constituent
 
@@ -1299,7 +1328,11 @@ def read_otis_transport(input_file,ic):
 
 # PURPOSE: read transport file with localized solutions to extract real and
 # imaginary components for constituent
-def read_atlas_transport(input_file, ic, constituent):
+def read_atlas_transport(
+        input_file: str,
+        ic: int,
+        constituent: str
+    ):
     """
     Read transport file with localized solutions to extract real and imaginary
     components for constituent
@@ -1315,9 +1348,9 @@ def read_atlas_transport(input_file, ic, constituent):
 
     Returns
     -------
-    u: float
+    u: np.ndarray
         global zonal tidal transport
-    v: float
+    v: np.ndarray
         global meridional zonal transport
     local: dict
         dictionary of local tidal solutions for transport variables
@@ -1414,17 +1447,23 @@ def read_atlas_transport(input_file, ic, constituent):
     return (u, v, local)
 
 # PURPOSE: create a 2 arc-minute grid mask from mz and depth variables
-def create_atlas_mask(xi, yi, mz, local, variable=None):
+def create_atlas_mask(
+        xi: np.ndarray,
+        yi: np.ndarray,
+        mz: np.ndarray,
+        local: dict,
+        variable: str | None = None
+    ):
     """
     Creates a high-resolution grid mask from model variables
 
     Parameters
     ----------
-    xi: float
+    xi: np.ndarray
         input x-coordinates of global tide model
-    yi: float
+    yi: np.ndarray
         input y-coordinates of global tide model
-    mz: int
+    mz: np.ndarray
         global land/water mask
     local: dict
         dictionary of local tidal solutions
@@ -1438,11 +1477,11 @@ def create_atlas_mask(xi, yi, mz, local, variable=None):
 
     Returns
     -------
-    x30: float
+    x30: np.ndarray
         x-coordinates of high-resolution tide model
-    y30: float
+    y30: np.ndarray
         y-coordinates of high-resolution tide model
-    m30: int
+    m30: np.ndarray
         high-resolution land/water mask
     """
     # create 2 arc-minute grid dimensions
@@ -1482,29 +1521,34 @@ def create_atlas_mask(xi, yi, mz, local, variable=None):
     return m30
 
 # PURPOSE: resample global solution to higher-resolution
-def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
+def interpolate_atlas_model(
+        xi: np.ndarray,
+        yi: np.ndarray,
+        zi: np.ndarray,
+        spacing: float = 1.0/30.0
+    ):
     """
     Interpolates global ATLAS tidal solutions into a
     higher-resolution sampling
 
     Parameters
     ----------
-    xi: float
+    xi: np.ndarray
         input x-coordinates of global tide model
-    yi: float
+    yi: np.ndarray
         input y-coordinates of global tide model
-    zi: float
+    zi: np.ndarray
         global tide model data
     spacing: float
         output grid spacing
 
     Returns
     -------
-    xs: float
+    xs: np.ndarray
         x-coordinates of high-resolution tide model
-    ys: float
+    ys: np.ndarray
         y-coordinates of high-resolution tide model
-    zs: float
+    zs: np.ndarray
         high-resolution tidal solution for variable
     """
     # create resampled grid dimensions
@@ -1526,20 +1570,27 @@ def interpolate_atlas_model(xi, yi, zi, spacing=1.0/30.0):
     return (xs, ys, zs)
 
 # PURPOSE: combines global and local atlas solutions
-def combine_atlas_model(xi, yi, zi, pmask, local, variable=None):
+def combine_atlas_model(
+        xi: np.ndarray,
+        yi: np.ndarray,
+        zi: np.ndarray,
+        pmask: np.ndarray,
+        local: dict,
+        variable: str | None = None
+    ):
     """
     Combines global and local ATLAS tidal solutions into a single
     high-resolution solution
 
     Parameters
     ----------
-    xi: float
+    xi: np.ndarray
         input x-coordinates of global tide model
-    yi: float
+    yi: np.ndarray
         input y-coordinates of global tide model
-    zi: float
+    zi: np.ndarray
         global tide model data
-    pmask: int
+    pmask: np.ndarray
         global mask
     local: dict
         dictionary of local tidal solutions
@@ -1553,11 +1604,11 @@ def combine_atlas_model(xi, yi, zi, pmask, local, variable=None):
 
     Returns
     -------
-    x30: float
+    x30: np.ndarray
         x-coordinates of high-resolution tide model
-    y30: float
+    y30: np.ndarray
         y-coordinates of high-resolution tide model
-    z30: float
+    z30: np.ndarray
         combined high-resolution tidal solution for variable
     """
     # create 2 arc-minute grid dimensions
@@ -1590,7 +1641,11 @@ def combine_atlas_model(xi, yi, zi, pmask, local, variable=None):
 
 # PURPOSE: read netCDF4 file to extract real and imaginary components for
 # constituent
-def read_netcdf_file(input_file, ic, variable=None):
+def read_netcdf_file(
+        input_file: str,
+        ic: int,
+        variable: str | None = None
+    ):
     """
     Read netCDF4 file to extract real and imaginary components for constituent
 
@@ -1638,7 +1693,15 @@ def read_netcdf_file(input_file, ic, variable=None):
     return hc
 
 # PURPOSE: output grid file in OTIS format
-def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
+def output_otis_grid(
+        FILE: str,
+        xlim: np.ndarray | list,
+        ylim: np.ndarray | list,
+        hz: np.ndarray,
+        mz: np.ndarray,
+        iob: np.ndarray,
+        dt: float
+    ):
     """
     Writes OTIS-format grid files
 
@@ -1646,15 +1709,15 @@ def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
     ----------
     FILE: str
         output OTIS grid file name
-    xlim: float
+    xlim: np.ndarray
         x-coordinate grid-cell edges of output grid
-    ylim: float
+    ylim: np.ndarray
         y-coordinate grid-cell edges of output grid
-    hz:float
+    hz: np.ndarray
         bathymetry
-    mz: int
+    mz: np.ndarray
         land/water mask
-    iob: int
+    iob: np.ndarray
         open boundary index
     dt: float
         time step
@@ -1696,7 +1759,13 @@ def output_otis_grid(FILE, xlim, ylim, hz, mz, iob, dt):
     fid.close()
 
 # PURPOSE: output elevation file in OTIS format
-def output_otis_elevation(FILE, h, xlim, ylim, constituents):
+def output_otis_elevation(
+        FILE: str,
+        h: np.ndarray,
+        xlim: np.ndarray | list,
+        ylim: np.ndarray | list,
+        constituents: list
+    ):
     """
     Writes OTIS-format elevation files
 
@@ -1704,11 +1773,11 @@ def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     ----------
     FILE: str
         output OTIS elevation file name
-    h: complex
+    h: np.ndarray
         Eulerian form of tidal height oscillation
-    xlim: float
+    xlim: np.ndarray
         x-coordinate grid-cell edges of output grid
-    ylim: float
+    ylim: np.ndarray
         y-coordinate grid-cell edges of output grid
     constituents: list
         tidal constituent IDs
@@ -1740,7 +1809,14 @@ def output_otis_elevation(FILE, h, xlim, ylim, constituents):
     fid.close()
 
 # PURPOSE: output transport file in OTIS format
-def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
+def output_otis_transport(
+        FILE: str,
+        u: np.ndarray,
+        v: np.ndarray,
+        xlim: np.ndarray | list,
+        ylim: np.ndarray | list,
+        constituents: list
+    ):
     """
     Writes OTIS-format transport files
 
@@ -1789,7 +1865,7 @@ def output_otis_transport(FILE, u, v, xlim, ylim, constituents):
 
 # For a rectangular bathymetry grid:
 # construct masks for zeta, u and v nodes on a C-grid
-def Muv(hz):
+def Muv(hz: np.ndarray):
     """
     Construct masks for zeta, u and v nodes on a C-grid
     """
@@ -1811,7 +1887,7 @@ def Muv(hz):
     return (mu, mv, mz)
 
 # PURPOSE: Interpolate bathymetry to zeta, u and v nodes on a C-grid
-def Huv(hz):
+def Huv(hz: np.ndarray):
     """
     Interpolate bathymetry to zeta, u and v nodes on a C-grid
     """

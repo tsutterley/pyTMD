@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (03/2023)
 
 Gravitational and ellipsoidal parameters
 
@@ -37,6 +37,7 @@ REFERENCE:
         https://iers-conventions.obspm.fr/content/tn36.pdf
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing
     Updated 01/2023: include main ellipsoid attributes in docstring
     Written 12/2022
 """
@@ -89,7 +90,7 @@ class constants(object):
         Geocentric gravitational constant
     """
     np.seterr(invalid='ignore')
-    def __init__(self, ellipsoid='WGS84', units='MKS'):
+    def __init__(self, ellipsoid: str = 'WGS84', units: str = 'MKS'):
         # validate ellipsoid and units
         assert ellipsoid in _ellipsoids
         assert units in _units
@@ -188,47 +189,49 @@ class constants(object):
     # mean radius of the Earth having the same volume
     # (4pi/3)R^3 = (4pi/3)(a^2)b = (4pi/3)(a^3)(1 - f)
     @property
-    def rad_e(self):
+    def rad_e(self) -> float:
         """Average radius of the Earth with same volume as ellipsoid
         """
         return self.a_axis*(1.0 - self.flat)**(1.0/3.0)
 
     # semiminor axis of the ellipsoid
     @property
-    def b_axis(self):
+    def b_axis(self) -> float:
         """Semi-minor axis of the ellipsoid
         """
         return (1.0 - self.flat)*self.a_axis
 
     # Ratio between ellipsoidal axes
     @property
-    def ratio(self):
+    def ratio(self) -> float:
         """Ratio between ellipsoidal axes
         """
         return (1.0 - self.flat)
 
     # Polar radius of curvature
     @property
-    def rad_p(self):
+    def rad_p(self) -> float:
+        """Polar radius of curvature
+        """
         return self.a_axis/(1.0 - self.flat)
 
     # Linear eccentricity
     @property
-    def ecc(self):
+    def ecc(self) -> float:
         """Linear eccentricity
         """
         return np.sqrt((2.0*self.flat - self.flat**2)*self.a_axis**2)
 
     # first numerical eccentricity
     @property
-    def ecc1(self):
+    def ecc1(self) -> float:
         """First numerical eccentricity
         """
         return self.ecc/self.a_axis
 
     # second numerical eccentricity
     @property
-    def ecc2(self):
+    def ecc2(self) -> float:
         """Second numerical eccentricity
         """
         return self.ecc/self.b_axis
@@ -236,7 +239,7 @@ class constants(object):
     # m parameter [omega^2*a^2*b/(GM)]
     # p. 70, Eqn.(2-137)
     @property
-    def m(self):
+    def m(self) -> float:
         """m Parameter
         """
         return self.omega**2*((1 - self.flat)*self.a_axis**3)/self.GM
@@ -244,7 +247,7 @@ class constants(object):
     # flattening f2 component
     # p. 80, Eqn.(2-200)
     @property
-    def f2(self):
+    def f2(self) -> float:
         """f2 component
         """
         return -self.flat + (5.0/2.0)*self.m + (1.0/2.0)*self.flat**2.0 - \
@@ -253,7 +256,7 @@ class constants(object):
     # flattening f4 component
     # p. 80, Eqn.(2-200)
     @property
-    def f4(self):
+    def f4(self) -> float:
         """f4 component
         """
         return -(1.0/2.0)*self.flat**2.0 + (5.0/2.0)*self.flat*self.m
@@ -261,7 +264,7 @@ class constants(object):
     # q
     # p. 67, Eqn.(2-113)
     @property
-    def q(self):
+    def q(self) -> float:
         """q Parameter
         """
         return 0.5*((1.0 + 3.0/(self.ecc2**2))*np.arctan(self.ecc2)-3.0/self.ecc2)
@@ -269,7 +272,7 @@ class constants(object):
     # q_0
     # p. 67, Eqn.(2-113)
     @property
-    def q0(self):
+    def q0(self) -> float:
         """q\ :sub:`0` Parameter
         """
         return 3*(1.0 + 1.0/(self.ecc2**2)) * \
@@ -277,7 +280,7 @@ class constants(object):
 
     # J_2 p. 75 Eqn.(2-167), p. 76 Eqn.(2-172)
     @property
-    def J2(self):
+    def J2(self) -> float:
         """Oblateness coefficient
         """
         return (self.ecc1**2)*(1.0 - 2.0*self.m*self.ecc2/(15.0*self.q))/3.0
@@ -285,7 +288,7 @@ class constants(object):
     # Normalized C20 harmonic
     # p. 60, Eqn.(2-80)
     @property
-    def C20(self):
+    def C20(self) -> float:
         """Normalized C\ :sub:`20` harmonic
         """
         return -self.J2/np.sqrt(5.0)
@@ -293,7 +296,7 @@ class constants(object):
     # Normal gravity at the equator
     # p. 79, Eqn.(2-286)
     @property
-    def gamma_a(self):
+    def gamma_a(self) -> float:
         """Normal gravity at the equator
         """
         return (self.GM/(self.a_axis*self.b_axis)) * \
@@ -302,7 +305,7 @@ class constants(object):
     # Normal gravity at the pole
     # p. 79, Eqn.(2-286)
     @property
-    def gamma_b(self):
+    def gamma_b(self) -> float:
         """Normal gravity at the pole
         """
         return (self.GM/(self.a_axis**2)) * \
@@ -310,7 +313,7 @@ class constants(object):
 
     # Normal gravity at location
     # p. 80, Eqn.(2-199)
-    def gamma_0(self, theta):
+    def gamma_0(self, theta) -> float:
         """Normal gravity at colatitudes
 
         Parameters
@@ -322,7 +325,7 @@ class constants(object):
 
     # Normal gravity at location
     # p. 82, Eqn.(2-215)
-    def gamma_h(self, theta, height):
+    def gamma_h(self, theta, height) -> float:
         """Normal gravity at colatitudes and heights
 
         Parameters
@@ -339,7 +342,7 @@ class constants(object):
 
     # ratio between gravity at pole versus gravity at equator
     @property
-    def dk(self):
+    def dk(self) -> float:
         """Ratio between gravity at pole versus gravity at equator
         """
         return self.b_axis*self.gamma_b/(self.a_axis*self.gamma_b) - 1.0
@@ -347,7 +350,7 @@ class constants(object):
     # Normal potential at the ellipsoid
     # p. 68, Eqn.(2-123)
     @property
-    def U0(self):
+    def U0(self) -> float:
         """Normal potential at the ellipsoid
         """
         return self.GM/self.ecc*np.arctan(self.ecc2) + \
@@ -355,7 +358,7 @@ class constants(object):
 
     # Surface area of the reference ellipsoid
     @property
-    def area(self):
+    def area(self) -> float:
         """Surface area of the ellipsoid
         """
         return np.pi*self.a_axis**2.0 * \
@@ -364,14 +367,14 @@ class constants(object):
 
     # Volume of the reference ellipsoid
     @property
-    def volume(self):
+    def volume(self) -> float:
         """Volume of the ellipsoid
         """
         return (4.0*np.pi/3.0)*(self.a_axis**3.0)*(1.0 - self.ecc1**2.0)**0.5
 
     # Average density
     @property
-    def rho_e(self):
+    def rho_e(self) -> float:
         """Average density
         """
         return self.GM/(self.G*self.volume)

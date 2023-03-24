@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict.py (05/2022)
+predict.py (03/2023)
 Predict tide values using harmonic constants
 
 REFERENCES:
@@ -17,6 +17,7 @@ PROGRAM DEPENDENCIES:
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: merged prediction functions into a single module
     Updated 05/2022: added ESR netCDF4 formats to list of model types
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -30,32 +31,39 @@ UPDATE HISTORY:
     Updated 07/2018: added option to use GSFC GOT nodal corrections
     Updated 09/2017: Rewritten in Python
 """
+from __future__ import annotations
+
 import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
 # PURPOSE: Predict tides at single times
-def map(t, hc, constituents, deltat=0.0, corrections='OTIS'):
+def map(t: float | np.ndarray,
+        hc: np.ndarray,
+        constituents: list | np.ndarray,
+        deltat: float | np.ndarray = 0.0,
+        corrections: str = 'OTIS'
+    ):
     """
     Predict tides at a single time using harmonic constants
 
     Parameters
     ----------
-    t: float
+    t: float or np.ndarray
         days relative to 1992-01-01T00:00:00
-    hc: complex
+    hc: np.ndarray
         harmonic constant vector
-    constituents: list
+    constituents: list or np.ndarray
         tidal constituent IDs
-    deltat: float, default 0.0
+    deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
-    ht: float
+    ht: np.ndarray
         tide values reconstructed using the nodal corrections
 
     References
@@ -80,7 +88,7 @@ def map(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     for k,c in enumerate(constituents):
         if corrections in ('OTIS','ATLAS','ESR','netcdf'):
             # load parameters for each constituent
-            amp,ph,omega,alpha,species = load_constituent(c)
+            amp, ph, omega, alpha, species = load_constituent(c)
             # add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[0,k]
         elif corrections in ('GOT','FES'):
@@ -93,26 +101,31 @@ def map(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     return np.squeeze(ht)
 
 # PURPOSE: Predict tides at drift bouys or altimetry points
-def drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
+def drift(t: float | np.ndarray,
+        hc: np.ndarray,
+        constituents: list | np.ndarray,
+        deltat: float | np.ndarray = 0.0,
+        corrections: str = 'OTIS'
+    ):
     """
     Predict tides at multiple times and locations using harmonic constants
 
     Parameters
     ----------
-    t: float
+    t: float or np.ndarray
         days relative to 1992-01-01T00:00:00
-    hc: complex
+    hc: np.ndarray
         harmonic constant vector
-    constituents: list
+    constituents: list or np.ndarray
         tidal constituent IDs
-    deltat: float, default 0.0
+    deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
-    ht: float
+    ht: np.ndarray
         tidal time series reconstructed using the nodal corrections
 
     References
@@ -149,26 +162,31 @@ def drift(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     return ht
 
 # PURPOSE: Predict a tidal time series at a location
-def time_series(t, hc, constituents, deltat=0.0, corrections='OTIS'):
+def time_series(t: float | np.ndarray,
+        hc: np.ndarray,
+        constituents: list | np.ndarray,
+        deltat: float | np.ndarray = 0.0,
+        corrections: str = 'OTIS'
+    ):
     """
     Predict tidal time series at a single location using harmonic constants
 
     Parameters
     ----------
-    t: float
+    t: float or np.ndarray
         days relative to 1992-01-01T00:00:00
-    hc: complex
+    hc: np.ndarray
         harmonic constant vector
-    constituents: list
+    constituents: list or np.ndarray
         tidal constituent IDs
-    deltat: float, default 0.0
+    deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
-    corrections: str, default ''
+    corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
-    ht: float
+    ht: np.ndarray
         tidal time series reconstructed using the nodal corrections
 
     References
@@ -192,7 +210,7 @@ def time_series(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     for k,c in enumerate(constituents):
         if corrections in ('OTIS','ATLAS','ESR','netcdf'):
             # load parameters for each constituent
-            amp,ph,omega,alpha,species = load_constituent(c)
+            amp, ph, omega, alpha, species = load_constituent(c)
             # add component for constituent to output tidal time series
             th = omega*t*86400.0 + ph + pu[:,k]
         elif corrections in ('GOT','FES'):
@@ -205,27 +223,32 @@ def time_series(t, hc, constituents, deltat=0.0, corrections='OTIS'):
     return ht
 
 # PURPOSE: infer the minor corrections from the major constituents
-def infer_minor(t, zmajor, constituents, **kwargs):
+def infer_minor(
+        t: float | np.ndarray,
+        zmajor: np.ndarray,
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
     """
     Calculate the tidal corrections for minor constituents inferred using
     major constituents
 
     Parameters
     ----------
-    t: float
+    t: float or np.ndarray
         days relative to 1992-01-01T00:00:00
-    zmajor: complex
+    zmajor: np.ndarray
         Complex HC for given constituents/points
     constituents: list
         tidal constituent IDs
-    deltat: float, default 0.0
+    deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
-    dh: float
+    dh: np.ndarray
         Height from minor constituents
 
     References
@@ -436,21 +459,21 @@ def infer_minor(t, zmajor, constituents, **kwargs):
     return dh
 
 # PURPOSE: estimate long-period equilibrium tides
-def equilibrium_tide(t, lat):
+def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     """
     Compute the long-period equilibrium tides the summation of fifteen
     tidal spectral lines from Cartwright-Tayler-Edden tables
 
     Parameters
     ----------
-    t: float
+    t: np.ndarray
         time (days relative to January 1, 1992)
-    lat: float
+    lat: np.ndarray
         latitudes (degrees)
 
     Returns
     -------
-    lpet: float
+    lpet: np.ndarray
         long-period equilibrium tide in meters
 
     References

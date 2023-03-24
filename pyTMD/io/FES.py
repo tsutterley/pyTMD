@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
         new functions to output FES formatted netCDF4 files
@@ -84,6 +85,8 @@ UPDATE HISTORY:
     Updated 08/2020: replaced griddata with scipy regular grid interpolators
     Written 07/2020
 """
+from __future__ import division, annotations
+
 import os
 import copy
 import gzip
@@ -106,7 +109,12 @@ except (ImportError, ModuleNotFoundError) as exc:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
-def extract_constants(ilon, ilat, model_files=None, **kwargs):
+def extract_constants(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        model_files: str | list | None = None,
+        **kwargs
+    ):
     """
     Reads files for a FES ascii or netCDF4 tidal model
 
@@ -116,9 +124,9 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude to interpolate
-    ilat: float
+    ilat: np.ndarray
         latitude to interpolate
     model_files: list or NoneType, default None
         list of model files for each constituent
@@ -155,9 +163,9 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
 
     Returns
     -------
-    amplitude: float
+    amplitude: np.ndarray
         amplitudes of tidal constituents
-    phase: float
+    phase: np.ndarray
         phases of tidal constituents
     """
     # set default keyword arguments
@@ -180,7 +188,7 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
             kwargs[new] = copy.copy(kwargs[old])
 
     # raise warning if model files are entered as a string
-    if isinstance(model_files,str):
+    if isinstance(model_files, str):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -290,7 +298,10 @@ def extract_constants(ilon, ilat, model_files=None, **kwargs):
     return (amplitude, phase)
 
 # PURPOSE: read harmonic constants from tide models
-def read_constants(model_files=None, **kwargs):
+def read_constants(
+        model_files: str | list | None = None,
+        **kwargs
+    ):
     """
     Reads files for a FES ascii or netCDF4 tidal model
 
@@ -326,7 +337,7 @@ def read_constants(model_files=None, **kwargs):
     kwargs.setdefault('compressed', False)
 
     # raise warning if model files are entered as a string
-    if isinstance(model_files,str):
+    if isinstance(model_files, str):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -360,7 +371,12 @@ def read_constants(model_files=None, **kwargs):
     return constituents
 
 # PURPOSE: interpolate constants from tide models to input coordinates
-def interpolate_constants(ilon, ilat, constituents, **kwargs):
+def interpolate_constants(
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        constituents,
+        **kwargs
+    ):
     """
     Interpolate constants from FES tidal models to input coordinates
 
@@ -368,9 +384,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
 
     Parameters
     ----------
-    ilon: float
+    ilon: np.ndarray
         longitude to interpolate
-    ilat: float
+    ilat: np.ndarray
         latitude to interpolate
     constituents: obj
         Tide model constituents (complex form)
@@ -391,9 +407,9 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
 
     Returns
     -------
-    amplitude: float
+    amplitude: np.ndarray
         amplitudes of tidal constituents
-    phase: float
+    phase: np.ndarray
         phases of tidal constituents
     """
     # set default keyword arguments
@@ -506,20 +522,20 @@ def interpolate_constants(ilon, ilat, constituents, **kwargs):
     return (amplitude, phase)
 
 # PURPOSE: Extend a longitude array
-def extend_array(input_array, step_size):
+def extend_array(input_array: np.ndarray, step_size: float):
     """
     Extends a longitude array
 
     Parameters
     ----------
-    input_array: float
+    input_array: np.ndarray
         array to extend
     step_size: float
         step size between elements of array
 
     Returns
     -------
-    temp: float
+    temp: np.ndarray
         extended array
     """
     n = len(input_array)
@@ -531,18 +547,18 @@ def extend_array(input_array, step_size):
     return temp
 
 # PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix):
+def extend_matrix(input_matrix: np.ndarray):
     """
     Extends a global matrix
 
     Parameters
     ----------
-    input_matrix: float
+    input_matrix: np.ndarray
         matrix to extend
 
     Returns
     -------
-    temp: float
+    temp: np.ndarray
         extended matrix
     """
     ny, nx = np.shape(input_matrix)
@@ -553,7 +569,7 @@ def extend_matrix(input_matrix):
     return temp
 
 # PURPOSE: read FES ascii tide model grid files
-def read_ascii_file(input_file, **kwargs):
+def read_ascii_file(input_file: str, **kwargs):
     """
     Read FES (Finite Element Solution) tide model file
 
@@ -629,7 +645,10 @@ def read_ascii_file(input_file, **kwargs):
     return (hc, lon, lat)
 
 # PURPOSE: read FES netCDF4 tide model files
-def read_netcdf_file(input_file, **kwargs):
+def read_netcdf_file(
+        input_file: str,
+        **kwargs
+    ):
     """
     Read FES (Finite Element Solution) tide model netCDF4 file
 
@@ -650,11 +669,11 @@ def read_netcdf_file(input_file, **kwargs):
 
     Returns
     -------
-    hc: complex
+    hc: np.ndarray
         complex form of tidal constituent oscillation
-    lon: float
+    lon: np.ndarray
         longitude of tidal model
-    lat: float
+    lat: np.ndarray
         latitude of tidal model
     """
     # set default keyword arguments
@@ -701,7 +720,14 @@ def read_netcdf_file(input_file, **kwargs):
     return (hc, lon, lat)
 
 # PURPOSE: output tidal constituent file in FES2014 format
-def output_netcdf_file(FILE, hc, lon, lat, constituent, **kwargs):
+def output_netcdf_file(
+        FILE: str,
+        hc: np.ndarray,
+        lon: np.ndarray,
+        lat: np.ndarray,
+        constituent: str,
+        **kwargs
+    ):
     """
     Writes tidal constituent files in FES2014 netCDF format
 
@@ -709,11 +735,11 @@ def output_netcdf_file(FILE, hc, lon, lat, constituent, **kwargs):
     ----------
     FILE: str
         output FES model file name
-    hc: complex
+    hc: np.ndarray
         Eulerian form of tidal constituent
-    lon: float
+    lon: np.ndarray
         longitude coordinates
-    lat: float
+    lat: np.ndarray
         latitude coordinates
     constituent: str
         tidal constituent ID

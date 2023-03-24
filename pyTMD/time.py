@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (03/2023)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: added interpolation for delta time (TT - UT1)
         output variables for some standard epochs used within tide programs
     Updated 11/2022: use IERS https server as default for Bulletin-A files
@@ -39,6 +40,8 @@ UPDATE HISTORY:
     Updated 08/2020: added NASA Earthdata routines for downloading from CDDIS
     Written 07/2020
 """
+from __future__ import annotations
+
 import os
 import re
 import copy
@@ -75,7 +78,7 @@ _j2000_epoch = (2000, 1, 1, 12, 0, 0)
 _atlas_sdp_epoch = (2018, 1, 1, 0, 0, 0)
 
 # PURPOSE: parse a date string into epoch and units scale
-def parse_date_string(date_string):
+def parse_date_string(date_string: str):
     """
     parse a date string of the form
 
@@ -110,7 +113,7 @@ def parse_date_string(date_string):
     return (datetime_to_list(epoch), _to_sec[units])
 
 # PURPOSE: split a date string into units and epoch
-def split_date_string(date_string):
+def split_date_string(date_string: str):
     """
     split a date string into units and epoch
 
@@ -149,13 +152,13 @@ _dpm_leap = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 _dpm_stnd = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 # PURPOSE: gets the number of days per month for a given year
-def calendar_days(year):
+def calendar_days(year: int | float | np.ndarray) -> np.ndarray:
     """
     Calculates the number of days per month for a given year
 
     Parameters
     ----------
-    year: int or float
+    year: int, float or np.ndarray
         calendar year
 
     Returns
@@ -201,13 +204,18 @@ def convert_datetime(date, epoch=(1970, 1, 1, 0, 0, 0)):
     return (date - np.datetime64(epoch)) / np.timedelta64(1, 's')
 
 # PURPOSE: convert times from seconds since epoch1 to time since epoch2
-def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
+def convert_delta_time(
+        delta_time: np.ndarray,
+        epoch1: tuple | list | None = None,
+        epoch2: tuple | list | None = None,
+        scale: float = 1.0
+    ):
     """
     Convert delta time from seconds since ``epoch1`` to time since ``epoch2``
 
     Parameters
     ----------
-    delta_time: float
+    delta_time: np.ndarray
         seconds since epoch1
     epoch1: tuple or NoneType, default None
         epoch for input delta_time
@@ -224,33 +232,41 @@ def convert_delta_time(delta_time, epoch1=None, epoch2=None, scale=1.0):
 
 # PURPOSE: calculate the delta time from calendar date
 # http://scienceworld.wolfram.com/astronomy/JulianDate.html
-def convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0,
-    epoch=(1992, 1, 1, 0, 0, 0), scale=1.0):
+def convert_calendar_dates(
+        year: np.ndarray,
+        month: np.ndarray,
+        day: np.ndarray,
+        hour: np.ndarray | float = 0.0,
+        minute: np.ndarray | float = 0.0,
+        second: np.ndarray | float = 0.0,
+        epoch: tuple | list = _tide_epoch,
+        scale: float = 1.0
+    ) -> np.ndarray:
     """
     Calculate the time in time units since ``epoch`` from calendar dates
 
     Parameters
     ----------
-    year: float
+    year: np.ndarray
         calendar year
-    month: float
+    month: np.ndarray
         month of the year
-    day: float
+    day: np.ndarray
         day of the month
-    hour: float, default 0.0
+    hour: np.ndarray or float, default 0.0
         hour of the day
-    minute: float, default 0.0
+    minute: np.ndarray or float, default 0.0
         minute of the hour
-    second: float, default 0.0
+    second: np.ndarray or float, default 0.0
         second of the minute
-    epoch: tuple, default pyTMD.time._tide_epoch
+    epoch: tuple or list, default pyTMD.time._tide_epoch
         epoch for output delta_time
     scale: float, default 1.0
         scaling factor for converting time to output units
 
     Returns
     -------
-    delta_time: float
+    delta_time: np.ndarray
         days since epoch
     """
     # calculate date in Modified Julian Days (MJD) from calendar date
@@ -266,32 +282,39 @@ def convert_calendar_dates(year, month, day, hour=0.0, minute=0.0, second=0.0,
     return scale*np.array(MJD - delta_time_epochs/86400.0, dtype=np.float64)
 
 # PURPOSE: Converts from calendar dates into decimal years
-def convert_calendar_decimal(year, month, day=None, hour=None, minute=None,
-    second=None, DofY=None):
+def convert_calendar_decimal(
+        year: np.ndarray,
+        month: np.ndarray,
+        day: np.ndarray,
+        hour: np.ndarray | float | None = None,
+        minute: np.ndarray | float | None = None,
+        second: np.ndarray | float | None = None,
+        DofY: np.ndarray | float | None = None,
+    ) -> np.ndarray:
     """
     Converts from calendar date into decimal years taking into
     account leap years
 
     Parameters
     ----------
-    year: float
+    year: np.ndarray
         calendar year
-    month: float
+    month: np.ndarray
         calendar month
-    day: float or NoneType, default None
+    day: np.ndarray, float or NoneType, default None
         day of the month
-    hour: float or NoneType, default None
+    hour: np.ndarray, float or NoneType, default None
         hour of the day
-    minute: float or NoneType, default None
+    minute: np.ndarray, float or NoneType, default None
         minute of the hour
-    second: float or NoneType, default None
+    second: np.ndarray, float or NoneType, default None
         second of the minute
-    DofY: float or NoneType, default None
+    DofY: np.ndarray, float or NoneType, default None
         day of the year (January 1 = 1)
 
     Returns
     -------
-    t_date: float
+    t_date: np.ndarray
         date in decimal-year format
 
     References
@@ -415,13 +438,13 @@ def convert_calendar_decimal(year, month, day=None, hour=None, minute=None,
     return t_date
 
 # PURPOSE: Converts from Julian day to calendar date and time
-def convert_julian(JD, **kwargs):
+def convert_julian(JD: np.ndarray, **kwargs):
     """
     Converts from Julian day to calendar date and time
 
     Parameters
     ----------
-    JD: float
+    JD: np.ndarray
         Julian Day (days since 01-01-4713 BCE at 12:00:00)
     astype: str or NoneType, default None
         convert output to variable type
@@ -434,17 +457,17 @@ def convert_julian(JD, **kwargs):
 
     Returns
     -------
-    year: float
+    year: np.ndarray
         calendar year
-    month: float
+    month: np.ndarray
         calendar month
-    day: float
+    day: np.ndarray
         day of the month
-    hour: float
+    hour: np.ndarray
         hour of the day
-    minute: float
+    minute: np.ndarray
         minute of the hour
-    second: float
+    second: np.ndarray
         second of the minute
 
     References
@@ -528,7 +551,7 @@ def convert_julian(JD, **kwargs):
 
 # PURPOSE: calculate the difference between universal time and dynamical time
 # by interpolating a delta time file to a given date
-def interpolate_delta_time(delta_file, idays):
+def interpolate_delta_time(delta_file: str, idays: np.ndarray):
     """
     Calculates the difference between universal time (UT) and
     dynamical time (TT)
@@ -560,13 +583,16 @@ def interpolate_delta_time(delta_file, idays):
     return spl(idays)/86400.0
 
 # PURPOSE: Count number of leap seconds that have passed for each GPS time
-def count_leap_seconds(GPS_Time, truncate=True):
+def count_leap_seconds(
+        GPS_Time: np.ndarray | float,
+        truncate: bool = True
+    ):
     """
     Counts the number of leap seconds between a given GPS time and UTC
 
     Parameters
     ----------
-    GPS_Time: float
+    GPS_Time: np.ndarray or float
         seconds since January 6, 1980 at 00:00:00
     truncate: bool, default True
         Reduce list of leap seconds to positive GPS times
@@ -589,7 +615,7 @@ def count_leap_seconds(GPS_Time, truncate=True):
     return n_leaps
 
 # PURPOSE: Define GPS leap seconds
-def get_leap_seconds(truncate=True):
+def get_leap_seconds(truncate: bool = True):
     """
     Gets a list of GPS times for when leap seconds occurred
 
@@ -627,7 +653,11 @@ def get_leap_seconds(truncate=True):
         return leap_GPS.astype(np.float64)
 
 # PURPOSE: connects to servers and downloads leap second files
-def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
+def update_leap_seconds(
+        timeout: int | None = 20,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to servers to download leap-seconds.list files from NIST servers
 
@@ -640,7 +670,7 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
 
     Parameters
     ----------
-    timeout: int, default 20
+    timeout: int or None, default 20
         timeout in seconds for blocking operations
     verbose: bool, default False
         print file information about output file
@@ -676,7 +706,12 @@ def update_leap_seconds(timeout=20, verbose=False, mode=0o775):
         return
 
 # PURPOSE: Download delta time files and merge into a single
-def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
+def merge_delta_time(
+        username: str | None = None,
+        password: str | None = None,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to servers to download historic_deltat.data and deltat.data files
 
@@ -752,7 +787,7 @@ def merge_delta_time(username=None, password=None, verbose=False, mode=0o775):
     os.chmod(merged_file,mode)
 
 # PURPOSE: Append Bulletin-A file to merged delta time file
-def append_delta_time(verbose=False, mode=0o775):
+def append_delta_time(verbose: bool = False, mode: oct = 0o775):
     """
     Appends merged delta time file with values from latest Bulletin-A file
 
@@ -786,8 +821,12 @@ def append_delta_time(verbose=False, mode=0o775):
     os.chmod(merged_file,mode)
 
 # PURPOSE: connect to IERS or CDDIS server and merge Bulletin-A files
-def merge_bulletin_a_files(username=None,password=None,
-    verbose=False,mode=0o775):
+def merge_bulletin_a_files(
+        username: str | None = None,
+        password: str | None = None,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Attempt to connects to the IERS server and the CDDIS Earthdata server
     to download and merge Bulletin-A files
@@ -853,7 +892,12 @@ def merge_bulletin_a_files(username=None,password=None,
         return
 
 # PURPOSE: connects to IERS ftp servers and finds Bulletin-A files
-def iers_ftp_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
+def iers_ftp_delta_time(
+        daily_file: str,
+        timeout: int | None = 120,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to the IERS ftp server to download Bulletin-A files
 
@@ -922,7 +966,12 @@ def iers_ftp_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     os.chmod(daily_file,mode)
 
 # PURPOSE: connects to IERS http servers and finds Bulletin-A files
-def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
+def iers_delta_time(
+        daily_file: str,
+        timeout: int | None = 120,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to the IERS server to download Bulletin-A files
 
@@ -973,8 +1022,13 @@ def iers_delta_time(daily_file, timeout=120, verbose=False, mode=0o775):
     os.chmod(daily_file, mode)
 
 # PURPOSE: connects to CDDIS Earthdata https server and finds Bulletin-A files
-def cddis_delta_time(daily_file, username=None, password=None,
-    verbose=False, mode=0o775):
+def cddis_delta_time(
+        daily_file: str,
+        username: str | None = None,
+        password: str | None = None,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to the CDDIS Earthdata server to download Bulletin-A files
 
@@ -1140,7 +1194,11 @@ def read_iers_bulletin_a(fileID):
     return (Y,M,D,DELTAT)
 
 # PURPOSE: connects to servers and downloads latest Bulletin-A file
-def update_bulletin_a(timeout=20, verbose=False, mode=0o775):
+def update_bulletin_a(
+        timeout: int | None = 20,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to IERS Rapid Service/Prediction Center (RS/PC) and
     downloads latest Bulletin-A file
@@ -1153,7 +1211,7 @@ def update_bulletin_a(timeout=20, verbose=False, mode=0o775):
 
     Parameters
     ----------
-    timeout: int, default 20
+    timeout: int or NoneType, default 20
         timeout in seconds for blocking operations
     verbose: bool, default False
         print file information about output file
@@ -1176,7 +1234,14 @@ def update_bulletin_a(timeout=20, verbose=False, mode=0o775):
         return
 
 # PURPOSE: connects to servers and downloads delta time files
-def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
+def pull_deltat_file(
+        FILE: str,
+        username: str | None = None,
+        password: str | None = None,
+        timeout: int | None = 20,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
     """
     Connects to servers and downloads delta time files
 
@@ -1198,6 +1263,8 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
         NASA Earthdata username
     password: str or NoneType, default None
         NASA Earthdata password
+    timeout: int or NoneType, default 20
+        timeout in seconds for blocking operations
     verbose: bool, default False
         print file information about output file
     mode: oct, default 0o775
@@ -1214,8 +1281,12 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     # try downloading from US Naval Oceanography Portal
     HOST = ['http://maia.usno.navy.mil','ser7',FILE]
     try:
-        pyTMD.utilities.from_http(HOST,timeout=5,local=LOCAL,hash=HASH,
-            verbose=verbose,mode=mode)
+        pyTMD.utilities.from_http(HOST,
+            timeout=timeout,
+            local=LOCAL,
+            hash=HASH,
+            verbose=verbose,
+            mode=mode)
     except Exception as exc:
         logging.debug(traceback.format_exc())
         pass
@@ -1231,8 +1302,12 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     for HOST in server:
         try:
             pyTMD.utilities.check_ftp_connection(HOST[0])
-            pyTMD.utilities.from_ftp(HOST,timeout=20,local=LOCAL,hash=HASH,
-                verbose=verbose,mode=mode)
+            pyTMD.utilities.from_ftp(HOST,
+                timeout=timeout,
+                local=LOCAL,
+                hash=HASH,
+                verbose=verbose,
+                mode=mode)
         except Exception as exc:
             logging.debug(traceback.format_exc())
             pass
@@ -1243,8 +1318,14 @@ def pull_deltat_file(FILE,username=None,password=None,verbose=False,mode=0o775):
     # using NASA Earthdata credentials stored in netrc file
     HOST = ['https://cddis.nasa.gov','archive','products','iers',FILE]
     try:
-        pyTMD.utilities.from_cddis(HOST,username=username,password=password,
-            timeout=20,local=LOCAL,hash=HASH,verbose=verbose,mode=mode)
+        pyTMD.utilities.from_cddis(HOST,
+            username=username,
+            password=password,
+            timeout=timeout,
+            local=LOCAL,
+            hash=HASH,
+            verbose=verbose,
+            mode=mode)
     except Exception as exc:
         logging.debug(traceback.format_exc())
         pass

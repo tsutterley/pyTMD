@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (11/2022)
+load_nodal_corrections.py (03/2023)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -37,6 +37,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 03/2023: add basic variable typing to function inputs
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
         changed keyword arguments to camel case
@@ -52,33 +53,39 @@ UPDATE HISTORY:
     Rewritten in Matlab by Lana Erofeeva 01/2003
     Written by Richard Ray 03/1999
 """
+from __future__ import annotations
+
 import copy
 import warnings
 import numpy as np
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 
-def load_nodal_corrections(MJD, constituents, **kwargs):
+def load_nodal_corrections(
+        MJD: np.ndarray,
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
     """
     Calculates the nodal corrections for tidal constituents
 
     Parameters
     ----------
-    MJD: float
+    MJD: np.ndarray
         modified julian day of input date
     constituents: list
         tidal constituent IDs
-    deltat: float, default 0.0
+    deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
 
     Returns
     -------
-    pu: float
+    pu: np.ndarray
         nodal correction for the constituent amplitude
-    pf: float
+    pf: np.ndarray
         nodal correction for the constituent phase
-    G: float
+    G: np.ndarray
         phase correction in degrees
 
     References
