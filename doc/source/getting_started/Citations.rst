@@ -14,7 +14,14 @@ following work:
 
     T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
     "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
-    13, 1801--1817, (2019). `doi:tc-13-1801-2019 <https://doi.org/10.5194/tc-13-1801-2019>`_
+    13, 1801--1817, (2019). `doi: tc-13-1801-2019 <https://doi.org/10.5194/tc-13-1801-2019>`_
+
+
+If you have used ``pyTMD`` in your work, please consider citing our library:
+
+    T. C. Sutterley, K. Alley, K. Brunt, S. Howard, L. Padman, and M. Siegfried,
+    "pyTMD: Python-based tidal prediction software", (2017).
+    `doi: 10.5281/zenodo.7714186 <https://doi.org/10.5281/zenodo.7714186>`_
 
 Contributors
 ############
