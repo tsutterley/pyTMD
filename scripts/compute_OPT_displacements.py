@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (02/2023)
+Written by Tyler Sutterley (03/2023)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -40,6 +40,11 @@ COMMAND LINE OPTIONS:
         datetime: formatted datetime string in UTC
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
+    -c X, --convention X: IERS mean or secular pole convention
+        2003
+        2010
+        2015
+        2018
     -I X, --interpolate X: Interpolation method
         spline
         linear
@@ -79,6 +84,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 03/2023: added option for changing the IERS mean pole convention
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
@@ -166,6 +172,7 @@ def compute_OPT_displacements(input_file, output_file,
     TIME_STANDARD='UTC',
     PROJECTION='4326',
     ELLIPSOID='WGS84',
+    CONVENTION='2018',
     METHOD='spline',
     VERBOSE=False,
     MODE=0o775):
@@ -324,8 +331,9 @@ def compute_OPT_displacements(input_file, output_file,
     # pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
-    # calculate angular coordinates of mean pole at time
-    mpx,mpy,fl = pyTMD.eop.iers_mean_pole(mean_pole_file,time_decimal,'2015')
+    # calculate angular coordinates of mean/secular pole at time
+    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(mean_pole_file, time_decimal,
+        CONVENTION)
     # read IERS daily polar motion values
     EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
     # interpolate daily polar motion values to t1 using cubic splines
@@ -333,10 +341,9 @@ def compute_OPT_displacements(input_file, output_file,
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
     px = xSPL(MJD)
     py = ySPL(MJD)
-    # calculate differentials from mean pole positions
+    # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
-    print(mpx, mpy, px, py)
 
     # read ocean pole tide map from Desai (2002)
     ocean_pole_tide_file = pyTMD.utilities.get_data_path(['data',
@@ -462,6 +469,10 @@ def arguments():
     parser.add_argument('--ellipsoid','-E',
         type=str, choices=pyTMD._ellipsoids, default='WGS84',
         help='Ellipsoid for calculating load pole tide parameters')
+    # Earth orientation parameters
+    parser.add_argument('--convention','-c',
+        type=str, choices=pyTMD.eop._conventions, default='2018',
+        help='IERS mean or secular pole convention')
     # interpolation method
     parser.add_argument('--interpolate','-I',
         metavar='METHOD', type=str, default='spline',
@@ -503,6 +514,7 @@ def main():
         TIME_STANDARD=args.standard,
         PROJECTION=args.projection,
         ELLIPSOID=args.ellipsoid,
+        CONVENTION=args.convention,
         METHOD=args.interpolate,
         VERBOSE=args.verbose,
         MODE=args.mode)

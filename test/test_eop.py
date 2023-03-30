@@ -29,8 +29,8 @@ def test_update_finals(username, password):
     LOCAL = pyTMD.utilities.get_data_path(['data','finals.all'])
     assert os.access(LOCAL, os.F_OK)
 
-# PURPOSE: read mean pole values
-@pytest.mark.parametrize("EPOCH", ['2003','2010','2015'])
+# PURPOSE: read and calculate mean/secular pole values
+@pytest.mark.parametrize("EPOCH", ['2003','2010','2015','2018'])
 def test_read_EOP(EPOCH):
     # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
     delta_time = 86400.0*np.arange(0,365)

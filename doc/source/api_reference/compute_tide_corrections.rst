@@ -3,9 +3,15 @@ compute_tide_corrections
 ========================
 
 - Calculates tidal elevations for correcting elevation or imagery data
-- Can use OTIS format tidal solutions provided by Ohio State University and ESR
-- Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
-- Can use Finite Element Solution (FES) models provided by AVISO
+
+  * Can use OTIS format tidal solutions provided by Ohio State University and ESR
+  * Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
+  * Can use Finite Element Solution (FES) models provided by AVISO
+- Calculates long-period equilibrium tides (LPET) for correcting elevation or imagery data
+
+  * Uses the summation of fifteen tidal spectral lines from `Cartwright and Edden, (1973) <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+- Calculates radial pole load tides (LPT) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <http://maia.usno.navy.mil/conventions/2010officialinfo.php>`_
+- Calculates radial ocean pole load tides (OPT) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <http://maia.usno.navy.mil/conventions/2010officialinfo.php>`_
 
 Calling Sequence
 ----------------
@@ -20,4 +26,12 @@ Calling Sequence
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py
 
+.. autofunction:: pyTMD.compute_corrections
+
 .. autofunction:: pyTMD.compute_tide_corrections
+
+.. autofunction:: pyTMD.compute_LPET_corrections
+
+.. autofunction:: pyTMD.compute_LPT_corrections
+
+.. autofunction:: pyTMD.compute_OPT_corrections

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 eop.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (03/2023)
 Utilities for maintaining and calculating Earth Orientation Parameters (EOP)
 
 PYTHON DEPENDENCIES:
@@ -14,6 +14,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 03/2023: add secular pole model from IERS 2018 conventions
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -270,15 +271,18 @@ def update_finals_file(
     else:
         return
 
+# IERS mean or secular pole conventions
+_conventions = ('2003','2010','2015','2018')
 # read table of mean pole values, calculate angular coordinates at epoch
 def iers_mean_pole(
         input_file: str,
         input_epoch: np.ndarray,
-        version: str,
+        convention: str,
         **kwargs
     ):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
+    or IERS Secular Pole (2018 convention)
 
     Parameters
     ----------
@@ -287,17 +291,22 @@ def iers_mean_pole(
     input_epoch: np.ndarray
         Dates for the angular coordinates of the Conventional Mean Pole
         in decimal years
-    version: str
-        Year of the conventional model
+    convention: str
+        IERS Mean or Secular Pole Convention
+
+            - ``'2003'``
+            - ``'2010'``
+            - ``'2015'``
+            - ``'2018'``
     fill_value: float, default np.nan
         Value for invalid flags
 
     Returns
     -------
     x: np.ndarray
-        Angular coordinate x of conventional mean pole
+        Angular coordinate x of conventional mean pole or secular pole
     y: np.ndarray
-        Angular coordinate y of conventional mean pole
+        Angular coordinate y of conventional mean pole or secular pole
     flag: np.ndarray
         epoch is valid for version and version number is valid
 
@@ -310,7 +319,7 @@ def iers_mean_pole(
     # set default keyword arguments
     kwargs.setdefault('fill_value', np.nan)
     # verify IERS model version
-    assert version in ('2003','2010','2015'), "Incorrect IERS model version"
+    assert convention in _conventions, "Incorrect IERS model convention"
     # read mean pole file
     table = np.loadtxt(os.path.expanduser(input_file))
     # reduce to 1971 to end date
@@ -326,25 +335,25 @@ def iers_mean_pole(
     x = np.full_like(input_epoch, kwargs['fill_value'])
     y = np.full_like(input_epoch, kwargs['fill_value'])
     flag = np.zeros_like(input_epoch, dtype=bool)
-    for t,epoch in enumerate(input_epoch):
+    for t, epoch in enumerate(input_epoch):
         # Conventional mean pole model in IERS Conventions 2003
-        if (version == '2003') and (epoch >= 1975) and (epoch < 2004):
-            x[t] = 0.054 + 0.00083*(epoch-2000.0)
-            y[t] = 0.357 + 0.00395*(epoch-2000.0)
+        if (convention == '2003') and (epoch >= 1975) and (epoch < end_time):
+            x[t] = 0.054 + 0.00083*(epoch - 2000.0)
+            y[t] = 0.357 + 0.00395*(epoch - 2000.0)
             flag[t] = True
         # Conventional mean pole model in IERS Conventions 2010
-        elif (version == '2010') and (epoch >= 1975) and (epoch < 2011):
-            dx = epoch-2000.0
+        elif (convention == '2010') and (epoch >= 1975) and (epoch < end_time):
+            dx = epoch - 2000.0
             if (dx < 10.0):
                 x[t] = 0.055974 + 1.8243e-3*dx + 1.8413e-4*dx**2 + 7.024e-6*dx**3
-                y[t] = 0.346346 + 1.7896e-3*dx + 1.0729e-4*dx**2 + 0.908e-6*dx**3
+                y[t] = 0.346346 + 1.7896e-3*dx - 1.0729e-4*dx**2 - 0.908e-6*dx**3
             else:
                 x[t] = 0.023513 + 0.0076141*dx
                 y[t] = 0.358891 - 0.0006287*dx
             flag[t] = True
         # Conventional mean pole model in IERS Conventions 2015
         # must be below maximum valid date within file (e.g. 2015.2 for 2015)
-        elif (version == '2015') and (epoch >= 1975) and (epoch < end_time):
+        elif (convention == '2015') and (epoch >= 1975) and (epoch < end_time):
             # find epoch within mean pole table
             i = 1
             j = nrows+1
@@ -363,7 +372,13 @@ def iers_mean_pole(
                 x[t] = table[i,1] + dx*(table[i+1,1]-table[i,1])
                 y[t] = table[i,2] + dx*(table[i+1,2]-table[i,2])
             flag[t] = True
-    # return mean pole values
+        # Secular pole model in IERS Conventions 2018
+        elif (convention == '2018'):
+            # calculate secular pole
+            x[t] = 0.055 + 0.001677*(epoch - 2000.0)
+            y[t] = 0.3205 + 0.00346*(epoch - 2000.0)
+            flag[t] = True
+    # return mean/secular pole values
     return (x, y, flag)
 
 # PURPOSE: read daily earth orientation parameters (EOP) file from IERS

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (02/2023)
+Written by Tyler Sutterley (03/2023)
 Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -38,6 +38,11 @@ COMMAND LINE OPTIONS:
         LORAN: Long Range Navigator Time
         TAI: International Atomic Time
         datetime: formatted datetime string in UTC
+    -c X, --convention X: IERS mean or secular pole convention
+        2003
+        2010
+        2015
+        2018
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -V, --verbose: Verbose output of processing run
@@ -61,12 +66,14 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    time.py: utilities for calculating time operations
-    spatial.py: utilities for reading and writing spatial data
-    utilities.py: download and management utilities for syncing files
+    constants.py: gravitational and ellipsoidal parameters
     eop.py: utilities for calculating Earth Orientation Parameters (EOP)
+    spatial: utilities for reading, writing and operating on spatial data
+    time.py: utilities for calculating time operations
+    utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 03/2023: added option for changing the IERS mean pole convention
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
@@ -149,6 +156,7 @@ def compute_LPT_displacements(input_file, output_file,
     TIME_STANDARD='UTC',
     PROJECTION='4326',
     ELLIPSOID='WGS84',
+    CONVENTION='2018',
     VERBOSE=False,
     MODE=0o775):
 
@@ -306,8 +314,9 @@ def compute_LPT_displacements(input_file, output_file,
     # pole tide files (mean and daily)
     mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
-    # calculate angular coordinates of mean pole at time
-    mpx,mpy,fl = pyTMD.eop.iers_mean_pole(mean_pole_file,time_decimal,'2015')
+    # calculate angular coordinates of mean/secular pole at time
+    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(mean_pole_file, time_decimal,
+        CONVENTION)
     # read IERS daily polar motion values
     EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
     # interpolate daily polar motion values to MJD using cubic splines
@@ -315,7 +324,7 @@ def compute_LPT_displacements(input_file, output_file,
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
     px = xSPL(MJD)
     py = ySPL(MJD)
-    # calculate differentials from mean pole positions
+    # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
 
@@ -420,6 +429,10 @@ def arguments():
     parser.add_argument('--ellipsoid','-E',
         type=str, choices=pyTMD._ellipsoids, default='WGS84',
         help='Ellipsoid for calculating load pole tide parameters')
+    # Earth orientation parameters
+    parser.add_argument('--convention','-c',
+        type=str, choices=pyTMD.eop._conventions, default='2018',
+        help='IERS mean or secular pole convention')
     # verbose output of processing run
     # print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -456,6 +469,7 @@ def main():
         TIME_STANDARD=args.standard,
         PROJECTION=args.projection,
         ELLIPSOID=args.ellipsoid,
+        CONVENTION=args.convention,
         VERBOSE=args.verbose,
         MODE=args.mode)
 
