@@ -38,6 +38,7 @@ REFERENCE:
 
 UPDATE HISTORY:
     Updated 03/2023: add basic variable typing
+        set ellipsoid name and output units as constants attributes
     Updated 01/2023: include main ellipsoid attributes in docstring
     Written 12/2022
 """
@@ -91,24 +92,27 @@ class constants(object):
     """
     np.seterr(invalid='ignore')
     def __init__(self, ellipsoid: str = 'WGS84', units: str = 'MKS'):
+        # set ellipsoid name and units
+        self.name = ellipsoid.upper()
+        self.units = units.upper()
         # validate ellipsoid and units
-        assert ellipsoid in _ellipsoids
-        assert units in _units
+        assert self.name in _ellipsoids
+        assert self.units in _units
 
         # set parameters for ellipsoid
-        if ellipsoid.upper() in ('CLK66','NAD27'):
+        if self.name in ('CLK66','NAD27'):
             # Clarke 1866
             self.a_axis = 6378206.4# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/294.9786982# flattening of the ellipsoid
 
-        elif ellipsoid.upper() in ('GRS80','NAD83'):
+        elif self.name in ('GRS80','NAD83'):
             # Geodetic Reference System 1980
             # North American Datum 1983
             self.a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.26# flattening of the ellipsoid
             self.GM = 3.986005e14# [m^3/s^2] Geocentric Gravitational Constant
 
-        elif (ellipsoid.upper() == 'GRS67'):
+        elif (self.name == 'GRS67'):
             # Geodetic Reference System 1967
             # International Astronomical Union (IAU ellipsoid)
             self.a_axis = 6378160.0# [m] semimajor axis of the ellipsoid
@@ -116,64 +120,64 @@ class constants(object):
             self.GM = 3.98603e14# [m^3/s^2] Geocentric Gravitational Constant
             self.omega = 7292115.1467e-11# angular velocity of the Earth [rad/s]
 
-        elif (ellipsoid.upper() == 'WGS72'):
+        elif (self.name == 'WGS72'):
             # World Geodetic System 1972
             self.a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.26# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'WGS84'):
+        elif (self.name == 'WGS84'):
             # World Geodetic System 1984
             self.a_axis = 6378137.0# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.257223563# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'ATS77'):
+        elif (self.name == 'ATS77'):
             # Quasi-earth centred ellipsoid for ATS77
             self.a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.257# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'KRASS'):
+        elif (self.name == 'KRASS'):
             # Krassovsky (USSR)
             self.a_axis = 6378245.0# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.3# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'INTER'):
+        elif (self.name == 'INTER'):
             # International
             self.a_axis = 6378388.0# [m] semimajor axis of the ellipsoid
             self.flat = 1/297.0# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'MAIRY'):
+        elif (self.name == 'MAIRY'):
             # Modified Airy (Ireland 1965/1975)
             self.a_axis = 6377340.189# [m] semimajor axis of the ellipsoid
             self.flat = 1/299.3249646# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'HGH80'):
+        elif (self.name == 'HGH80'):
             # Hughes 1980 Ellipsoid used in some NSIDC data
             self.a_axis = 6378273.0# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.279411123064# flattening of the ellipsoid
 
-        elif (ellipsoid.upper() == 'TOPEX'):
+        elif (self.name == 'TOPEX'):
             # TOPEX/POSEIDON ellipsoid
             self.a_axis = 6378136.3# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.257# flattening of the ellipsoid
             self.GM = 3.986004415e14# [m^3/s^2]
 
-        elif (ellipsoid.upper() == 'EGM96'):
+        elif (self.name == 'EGM96'):
             # EGM 1996 gravity model
             self.a_axis = 6378136.3# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.256415099# flattening of the ellipsoid
             self.GM = 3.986004415e14# [m^3/s^2]
 
-        elif (ellipsoid.upper() == 'IERS'):
+        elif (self.name == 'IERS'):
             # IERS Numerical Standards
             self.a_axis = 6378136.6# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.25642# flattening of the ellipsoid
 
         # set default parameters if not listed as part of ellipsoid
-        if ellipsoid.upper() not in ('GRS80','GRS67','NAD83','TOPEX','EGM96'):
+        if self.name not in ('GRS80','GRS67','NAD83','TOPEX','EGM96'):
             # for ellipsoids not listing the Geocentric Gravitational Constant
             self.GM = 3.986004418e14# [m^3/s^2]
 
-        if ellipsoid.upper() not in ('GRS67'):
+        if self.name not in ('GRS67'):
             # for ellipsoids not listing the angular velocity of the Earth
             self.omega = 7292115e-11# [rad/s]
 
@@ -181,7 +185,7 @@ class constants(object):
         self.G = 6.67430e-11
 
         # convert units to CGS
-        if (units == 'CGS'):
+        if (self.units == 'CGS'):
             self.a_axis *= 100.0
             self.GM *= 1e6
             self.G *= 1000.0 # [dyn*cm^2/g^2]
