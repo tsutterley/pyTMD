@@ -772,7 +772,7 @@ def compute_OPT_corrections(
         TYPE: str or None = 'drift',
         TIME: str = 'UTC',
         ELLIPSOID: str = 'WGS84',
-        CONVENTION: str = '2015',
+        CONVENTION: str = '2018',
         METHOD: str = 'spline',
         FILL_VALUE: float = np.nan,
         **kwargs
