@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 04/2023: added global HAMTIDE11 model
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -965,6 +966,30 @@ class model:
             self.long_name = "Load Tide"
             self.description = ("Local displacement due to Ocean "
                 "Loading (-6 to 0 cm)")
+        elif (m == 'HAMTIDE11'):
+            self.format = 'FES'
+            self.model_directory = os.path.join(self.directory,'hamtide')
+            model_files = ['2n.hamtide11a.nc','k1.hamtide11a.nc','k2.hamtide11a.nc',
+                'm2.hamtide11a.nc','n2.hamtide11a.nc','o1.hamtide11a.nc',
+                'p1.hamtide11a.nc','q1.hamtide11a.nc','s2.hamtide11a.nc']
+            self.model_file = self.pathfinder(model_files)
+            self.constituents = ['2n2','k1','k2','m2','n2','o1','p1','q1','s2']
+            self.scale = 1.0/100.0
+            self.version = 'HAMTIDE11'
+            # model description and references
+            self.reference = 'https://doi.org/10.1002/2013JC009766'
+            self.atl03 = 'tide_ocean'
+            self.atl06 = 'tide_ocean'
+            self.atl07 = 'height_segment_ocean'
+            self.atl10 = 'height_segment_ocean'
+            self.atl11 = 'tide_ocean'
+            self.atl12 = 'tide_ocean_seg'
+            self.gla12 = 'd_ocElv'
+            self.variable = 'tide_ocean'
+            self.long_name = "Ocean Tide"
+            self.description = ("Ocean Tides including diurnal and "
+                "semi-diurnal (harmonic analysis), and longer period "
+                "tides (dynamic and self-consistent equilibrium).")
         else:
             raise Exception("Unlisted tide model")
         # return the model parameters
@@ -1243,6 +1268,25 @@ class model:
             # model description and references
             self.reference = ('https://www.aviso.altimetry.fr/en/data/products'
                 'auxiliary-products/global-tide-fes.html')
+        elif (m == 'HAMTIDE11'):
+            self.format = 'FES'
+            model_directory = {}
+            model_directory['u'] = os.path.join(self.directory,'hamtide')
+            model_directory['v'] = os.path.join(self.directory,'hamtide')
+            model_files = ['HAMcurrent11a_2n.nc','HAMcurrent11a_k1.nc',
+                'HAMcurrent11a_k2.nc','HAMcurrent11a_m2.nc',
+                'HAMcurrent11a_n2.nc,''HAMcurrent11a_o1.nc',
+                'HAMcurrent11a_p1.nc','HAMcurrent11a_q1.nc',
+                'HAMcurrent11a_s2.nc']
+            self.model_file = {}
+            for key,val in model_directory.items():
+                self.model_directory = os.path.expanduser(model_directory)
+                self.model_file[key] = self.pathfinder(val)
+            self.constituents = ['2n2','k1','k2','m2','n2','o1','p1','q1','s2']
+            self.scale = 1.0
+            self.version = 'HAMTIDE11'
+            # model description and references
+            self.reference = 'https://doi.org/10.1002/2013JC009766'
         else:
             raise Exception("Unlisted tide model")
         # return the model parameters
@@ -1269,7 +1313,8 @@ class model:
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
             'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas',
-            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
+            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20',
+            'HAMTIDE11']
 
     @staticmethod
     def global_load() -> list:
@@ -1286,7 +1331,7 @@ class model:
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2',
             'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5',
-            'TPXO9.1','TPXO8-atlas','TPXO7.2','FES2014']
+            'TPXO9.1','TPXO8-atlas','TPXO7.2','FES2014','HAMTIDE11']
 
     @staticmethod
     def antarctic_ocean() -> list:
@@ -1341,7 +1386,8 @@ class model:
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
-            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20']
+            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20',
+            'HAMTIDE11']
 
     @staticmethod
     def load_elevation() -> list:
@@ -1360,7 +1406,7 @@ class model:
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
-            'Arc2kmTM','Gr1kmTM','Gr1km-v2','FES2014']
+            'Arc2kmTM','Gr1kmTM','Gr1km-v2','FES2014','HAMTIDE11']
 
     @staticmethod
     def OTIS() -> list:
@@ -1406,7 +1452,7 @@ class model:
         """
         Returns list of FES format models
         """
-        return ['FES2014','FES2014_load','EOT20','EOT20_load']
+        return ['FES2014','FES2014_load','EOT20','EOT20_load','HAMTIDE11']
 
     def pathfinder(self, model_file: str | list):
         """

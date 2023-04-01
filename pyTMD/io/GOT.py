@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 GOT.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 
 Reads files for Richard Ray's Global Ocean Tide (GOT) models and makes initial
     calculations to run the tide program
@@ -42,6 +42,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: fix repeated longitudinal convention adjustment
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
@@ -410,17 +411,6 @@ def interpolate_constants(
     npts = len(ilon)
     # number of constituents
     nc = len(constituents)
-
-    # adjust longitudinal convention of input latitude and longitude
-    # to fit tide model convention
-    if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
-        # input points convention (-180:180)
-        # tide model convention (0:360)
-        ilon[ilon<0.0] += 360.0
-    elif (np.max(ilon) > 180.0) & (np.min(lon) < 0.0):
-        # input points convention (0:360)
-        # tide model convention (-180:180)
-        ilon[ilon>180.0] -= 360.0
 
     # amplitude and phase
     amplitude = np.ma.zeros((npts,nc))

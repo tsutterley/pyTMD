@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -28,6 +28,7 @@ OPTIONS:
         FES2012
         FES2014
         EOT20
+        HAMTIDE11
     method: interpolation method
         bilinear: quick bilinear interpolation
         spline: scipy bivariate spline interpolation
@@ -55,6 +56,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: added global HAMTIDE11 model
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
@@ -144,6 +146,7 @@ def extract_constants(
             - ``'FES2012'``
             - ``'FES2014'``
             - ``'EOT20'``
+            - ``'HAMTIDE11'``
     method: str, default 'spline'
         Interpolation method
 
@@ -214,7 +217,7 @@ def extract_constants(
         if kwargs['version'] in ('FES1999','FES2004'):
             # FES ascii constituent files
             hc,lon,lat = read_ascii_file(os.path.expanduser(fi), **kwargs)
-        elif kwargs['version'] in ('FES2012','FES2014','EOT20'):
+        elif kwargs['version'] in ('FES2012','FES2014','EOT20','HAMTIDE11'):
             # FES netCDF4 constituent files
             hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
         # adjust longitudinal convention of input latitude and longitude
@@ -323,6 +326,7 @@ def read_constants(
             - ``'FES2012'``
             - ``'FES2014'``
             - ``'EOT20'``
+            - ``'HAMTIDE11'``
     compressed: bool, default False
         Input files are gzip compressed
 
@@ -352,7 +356,7 @@ def read_constants(
         if kwargs['version'] in ('FES1999','FES2004'):
             # FES ascii constituent files
             hc,lon,lat = read_ascii_file(os.path.expanduser(fi), **kwargs)
-        elif kwargs['version'] in ('FES2012','FES2014','EOT20'):
+        elif kwargs['version'] in ('FES2012','FES2014','EOT20','HAMTIDE11'):
             # FES netCDF4 constituent files
             hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
         # grid step size of tide model
@@ -664,6 +668,11 @@ def read_netcdf_file(
             - ``'v'``: vertical transport velocities
     version: str or NoneType, default None
         FES model version
+
+            - ``'FES2012'``
+            - ``'FES2014'``
+            - ``'EOT20'``
+            - ``'HAMTIDE11'``
     compressed: bool, default False
         Input file is gzip compressed
 
@@ -688,22 +697,22 @@ def read_netcdf_file(
     else:
         fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
     # variable dimensions for each model
+    # amplitude and phase components for each type
     if kwargs['version'] in ('FES2012',):
         lon = fileID.variables['longitude'][:]
         lat = fileID.variables['latitude'][:]
+        amp_key = dict(z='amplitude', u='Ua', v='Va')[kwargs['type']]
+        phase_key = dict(z='phase', u='Ug', v='Vg')[kwargs['type']]
     elif kwargs['version'] in ('FES2014','EOT20'):
         lon = fileID.variables['lon'][:]
         lat = fileID.variables['lat'][:]
-    # amplitude and phase components for each type
-    if (kwargs['type'] == 'z'):
-        amp_key = 'amplitude'
-        phase_key = 'phase'
-    elif (kwargs['type'] == 'u'):
-        amp_key = 'Ua'
-        phase_key = 'Ug'
-    elif (kwargs['type'] == 'v'):
-        amp_key = 'Va'
-        phase_key = 'Vg'
+        amp_key = dict(z='amplitude', u='Ua', v='Va')[kwargs['type']]
+        phase_key = dict(z='phase', u='Ug', v='Vg')[kwargs['type']]
+    elif kwargs['version'] in ('HAMTIDE11',):
+        lon = fileID.variables['LON'][:]
+        lat = fileID.variables['LAT'][:]
+        amp_key = dict(z='AMPL', u='UAMP', v='VAMP')[kwargs['type']]
+        phase_key = dict(z='PHAS', u='UPHA', v='VPHA')[kwargs['type']]
     # get amplitude and phase components
     amp = fileID.variables[amp_key][:]
     ph = fileID.variables[phase_key][:]
