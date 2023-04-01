@@ -2,7 +2,7 @@
 constants
 =========
 
-Gravitational and ellipsoidal parameters
+Gravitational and ellipsoidal parameters [1]_ [2]_
 
 `Source code`__
 

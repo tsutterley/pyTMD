@@ -2,7 +2,7 @@
 io.FES
 ======
 
-- Reads files for Finite Element Solution (FES) models
+- Reads files for Finite Element Solution (FES), Empirical Ocean Tide (EOT), and Hamburg direct data Assimilation Methods for Tides (HAMTIDE) models
 
    * ascii
    * netCDF4

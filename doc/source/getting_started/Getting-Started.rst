@@ -85,7 +85,12 @@ Presently, the following models and their directories parameterized within ``pyT
     * `EOT20 <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/ocean_tides/``
     * `EOT20_load <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/load_tides/``
 
+- Hamburg direct data Assimilation Methods for Tides models [Taguchi2014]_
+
+    * `HAMTIDE11 <https://www.cen.uni-hamburg.de/en/icdc/data/ocean/hamtide.html>`_: ``<path_to_tide_models>/hamtide/``
+
 For other tide models, the model parameters can be set with a `model definition file <./Getting-Started.html#definition-files>`_.
+Note that any alternatively defined model will have to fit the file standard of a currently supported model.
 
 Programs
 ########
@@ -249,6 +254,8 @@ References
 .. [Ray1999] R. D. Ray, "A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2", *NASA Technical Memorandum*, `NASA/TM--1999-209478 <https://ntrs.nasa.gov/citations/19990089548>`_.
 
 .. [Stammer2014] D. Stammer et al., "Accuracy assessment of global barotropic ocean tide models", *Reviews of Geophysics*, 52, 243--282, (2014). `doi: 10.1002/2014RG000450 <https://doi.org/10.1002/2014RG000450>`_
+
+.. [Taguchi2014] E. Taguchi, D. Stammer, and W. Zahel, "Inferring deep ocean tidal energy dissipation from the global high-resolution data-assimilative HAMTIDE model", *Journal of Geophysical Research: Oceans*, 119, 4573--4592, (2014). `doi: 10.1002/2013JC009766 <https://doi.org/10.1002/2013JC009766>`_
 
 .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
 
