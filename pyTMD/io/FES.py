@@ -586,9 +586,12 @@ def read_ascii_file(input_file: str, **kwargs):
 
     Returns
     -------
-    hc: complex form of tidal constituent oscillation
-    lon: longitude of tidal model
-    lat: latitude of tidal model
+    hc: np.ndarray
+        complex form of tidal constituent oscillation
+    lon: np.ndarray
+        longitude of tidal model
+    lat: np.ndarray
+        latitude of tidal model
     """
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
