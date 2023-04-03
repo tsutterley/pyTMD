@@ -1257,8 +1257,8 @@ class model:
                 'ssa.nc','t2.nc']
             self.model_file = {}
             for key,val in model_directory.items():
-                self.model_directory = os.path.expanduser(model_directory)
-                self.model_file[key] = self.pathfinder(val)
+                self.model_directory = os.path.expanduser(val)
+                self.model_file[key] = self.pathfinder(model_files)
             self.constituents = ['2n2','eps2','j1','k1','k2','l2','lambda2',
                 'm2','m3','m4','m6','m8','mf','mks2','mm','mn4','ms4','msf',
                 'msqm','mtm','mu2','n2','n4','nu2','o1','p1','q1','r2','s1',
@@ -1275,13 +1275,13 @@ class model:
             model_directory['v'] = os.path.join(self.directory,'hamtide')
             model_files = ['HAMcurrent11a_2n.nc','HAMcurrent11a_k1.nc',
                 'HAMcurrent11a_k2.nc','HAMcurrent11a_m2.nc',
-                'HAMcurrent11a_n2.nc,''HAMcurrent11a_o1.nc',
+                'HAMcurrent11a_n2.nc','HAMcurrent11a_o1.nc',
                 'HAMcurrent11a_p1.nc','HAMcurrent11a_q1.nc',
                 'HAMcurrent11a_s2.nc']
             self.model_file = {}
             for key,val in model_directory.items():
-                self.model_directory = os.path.expanduser(model_directory)
-                self.model_file[key] = self.pathfinder(val)
+                self.model_directory = os.path.expanduser(val)
+                self.model_file[key] = self.pathfinder(model_files)
             self.constituents = ['2n2','k1','k2','m2','n2','o1','p1','q1','s2']
             self.scale = 1.0
             self.version = 'HAMTIDE11'
@@ -1466,7 +1466,9 @@ class model:
         if isinstance(model_file,list):
             output_file = [os.path.join(self.model_directory,
                 ''.join([f,self.suffix,self.gzip])) for f in model_file]
-            valid = all([os.access(f, os.F_OK) for f in output_file])
+            test = [os.access(f, os.F_OK) for f in output_file]
+            print(test)
+            valid = all(test)
         elif isinstance(model_file,str):
             output_file = os.path.join(self.model_directory,
                 ''.join([model_file,self.suffix,self.gzip]))
