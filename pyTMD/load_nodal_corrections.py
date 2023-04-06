@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
-load_nodal_corrections.py (03/2023)
+load_nodal_corrections.py
+Written by Tyler Sutterley (04/2023)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
 CALLING SEQUENCE:
-    pu,pf,G = load_nodal_corrections(MJD,constituents)
+    pu,pf,G = load_nodal_corrections(MJD, constituents)
 
 INPUTS:
     MJD: Modified Julian Day of input date
@@ -25,7 +26,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 PROGRAM DEPENDENCIES:
-    calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
+    astro.py: computes the basic astronomical mean longitudes
 
 REFERENCES:
     A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
@@ -37,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 04/2023: using renamed astro mean_longitudes function
     Updated 03/2023: add basic variable typing to function inputs
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 05/2022: added ESR netCDF4 formats to list of model types
@@ -58,7 +60,7 @@ from __future__ import annotations
 import copy
 import warnings
 import numpy as np
-from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
+import pyTMD.astro
 
 def load_nodal_corrections(
         MJD: np.ndarray,
@@ -130,7 +132,7 @@ def load_nodal_corrections(
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
-    s,h,p,omega,pp = calc_astrol_longitudes(MJD + kwargs['deltat'],
+    s,h,p,omega,pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
     hour = (MJD % 1)*24.0
     t1 = 15.0*hour

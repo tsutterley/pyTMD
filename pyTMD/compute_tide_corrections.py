@@ -46,7 +46,7 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
-    calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
+    astro.py: computes the basic astronomical mean longitudes
     convert_crs.py: convert points to and from Coordinates Reference Systems
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
@@ -691,7 +691,7 @@ def compute_LPT_corrections(
     # number of time points
     nt = len(time_decimal)
 
-    # degrees to radians
+    # degrees and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
@@ -914,7 +914,7 @@ def compute_OPT_corrections(
     # number of time points
     nt = len(time_decimal)
 
-    # degrees to radians and arcseconds to radians
+    # degrees and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid

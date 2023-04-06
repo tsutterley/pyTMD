@@ -302,7 +302,7 @@ def compute_OPT_displacements(input_file, output_file,
     # number of time points
     nt = len(time_decimal)
 
-    # degrees to radians and arcseconds to radians
+    # degrees and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid

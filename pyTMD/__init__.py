@@ -20,7 +20,11 @@ import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
-from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
+from pyTMD.astro import (
+    mean_longitudes,
+    solar_ecef,
+    lunar_ecef
+)
 from pyTMD.check_tide_points import check_tide_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,

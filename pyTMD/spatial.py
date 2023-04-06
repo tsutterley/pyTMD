@@ -18,6 +18,9 @@ PYTHON DEPENDENCIES:
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
 
+PROGRAM DEPENDENCIES:
+    constants.py: calculate reference parameters for common ellipsoids
+
 UPDATE HISTORY:
     Updated 03/2023: add basic variable typing to function inputs
     Updated 02/2023: use outputs from constants class for WGS84 parameters

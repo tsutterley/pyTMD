@@ -28,7 +28,7 @@ conventions for calculating radial pole tide displacements.
     :hidden:
     :caption: API Reference
 
-    api_reference/calc_astrol_longitudes.rst
+    api_reference/astro.rst
     api_reference/check_tide_points.rst
     api_reference/compute_tide_corrections.rst
     api_reference/constants.rst

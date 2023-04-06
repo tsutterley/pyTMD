@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-predict.py (03/2023)
+predict.py (04/2023)
 Predict tide values using harmonic constants
 
 REFERENCES:
@@ -13,10 +13,15 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 PROGRAM DEPENDENCIES:
+    astro.py: computes the basic astronomical mean longitudes
+    constants.py: calculate reference parameters for common ellipsoids
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: loads nodal corrections for tidal constituents
+    spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: using renamed astro mean_longitudes function
+        adding prediction routine for solid earth tides
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: merged prediction functions into a single module
     Updated 05/2022: added ESR netCDF4 formats to list of model types
@@ -34,9 +39,11 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import numpy as np
-from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
+from pyTMD.astro import mean_longitudes, solar_ecef, lunar_ecef
+from pyTMD.constants import constants
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
+from pyTMD.spatial import to_cartesian
 
 # PURPOSE: Predict tides at single times
 def map(t: float | np.ndarray,
@@ -46,7 +53,7 @@ def map(t: float | np.ndarray,
         corrections: str = 'OTIS'
     ):
     """
-    Predict tides at a single time using harmonic constants
+    Predict tides at a single time using harmonic constants [1]_
 
     Parameters
     ----------
@@ -108,7 +115,8 @@ def drift(t: float | np.ndarray,
         corrections: str = 'OTIS'
     ):
     """
-    Predict tides at multiple times and locations using harmonic constants
+    Predict tides at multiple times and locations using harmonic
+    constants [1]_
 
     Parameters
     ----------
@@ -169,7 +177,8 @@ def time_series(t: float | np.ndarray,
         corrections: str = 'OTIS'
     ):
     """
-    Predict tidal time series at a single location using harmonic constants
+    Predict tidal time series at a single location using harmonic
+    constants [1]_
 
     Parameters
     ----------
@@ -339,7 +348,7 @@ def infer_minor(
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
-    S,H,P,omega,pp = calc_astrol_longitudes(MJD + kwargs['deltat'],
+    S,H,P,omega,pp = mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
 
     # determine equilibrium tidal arguments
@@ -458,18 +467,119 @@ def infer_minor(
     # return the inferred elevation
     return dh
 
+# get IERS parameters
+_iers = constants(ellipsoid='IERS', units='MKS')
+
+# PURPOSE: estimate solid Earth tides due to gravitational attraction
+def solid_earth_tide(
+        lon: np.ndarray,
+        lat: np.ndarray,
+        t: np.ndarray,
+        z: np.ndarray | None = None,
+        a_axis: float = _iers.a_axis,
+        flat: float = _iers.flat
+    ):
+    """
+    Compute the solid Earth tides due to the gravitational attraction
+    of the moon and sun [1]_ [2]_
+
+    Parameters
+    ----------
+    lon: np.ndarray
+        Longitude (degrees east)
+    lat: np.ndarray
+        Latitude (degrees north)
+    t: np.ndarray
+        Time (days relative to January 1, 1992)
+
+    Returns
+    -------
+    dxt: np.ndarray
+        Solid Earth tide in meters
+
+    References
+    ----------
+    .. [1] P. M. Mathews, V. Dehant and J. M. Gipson,
+        "Tidal station displacements", *Journal of Geophysical
+        Research: Solid Earth*, 102(B9), 20469--20477, (1997).
+        `doi: 10.1029/97JB01515 <https://doi.org/10.1029/97JB01515>`_
+    .. [2] J. C. Ries, R. J. Eanes, C. K. Shum and M. M. Watkins,
+        "Progress in the determination of the gravitational
+        coefficient of the Earth", *Geophysical Research Letters*,
+        19(6), 529--531, (1992). `doi: 10.1029/92GL00259
+        <https://doi.org/10.1029/92GL00259>`_
+    """
+    # number of input coordinates
+    nt = len(t)
+    # nominal Love and Shida numbers
+    h20 = 0.6078
+    l20 = 0.0847
+    h3 = 0.292
+    l3 = 0.015
+    # mass ratios between earth and sun/moon
+    mass_ratio_solar = 332946.0482
+    mass_ratio_lunar = 0.0123000371
+    # convert input coordinates to cartesian
+    X, Y, Z = to_cartesian(lon, lat, z, a_axis=a_axis, flat=flat)
+    # convert time to Modified Julian Days (MJD)
+    MJD = t + 48622.0
+    # get low-resolution solar and lunar ephemerides
+    SX, SY, SZ = solar_ecef(MJD)
+    LX, LY, LZ = lunar_ecef(MJD)
+    # scalar product of input coordinates with sun/moon vectors
+    radius = np.sqrt(X**2 + Y**2 + Z**2)
+    solar_radius = np.sqrt(SX**2 + SY**2 + SZ**2)
+    lunar_radius = np.sqrt(LX**2 + LY**2 + LZ**2)
+    solar_scalar = (X*SX + Y*SY + Z*SZ)/(radius*solar_radius)
+    lunar_scalar = (Y*LX + Y*LY + Z*LZ)/(radius*lunar_radius)
+    # compute new h2 and l2 (Mathews et al., 1997)
+    cosphi = np.sqrt(X**2 + Y**2)/radius
+    h2 = h20 - 0.0006*(1.0 - 3.0/2.0*cosphi**2)
+    l2 = l20 + 0.0002*(1.0 - 3.0/2.0*cosphi**2)
+    # compute P2 terms
+    P2_solar = 3.0*(h2/2.0 - l2)*solar_scalar**2 - h2/2.0
+    P2_lunar = 3.0*(h2/2.0 - l2)*lunar_scalar**2 - h2/2.0
+    # compute P3 terms
+    P3_solar = 5.0/2.0*(h3 - 3.0*l3)*solar_scalar**3 + \
+        3.0/2.0*(l3 - h3)*solar_scalar
+    P3_lunar = 5.0/2.0*(h3 - 3.0*l3)*lunar_scalar**3 + \
+        3.0/2.0*(l3 - h3)*lunar_scalar
+    # compute terms in direction of sun/moon vectors
+    X2_solar = 3.0*l2*solar_scalar
+    X2_lunar = 3.0*l2*lunar_scalar
+    X3_solar = 3.0*l3/2.0*(5.0*solar_scalar**2 - 1.0)
+    X3_lunar = 3.0*l3/2.0*(5.0*lunar_scalar**2 - 1.0)
+    # factors for sun and moon using IAU estimates of mass ratios
+    F2_solar = mass_ratio_solar*a_axis*(a_axis/solar_radius)**3
+    F2_lunar = mass_ratio_lunar*a_axis*(a_axis/lunar_radius)**3
+    F3_solar = mass_ratio_lunar*a_axis*(a_axis/solar_radius)**4
+    F3_lunar = mass_ratio_lunar*a_axis*(a_axis/lunar_radius)**4
+    # convert coordinates to column arrays
+    XYZ = np.c_[X, Y, Z]
+    SXYZ = np.c_[SX, SY, SZ]
+    LXYZ = np.c_[LX, LY, LZ]
+    # compute total displacement (Mathews et al. 1997)
+    dxt = np.zeros((nt, 3))
+    for i in range(3):
+        S2 = F2_solar*(X2_solar*SXYZ[:,i]/solar_radius+P2_solar*XYZ[:,i]/radius)
+        L2 = F2_lunar*(X2_lunar*LXYZ[:,i]/lunar_radius+P2_lunar*XYZ[:,i]/radius)
+        S3 = F3_solar*(X3_solar*SXYZ[:,i]/solar_radius+P3_solar*XYZ[:,i]/radius)
+        L3 = F3_lunar*(X3_lunar*LXYZ[:,i]/lunar_radius+P3_lunar*XYZ[:,i]/radius)
+        dxt[:,i] = S2 + L2 + S3 + L3
+    # return the solid earth tide
+
 # PURPOSE: estimate long-period equilibrium tides
 def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     """
     Compute the long-period equilibrium tides the summation of fifteen
-    tidal spectral lines from Cartwright-Tayler-Edden tables
+    tidal spectral lines from Cartwright-Tayler-Edden tables [1]_ [2]_
 
     Parameters
     ----------
     t: np.ndarray
         time (days relative to January 1, 1992)
     lat: np.ndarray
-        latitudes (degrees)
+        latitudes (degrees north)
 
     Returns
     -------
