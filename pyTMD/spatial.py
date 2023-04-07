@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
     constants.py: calculate reference parameters for common ellipsoids
 
 UPDATE HISTORY:
+    Updated 04/2023: copy inputs in cartesian to not modify original arrays
     Updated 03/2023: add basic variable typing to function inputs
     Updated 02/2023: use outputs from constants class for WGS84 parameters
         include more possible dimension names for gridded and drift outputs
@@ -1236,9 +1237,9 @@ def to_cartesian(
 
         for spherical coordinates set to 0
     """
-    # verify axes
-    lon = np.atleast_1d(lon)
-    lat = np.atleast_1d(lat)
+    # verify axes and copy to not modify inputs
+    lon = np.atleast_1d(np.copy(lon))
+    lat = np.atleast_1d(np.copy(lat))
     # fix coordinates to be 0:360
     lon[lon < 0] += 360.0
     # Linear eccentricity and first numerical eccentricity
@@ -1335,26 +1336,29 @@ def to_geodetic(
     lon = np.arctan2(y,x)/dtr
     lat = np.zeros_like(lon)
     h = np.zeros_like(lon)
-    if (w == 0):
+    if np.any(w == 0):
         # special case where w == 0 (exact polar solution)
-        h = np.sign(z)*z - b_axis
-        lat = 90.0*np.sign(z)
+        ind, = np.nonzero(w == 0)
+        h[ind] = np.sign(z[ind])*z[ind] - b_axis
+        lat[ind] = 90.0*np.sign(z[ind])
     else:
         # all other cases
+        ind, = np.nonzero(w != 0)
         l = e12/2.0
-        m = (w/a_axis)**2.0
-        n = ((1.0-e12)*z/b_axis)**2.0
+        m = (w[ind]/a_axis)**2.0
+        n = ((1.0 - e12)*z[ind]/b_axis)**2.0
         i = -(2.0*l**2 + m + n)/2.0
         k = (l**2.0 - m - n)*l**2.0
         q = (1.0/216.0)*(m + n - 4.0*l**2)**3.0 + m*n*l**2.0
         D = np.sqrt((2.0*q - m*n*l**2)*m*n*l**2)
-        B = i/3.0 - (q+D)**(1.0/3.0) - (q-D)**(1.0/3.0)
-        t = np.sqrt(np.sqrt(B**2-k) - (B+i)/2.0)-np.sign(m-n)*np.sqrt((B-i)/2.0)
-        wi = w/(t+l)
-        zi = (1.0-e12)*z/(t-l)
+        B = i/3.0 - (q + D)**(1.0/3.0) - (q - D)**(1.0/3.0)
+        t = np.sqrt(np.sqrt(B**2-k) - (B + i)/2.0) - \
+            np.sign(m - n)*np.sqrt((B - i)/2.0)
+        wi = w/(t + l)
+        zi = (1.0 - e12)*z[ind]/(t - l)
         # calculate latitude and height
-        lat = np.arctan2(zi,((1.0-e12)*wi))/dtr
-        h = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z-zi)**2.0)
+        lat[ind] = np.arctan2(zi, ((1.0 - e12)*wi))/dtr
+        h[ind] = np.sign(t - 1.0 + l)*np.sqrt((w - wi)**2.0 + (z[ind] - zi)**2.0)
     # return latitude, longitude and height
     return (lon, lat, h)
 

@@ -28,6 +28,7 @@ from pyTMD.compute_tide_corrections import (
     compute_LPET_corrections,
     compute_LPT_corrections,
     compute_OPT_corrections,
+    compute_SET_corrections,
 )
 from pyTMD.constants import (
     constants,

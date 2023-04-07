@@ -2,9 +2,9 @@
 astro
 =====
 
-- Computes the basic astronomical mean longitudes: `s`, `h`, `p`, `N` and `PP`
-- Note `N` is not `N'`, i.e. `N` is decreasing with time.
-- Formulae for the period 1990--2010 were derived by David Cartwright
+- Computes the basic astronomical mean longitudes: `S`, `H`, `P`, `N` and `PP`
+- Computes astronomical phase angles for the sun and moon:  `S`, `H`, `P`, `TAU`, `ZNS` and `PS`
+- Computes the solar and lunar positions in Earth-Centered Earth-Fixed (ECEF) coordinates
 
 Calling Sequence
 ----------------
@@ -12,7 +12,7 @@ Calling Sequence
 .. code-block:: python
 
     import pyTMD.astro
-    s,h,p,N,PP = pyTMD.astro.mean_longitudes(MJD, ASTRO5=True)
+    S,H,P,N,PP = pyTMD.astro.mean_longitudes(MJD, ASTRO5=True)
 
 `Source code`__
 

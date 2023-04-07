@@ -9,6 +9,7 @@ predict
   * Time series at a location (``time_series``) such as to compare with tide gauges
 
 - Predicts tidal values from minor constituents inferred using major constituents
+- Predicts solid earth tidal values following IERS Conventions
 - Predicts long-period equilibrium ocean tides
 
 
@@ -33,3 +34,17 @@ Calling Sequence
 .. autofunction:: pyTMD.predict.infer_minor
 
 .. autofunction:: pyTMD.predict.equilibrium_tide
+
+.. autofunction:: pyTMD.predict.solid_earth_tide
+
+.. autofunction:: pyTMD.predict._out_of_phase_diurnal
+
+.. autofunction:: pyTMD.predict._out_of_phase_semidiurnal
+
+.. autofunction:: pyTMD.predict._latitude_dependence
+
+.. autofunction:: pyTMD.predict._frequency_dependence_diurnal
+
+.. autofunction:: pyTMD.predict._frequency_dependence_long_period
+
+.. autofunction:: pyTMD.predict._free_to_mean

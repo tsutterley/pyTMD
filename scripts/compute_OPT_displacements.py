@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     http://maia.usno.navy.mil/conventions/2010officialinfo.php
@@ -28,6 +28,7 @@ COMMAND LINE OPTIONS:
     -t X, --type X: input data type
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time for all data points)
+        time series: time series at a single point
     -e X, --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
     -d X, --deltatime X: Input delta time for files without date information
@@ -40,6 +41,7 @@ COMMAND LINE OPTIONS:
         datetime: formatted datetime string in UTC
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
+    -E X, --ellipsoid X: Ellipsoid for calculating load pole tide parameters
     -c X, --convention X: IERS mean or secular pole convention
         2003
         2010
@@ -84,6 +86,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 04/2023: check if datetime before converting to seconds
     Updated 03/2023: added option for changing the IERS mean pole convention
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
@@ -253,7 +256,8 @@ def compute_OPT_displacements(input_file, output_file,
     except (TypeError, KeyError, ValueError):
         epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     # convert time to seconds
-    delta_time = to_secs*dinput['time'].flatten()
+    if (TIME_STANDARD.lower() != 'datetime'):
+        delta_time = to_secs*dinput['time'].flatten()
 
     # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
@@ -288,7 +292,7 @@ def compute_OPT_displacements(input_file, output_file,
     if (TIME_STANDARD.lower() == 'datetime'):
         # convert delta time array from datetime object
         # to Modified Julian days (days since 1858-11-17T00:00:00)
-        MJD = pyTMD.time.convert_datetime(delta_time,
+        MJD = pyTMD.time.convert_datetime(dinput['time'].flatten(),
             epoch=pyTMD.time._mjd_epoch)/86400.0
     else:
         # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)

@@ -2,7 +2,7 @@
 Getting Started
 ===============
 
-This documentation is intended to explain how to compute ocean, load and pole tide variations using the set of ``pyTMD`` programs.
+This documentation is intended to explain how to compute ocean, solid Earth, load and pole tide variations using the set of ``pyTMD`` programs.
 The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface.
 Ocean tides are typically observed using float gauges, GPS stations, gravimeters, tiltmeters, pressure recorders, and satellite altimeters.
 For each of these measurements, it is important to note the `vertical datum of the measurement technique <https://www.esr.org/data-products/antarctic_tg_database/ocean-tide-and-ocean-tide-loading/>`_.
@@ -15,10 +15,16 @@ These tide models will be one of following categories depending on the version:
 2) a barotropic hydrodynamic model constrained by data assimilation,
 or 3) an unconstrained hydrodynamic model [Stammer2014]_.
 
+Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun.
+Within ``pyTMD``, the tidal deformation of the Earth is modeled using a Load Love number formalism taking into account the effects of mantle anelasticity [Mathews1997]_ [Wahr1981]_.
+The formalism for estimating the solid Earth tides is based upon IERS Conventions.
+Basic ephemerides for the sun and moon can be calculated within ``pyTMD``, and high-resolution ephemerides for the sun and moon can be downloaded from the Jet Propulsion Laboratory.
+
 Load and ocean pole tides are driven by variations in the Earth's figure axis.
 These pole tides are due to Earth's ellipsoidal shape shifting as the rotation axis of the Earth
 moves with respect to the mean pole location, and for the case of ocean pole tides the centripetal effects of polar motion on the ocean.
-The Earth Orientation Parameters (EOPs) necessary for computing load pole and ocean pole tide variations are included within the ``pyTMD`` program.
+The formalism for estimating the pole tides is also based upon IERS Conventions.
+The Earth Orientation Parameters (EOPs) necessary for computing load pole and ocean pole tide variations are included within ``pyTMD``.
 
 Tide Model Formats
 ##################
@@ -96,7 +102,7 @@ Programs
 ########
 
 For users wanting to compute tide corrections for use with numpy arrays or pandas dataframes
-`compute_tide_corrections.py <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py>`_
+`compute_tide_corrections() <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py>`_
 is the place to start.  It is a function that takes ``x``, ``y``, and ``time`` coordinates and
 computes the corresponding tidal elevation.
 
@@ -243,6 +249,8 @@ References
 
 .. [Lyard2020] F. H. Lyard, D. J. Allain, M. Cancet, L. Carr\ |egrave|\ re, and N. Picot, "FES2014 global ocean tides atlas: design and performances", *Ocean Science Discussions*, in review, (2020). `doi: 10.5194/os-2020-96 <https://doi.org/10.5194/os-2020-96>`_
 
+.. [Mathews1997] P. M. Mathews, V. Dehant and J. M. Gipson, "Tidal station displacements", *Journal of Geophysical Research: Solid Earth*, 102(B9), 20469--20477, (1997). `doi: 10.1029/97JB01515 <https://doi.org/10.1029/97JB01515>`_
+
 .. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
 
 .. [Padman2004] L. Padman and S. Y. Erofeeva, "A barotropic inverse tidal model for the Arctic Ocean", *Geophysical Research Letters*, 31(2), L02303. (2004). `doi: 10.1029/2003GL019003 <https://doi.org/10.1029/2003GL019003>`_
@@ -256,6 +264,8 @@ References
 .. [Stammer2014] D. Stammer et al., "Accuracy assessment of global barotropic ocean tide models", *Reviews of Geophysics*, 52, 243--282, (2014). `doi: 10.1002/2014RG000450 <https://doi.org/10.1002/2014RG000450>`_
 
 .. [Taguchi2014] E. Taguchi, D. Stammer, and W. Zahel, "Inferring deep ocean tidal energy dissipation from the global high-resolution data-assimilative HAMTIDE model", *Journal of Geophysical Research: Oceans*, 119, 4573--4592, (2014). `doi: 10.1002/2013JC009766 <https://doi.org/10.1002/2013JC009766>`_
+
+.. [Wahr1981] J. M. Wahr, "Body tides on an elliptical, rotating, elastic and oceanless Earth", *Geophysical Journal of the Royal Astronomical Society*, 64(3), 677--703, (1981). `doi: 10.1111/j.1365-246X.1981.tb02690.x <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
 
 .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
 
