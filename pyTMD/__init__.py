@@ -11,6 +11,7 @@ matplotlib and cartopy
 
 Documentation is available at https://pytmd.readthedocs.io
 """
+import pyTMD.astro
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
@@ -20,11 +21,6 @@ import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
-from pyTMD.astro import (
-    mean_longitudes,
-    solar_ecef,
-    lunar_ecef
-)
 from pyTMD.check_tide_points import check_tide_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,

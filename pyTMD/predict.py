@@ -39,7 +39,7 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import numpy as np
-from pyTMD.astro import mean_longitudes, solar_ecef, lunar_ecef
+import pyTMD.astro
 from pyTMD.constants import constants
 from pyTMD.load_constituent import load_constituent
 from pyTMD.load_nodal_corrections import load_nodal_corrections
@@ -348,7 +348,7 @@ def infer_minor(
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
-    S,H,P,omega,pp = mean_longitudes(MJD + kwargs['deltat'],
+    S,H,P,omega,pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
 
     # determine equilibrium tidal arguments
@@ -481,7 +481,7 @@ def solid_earth_tide(
     ):
     """
     Compute the solid Earth tides due to the gravitational attraction
-    of the moon and sun [1]_ [2]_
+    of the moon and sun [1]_ [2]_ [3]_ [4]_
 
     Parameters
     ----------
@@ -499,15 +499,25 @@ def solid_earth_tide(
 
     References
     ----------
-    .. [1] P. M. Mathews, V. Dehant and J. M. Gipson,
+    .. [1] P. M. Mathews, B. A. Buffett, T. A. Herring and I. I Shapiro,
+        "Forced nutations of the Earth: Influence of inner core dynamics:
+        1. Theory", *Journal of Geophysical Research: Solid Earth*,
+        96(B5), 8219--8242, (1991). `doi: 10.1029/90JB01955
+        <https://doi.org/10.1029/90JB01955>`_
+    .. [2] P. M. Mathews, V. Dehant and J. M. Gipson,
         "Tidal station displacements", *Journal of Geophysical
         Research: Solid Earth*, 102(B9), 20469--20477, (1997).
         `doi: 10.1029/97JB01515 <https://doi.org/10.1029/97JB01515>`_
-    .. [2] J. C. Ries, R. J. Eanes, C. K. Shum and M. M. Watkins,
+    .. [3] J. C. Ries, R. J. Eanes, C. K. Shum and M. M. Watkins,
         "Progress in the determination of the gravitational
         coefficient of the Earth", *Geophysical Research Letters*,
         19(6), 529--531, (1992). `doi: 10.1029/92GL00259
         <https://doi.org/10.1029/92GL00259>`_
+    .. [4] J. M. Wahr, "Body tides on an elliptical, rotating, elastic
+        and oceanless Earth", *Geophysical Journal of the Royal
+        Astronomical Society*, 64(3), 677--703, (1981).
+        `doi: 10.1111/j.1365-246X.1981.tb02690.x
+        <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
     """
     # number of input coordinates
     nt = len(t)
@@ -524,8 +534,8 @@ def solid_earth_tide(
     # convert time to Modified Julian Days (MJD)
     MJD = t + 48622.0
     # get low-resolution solar and lunar ephemerides
-    SX, SY, SZ = solar_ecef(MJD)
-    LX, LY, LZ = lunar_ecef(MJD)
+    SX, SY, SZ = pyTMD.astro.solar_ecef(MJD)
+    LX, LY, LZ = pyTMD.astro.lunar_ecef(MJD)
     # scalar product of input coordinates with sun/moon vectors
     radius = np.sqrt(X**2 + Y**2 + Z**2)
     solar_radius = np.sqrt(SX**2 + SY**2 + SZ**2)
@@ -566,7 +576,279 @@ def solid_earth_tide(
         S3 = F3_solar*(X3_solar*SXYZ[:,i]/solar_radius+P3_solar*XYZ[:,i]/radius)
         L3 = F3_lunar*(X3_lunar*LXYZ[:,i]/lunar_radius+P3_lunar*XYZ[:,i]/radius)
         dxt[:,i] = S2 + L2 + S3 + L3
+    # corrections for out-of-phase portions of the love numbers
+    DDX, DDY, DDZ = _out_of_phase_diurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
+    DSX, DSY, DSZ = _out_of_phase_semidiurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
+    # corrections for the latitudinal dependence
+    DLX, DLY, DLZ = _latitude_dependence(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
+    # corrections for the frequency dependence
+    DFDX, DFDY, DFDZ = _frequency_dependence_diurnal(XYZ, MJD)
+    DFLX, DFLY, DFLZ = _frequency_dependence_long_period(XYZ, MJD)
+    # add the corrections to the total displacement
+    dxt += np.c_[DDX, DDY, DDZ]
+    dxt += np.c_[DSX, DSY, DSZ]
+    dxt += np.c_[DLX, DLY, DLZ]
+    dxt += np.c_[DFDX, DFDY, DFDZ]
+    dxt += np.c_[DFLX, DFLY, DFLZ]
     # return the solid earth tide
+    return dxt
+
+def _out_of_phase_diurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar):
+    """
+    Computes the out-of-phase corrections induced by mantle
+    anelasticity in the diurnal band
+    """
+    # love number corrections
+    dhi = -0.0025
+    dli = -0.0007
+    # Compute the normalized position vector of coordinates
+    radius = np.sqrt(np.sum(XYZ**2, axis=1))
+    sinphi = XYZ[:,2]/radius
+    cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
+    cos2phi = cosphi**2 - sinphi**2
+    sinla = XYZ[:,1]/cosphi/radius
+    cosla = XYZ[:,0]/cosphi/radius
+    # Compute the normalized position vector of the Sun/Moon
+    solar_radius = np.sqrt(np.sum(SXYZ**2, axis=1))
+    lunar_radius = np.sqrt(np.sum(LXYZ**2, axis=1))
+    # calculate offsets
+    dr_solar = -3.0*dhi*sinphi*cosphi*F2_solar*SXYZ[:,2]* \
+        (SXYZ[:,0]*sinla-SXYZ[:,1]*cosla)/solar_radius**2
+    dr_lunar = -3.0*dhi*sinphi*cosphi*F2_lunar*LXYZ[:,2]* \
+        (LXYZ[:,0]*sinla-LXYZ[:,1]*cosla)/lunar_radius**2
+    dn_solar = -3.0*dli*cos2phi*F2_solar*SXYZ[:,2]* \
+        (SXYZ[:,0]*sinla-SXYZ[:,1]*cosla)/solar_radius**2
+    dn_lunar = -3.0*dli*cos2phi*F2_lunar*LXYZ[:,2]* \
+        (LXYZ[:,0]*sinla-LXYZ[:,1]*cosla)/lunar_radius**2
+    de_solar = -3.0*dli*sinphi*F2_solar*SXYZ[:,2]* \
+        (SXYZ[:,0]*cosla+SXYZ[:,1]*sinla)/solar_radius**2
+    de_lunar = -3.0*dli*sinphi*F2_lunar*LXYZ[:,2]* \
+        (LXYZ[:,0]*cosla+LXYZ[:,1]*sinla)/lunar_radius**2
+    # add solar and lunar offsets
+    DR = dr_solar + dr_lunar
+    DN = dn_solar + dn_lunar
+    DE = de_solar + de_lunar
+    # compute corrections
+    DX = DR*cosla*cosphi - DE*sinla - DN*sinphi*cosla
+    DY = DR*sinla*cosphi + DE*cosla - DN*sinphi*sinla
+    DZ = DR*sinphi + DN*cosphi
+    # return the corrections
+    return (DX, DY, DZ)
+
+def _out_of_phase_semidiurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar):
+    """
+    Computes the out-of-phase corrections induced by mantle
+    anelasticity in the semi-diurnal band
+    """
+    # love number corrections
+    dhi = -0.0022
+    dli = -0.0007
+    # Compute the normalized position vector of coordinates
+    radius = np.sqrt(np.sum(XYZ**2, axis=1))
+    sinphi = XYZ[:,2]/radius
+    cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
+    sinla = XYZ[:,1]/cosphi/radius
+    cosla = XYZ[:,0]/cosphi/radius
+    cos2la = cosla**2 - sinla**2
+    sin2la = 2.0*cosla*sinla
+    # Compute the normalized position vector of the Sun/Moon
+    solar_radius = np.sqrt(np.sum(SXYZ**2, axis=1))
+    lunar_radius = np.sqrt(np.sum(LXYZ**2, axis=1))
+    # calculate offsets
+    dr_solar = -3.0/4.0*dhi*cosphi**2*F2_solar * \
+        ((SXYZ[:,0]**2-SXYZ[:,1]**2)*sin2la-2.0*SXYZ[:,0]*SXYZ[:,1]*cos2la) / \
+        solar_radius**2
+    dr_lunar = -3.0/4.0*dhi*cosphi**2*F2_lunar * \
+        ((LXYZ[:,0]**2-LXYZ[:,1]**2)*sin2la-2.0*LXYZ[:,0]*LXYZ[:,1]*cos2la) / \
+        lunar_radius**2
+    dn_solar = 3.0/2.0*dli*sinphi*cosphi*F2_solar * \
+        ((SXYZ[:,0]**2-SXYZ[:,1]**2)*sin2la-2.0*SXYZ[:,0]*SXYZ[:,1]*cos2la) / \
+        solar_radius**2
+    dn_lunar = 3.0/2.0*dli*sinphi*cosphi*F2_lunar * \
+        ((LXYZ[:,0]**2-LXYZ[:,1]**2)*sin2la-2.0*LXYZ[:,0]*LXYZ[:,1]*cos2la) / \
+        lunar_radius**2
+    de_solar = -3.0/2.0*dli*cosphi*F2_solar * \
+        ((SXYZ[:,0]**2-SXYZ[:,1]**2)*cos2la+2.0*SXYZ[:,0]*SXYZ[:,1]*sin2la) / \
+        solar_radius**2
+    de_lunar = -3.0/2.0*dli*cosphi*F2_lunar * \
+        ((LXYZ[:,0]**2-LXYZ[:,1]**2)*cos2la+2.0*LXYZ[:,0]*LXYZ[:,1]*sin2la) / \
+        lunar_radius**2
+    # add solar and lunar offsets
+    DR = dr_solar + dr_lunar
+    DN = dn_solar + dn_lunar
+    DE = de_solar + de_lunar
+    # compute corrections
+    DX = DR*cosla*cosphi - DE*sinla - DN*sinphi*cosla
+    DY = DR*sinla*cosphi + DE*cosla - DN*sinphi*sinla
+    DZ = DR*sinphi + DN*cosphi
+    # return the corrections
+    return (DX, DY, DZ)
+
+def _latitude_dependence(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar):
+    """
+    Computes the corrections induced by the latitude of the
+    dependence given by L^1
+    """
+    # love number corrections (diurnal and semi-diurnal)
+    l1d = 0.0012
+    l1sd = 0.0024
+    # Compute the normalized position vector of coordinates
+    radius = np.sqrt(np.sum(XYZ**2, axis=1))
+    sinphi = XYZ[:,2]/radius
+    cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
+    sinla = XYZ[:,1]/cosphi/radius
+    cosla = XYZ[:,0]/cosphi/radius
+    cos2la = cosla**2 - sinla**2
+    sin2la = 2.0*cosla*sinla
+    # Compute the normalized position vector of the Sun/Moon
+    solar_radius = np.sqrt(np.sum(SXYZ**2, axis=1))
+    lunar_radius = np.sqrt(np.sum(LXYZ**2, axis=1))
+    # calculate offsets for the diurnal band
+    dn_d_solar = -l1d*sinphi**2*F2_solar*SXYZ[:,2] * \
+        (SXYZ[:,0]*cosla+SXYZ[:,1]*sinla)/solar_radius**2
+    dn_d_lunar = -l1d*sinphi**2*F2_lunar*LXYZ[:,2] * \
+        (LXYZ[:,0]*cosla+LXYZ[:,1]*sinla)/lunar_radius**2
+    de_d_solar = l1d*sinphi*(cosphi**2-sinphi**2)*F2_solar*SXYZ[:,2] * \
+        (SXYZ[:,0]*sinla-SXYZ[:,1]*cosla)/solar_radius**2
+    de_d_lunar = l1d*sinphi*(cosphi**2-sinphi**2)*F2_lunar*LXYZ[:,2] * \
+        (LXYZ[:,0]*sinla-LXYZ[:,1]*cosla)/lunar_radius**2
+    # calculate offsets for the semi-diurnal band
+    dn_s_solar = -l1sd/2.0*sinphi*cosphi*F2_solar * \
+        ((SXYZ[:,0]**2-SXYZ[:,1]**2)*cos2la+2.0*SXYZ[:,0]*SXYZ[:,1]*sin2la) / \
+        solar_radius**2
+    dn_s_lunar =-l1sd/2.0*sinphi*cosphi*F2_lunar * \
+        ((LXYZ[:,0]**2-LXYZ[:,1]**2)*cos2la+2.0*LXYZ[:,0]*LXYZ[:,1]*sin2la) / \
+        lunar_radius**2
+    de_s_solar =-l1sd/2.0*sinphi**2*cosphi*F2_solar * \
+        ((SXYZ[:,0]**2-SXYZ[:,1]**2)*sin2la-2.0*SXYZ[:,0]*SXYZ[:,1]*cos2la) / \
+        solar_radius**2
+    de_s_lunar =-l1sd/2.0*sinphi**2*cosphi*F2_lunar * \
+        ((LXYZ[:,0]**2-LXYZ[:,1]**2)*sin2la-2.0*LXYZ[:,0]*LXYZ[:,1]*cos2la) / \
+        lunar_radius**2
+    # add solar and lunar offsets (diurnal and semi-diurnal)
+    DN = 3.0*(dn_d_solar + dn_d_lunar + dn_s_solar + dn_s_lunar)
+    DE = 3.0*(de_d_solar + de_d_lunar + de_s_solar + de_s_lunar)
+    # compute combined diurnal and semi-diurnal corrections
+    DX = -DE*sinla - DN*sinphi*cosla
+    DY = DE*cosla - DN*sinphi*sinla
+    DZ = DN*cosphi
+    # return the corrections
+    return (DX, DY, DZ)
+
+def _frequency_dependence_diurnal(XYZ, MJD: np.ndarray):
+    """
+    Computes the in-phase and out-of-phase corrections induced by mantle
+    anelasticity in the diurnal band
+    """
+    # number of time steps
+    nt = len(np.atleast_1d(MJD))
+    # Corrections to Diurnal Tides for Frequency Dependence
+    # of Love Number Parameters
+    # table 7.3a of IERS conventions
+    table = np.array([
+        [-3.0, 0.0, 2.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
+        [-3.0, 2.0, 0.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
+        [-2.0, 0.0, 1.0, -1.0, 0.0, -0.02, 0.0, 0.0, 0.0],
+        [-2.0, 0.0, 1.0, 0.0, 0.0, -0.08, 0.0, -0.01, 0.01],
+        [-2.0, 2.0, -1.0, 0.0, 0.0, -0.02, 0.0, 0.0, 0.0],
+        [-1.0, 0.0, 0.0,-1.0, 0.0, -0.10, 0.0, 0.0, 0.0],
+        [-1.0, 0.0, 0.0, 0.0, 0.0, -0.51, 0.0, -0.02, 0.03],
+        [-1.0, 2.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0],
+        [0.0, -2.0, 1.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0],
+        [0.0, 0.0, -1.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0, 0.06, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 1.0, 0.0, 0.01, 0.0, 0.0, 0.0],
+        [0.0, 2.0, -1.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0],
+        [1.0, -3.0, 0.0, 0.0, 1.0, -0.06, 0.0, 0.0, 0.0],
+        [1.0, -2.0, 0.0, -1.0, 0.0, 0.01, 0.0, 0.0, 0.0],
+        [1.0, -2.0, 0.0, 0.0, 0.0, -1.23, -0.07, 0.06, 0.01],
+        [1.0, -1.0, 0.0, 0.0,-1.0, 0.02, 0.0, 0.0, 0.0],
+        [1.0, -1.0, 0.0, 0.0, 1.0, 0.04, 0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0, -1.0, 0.0, -0.22, 0.01, 0.01, 0.0],
+        [1.0, 0.0, 0.0, 0.0, 0.0, 12.00, -0.80, -0.67, -0.03],
+        [1.0, 0.0, 0.0, 1.0, 0.0, 1.73, -0.12, -0.10, 0.0],
+        [1.0, 0.0, 0.0, 2.0, 0.0, -0.04, 0.0, 0.0, 0.0],
+        [1.0, 1.0, 0.0, 0.0, -1.0, -0.50, -0.01, 0.03, 0.0],
+        [1.0, 1.0, 0.0, 0.0, 1.0, 0.01, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 1.0, -1.0, -0.01, 0.0, 0.0, 0.0],
+        [1.0, 2.0, -2.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
+        [1.0, 2.0, 0.0, 0.0, 0.0, -0.11, 0.01, 0.01, 0.0],
+        [2.0, -2.0, 1.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
+        [2.0, 0.0,-1.0, 0.0, 0.0, -0.02, 0.0, 0.0, 0.0],
+        [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ])
+    # get phase angles
+    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    # Compute the normalized position vector of coordinates
+    radius = np.sqrt(np.sum(XYZ**2, axis=1))
+    sinphi = XYZ[:,2]/radius
+    cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
+    sinla = XYZ[:,1]/cosphi/radius
+    cosla = XYZ[:,0]/cosphi/radius
+    zla = np.arctan2(XYZ[:,1], XYZ[:,0])
+    # compute corrections (Mathews et al. 1997)
+    DX = np.zeros((nt))
+    DY = np.zeros((nt))
+    DZ = np.zeros((nt))
+    # iterate over rows in the table
+    for i, row in enumerate(table):
+        thetaf = TAU + S*row[0] + H*row[1] + P*row[2] + \
+            ZNS*row[3] + PS*row[4]
+        dr = 2.0*row[5]*sinphi*cosphi*np.sin(thetaf + zla) + \
+            2.0*row[6]*sinphi*cosphi*np.cos(thetaf + zla)
+        dn = row[7]*(cosphi**2 - sinphi**2)*np.sin(thetaf + zla) + \
+            row[8]*(cosphi**2 - sinphi**2)*np.cos(thetaf + zla)
+        de = row[7]*sinphi*np.cos(thetaf + zla) - \
+            row[8]*sinphi*np.sin(thetaf + zla)
+        DX += 1e-3*(dr*cosla*cosphi - de*sinla - dn*sinphi*cosla)
+        DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinphi*sinla)
+        DZ += 1e-3*(dr*sinphi + dn*cosphi)
+    # return the corrections
+    return (DX, DY, DZ)
+
+def _frequency_dependence_long_period(XYZ, MJD: np.ndarray):
+    """
+    Computes the in-phase and out-of-phase corrections induced by mantle
+    anelasticity in the long-period band
+    """
+    # number of time steps
+    nt = len(np.atleast_1d(MJD))
+    # Corrections to Long-Peroid Tides for Frequency Dependence
+    # of Love Number Parameters
+    # table 7.3b of IERS conventions
+    table = np.array([
+        [0.0, 0.0, 0.0, 1.0, 0.0, 0.47, 0.23, 0.16, 0.07],
+        [0.0, 2.0, 0.0, 0.0, 0.0, -0.20, -0.12, -0.11, -0.05],
+        [1.0, 0.0, -1.0, 0.0, 0.0, -0.11, -0.08, -0.09, -0.04],
+        [2.0, 0.0, 0.0, 0.0, 0.0, -0.13, -0.11, -0.15, -0.07],
+        [2.0, 0.0, 0.0, 1.0, 0.0, -0.05, -0.05, -0.06, -0.03]
+    ])
+    # get phase angles
+    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    # Compute the normalized position vector of coordinates
+    radius = np.sqrt(np.sum(XYZ**2, axis=1))
+    sinphi = XYZ[:,2]/radius
+    cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
+    sinla = XYZ[:,1]/cosphi/radius
+    cosla = XYZ[:,0]/cosphi/radius
+    # compute corrections (Mathews et al. 1997)
+    DX = np.zeros((nt))
+    DY = np.zeros((nt))
+    DZ = np.zeros((nt))
+    # iterate over rows in the table
+    for i, row in enumerate(table):
+        thetaf = S*row[0] + H*row[1] + P*row[2] + ZNS*row[3] + PS*row[4]
+        dr = row[5]*(3.0*sinphi**2 - 1.0)*np.cos(thetaf)/2.0 + \
+            row[7]*(3.0*sinphi**2 - 1.0)*np.sin(thetaf)/2.0
+        dn = row[6]*(2.0*cosphi*sinphi)*np.cos(thetaf) + \
+            row[8]*(2.0*cosphi*sinphi)*np.sin(thetaf)
+        de = 0.0
+        DX += 1e-3*(dr*cosla*cosphi - de*sinla - dn*sinphi*cosla)
+        DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinphi*sinla)
+        DZ += 1e-3*(dr*sinphi + dn*cosphi)
+    # return the corrections
+    return (DX, DY, DZ)
 
 # PURPOSE: estimate long-period equilibrium tides
 def equilibrium_tide(t: np.ndarray, lat: np.ndarray):

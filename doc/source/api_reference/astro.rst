@@ -18,10 +18,12 @@ Calling Sequence
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/astro.py
 
-.. autofunction:: pyTMD.mean_longitudes
+.. autofunction:: pyTMD.astro.mean_longitudes
+
+.. autofunction:: pyTMD.astro.phase_angles
+
+.. autofunction:: pyTMD.astro.solar_ecef
+
+.. autofunction:: pyTMD.astro.lunar_ecef
 
 .. autofunction:: pyTMD.astro.polynomial_sum
-
-.. autofunction:: pyTMD.solar_ecef
-
-.. autofunction:: pyTMD.lunar_ecef
