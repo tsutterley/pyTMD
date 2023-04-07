@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 u"""
-test_interpolate.py (12/2022)
+test_interpolate.py (04/2024)
 Test the interpolation and extrapolation routines
 
 UPDATE HISTORY:
+    Updated 04/2023: test geodetic conversion additionally as arrays
     Updated 12/2022: refactored interpolation routines into new module
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Written 03/2021
@@ -74,6 +75,13 @@ def test_geodetic(N=324):
     h = np.zeros((N))
     for i in range(N):
         lon[i],lat[i],h[i] = pyTMD.spatial.to_geodetic(X[i],Y[i],Z[i])
+    # fix coordinates to be 0:360
+    lon[lon < 0] += 360.0
+    # verify that coordinates are within tolerance
+    assert np.all(np.isclose(ln,lon))
+    assert np.all(np.isclose(lt,lat))
+    # convert from cartesian to geodetic as arrays
+    lon,lat,h = pyTMD.spatial.to_geodetic(X,Y,Z)
     # fix coordinates to be 0:360
     lon[lon < 0] += 360.0
     # verify that coordinates are within tolerance

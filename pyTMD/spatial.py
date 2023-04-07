@@ -1271,6 +1271,10 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     z, np.ndarray
         cartesian z-coordinates
     """
+    # verify axes and copy to not modify inputs
+    x = np.atleast_1d(np.copy(x))
+    y = np.atleast_1d(np.copy(y))
+    z = np.atleast_1d(np.copy(z))
     # calculate radius
     rad = np.sqrt(x**2.0 + y**2.0 + z**2.0)
     # calculate angular coordinates
@@ -1321,6 +1325,10 @@ def to_geodetic(
         16(2), 389--391, (1993). `doi: 10.2514/3.21016
         <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
     """
+    # verify axes and copy to not modify inputs
+    x = np.atleast_1d(np.copy(x))
+    y = np.atleast_1d(np.copy(y))
+    z = np.atleast_1d(np.copy(z))
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
     # Linear eccentricity and first numerical eccentricity
@@ -1358,7 +1366,7 @@ def to_geodetic(
         zi = (1.0 - e12)*z[ind]/(t - l)
         # calculate latitude and height
         lat[ind] = np.arctan2(zi, ((1.0 - e12)*wi))/dtr
-        h[ind] = np.sign(t - 1.0 + l)*np.sqrt((w - wi)**2.0 + (z[ind] - zi)**2.0)
+        h[ind] = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z[ind]-zi)**2.0)
     # return latitude, longitude and height
     return (lon, lat, h)
 
