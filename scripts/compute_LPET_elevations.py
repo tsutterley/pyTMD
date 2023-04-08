@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (02/2023)
+Written by Tyler Sutterley (04/2023)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -24,6 +24,7 @@ COMMAND LINE OPTIONS:
     -t X, --type X: input data type
         drift: drift buoys or satellite/airborne altimetry (time per data point)
         grid: spatial grids or images (single time for all data points)
+        time series: time series at a single point
     -e X, --epoch X: Reference epoch of input time (default Modified Julian Day)
         days since 1858-11-17T00:00:00
     -d X, --deltatime X: Input delta time for files without date information
@@ -63,6 +64,7 @@ PROGRAM DEPENDENCIES:
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 04/2023: check if datetime before converting to seconds
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
@@ -213,7 +215,8 @@ def compute_LPET_elevations(input_file, output_file,
     except (TypeError, KeyError, ValueError):
         epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
     # convert time to seconds
-    delta_time = to_secs*dinput['time'].flatten()
+    if (TIME_STANDARD.lower() != 'datetime'):
+        delta_time = to_secs*dinput['time'].flatten()
 
     # calculate leap seconds if specified
     if (TIME_STANDARD.upper() == 'GPS'):
@@ -248,7 +251,7 @@ def compute_LPET_elevations(input_file, output_file,
     if (TIME_STANDARD.lower() == 'datetime'):
         # convert delta time array from datetime object
         # to days relative to 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_datetime(delta_time,
+        tide_time = pyTMD.time.convert_datetime(dinput['time'].flatten(),
             epoch=pyTMD.time._tide_epoch)/86400.0
     else:
         # convert time from units to days since 1992-01-01T00:00:00 (UTC)

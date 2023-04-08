@@ -46,7 +46,7 @@ def test_ocean_pole_tide(METHOD):
     test_header['latitude'] = np.float64(lat)
     test_header['longitude'] = np.float64(lon)
 
-    # degrees to radians and arcseconds to radians
+    # degrees and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid

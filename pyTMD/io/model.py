@@ -1466,9 +1466,7 @@ class model:
         if isinstance(model_file,list):
             output_file = [os.path.join(self.model_directory,
                 ''.join([f,self.suffix,self.gzip])) for f in model_file]
-            test = [os.access(f, os.F_OK) for f in output_file]
-            print(test)
-            valid = all(test)
+            valid = all([os.access(f, os.F_OK) for f in output_file])
         elif isinstance(model_file,str):
             output_file = os.path.join(self.model_directory,
                 ''.join([model_file,self.suffix,self.gzip]))

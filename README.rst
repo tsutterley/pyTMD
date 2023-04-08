@@ -39,7 +39,10 @@ pyTMD
 .. |zenodo| image:: https://zenodo.org/badge/107997403.svg
    :target: https://zenodo.org/badge/latestdoi/107997403
 
-Python-based tidal prediction software that reads OTIS, GOT and FES formatted tidal solutions for calculating ocean and load tides
+
+Python-based tidal prediction software for estimating ocean, load, solid Earth and pole tides
+
+Ocean and load tidal predictions using OTIS, GOT and FES formatted tidal solutions
 
 - `OSU Tidal Prediction Software (OTPS) <https://www.tpxo.net/otps>`_
 - `ESR Tide Model Driver (TMD) Matlab Toolbox <https://www.esr.org/research/polar-tide-models/tmd-software/>`_
@@ -50,7 +53,7 @@ Python-based tidal prediction software that reads OTIS, GOT and FES formatted ti
 - `Delta times from US Naval Observatory (USNO) Earth Orientation Products <http://maia.usno.navy.mil/ser7/deltat.data>`_
 - `Delta times from NASA Crustal Dynamics Data Information System (CDDIS) <ftp://cddis.nasa.gov/products/iers/deltat.data>`_
 
-Pole tide prediction software for calculating radial pole tide displacements
+Radial solid Earth and pole tide displacements following IERS conventions
 
 - `IERS Conventions (2010) <http://iers-conventions.obspm.fr/>`_
 - `IERS Mean Pole Location <https://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab>`_

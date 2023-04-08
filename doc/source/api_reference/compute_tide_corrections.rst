@@ -10,8 +10,9 @@ compute_tide_corrections
 - Calculates long-period equilibrium tides (LPET) for correcting elevation or imagery data
 
   * Uses the summation of fifteen tidal spectral lines from `Cartwright and Edden, (1973) <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
-- Calculates radial pole load tides (LPT) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <http://maia.usno.navy.mil/conventions/2010officialinfo.php>`_
-- Calculates radial ocean pole load tides (OPT) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <http://maia.usno.navy.mil/conventions/2010officialinfo.php>`_
+- Calculates radial pole load tides (LPT) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <https://iers-conventions.obspm.fr/chapter7.php>`_
+- Calculates radial ocean pole load tides (OPT) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <https://iers-conventions.obspm.fr/chapter7.php>`_
+- Calculates radial solid earth tides (SET) for correcting elevation or imagery data following `IERS Convention (2010) guidelines <https://iers-conventions.obspm.fr/chapter7.php>`_
 
 Calling Sequence
 ----------------
@@ -35,3 +36,5 @@ Calling Sequence
 .. autofunction:: pyTMD.compute_LPT_corrections
 
 .. autofunction:: pyTMD.compute_OPT_corrections
+
+.. autofunction:: pyTMD.compute_SET_corrections

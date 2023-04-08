@@ -1,9 +1,8 @@
 pyTMD
 =====
 
-``pyTMD`` is a Python-based tidal prediction software that reads OTIS, GOT and FES
-formatted tidal solutions for predicting ocean and load tides and can use IERS
-conventions for calculating radial pole tide displacements.
+Python-based tidal prediction software for estimating
+ocean, load, solid Earth and pole tides
 
 .. toctree::
     :maxdepth: 2
@@ -28,7 +27,7 @@ conventions for calculating radial pole tide displacements.
     :hidden:
     :caption: API Reference
 
-    api_reference/calc_astrol_longitudes.rst
+    api_reference/astro.rst
     api_reference/check_tide_points.rst
     api_reference/compute_tide_corrections.rst
     api_reference/constants.rst
@@ -69,6 +68,7 @@ conventions for calculating radial pole tide displacements.
     api_reference/compute_LPET_elevations.rst
     api_reference/compute_LPT_displacements.rst
     api_reference/compute_OPT_displacements.rst
+    api_reference/compute_SET_displacements.rst
     api_reference/compute_tidal_currents.rst
     api_reference/compute_tidal_elevations.rst
 

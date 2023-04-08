@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Ocean and Load Tides
@@ -20,16 +20,17 @@ elevation or imagery data from the summation of fifteen spectral lines
 Load Pole Tides (LPT)
 Calculates radial load pole tide displacements following IERS Convention
 (2010) guidelines for correcting elevation or imagery data
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
-    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
+    https://iers-conventions.obspm.fr/chapter7.php
 
-Ocean Pole Tides (LPT)
+Ocean Pole Tides (OPT)
 Calculates radial ocean pole load tide displacements following IERS Convention
 (2010) guidelines for correcting elevation or imagery data
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
-    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
+    https://iers-conventions.obspm.fr/chapter7.php
+
+Ocean Pole Tides (SET)
+Calculates radial Solid Earth tide displacements following IERS Convention
+(2010) guidelines for correcting elevation or imagery data
+    https://iers-conventions.obspm.fr/chapter7.php
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -46,7 +47,7 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
-    calc_astrol_longitudes.py: computes the basic astronomical mean longitudes
+    astro.py: computes the basic astronomical mean longitudes
     convert_crs.py: convert points to and from Coordinates Reference Systems
     load_constituent.py: loads parameters for a given tidal constituent
     load_nodal_corrections.py: load the nodal corrections for tidal constituents
@@ -59,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: added function for radial solid earth tides
     Updated 03/2023: add basic variable typing to function inputs
         added function for long-period equilibrium tides
         added function for radial load pole tides
@@ -138,6 +140,7 @@ def compute_corrections(x, y, delta_time, CORRECTION='ocean', **kwargs):
             - ``'LPET'``: long-period equilibrium tide
             - ``'LPT'``: solid earth load pole tide
             - ``'OPT'``: ocean pole tide
+            - ``'SET'``: solid earth tide
     **kwargs: dict
         keyword arguments for correction functions
 
@@ -148,12 +151,16 @@ def compute_corrections(x, y, delta_time, CORRECTION='ocean', **kwargs):
     """
     if CORRECTION.lower() in ('ocean', 'load'):
         return compute_tide_corrections(x, y, delta_time, **kwargs)
-    if (CORRECTION.upper() == 'LPET'):
+    elif (CORRECTION.upper() == 'LPET'):
         return compute_LPET_corrections(x, y, delta_time, **kwargs)
-    if (CORRECTION.upper() == 'LPT'):
+    elif (CORRECTION.upper() == 'LPT'):
         return compute_LPT_corrections(x, y, delta_time, **kwargs)
-    if (CORRECTION.upper() == 'OPT'):
+    elif (CORRECTION.upper() == 'OPT'):
         return compute_OPT_corrections(x, y, delta_time, **kwargs)
+    elif (CORRECTION.upper() == 'SET'):
+        return compute_SET_corrections(x, y, delta_time, **kwargs)
+    else:
+        raise ValueError(f'Unrecognized correction type: {CORRECTION}')
 
 # PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(
@@ -691,7 +698,7 @@ def compute_LPT_corrections(
     # number of time points
     nt = len(time_decimal)
 
-    # degrees to radians
+    # degrees and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
@@ -914,7 +921,7 @@ def compute_OPT_corrections(
     # number of time points
     nt = len(time_decimal)
 
-    # degrees to radians and arcseconds to radians
+    # degrees and arcseconds to radians
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
@@ -1008,3 +1015,214 @@ def compute_OPT_corrections(
 
     # return the ocean pole tide corrections
     return Urad
+
+# PURPOSE: compute solid earth tidal elevations
+def compute_SET_corrections(
+        x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
+        h: float | np.ndarray = 0.0,
+        EPSG: str | int = 3031,
+        EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
+        TYPE: str or None = 'drift',
+        TIME: str = 'UTC',
+        ELLIPSOID: str = 'WGS84',
+        TIDE_SYSTEM='tide_free',
+        **kwargs
+    ):
+    """
+    Compute solid earth tidal elevations at points and times
+    following IERS Convention (2010) guidelines
+
+    Parameters
+    ----------
+    x: np.ndarray
+        x-coordinates in projection EPSG
+    y: np.ndarray
+        y-coordinates in projection EPSG
+    delta_time: np.ndarray
+        seconds since EPOCH or datetime array
+    h: float or np.ndarray, default 0.0
+        height coordinates in meters
+    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+        Input coordinate system
+    EPOCH: tuple, default (2000,1,1,0,0,0)
+        Time period for calculating delta times
+    TYPE: str or NoneType, default 'drift'
+        Input data type
+
+            - ``None``: determined from input variable dimensions
+            - ``'drift'``: drift buoys or satellite/airborne altimetry
+            - ``'grid'``: spatial grids or images
+            - ``'time series'``: time series at a single point
+    TIME: str, default 'UTC'
+        Time type if need to compute leap seconds to convert to UTC
+
+            - ``'GPS'``: leap seconds needed
+            - ``'LORAN'``: leap seconds needed (LORAN = GPS + 9 seconds)
+            - ``'TAI'``: leap seconds needed (TAI = GPS + 19 seconds)
+            - ``'UTC'``: no leap seconds needed
+            - ``'datetime'``: numpy datatime array in UTC
+    ELLIPSOID: str, default 'WGS84'
+        Ellipsoid for calculating Earth parameters
+    TIDE_SYSTEM: str, default 'tide_free'
+        Permanent tide system for the output solid Earth tide
+
+            - ``'tide_free'``: no permanent direct and indirect tidal potentials
+            - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+
+    Returns
+    -------
+    tide_se: np.ndarray
+        solid earth tide at coordinates and time in meters
+    """
+
+    # validate input arguments
+    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
+    assert TIDE_SYSTEM in ('mean_tide', 'tide_free')
+    # determine input data type based on variable dimensions
+    if not TYPE:
+        TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    # reform coordinate dimensions for input grids
+    # or verify coordinate dimension shapes
+    if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
+        x,y = np.meshgrid(np.copy(x),np.copy(y))
+    elif (TYPE.lower() == 'grid'):
+        x = np.atleast_2d(x)
+        y = np.atleast_2d(y)
+    elif TYPE.lower() in ('time series', 'drift'):
+        x = np.atleast_1d(x)
+        y = np.atleast_1d(y)
+
+    # converting x,y from EPSG to latitude/longitude
+    try:
+        # EPSG projection code string or int
+        crs1 = pyproj.CRS.from_epsg(int(EPSG))
+    except (ValueError,pyproj.exceptions.CRSError):
+        # Projection SRS string
+        crs1 = pyproj.CRS.from_string(EPSG)
+    # output coordinate reference system
+    crs2 = pyproj.CRS.from_epsg(4326)
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    lon, lat = transformer.transform(x.flatten(), y.flatten())
+
+    # assert delta time is an array
+    delta_time = np.atleast_1d(delta_time)
+    # calculate leap seconds if specified
+    if (TIME.upper() == 'GPS'):
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
+        # calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME.upper() == 'LORAN'):
+        # LORAN time is ahead of GPS time by 9 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
+        # calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    elif (TIME.upper() == 'TAI'):
+        # TAI time is ahead of GPS time by 19 seconds
+        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
+        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
+            epoch2=pyTMD.time._gps_epoch, scale=1.0)
+        # calculate difference in leap seconds from start of epoch
+        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
+            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
+    else:
+        leap_seconds = 0.0
+
+    if (TIME.lower() == 'datetime'):
+        # convert delta time array from datetime object
+        # to days relative to 1992-01-01T00:00:00
+        tide_time = pyTMD.time.convert_datetime(delta_time,
+            epoch=pyTMD.time._tide_epoch)/86400.0
+    else:
+        # convert time from units to days since 1992-01-01T00:00:00 (UTC)
+        tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
+            epoch1=EPOCH, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
+
+    # interpolate delta times from calendar dates to tide time
+    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+    # number of time points
+    nt = len(tide_time)
+
+    # earth and physical parameters for ellipsoid
+    units = pyTMD.constants(ELLIPSOID)
+
+    # convert input coordinates to cartesian
+    X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+        a_axis=units.a_axis, flat=units.flat)
+    # convert time to Modified Julian Days (MJD) for ephemerides
+    MJD = tide_time + deltat + 48622.0
+    # get low-resolution solar and lunar ephemerides
+    SX, SY, SZ = pyTMD.astro.solar_ecef(MJD)
+    LX, LY, LZ = pyTMD.astro.lunar_ecef(MJD)
+
+    # calculate radial displacement at time
+    if (TYPE == 'grid'):
+        ny,nx = np.shape(x)
+        tide_se = np.zeros((ny,nx,nt))
+        # convert coordinates to column arrays
+        XYZ = np.c_[X, Y, Z]
+        for i in range(nt):
+            # reshape time to match spatial
+            t = tide_time[i] + deltat[i] + np.ones((ny*nx))
+            # convert coordinates to column arrays
+            SXYZ = np.repeat(np.c_[SX[i], SY[i], SZ[i]], ny*nx, axis=0)
+            LXYZ = np.repeat(np.c_[LX[i], LY[i], LZ[i]], ny*nx, axis=0)
+            # predict solid earth tides (cartesian)
+            dxi = pyTMD.predict.solid_earth_tide(t,
+                XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
+                tide_system=TIDE_SYSTEM)
+            # calculate radial component of solid earth tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # remove effects of original topography
+            # (if added when computing cartesian coordinates)
+            tide_se[:,:,i] = np.reshape(drad - h, (ny,nx))
+    elif (TYPE == 'drift'):
+        # convert coordinates to column arrays
+        XYZ = np.c_[X, Y, Z]
+        SXYZ = np.c_[SX, SY, SZ]
+        LXYZ = np.c_[LX, LY, LZ]
+        # predict solid earth tides (cartesian)
+        dxi = pyTMD.predict.solid_earth_tide(tide_time + deltat,
+            XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
+            tide_system=TIDE_SYSTEM)
+        # calculate radial component of solid earth tides
+        dln,dlt,drad = pyTMD.spatial.to_geodetic(
+            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+            a_axis=units.a_axis, flat=units.flat)
+        # remove effects of original topography
+        # (if added when computing cartesian coordinates)
+        tide_se = drad - h
+    elif (TYPE == 'time series'):
+        nstation = len(x)
+        tide_se = np.zeros((nstation,nt))
+        # convert coordinates to column arrays
+        SXYZ = np.c_[SX, SY, SZ]
+        LXYZ = np.c_[LX, LY, LZ]
+        for s in range(nstation):
+            # convert coordinates to column arrays
+            XYZ = np.repeat(np.c_[X[s], Y[s], Z[s]], nt, axis=0)
+            # predict solid earth tides (cartesian)
+            dxi = pyTMD.predict.solid_earth_tide(tide_time + deltat,
+                XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
+                tide_system=TIDE_SYSTEM)
+            # calculate radial component of solid earth tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # remove effects of original topography
+            # (if added when computing cartesian coordinates)
+            tide_se[s,:] = drad - h
+
+    # return the solid earth tide corrections
+    return tide_se
