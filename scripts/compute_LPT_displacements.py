@@ -4,9 +4,7 @@ compute_LPT_displacements.py
 Written by Tyler Sutterley (04/2023)
 Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
-    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
+    https://iers-conventions.obspm.fr/chapter7.php
 
 INPUTS:
     csv file with columns for spatial and temporal coordinates

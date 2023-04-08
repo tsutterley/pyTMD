@@ -20,16 +20,17 @@ elevation or imagery data from the summation of fifteen spectral lines
 Load Pole Tides (LPT)
 Calculates radial load pole tide displacements following IERS Convention
 (2010) guidelines for correcting elevation or imagery data
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
-    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
+    https://iers-conventions.obspm.fr/chapter7.php
 
-Ocean Pole Tides (LPT)
+Ocean Pole Tides (OPT)
 Calculates radial ocean pole load tide displacements following IERS Convention
 (2010) guidelines for correcting elevation or imagery data
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
-    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
+    https://iers-conventions.obspm.fr/chapter7.php
+
+Ocean Pole Tides (SET)
+Calculates radial Solid Earth tide displacements following IERS Convention
+(2010) guidelines for correcting elevation or imagery data
+    https://iers-conventions.obspm.fr/chapter7.php
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -1065,8 +1066,8 @@ def compute_SET_corrections(
     TIDE_SYSTEM: str, default 'tide_free'
         Permanent tide system for the output solid Earth tide
 
-        - ``'tide_free'``: no permanent direct and indirect tidal potentials
-        - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+            - ``'tide_free'``: no permanent direct and indirect tidal potentials
+            - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
 
     Returns
     -------

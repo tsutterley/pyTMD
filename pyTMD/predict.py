@@ -574,8 +574,8 @@ def solid_earth_tide(
     tide_system: str, default 'tide_free'
         Permanent tide system for the output solid Earth tide
 
-        - ``'tide_free'``: no permanent direct and indirect tidal potentials
-        - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+            - ``'tide_free'``: no permanent direct and indirect tidal potentials
+            - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
 
     Returns
     -------
@@ -774,7 +774,7 @@ def _latitude_dependence(XYZ: np.ndarray, SXYZ: np.ndarray,
     LXYZ: np.ndarray, F2_solar, F2_lunar):
     """
     Computes the corrections induced by the latitude of the
-    dependence given by L^1
+    dependence given by L\ :sup:`1`
     """
     # love number corrections (diurnal and semi-diurnal)
     l1d = 0.0012
@@ -941,7 +941,7 @@ def _free_to_mean(XYZ: np.ndarray, h2: float | np.ndarray,
     l2: float | np.ndarray):
     """
     Calculate offsets for converting the permanent tide from
-    tide-free to the mean-tide state.
+    a tide-free to a mean-tide state
     """
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))

@@ -17,7 +17,7 @@ Ocean and Load Tide Resources
 Pole Tide Resources
 ###################
 
-- `IERS Conventions (2010) <http://iers-conventions.obspm.fr/>`_
+- `IERS Conventions (2010) <https://iers-conventions.obspm.fr/>`_
 - `IERS Mean Pole Location <https://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab>`_
 - `IERS Pole Coordinates to Calculate Mean Pole <https://hpiers.obspm.fr/iers/eop/eopc01/eopc01.1900-now.dat>`_
 - `IERS Daily Earth Orientation Parameters (EOP) from USNO <http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly>`_

@@ -4,9 +4,7 @@ compute_SET_displacements.py
 Written by Tyler Sutterley (04/2023)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
-    http://maia.usno.navy.mil/conventions/2010officialinfo.php
-    http://maia.usno.navy.mil/conventions/chapter7.php
-    https://iers-conventions.obspm.fr/content/chapter7/icc7.pdf
+    https://iers-conventions.obspm.fr/chapter7.php
 
 INPUTS:
     csv file with columns for spatial and temporal coordinates
@@ -43,6 +41,8 @@ COMMAND LINE OPTIONS:
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
     -E X, --ellipsoid X: Ellipsoid for calculating astronomical parameters
     -p X, --tide-system X: Permanent tide system for output values
+        tide_free: no permanent direct and indirect tidal potentials
+        mean_tide: permanent tidal potentials (direct and indirect)
     -V, --verbose: Verbose output of processing run
     -M X, --mode X: Permission mode of output file
 

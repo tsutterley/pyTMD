@@ -175,17 +175,23 @@ def test_solid_earth_tide():
 def test_solid_earth_radial():
     """Test radial solid tides with predictions from ICESat-2
     """
-    times = np.array(['2022-07-23 13:53:08','2022-07-23 13:53:08',
+    times = np.array(['2018-10-14 00:21:48','2018-10-14 00:21:48',
+        '2018-10-14 00:21:48','2018-10-14 00:21:48',
+        '2022-07-23 13:53:08','2022-07-23 13:53:08',
         '2022-07-23 13:53:08','2022-07-23 13:53:08'], dtype=np.datetime64)
-    longitudes = np.array([-71.77356870,-71.77374742,
+    longitudes = np.array([-136.79534534,-136.79545175,
+        -136.79548250,-136.79549453,-71.77356870,-71.77374742,
         -71.77392700,-71.77410705])
-    latitudes = np.array([-79.00591611,-79.00609103,
+    latitudes = np.array([68.95910366,68.95941755,
+        68.95950895,68.95954490,-79.00591611,-79.00609103,
         -79.00626593,-79.00644081])
     # expected results (tide-free)
-    tide_earth = np.array([-0.11887791,-0.11887763,
+    tide_earth = np.array([-0.14320290,-0.14320324,
+        -0.14320339,-0.14320345,-0.11887791,-0.11887763,
         -0.11887724,-0.11887683])
     # tide_mean = tide_free + tide_earth_free2mean
-    tide_earth_free2mean = np.array([-0.11400376,-0.11400391,
+    tide_earth_free2mean = np.array([-0.09726650,-0.09726728,
+        -0.09726749,-0.09726755,-0.11400376,-0.11400391,
         -0.11400412,-0.11400434])
     # predict radial solid earth tides
     tide_free = compute_SET_corrections(longitudes, latitudes, times,

@@ -68,6 +68,7 @@ ocean, load, solid Earth and pole tides
     api_reference/compute_LPET_elevations.rst
     api_reference/compute_LPT_displacements.rst
     api_reference/compute_OPT_displacements.rst
+    api_reference/compute_SET_displacements.rst
     api_reference/compute_tidal_currents.rst
     api_reference/compute_tidal_elevations.rst
 
