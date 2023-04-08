@@ -951,8 +951,9 @@ def _free_to_mean(XYZ: np.ndarray, h2: float | np.ndarray,
     cosla = XYZ[:,0]/cosphi/radius
     dr = -np.sqrt(5.0/(4.0*np.pi))*h2*0.31460*(3.0/2.0*sinphi**2 - 0.5)
     dn = -np.sqrt(5.0/(4.0*np.pi))*l2*0.31460*3.0*cosphi*sinphi
-    DX = dr*cosla*cosphi - dn*cosla*sinphi
-    DY = dr*sinla*cosphi - dn*sinla*sinphi
-    DZ = dr*sinphi + dn*cosphi
+    # compute as an additive correction
+    DX = -dr*cosla*cosphi + dn*cosla*sinphi
+    DY = -dr*sinla*cosphi + dn*sinla*sinphi
+    DZ = -dr*sinphi - dn*cosphi
     # return the corrections
     return (DX, DY, DZ)

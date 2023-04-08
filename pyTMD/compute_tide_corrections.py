@@ -1183,7 +1183,9 @@ def compute_SET_corrections(
             dln,dlt,drad = pyTMD.spatial.to_geodetic(
                 X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
-            tide_se[:,:,i] = np.reshape(drad, (ny,nx))
+            # remove effects of original topography
+            # (if added when computing cartesian coordinates)
+            tide_se[:,:,i] = np.reshape(drad - h, (ny,nx))
     elif (TYPE == 'drift'):
         # convert coordinates to column arrays
         XYZ = np.c_[X, Y, Z]
@@ -1194,9 +1196,12 @@ def compute_SET_corrections(
             XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
             tide_system=TIDE_SYSTEM)
         # calculate radial component of solid earth tides
-        dln,dlt,tide_se = pyTMD.spatial.to_geodetic(
+        dln,dlt,drad = pyTMD.spatial.to_geodetic(
             X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
             a_axis=units.a_axis, flat=units.flat)
+        # remove effects of original topography
+        # (if added when computing cartesian coordinates)
+        tide_se = drad - h
     elif (TYPE == 'time series'):
         nstation = len(x)
         tide_se = np.zeros((nstation,nt))
@@ -1211,9 +1216,12 @@ def compute_SET_corrections(
                 XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
                 tide_system=TIDE_SYSTEM)
             # calculate radial component of solid earth tides
-            dln,dlt,tide_se[s,:] = pyTMD.spatial.to_geodetic(
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
                 X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
+            # remove effects of original topography
+            # (if added when computing cartesian coordinates)
+            tide_se[s,:] = drad - h
 
     # return the solid earth tide corrections
     return tide_se
