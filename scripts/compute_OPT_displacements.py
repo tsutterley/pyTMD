@@ -85,6 +85,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 04/2023: check if datetime before converting to seconds
+        using pathlib to define and expand paths
     Updated 03/2023: added option for changing the IERS mean pole convention
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
@@ -117,8 +118,8 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
 import logging
+import pathlib
 import warnings
 import argparse
 import numpy as np
@@ -407,7 +408,7 @@ def compute_OPT_displacements(input_file, output_file,
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_oc_pole')
     # change the permissions level to MODE
-    os.chmod(output_file, MODE)
+    output_file.chmod(MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -421,10 +422,10 @@ def arguments():
     # command line options
     # input and output file
     parser.add_argument('infile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=pathlib.Path, nargs='?',
         help='Input file to run')
     parser.add_argument('outfile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=pathlib.Path, nargs='?',
         help='Computed output file')
     # input and output data format
     parser.add_argument('--format','-F',
@@ -500,8 +501,7 @@ def main():
 
     # set output file from input filename if not entered
     if not args.outfile:
-        fileBasename,fileExtension = os.path.splitext(args.infile)
-        vars = (fileBasename,'ocean_pole_tide',fileExtension)
+        vars = (args.infile.stem,'ocean_pole_tide',args.infile.suffix)
         args.outfile = '{0}_{1}{2}'.format(*vars)
 
     # run ocean pole tide program for input file

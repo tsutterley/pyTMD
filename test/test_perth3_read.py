@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (12/2022)
+test_perth3_read.py (04/2023)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 09/2021: added test for model definition files
         update check tide points to add compression flags
@@ -24,13 +25,13 @@ UPDATE HISTORY:
         replaced numpy bool/int to prevent deprecation warnings
     Written 08/2020
 """
-import os
 import io
 import gzip
 import boto3
 import shutil
 import pytest
 import inspect
+import pathlib
 import posixpath
 import numpy as np
 import pyTMD.io
@@ -43,7 +44,7 @@ import pyTMD.check_tide_points
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: Download GOT4.7 constituents from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
@@ -61,17 +62,17 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('GOT4.7')
     # recursively create model directory
-    os.makedirs(model.model_directory)
+    model.model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
-        f = os.path.basename(model_file)
+        f = model_file.name
         obj = bucket.Object(key=posixpath.join('GOT4.7','grids_oceantide',f))
         response = obj.get()
         # save constituent data
-        with open(model_file, 'wb') as destination:
+        with model_file.open(mode='wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(model_file, os.F_OK)
+        assert model_file.exists()
     # run tests
     yield
     # clean up model
@@ -82,18 +83,18 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
 # PURPOSE: Tests that interpolated results are comparable to PERTH3 program
 def test_verify_GOT47(METHOD):
     # model parameters for GOT4.7
-    model_directory = os.path.join(filepath,'GOT4.7','grids_oceantide')
+    model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model_format = 'GOT'
     GZIP = True
     SCALE = 1.0
 
     # read validation dataset
-    with gzip.open(os.path.join(filepath,'perth_output_got4.7.gz'),'r') as fid:
+    with gzip.open(filepath.joinpath('perth_output_got4.7.gz'),'r') as fid:
         file_contents = fid.read().decode('ISO-8859-1').splitlines()
     # extract latitude, longitude, time (Modified Julian Days) and tide data
     npts = len(file_contents) - 2
@@ -151,16 +152,16 @@ def test_verify_GOT47(METHOD):
 # PURPOSE: Tests that interpolated results are comparable
 def test_compare_GOT47(METHOD):
     # model parameters for GOT4.7
-    model_directory = os.path.join(filepath,'GOT4.7','grids_oceantide')
+    model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     GZIP = True
     SCALE = 1.0
 
     # read validation dataset
-    with gzip.open(os.path.join(filepath,'perth_output_got4.7.gz'),'r') as fid:
+    with gzip.open(filepath.joinpath('perth_output_got4.7.gz'),'r') as fid:
         file_contents = fid.read().decode('ISO-8859-1').splitlines()
     # extract latitude, longitude, time (Modified Julian Days) and tide data
     npts = len(file_contents) - 2

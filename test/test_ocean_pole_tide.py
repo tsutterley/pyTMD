@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 u"""
 test_ocean_pole_tide.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (04/2023)
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: single implicit import of pyTMD
         use constants class for ellipsoidal parameters
         read header from test file and compare more variables
@@ -11,9 +12,9 @@ UPDATE HISTORY:
     Updated 05/2022: change to longcomplex for windows compatibility
     Written 08/2020
 """
-import os
 import re
 import inspect
+import pathlib
 import pytest
 import numpy as np
 import scipy.interpolate
@@ -21,15 +22,15 @@ import pyTMD
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest','linear'])
 # test the interpolation of ocean pole tide values
 def test_ocean_pole_tide(METHOD):
     # read ocean pole tide test file for header text
-    ocean_pole_test_file = os.path.join(filepath,'opoleloadcmcor.test')
-    with open(ocean_pole_test_file, mode='r', encoding='utf8') as f:
+    ocean_pole_test_file = filepath.joinpath('opoleloadcmcor.test')
+    with ocean_pole_test_file.open(mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
 
     # extract header parameters

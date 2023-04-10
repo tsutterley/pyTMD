@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: added function for radial solid earth tides
+        using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
         added function for long-period equilibrium tides
         added function for radial load pole tides
@@ -97,7 +98,7 @@ UPDATE HISTORY:
 """
 from __future__ import print_function, annotations
 
-import os
+import pathlib
 import warnings
 import numpy as np
 import scipy.interpolate
@@ -120,7 +121,11 @@ except (ImportError, ModuleNotFoundError) as exc:
 warnings.filterwarnings("ignore")
 
 # PURPOSE: wrapper function for computing corrections
-def compute_corrections(x, y, delta_time, CORRECTION='ocean', **kwargs):
+def compute_corrections(
+        x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
+        CORRECTION: str = 'ocean',
+        **kwargs
+    ):
     """
     Wrapper function to compute tide corrections at points and times
 
@@ -135,8 +140,8 @@ def compute_corrections(x, y, delta_time, CORRECTION='ocean', **kwargs):
     CORRECTION: str, default 'ocean'
         Correction type to compute
 
-            - ``'ocean'``: ocean tide
-            - ``'load'``: load tide
+            - ``'ocean'``: ocean tide from model constituents
+            - ``'load'``: load tide from model constituents
             - ``'LPET'``: long-period equilibrium tide
             - ``'LPT'``: solid earth load pole tide
             - ``'OPT'``: ocean pole tide
@@ -165,11 +170,11 @@ def compute_corrections(x, y, delta_time, CORRECTION='ocean', **kwargs):
 # PURPOSE: compute tides at points and times using tide model algorithms
 def compute_tide_corrections(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        DIRECTORY: str | None = None,
+        DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
         ATLAS_FORMAT: str = 'netcdf',
         GZIP: bool = False,
-        DEFINITION_FILE: str | None = None,
+        DEFINITION_FILE: str | pathlib.Path | None = None,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str or None = 'drift',
@@ -182,7 +187,8 @@ def compute_tide_corrections(
         **kwargs
     ):
     """
-    Compute tides at points and times using tidal harmonics
+    Compute ocean or load tides at points and times from
+    model constituents
 
     Parameters
     ----------
@@ -251,9 +257,8 @@ def compute_tide_corrections(
     """
 
     # check that tide directory is accessible
-    try:
-        os.access(DIRECTORY, os.F_OK)
-    except:
+    DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
+    if not DIRECTORY.exists():
         raise FileNotFoundError("Invalid tide directory")
 
     # validate input arguments
@@ -262,7 +267,8 @@ def compute_tide_corrections(
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
+        model = pyTMD.io.model(DIRECTORY).from_file(
+            pathlib.Path(DEFINITION_FILE).expanduser())
     else:
         model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).elevation(MODEL)

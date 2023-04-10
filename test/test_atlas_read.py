@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (12/2022)
+test_atlas_read.py (04/2023)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 09/2021: added test for model definition files
@@ -24,7 +25,6 @@ UPDATE HISTORY:
         replaced numpy bool/int to prevent deprecation warnings
     Written 09/2020
 """
-import os
 import re
 import io
 import gzip
@@ -32,6 +32,7 @@ import boto3
 import shutil
 import pytest
 import inspect
+import pathlib
 import posixpath
 import numpy as np
 import pyTMD.io
@@ -41,7 +42,7 @@ import pyTMD.utilities
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: Download TPXO8 ATLAS compact constituents from AWS S3 bucket
 # @pytest.fixture(scope="module", autouse=True)
@@ -56,18 +57,18 @@ def download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     # model parameters for TPXO8-ATLAS
-    model_directory = os.path.join(filepath,'tpxo8_atlas')
+    model_directory = filepath.joinpath('tpxo8_atlas')
     # recursively create model directory
-    os.makedirs(model_directory)
+    model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve each model file from s3
     for f in ['grid_tpxo8atlas_30_v1','hf.tpxo8_atlas_30_v1','uv.tpxo8_atlas_30_v1']:
         # retrieve constituent file
         obj = bucket.Object(key=posixpath.join('tpxo8_atlas',f))
         response = obj.get()
         # save constituent data
-        with open(os.path.join(model_directory,f), 'wb') as destination:
+        with open(model_directory.joinpath(f), 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(os.path.join(model_directory,f), os.F_OK)
+        assert model_directory.joinpath(f).exists()
     # run tests
     yield
     # clean up model
@@ -89,25 +90,23 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,format='netcdf',compressed=True,
         verify=False).elevation('TPXO9-atlas-v2')
     # recursively create model directory
-    os.makedirs(model.model_directory)
+    model.model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve grid file from s3
-    f = os.path.basename(model.grid_file)
-    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',f))
+    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model.grid_file.stem))
     response = obj.get()
     # save grid data
-    with open(model.grid_file, 'wb') as destination:
+    with model.grid_file.open(mode='wb') as destination:
         shutil.copyfileobj(response['Body'], destination)
-    assert os.access(model.grid_file, os.F_OK)
+    assert model.grid_file.exists()
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
-        f = os.path.basename(model_file)
-        obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',f))
+        obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model_file.stem))
         response = obj.get()
         # save constituent data
-        with open(model_file, 'wb') as destination:
+        with model_file.open(mode='wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(model_file, os.F_OK)
+        assert model_file.exists()
     # run tests
     yield
     # clean up model
@@ -119,13 +118,13 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
 # PURPOSE: Tests that interpolated results are comparable to OTPSnc program
 def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
     # model parameters for TPXO9-atlas-v2
-    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
+    model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
-    grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
+    grid_file = model_directory.joinpath('grid_tpxo9_atlas_30_v2.nc.gz')
     # constituent files included in test
     model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
         'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
     TYPE = 'z'
     SCALE = 1.0/1000.0
@@ -135,7 +134,7 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
     names = ('Lat', 'Lon', 'm2_amp', 'm2_ph', 's2_amp', 's2_ph',
         'k1_amp', 'k1_ph', 'o1_amp', 'o1_ph')
     formats = ('f','f','f','f','f','f','f','f','f','f')
-    val = np.loadtxt(os.path.join(filepath,'extract_HC_sample_out.gz'),
+    val = np.loadtxt(filepath.joinpath('extract_HC_sample_out.gz'),
         skiprows=3,dtype=dict(names=names,formats=formats))
 
     # extract amplitude and phase from tide model
@@ -164,13 +163,13 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
 # PURPOSE: Tests that interpolated results are comparable
 def test_compare_TPXO9_v2(METHOD):
     # model parameters for TPXO9-atlas-v2
-    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
+    model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
-    grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
+    grid_file = model_directory.joinpath('grid_tpxo9_atlas_30_v2.nc.gz')
     # constituent files included in test
     model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
         'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     TYPE = 'z'
     SCALE = 1.0
     GZIP = True
@@ -179,7 +178,7 @@ def test_compare_TPXO9_v2(METHOD):
     names = ('Lat', 'Lon', 'm2_amp', 'm2_ph', 's2_amp', 's2_ph',
         'k1_amp', 'k1_ph', 'o1_amp', 'o1_ph')
     formats = ('f','f','f','f','f','f','f','f','f','f')
-    val = np.loadtxt(os.path.join(filepath,'extract_HC_sample_out.gz'),
+    val = np.loadtxt(filepath.joinpath('extract_HC_sample_out.gz'),
         skiprows=3,dtype=dict(names=names,formats=formats))
 
     # extract amplitude and phase from tide model
@@ -224,7 +223,7 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
         r'|(?:\d*\.\d+)|(?:\d+\.?))')
     # read validation dataset (m2, s2)
     # Lat  Lon  mm.dd.yyyy hh:mm:ss  z(m)  Depth(m)
-    with gzip.open(os.path.join(filepath,'predict_tide.out.gz'),'r') as f:
+    with gzip.open(filepath.joinpath('predict_tide.out.gz'),'r') as f:
         file_contents = f.read().decode('ISO-8859-1').splitlines()
     # number of validation data points
     nval = len(file_contents) - 13
@@ -289,13 +288,13 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
 # PURPOSE: Tests that interpolated results are comparable to OTPSnc program
 def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     # model parameters for TPXO9-atlas-v2
-    model_directory = os.path.join(filepath,'TPXO9_atlas_v2')
+    model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
-    grid_file = os.path.join(model_directory,'grid_tpxo9_atlas_30_v2.nc.gz')
+    grid_file = model_directory.joinpath('grid_tpxo9_atlas_30_v2.nc.gz')
     # constituent files included in test
     model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
         'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
     model_format = 'netcdf'
     TYPE = 'z'
@@ -307,7 +306,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         r'|(?:\d*\.\d+)|(?:\d+\.?))')
     # read validation dataset (m2, s2, k1, o1)
     # Lat  Lon  mm.dd.yyyy hh:mm:ss  z(m)  Depth(m)
-    with gzip.open(os.path.join(filepath,'predict_tide_sample_out.gz'),'r') as f:
+    with gzip.open(filepath.joinpath('predict_tide_sample_out.gz'),'r') as f:
         file_contents = f.read().decode('ISO-8859-1').splitlines()
     # number of validation data points
     nval = len(file_contents) - 6

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 aviso_fes_tides.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (04/2023)
 Downloads the FES (Finite Element Solution) global tide model from AVISO
 Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/data/products/auxiliary-products/
@@ -35,6 +35,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
@@ -51,7 +52,6 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
 import io
 import gzip
 import netrc
@@ -59,6 +59,7 @@ import shutil
 import logging
 import tarfile
 import getpass
+import pathlib
 import argparse
 import builtins
 import posixpath
@@ -74,15 +75,15 @@ def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
     f = ftplib.FTP('ftp-access.aviso.altimetry.fr',timeout=1000)
     f.login(USER, PASSWORD)
     # check if local directory exists and recursively create if not
-    localpath = os.path.join(DIRECTORY,MODEL.lower())
-    os.makedirs(localpath,MODE) if not os.path.exists(localpath) else None
+    localpath = pathlib.Path(DIRECTORY).joinpath(MODEL.lower()).expanduser()
+    localpath.mkdir(MODE, parents=True, exist_ok=True)
 
     # create log file with list of downloaded files (or print to terminal)
     if LOG:
         # format: AVISO_FES_tides_2002-04-01.log
         today = time.strftime('%Y-%m-%d',time.localtime())
-        LOGFILE = f'AVISO_FES_tides_{today}.log'
-        fid = open(os.path.join(DIRECTORY,LOGFILE), mode='w', encoding='utf8')
+        LOGFILE = localpath.joinpath(f'AVISO_FES_tides_{today}.log')
+        fid = LOGFILE.open(mode='w', encoding='utf8')
         logger = pyTMD.utilities.build_logger(__name__,stream=fid,
             level=logging.INFO)
         logger.info(f'AVISO FES Sync Log ({today})')
@@ -158,7 +159,7 @@ def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
     f.quit()
     # close log file and set permissions level to MODE
     if LOG:
-        os.chmod(os.path.join(DIRECTORY,LOGFILE), MODE)
+        LOGFILE.chmod(MODE)
 
 # PURPOSE: pull file from a remote ftp server and decompress if tar file
 def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE):
@@ -179,44 +180,41 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
         member_files = [m for m in tar.getmembers() if tarfile.TarInfo.isfile(m)]
         for m in member_files:
             member = posixpath.basename(m.name) if flatten else m.name
-            fileBasename,fileExtension = posixpath.splitext(m.name)
+            fileBasename, fileExtension = posixpath.splitext(m.name)
             # extract file contents to new file
             if fileExtension in ('.asc','.nc') and GZIP:
-                local_file = os.path.join(local_dir,
-                    *posixpath.split(f'{member}.gz'))
-                logger.info(f'\t{local_file}')
+                local_file = local_dir.joinpath(*posixpath.split(f'{member}.gz'))
+                logger.info(f'\t{str(local_file)}')
                 # recursively create output directory if non-existent
-                if not os.access(os.path.dirname(local_file),os.F_OK):
-                    os.makedirs(os.path.dirname(local_file),MODE)
+                local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
                 # extract file to compressed gzip format in local directory
                 with tar.extractfile(m) as fi,gzip.open(local_file, 'wb') as fo:
                     shutil.copyfileobj(fi, fo)
             else:
-                local_file = os.path.join(local_dir,*posixpath.split(member))
-                logger.info(f'\t{local_file}')
+                local_file = local_dir.joinpath(*posixpath.split(member))
+                logger.info(f'\t{str(local_file)}')
                 # recursively create output directory if non-existent
-                if not os.access(os.path.dirname(local_file),os.F_OK):
-                    os.makedirs(os.path.dirname(local_file),MODE)
+                local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
                 # extract file to local directory
                 with tar.extractfile(m) as fi,open(local_file, 'wb') as fo:
                     shutil.copyfileobj(fi, fo)
             # get last modified date of remote file within tar file
             # keep remote modification time of file and local access time
-            os.utime(local_file, (os.stat(local_file).st_atime, m.mtime))
-            os.chmod(local_file, MODE)
+            pathlib.os.utime(local_file, (local_file.stat().st_atime, m.mtime))
+            local_file.chmod(MODE)
     else:
         # copy readme and uncompressed files directly
-        local_file = os.path.join(local_dir,remote_path[-1])
-        logger.info(f'\t{local_file}\n')
+        local_file = local_dir.joinpath(local_dir,remote_path[-1])
+        logger.info(f'\t{str(local_file)}\n')
         # copy remote file contents to local file
-        with open(local_file, 'wb') as f:
+        with local_file.open('wb') as f:
             ftp.retrbinary(f'RETR {remote_file}', f.write)
         # get last modified date of remote file and convert into unix time
         mdtm = ftp.sendcmd(f'MDTM {remote_file}')
         remote_mtime = calendar.timegm(time.strptime(mdtm[4:],"%Y%m%d%H%M%S"))
         # keep remote modification time of file and local access time
-        os.utime(local_file, (os.stat(local_file).st_atime, remote_mtime))
-        os.chmod(local_file, MODE)
+        pathlib.os.utime(local_file, (local_file.stat().st_atime, remote_mtime))
+        local_file.chmod(MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -234,13 +232,11 @@ def arguments():
         type=str, default='',
         help='Username for AVISO FTP servers')
     parser.add_argument('--netrc','-N',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.path.join(os.path.expanduser('~'),'.netrc'),
+        type=pathlib.Path, default=pathlib.Path().home().joinpath('.netrc'),
         help='Path to .netrc file for authentication')
     # working data directory
     parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path, default=pathlib.Path.cwd(),
         help='Working data directory')
     # FES tide models
     parser.add_argument('--tide','-T',

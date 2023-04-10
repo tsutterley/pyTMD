@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (04/2023)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     convert_crs.py: converts lat/lon points to and from projected coordinates
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: new function name for coordinate reference systems
     Updated 12/2022: refactored OTIS model input and output
     Updated 11/2022: place some imports within try/except statements
@@ -49,7 +50,7 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
+import pathlib
 import warnings
 import argparse
 import numpy as np
@@ -138,7 +139,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     new_grid_file = create_unique_filename(model.grid_file)
     pyTMD.io.OTIS.output_otis_grid(new_grid_file,xlim,ylim,hz1,mz1,iob,dt)
     # change the permissions level to MODE
-    os.chmod(new_grid_file, MODE)
+    new_grid_file.chmod(MODE)
 
     # combine ATLAS sub-grids into single output grid
     # reduce elevation files to bounds
@@ -167,7 +168,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         pyTMD.io.OTIS.output_otis_elevation(new_model_file['z'], z1,
             xlim, ylim, constituents)
         # change the permissions level to MODE
-        os.chmod(new_model_file['z'], MODE)
+        new_model_file['z'].chmod(MODE)
 
     # combine ATLAS sub-grids into single output grid
     # reduce transport files to bounds
@@ -200,30 +201,30 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         pyTMD.io.OTIS.output_otis_transport(new_model_file['u'], u1, v1,
             xlim, ylim, constituents)
         # change the permissions level to MODE
-        os.chmod(new_model_file['u'], MODE)
+        new_model_file['u'].chmod(MODE)
 
 # PURPOSE: create a unique filename adding a numerical instance if existing
 def create_unique_filename(filename):
-    # split filename into fileBasename and fileExtension
-    fileBasename, fileExtension = os.path.splitext(filename)
-    fileExtension = '' if (fileExtension in ('.out','.oce')) else fileExtension
+    # split filename into parts
+    filename = pathlib.Path(filename)
+    basename = filename.stem
+    suffix = '' if (filename.suffix in ('.out','.oce')) else filename.suffix
     # replace extension with reduced flag
-    filename = '{0}{1}{2}'.format(fileBasename, fileExtension, '.reduced')
+    filename = filename.with_name(f'{basename}{suffix}.reduced')
     # create counter to add to the end of the filename if existing
     counter = 1
     while counter:
         try:
             # open file descriptor only if the file doesn't exist
-            fd = os.open(filename, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            fd = filename.open(mode='xb')
         except OSError:
             pass
         else:
             # close the file descriptor and return the filename
-            os.close(fd)
+            fd.close()
             return filename
         # new filename adds counter
-        args = (fileBasename, fileExtension, '.reduced', counter)
-        filename = '{0}{1}{2}_{3:d}'.format(*args)
+        filename = filename.with_name(f'{basename}{suffix}.reduced_{counter:d}')
         counter += 1
 
 # PURPOSE: create argument parser
@@ -238,8 +239,7 @@ def arguments():
     # command line options
     # set data directory containing the tidal data
     parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path, default=pathlib.Path.cwd(),
         help='Working data directory')
     # tide model to use
     model_choices = ('CATS0201','CATS2008','CATS2008_load','TPXO9-atlas',

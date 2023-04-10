@@ -3,7 +3,6 @@ u"""
 test_time.py (09/2020)
 Verify time conversion functions
 """
-import os
 import pytest
 import numpy as np
 import pyTMD.time
@@ -138,4 +137,4 @@ def test_update_delta_time(username, password):
     delta_time_files.append('iers_deltat.data')
     delta_time_files.append('merged_deltat.data')
     for FILE in delta_time_files:
-        assert os.access(pyTMD.utilities.get_data_path(['data',FILE]),os.F_OK)
+        assert pyTMD.utilities.get_data_path(['data',FILE]).exists()

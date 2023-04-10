@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (12/2022)
+test_download_and_read.py (04/2023)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
@@ -37,13 +38,13 @@ UPDATE HISTORY:
         will install octave and oct2py in development requirements
     Written 08/2020
 """
-import os
 import re
 import io
 import boto3
 import shutil
 import pytest
 import inspect
+import pathlib
 import zipfile
 import warnings
 import posixpath
@@ -59,7 +60,7 @@ from oct2py import octave
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: calculate the matlab serial date from calendar date
 # http://scienceworld.wolfram.com/astronomy/JulianDate.html
@@ -81,37 +82,37 @@ class Test_CATS2008:
             '2019-12-19T23:26:43.6Z','CATS2008.zip?dataset_id=601235']
         FILE = pyTMD.utilities.from_http(HOST)
         zfile = zipfile.ZipFile(FILE)
-        print('{0} -->\n'.format(posixpath.join(*HOST)))
+        print(f'{posixpath.join(*HOST)} -->\n')
         # find model files within zip file
         rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)',re.IGNORECASE)
         m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
         # verify that model files are within downloaded zip file
         assert all(m)
         # output tide directory for model
-        modelpath = os.path.join(filepath,'CATS2008')
+        modelpath = filepath.joinpath('CATS2008')
         # extract each member (model and configuration files)
         for member in m:
             # strip directories from member filename
             member.filename = posixpath.basename(member.filename)
-            print('\t{0}\n'.format(os.path.join(modelpath,member.filename)))
+            print(f'\t{modelpath.joinpath(member.filename)}\n')
             zfile.extract(member, path=modelpath)
         # close the zipfile object
         zfile.close()
         # output control file for tide model
-        CFname = os.path.join(filepath,'Model_CATS2008')
-        fid = open(CFname, mode='w', encoding='utf8')
+        CFname = filepath.joinpath('Model_CATS2008')
+        fid = CFname.open(mode='w', encoding='utf8')
         for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
-            print(os.path.join(modelpath,model_file),file=fid)
-        print('xy_ll_CATS2008',file=fid)
+            print(modelpath.joinpath(model_file), file=fid)
+        print('xy_ll_CATS2008', file=fid)
         fid.close()
         # verify control file
-        assert os.access(CFname, os.F_OK)
+        assert CFname.exists()
         # run tests
         yield
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        os.remove(CFname)
+        CFname.unlink()
 
     # PURPOSE: Download CATS2008 from AWS S3 bucket
     @pytest.fixture(scope="class", autouse=True)
@@ -125,39 +126,41 @@ class Test_CATS2008:
         s3 = session.resource('s3')
         bucket = s3.Bucket('pytmd')
         # model parameters for CATS2008
-        modelpath = os.path.join(filepath,'CATS2008')
+        modelpath = filepath.joinpath('CATS2008')
         # recursively create model directory
-        os.makedirs(modelpath)
+        modelpath.mkdir(parents=True, exist_ok=True)
         # output control file for tide model
-        CFname = os.path.join(filepath,'Model_CATS2008')
-        fid = open(CFname, mode='w', encoding='utf8')
+        CFname = filepath.joinpath('Model_CATS2008')
+        fid = CFname.open(mode='w', encoding='utf8')
         # retrieve each model file from s3
         for model_file in ['hf.CATS2008.out','uv.CATS2008.out','grid_CATS2008']:
-            # retrieve CATS2008 modelfile
+            # retrieve CATS2008 model files
             obj = bucket.Object(key=posixpath.join('CATS2008',model_file))
             response = obj.get()
-            with open(os.path.join(modelpath,model_file), 'wb') as destination:
+            local = modelpath.joinpath(model_file)
+            with local.open(mode='wb') as destination:
                 shutil.copyfileobj(response['Body'], destination)
-            assert os.access(os.path.join(modelpath,model_file), os.F_OK)
+            assert local.exists()
             # print to model control file
-            print(os.path.join(modelpath,model_file),file=fid)
+            print(local, file=fid)
         # retrieve CATS2008 coordinate file
         model_file = 'xy_ll_CATS2008.m'
         obj = bucket.Object(key=posixpath.join('CATS2008',model_file))
         response = obj.get()
-        with open(os.path.join(modelpath,model_file), 'wb') as destination:
+        local = modelpath.joinpath(model_file)
+        with local.open(mode='wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         # print coordinate conversion function to model control file
-        print('xy_ll_CATS2008',file=fid)
+        print('xy_ll_CATS2008', file=fid)
         fid.close()
         # verify control file
-        assert os.access(CFname, os.F_OK)
+        assert CFname.exists()
         # run tests
         yield
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        os.remove(CFname)
+        CFname.unlink()
 
     # PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
     @pytest.fixture(scope="class", autouse=False)
@@ -165,13 +168,13 @@ class Test_CATS2008:
         # download Tide Gauge Database text file
         HOST = ['https://www.usap-dc.org','dataset','usap-dc','601358',
             '2020-07-10T19:50:08.8Z','AntTG_ocean_height_v1.txt?dataset_id=601358']
-        local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
-        pyTMD.utilities.from_http(HOST,local=local)
-        assert os.access(local, os.F_OK)
+        local = filepath.joinpath('AntTG_ocean_height_v1.txt')
+        pyTMD.utilities.from_http(HOST, local=local)
+        assert local.exists()
         # run tests
         yield
         # clean up
-        os.remove(local)
+        local.unlink()
 
     # PURPOSE: Download Antarctic Tide Gauge Database from AWS
     @pytest.fixture(scope="class", autouse=True)
@@ -187,22 +190,22 @@ class Test_CATS2008:
         # retrieve Tide Gauge Database text file
         obj = bucket.Object(key='AntTG_ocean_height_v1.txt')
         response = obj.get()
-        local = os.path.join(filepath,'AntTG_ocean_height_v1.txt')
+        local = filepath.joinpath('AntTG_ocean_height_v1.txt')
         with open(local, 'wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(local, os.F_OK)
+        assert local.exists()
         # run tests
         yield
         # clean up
-        os.remove(local)
+        local.unlink()
 
     # PURPOSE: Test read program that grids and constituents are as expected
     def test_read_CATS2008(self, ny=2026, nx=1663):
         # model parameters for CATS2008
-        modelpath = os.path.join(filepath,'CATS2008')
-        grid_file = os.path.join(modelpath,'grid_CATS2008')
-        elevation_file = os.path.join(modelpath,'hf.CATS2008.out')
-        transport_file = os.path.join(modelpath,'uv.CATS2008.out')
+        modelpath = filepath.joinpath('CATS2008')
+        grid_file = modelpath.joinpath('grid_CATS2008')
+        elevation_file = modelpath.joinpath('hf.CATS2008.out')
+        transport_file = modelpath.joinpath('uv.CATS2008.out')
         # read CATS2008 grid file
         xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(grid_file)
         # check dimensions of input grids
@@ -233,16 +236,16 @@ class Test_CATS2008:
     # PURPOSE: Tests that interpolated results are comparable to AntTG database
     def test_compare_CATS2008(self):
         # model parameters for CATS2008
-        modelpath = os.path.join(filepath,'CATS2008')
-        grid_file = os.path.join(modelpath,'grid_CATS2008')
-        model_file = os.path.join(modelpath,'hf.CATS2008.out')
+        modelpath = filepath.joinpath('CATS2008')
+        grid_file = modelpath.joinpath('grid_CATS2008')
+        model_file = modelpath.joinpath('hf.CATS2008.out')
         GRID = 'OTIS'
         EPSG = 'CATS2008'
         TYPE = 'z'
 
         # open Antarctic Tide Gauge (AntTG) database
-        AntTG = 'AntTG_ocean_height_v1.txt'
-        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
+        AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
+        with AntTG.open(mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -329,16 +332,16 @@ class Test_CATS2008:
     # PURPOSE: Tests that interpolated results are comparable to Matlab program
     def test_verify_CATS2008(self, parameters):
         # model parameters for CATS2008
-        modelpath = os.path.join(filepath,'CATS2008')
-        grid_file = os.path.join(modelpath,parameters['grid'])
-        model_file = os.path.join(modelpath,parameters['model'])
+        modelpath = filepath.joinpath('CATS2008')
+        grid_file = modelpath.joinpath(parameters['grid'])
+        model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
         GRID = 'OTIS'
         EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
-        AntTG = 'AntTG_ocean_height_v1.txt'
-        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
+        AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
+        with AntTG.open(mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -385,8 +388,6 @@ class Test_CATS2008:
             method='spline', grid=GRID)
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
-        # will verify differences between model outputs are within tolerance
-        eps = np.finfo(np.float16).eps
 
         # compare daily outputs at each station point
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
@@ -397,18 +398,20 @@ class Test_CATS2008:
             'Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
         valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
+        # will verify differences between model outputs are within tolerance
+        eps = np.finfo(np.float16).eps
 
         # compute validation data from Matlab TMD program using octave
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-        TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
-        octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
+        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
+        octave.addpath(octave.genpath(TMDpath))
         octave.addpath(filepath)
         octave.addpath(modelpath)
         # turn off octave warnings
         octave.warning('off', 'all')
         # input control file for model
-        CFname = os.path.join(filepath,'Model_CATS2008')
-        assert os.access(CFname, os.F_OK)
+        CFname = filepath.joinpath('Model_CATS2008')
+        assert CFname.exists()
         # run Matlab TMD program with octave
         # MODE: OB time series
         validation,_ = octave.tmd_tide_pred_plus(CFname,SDtime,
@@ -441,16 +444,16 @@ class Test_CATS2008:
     # PURPOSE: Tests that tidal ellipse results are comparable to Matlab program
     def test_tidal_ellipse(self):
         # model parameters for CATS2008
-        modelpath = os.path.join(filepath,'CATS2008')
-        grid_file = os.path.join(modelpath,'grid_CATS2008')
-        model_file = os.path.join(modelpath,'uv.CATS2008.out')
+        modelpath = filepath.joinpath('CATS2008')
+        grid_file = modelpath.joinpath('grid_CATS2008')
+        model_file = modelpath.joinpath('uv.CATS2008.out')
         TYPES = ['U','V']
         GRID = 'OTIS'
         EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
-        AntTG = 'AntTG_ocean_height_v1.txt'
-        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
+        AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
+        with AntTG.open(mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -492,6 +495,18 @@ class Test_CATS2008:
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
 
+        # compute validation data from Matlab TMD program using octave
+        # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
+        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
+        octave.addpath(octave.genpath(TMDpath))
+        octave.addpath(filepath)
+        octave.addpath(modelpath)
+        # turn off octave warnings
+        octave.warning('off', 'all')
+        # input control file for model
+        CFname = filepath.joinpath('Model_CATS2008')
+        assert CFname.exists()
+
         # save complex amplitude for each current
         hc1,hc2 = ({},{})
         # iterate over zonal and meridional currents
@@ -505,17 +520,6 @@ class Test_CATS2008:
             # calculate constituent oscillation for station
             hc1[TYPE] = amp*np.exp(cph)
 
-            # compute validation data from Matlab TMD program using octave
-            # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-            TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
-            octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
-            octave.addpath(filepath)
-            octave.addpath(modelpath)
-            # turn off octave warnings
-            octave.warning('off', 'all')
-            # input control file for model
-            CFname = os.path.join(filepath,'Model_CATS2008')
-            assert os.access(CFname, os.F_OK)
             # extract tidal harmonic constants out of a tidal model
             amp,ph,D,cons = octave.tmd_extract_HC(CFname,station_lat[i],
                 station_lon[i],TYPE,nout=4)
@@ -553,16 +557,16 @@ class Test_CATS2008:
     # PURPOSE: Tests that interpolated results are comparable
     def test_compare_constituents(self, parameters, METHOD):
         # model parameters for CATS2008
-        modelpath = os.path.join(filepath,'CATS2008')
-        grid_file = os.path.join(modelpath,parameters['grid'])
-        model_file = os.path.join(modelpath,parameters['model'])
+        modelpath = filepath.joinpath('CATS2008')
+        grid_file = modelpath.joinpath(parameters['grid'])
+        model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
         GRID = 'OTIS'
         EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
-        AntTG = 'AntTG_ocean_height_v1.txt'
-        with open(os.path.join(filepath,AntTG),mode='r',encoding='utf8') as f:
+        AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
+        with AntTG.open(mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # counts the number of lines in the header
         count = 0
@@ -685,51 +689,51 @@ class Test_AOTIM5_2018:
         # download zipfile from host
         FILE = pyTMD.utilities.from_http(HOST)
         zfile = zipfile.ZipFile(FILE)
-        print('{0} -->\n'.format(posixpath.join(*HOST)))
+        print(f'{posixpath.join(*HOST)} -->\n')
         # find model files within zip file
         rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)',re.IGNORECASE)
         m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
         # verify that model files are within downloaded zip file
         assert all(m)
         # output tide directory for model
-        modelpath = os.path.join(filepath,'Arc5km2018')
+        modelpath = filepath.joinpath('Arc5km2018')
         # extract each member (model and configuration files)
         for member in m:
             # strip directories from member filename
             member.filename = posixpath.basename(member.filename)
-            print('\t{0}\n'.format(os.path.join(modelpath,member.filename)))
+            print(f'\t{modelpath.joinpath(member.filename)}\n')
             # extract file
             zfile.extract(member, path=modelpath)
         # close the zipfile object
         zfile.close()
         # output control file for tide model
-        CFname = os.path.join(filepath,'Model_Arc5km2018')
-        fid = open(CFname, mode='w', encoding='utf8')
+        CFname = filepath.joinpath('Model_Arc5km2018')
+        fid = CFname.open(mode='w', encoding='utf8')
         for model_file in ['h_Arc5km2018','UV_Arc5km2018','grid_Arc5km2018']:
-            print(os.path.join(modelpath,model_file),file=fid)
-        print('xy_ll_Arc5km2018',file=fid)
+            print(modelpath.joinpath(model_file), file=fid)
+        print('xy_ll_Arc5km2018', file=fid)
         fid.close()
         # verify control file
-        assert os.access(CFname, os.F_OK)
+        assert CFname.exists()
         # run tests
         yield
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        os.remove(CFname)
+        CFname.unlink()
 
     # PURPOSE: Download Arctic Tidal Current Atlas list of records
     @pytest.fixture(scope="class", autouse=True)
     def download_Arctic_Tide_Atlas(self):
         HOST = ['https://arcticdata.io','metacat','d1','mn','v2','object',
             'urn%3Auuid%3Ae3abe2cc-f903-44de-9758-0c6bfc5b66c9']
-        local = os.path.join(filepath,'List_of_records.txt')
-        pyTMD.utilities.from_http(HOST,local=local)
-        assert os.access(local, os.F_OK)
+        local = filepath.joinpath('List_of_records.txt')
+        pyTMD.utilities.from_http(HOST, local=local)
+        assert local.exists()
         # run tests
         yield
         # clean up
-        os.remove(local)
+        local.unlink()
 
     # parameterize type: heights versus currents
     parameters = []
@@ -740,16 +744,16 @@ class Test_AOTIM5_2018:
     # PURPOSE: Tests that interpolated results are comparable to Matlab program
     def test_verify_AOTIM5_2018(self, parameters):
         # model parameters for AOTIM-5-2018
-        modelpath = os.path.join(filepath,'Arc5km2018')
-        grid_file = os.path.join(modelpath,parameters['grid'])
-        model_file = os.path.join(modelpath,parameters['model'])
+        modelpath = filepath.joinpath('Arc5km2018')
+        grid_file = modelpath.joinpath(parameters['grid'])
+        model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
         GRID = 'OTIS'
         EPSG = 'PSNorth'
 
         # open Arctic Tidal Current Atlas list of records
-        ATLAS = 'List_of_records.txt'
-        with open(os.path.join(filepath,ATLAS),mode='r',encoding='utf8') as f:
+        ATLAS = filepath.joinpath('List_of_records.txt')
+        with ATLAS.open(mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # skip 2 header rows
         count = 2
@@ -794,15 +798,15 @@ class Test_AOTIM5_2018:
 
         # compute validation data from Matlab TMD program using octave
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-        TMDpath = os.path.join(filepath,'..','TMD_Matlab_Toolbox','TMD')
-        octave.addpath(octave.genpath(os.path.normpath(TMDpath)))
+        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
+        octave.addpath(octave.genpath(TMDpath))
         octave.addpath(filepath)
         octave.addpath(modelpath)
         # turn off octave warnings
         octave.warning('off', 'all')
         # input control file for model
-        CFname = os.path.join(filepath,'Model_Arc5km2018')
-        assert os.access(CFname, os.F_OK)
+        CFname = filepath.joinpath('Model_Arc5km2018')
+        assert CFname.exists()
         # run Matlab TMD program with octave
         # MODE: OB time series
         validation,_ = octave.tmd_tide_pred_plus(CFname,SDtime,
@@ -843,16 +847,16 @@ class Test_AOTIM5_2018:
     # PURPOSE: Tests that interpolated results are comparable
     def test_compare_constituents(self, parameters, METHOD):
         # model parameters for AOTIM-5-2018
-        modelpath = os.path.join(filepath,'Arc5km2018')
-        grid_file = os.path.join(modelpath,parameters['grid'])
-        model_file = os.path.join(modelpath,parameters['model'])
+        modelpath = filepath.joinpath('Arc5km2018')
+        grid_file = modelpath.joinpath(parameters['grid'])
+        model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
         GRID = 'OTIS'
         EPSG = 'PSNorth'
 
         # open Arctic Tidal Current Atlas list of records
-        ATLAS = 'List_of_records.txt'
-        with open(os.path.join(filepath,ATLAS),mode='r',encoding='utf8') as f:
+        ATLAS = filepath.joinpath('List_of_records.txt')
+        with ATLAS.open(mode='r', encoding='utf8') as f:
             file_contents = f.read().splitlines()
         # skip 2 header rows
         count = 2

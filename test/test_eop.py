@@ -3,31 +3,31 @@ u"""
 test_eop.py (09/2020)
 Verify Earth Orientation Parameter (EOP) functions
 """
-import os
 import pytest
 import numpy as np
 import scipy.interpolate
 import pyTMD.eop
 import pyTMD.time
+import pyTMD.utilities
 
 # PURPOSE: update mean pole values
 def test_update_mean_pole():
     pyTMD.eop.update_mean_pole(verbose=True, mode=0o775)
     LOCAL = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    assert os.access(LOCAL, os.F_OK)
+    assert LOCAL.exists()
 
 # PURPOSE: calculate updated mean pole values
 def test_calculate_mean_pole():
     pyTMD.eop.calculate_mean_pole(verbose=True, mode=0o775)
     LOCAL = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    assert os.access(LOCAL, os.F_OK)
+    assert LOCAL.exists()
 
 # PURPOSE: update EOP finals values
 def test_update_finals(username, password):
     pyTMD.eop.update_finals_file(username=username, password=password,
         verbose=True, mode=0o775)
     LOCAL = pyTMD.utilities.get_data_path(['data','finals.all'])
-    assert os.access(LOCAL, os.F_OK)
+    assert LOCAL.exists()
 
 # PURPOSE: read and calculate mean/secular pole values
 @pytest.mark.parametrize("EPOCH", ['2003','2010','2015','2018'])

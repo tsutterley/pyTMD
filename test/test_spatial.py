@@ -3,16 +3,16 @@ u"""
 test_spatial.py (11/2020)
 Verify file read and write with spatial utilities
 """
-import os
 import pytest
 import inspect
+import pathlib
 import numpy as np
 import pyTMD.spatial
 import pyTMD.utilities
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: test the data type function
 def test_data_type():
@@ -91,25 +91,25 @@ def test_ascii():
     attrib['time']['calendar'] = 'standard'
 
     # create test ascii file
-    output_file = os.path.join(filepath,'test.csv')
+    output_file = filepath.joinpath('test.csv')
     pyTMD.spatial.to_ascii(output, attrib, output_file, delimiter=',',
         columns=['time','y','x','data'], header=True, verbose=True)
     # read test ascii file (change case to test find function)
-    input_file = os.path.join(filepath,'TEST.csv')
+    input_file = filepath.joinpath('TEST.csv')
     test = pyTMD.spatial.from_ascii(input_file, header='YAML',
         columns=['time','y','x','data'], verbose=True)
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # read test ascii file as bytes
-    fid = open(output_file, mode='r', encoding='utf8')
+    fid = output_file.open(mode='r', encoding='utf8')
     test = pyTMD.spatial.from_ascii(fid, compression='bytes', header='YAML',
         columns=['time','y','x','data'])
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    os.remove(output_file)
+    output_file.unlink()
 
 # PURPOSE: test the read and write of netCDF4 files
 @pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
@@ -159,25 +159,25 @@ def test_netCDF4(TYPE):
     attrib['time']['calendar'] = 'standard'
 
     # create test netCDF4 file
-    output_file = os.path.join(filepath,'test.nc')
+    output_file = filepath.joinpath('test.nc')
     pyTMD.spatial.to_netCDF4(output, attrib, output_file,
         data_type=TYPE, verbose=True)
     # read test netCDF4 file (change case to find test function)
-    input_file = os.path.join(filepath,'TEST.nc')
+    input_file = filepath.joinpath('TEST.nc')
     test = pyTMD.spatial.from_netCDF4(input_file, timename='time',
         xname='x', yname='y', varname='data', verbose=True)
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # read test netCDF4 file as bytes
-    fid = open(output_file, 'rb')
+    fid = output_file.open(mode='rb')
     test = pyTMD.spatial.from_netCDF4(fid, compression='bytes',
         timename='time', xname='x', yname='y', varname='data')
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    os.remove(output_file)
+    output_file.unlink()
 
 # PURPOSE: test the read and write of HDF5 files
 @pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
@@ -227,24 +227,24 @@ def test_HDF5(TYPE):
     attrib['time']['calendar'] = 'standard'
 
     # create test HDF5 file
-    output_file = os.path.join(filepath,'test.H5')
+    output_file = filepath.joinpath('test.H5')
     pyTMD.spatial.to_HDF5(output, attrib, output_file, verbose=True)
     # read test HDF5 file (change case to test find function)
-    input_file = os.path.join(filepath,'TEST.H5')
+    input_file = filepath.joinpath('TEST.H5')
     test = pyTMD.spatial.from_HDF5(input_file, timename='time',
         xname='x', yname='y', varname='data', verbose=True)
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # read test HDF5 file as bytes
-    fid = open(output_file, 'rb')
+    fid = output_file.open(mode='rb')
     test = pyTMD.spatial.from_HDF5(fid, compression='bytes',
         timename='time', xname='x', yname='y', varname='data')
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    os.remove(output_file)
+    output_file.unlink()
 
 # PURPOSE: test the read and write of geotiff files
 def test_geotiff(username, password):
@@ -255,7 +255,7 @@ def test_geotiff(username, password):
     # download NASA Operation IceBridge DMS L3 Photogrammetric DEM
     HOST = ['https://n5eil01u.ecs.nsidc.org','ICEBRIDGE','IODEM3.001',
         '2009.10.25','IODEM3_20091025_212618_02720_DEM.tif']
-    input_file = os.path.join(filepath,HOST[-1])
+    input_file = filepath.joinpath(HOST[-1])
     remote_buffer = pyTMD.utilities.from_http(HOST, local=input_file,
         context=None, verbose=True, mode=0o775)
     dinput = pyTMD.spatial.from_geotiff(input_file, verbose=True)
@@ -269,7 +269,7 @@ def test_geotiff(username, password):
         else:
             attrib['data'][key] = np.copy(val)
     # create test geotiff file
-    output_file = os.path.join(filepath,'test.tif')
+    output_file = filepath.joinpath('test.tif')
     output = {'data':dinput['data'].astype(np.float64)}
     pyTMD.spatial.to_geotiff(output, attrib, output_file,
         driver='GTiff', verbose=True)
@@ -282,8 +282,8 @@ def test_geotiff(username, password):
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
     # remove the test files
-    os.remove(input_file)
-    os.remove(output_file)
+    input_file.unlink()
+    output_file.unlink()
 
 # PURPOSE: test the default field mapping function
 def test_field_mapping():
@@ -337,6 +337,38 @@ def test_convert_ellipsoid():
     expelevdel = [-1.3287718e-7,1.6830199e-7]
     assert np.isclose([minlatdel,maxlatdel],explatdel).all()
     assert np.isclose([minelevdel,maxelevdel],expelevdel,atol=1e-5).all()
+
+# PURPOSE: verify cartesian to geodetic conversions
+def test_convert_geodetic():
+    # choose a random set of locations
+    latitude = -90.0 + 180.0*np.random.rand(100)
+    longitude = -180.0 + 360.0*np.random.rand(100)
+    height = 2000.0*np.random.rand(100)
+    # ellipsoidal parameters
+    a_axis = pyTMD.spatial._wgs84.a_axis
+    flat = pyTMD.spatial._wgs84.flat
+    # convert to cartesian coordinates
+    x, y, z = pyTMD.spatial.to_cartesian(longitude, latitude, h=height,
+        a_axis=a_axis, flat=flat)
+    # convert back to geodetic coordinates
+    ln1, lt1, h1 = pyTMD.spatial.to_geodetic(x, y, z,
+        a_axis=a_axis, flat=flat, method='moritz')
+    ln2, lt2, h2 = pyTMD.spatial.to_geodetic(x, y, z,
+        a_axis=a_axis, flat=flat, method='bowring')
+    ln3, lt3, h3 = pyTMD.spatial.to_geodetic(x, y, z,
+        a_axis=a_axis, flat=flat, method='zhu')
+    # validate outputs for Moritz iterative method
+    assert np.isclose(longitude, ln1).all()
+    assert np.isclose(latitude, lt1).all()
+    assert np.isclose(height, h1).all()
+     # validate outputs for Bowring iterative method
+    assert np.isclose(longitude, ln2).all()
+    assert np.isclose(latitude, lt2).all()
+    assert np.isclose(height, h2).all()
+    # validate outputs for Zhu closed-form method
+    assert np.isclose(longitude, ln3).all()
+    assert np.isclose(latitude, lt3).all()
+    assert np.isclose(height, h3).all()
 
 # PURPOSE: test wrap longitudes
 def test_wrap_longitudes():

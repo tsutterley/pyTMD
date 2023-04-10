@@ -142,6 +142,7 @@ For models not parameterized within ``pyTMD``, the parameters can be set with a 
 The definition files are read line by line to fill a python dictionary variable mapping specific parameter names with their values.
 The parameter names are the first column in the file and the parameter values are in the subsequent columns.
 For parameters consisting of lists, the parameter values can be separated by spaces or commas.
+For FES-type models of currents, the two lists of files should be separated by a semi-colon.
 Each definition file should have a ``name``, ``format`` and ``type`` parameters.
 Each model format also requires specific sets of parameters.
 
