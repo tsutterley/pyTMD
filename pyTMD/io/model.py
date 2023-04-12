@@ -10,7 +10,7 @@ UPDATE HISTORY:
         made ICESat, ICESat-2 and output file attributes properties
         updated model definition read function for currents
         using pathlib to define and expand tide model paths
-        add basic file searchinisinstanceg with glob strings in definition files
+        add basic file searching with glob strings in definition files
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
