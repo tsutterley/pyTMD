@@ -1740,7 +1740,7 @@ def output_otis_grid(
     # tilde-expand output file
     FILE = pathlib.Path(FILE).expanduser()
     # open output file
-    fid = open(FILE, 'wb')
+    fid = FILE.open(mode='wb')
     nob = len(iob)
     ny, nx = np.shape(hz)
     reclen = 32
@@ -1802,7 +1802,7 @@ def output_otis_elevation(
     # tilde-expand output file
     FILE = pathlib.Path(FILE).expanduser()
     # open output file
-    fid = open(FILE, 'wb')
+    fid = FILE.open(mode='wb')
     ny, nx, nc = np.shape(h)
     # length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)
@@ -1858,7 +1858,7 @@ def output_otis_transport(
     # tilde-expand output file
     FILE = pathlib.Path(FILE).expanduser()
     # open output file
-    fid = open(FILE, 'wb')
+    fid = FILE.open(mode='wb')
     ny, nx, nc = np.shape(u)
     # length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)

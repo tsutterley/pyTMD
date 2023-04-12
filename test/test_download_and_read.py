@@ -191,7 +191,7 @@ class Test_CATS2008:
         obj = bucket.Object(key='AntTG_ocean_height_v1.txt')
         response = obj.get()
         local = filepath.joinpath('AntTG_ocean_height_v1.txt')
-        with open(local, 'wb') as destination:
+        with local.open(mode='wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
         assert local.exists()
         # run tests
