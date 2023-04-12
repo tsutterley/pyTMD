@@ -10,6 +10,7 @@ UPDATE HISTORY:
         made ICESat, ICESat-2 and output file attributes properties
         updated model definition read function for currents
         using pathlib to define and expand tide model paths
+        add basic file searching with glob strings in definition files
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -115,7 +116,7 @@ class model:
         if directory is not None:
             self.directory = pathlib.Path(directory).expanduser()
         else:
-            self.directory = pathlib.Path().absolute()
+            self.directory = None
         self.flexure = False
         # set tide model format
         self.format = copy.copy(kwargs['format'])
@@ -139,6 +140,9 @@ class model:
         m: str
             model name
         """
+        # set working data directory if unset
+        if self.directory is None:
+            self.directory = pathlib.Path().absolute()
         # model name
         self.name = m
         # select between known tide models
@@ -239,6 +243,9 @@ class model:
         m: str
             model name
         """
+        # set working data directory if unset
+        if self.directory is None:
+            self.directory = pathlib.Path().absolute()
         # model name
         self.name = m
         # model type
@@ -673,6 +680,9 @@ class model:
         m: str
             model name
         """
+        # set working data directory if unset
+        if self.directory is None:
+            self.directory = pathlib.Path().absolute()
         # model name
         self.name = m
         # model type
@@ -1232,6 +1242,10 @@ class model:
         model_file: str, pathlib.Path or list
             model file(s) to complete
         """
+        # set working data directory if unset
+        if self.directory is None:
+            self.directory = pathlib.Path().absolute()
+        # complete model file paths
         if isinstance(model_file,list):
             output_file = [self.model_directory.joinpath(
                 ''.join([f,self.suffix,self.gzip])) for f in model_file]
@@ -1304,25 +1318,48 @@ class model:
                 temp.model_file = [pathlib.Path(f).expanduser() for f in
                     re.split(r'[\s\,]+',temp.model_file)]
                 temp.model_directory = temp.model_file[0].parent
-            elif (temp.type == 'z'):
+            elif (temp.type == ['u','v']) and (temp.directory is not None):
+                # use glob strings to find files in directory
+                model_file = list(temp.directory.glob(temp.model_file))
+                # copy to model file and directory dictionaries
+                temp.model_file = dict(u=model_file, v=model_file)
+                temp.model_directory = temp.model_file['u'][0].parent
+            elif (temp.type == 'z') and (temp.directory is not None):
+                # use glob strings to find files in directory
+                temp.model_file = list(temp.directory.glob(temp.model_file))
+                temp.model_directory = temp.model_file[0].parent
+            else:
                 temp.model_file = pathlib.Path(temp.model_file).expanduser()
                 temp.model_directory = temp.model_file.parent
         elif temp.format in ('FES','GOT'):
             # extract model files
-            if (temp.type == ['u','v']):
+            if (temp.type == ['u','v']) and (temp.directory is not None):
+                # split model file string at semicolon
+                model_file = temp.model_file.split(';')
+                # use glob strings to find files in directory
+                temp.model_file = {}
+                temp.model_file['u'] = list(temp.directory.glob(model_file[0]))
+                temp.model_file['v'] = list(temp.directory.glob(model_file[1]))
+                # build model directory dictionaries
+                temp.model_directory = {}
+                for key,val in temp.model_file.items():
+                    temp.model_directory[key] = val[0].parent
+            elif (temp.type == 'z') and (temp.directory is not None):
+                # use glob strings to find files in directory
+                temp.model_file = list(temp.directory.glob(temp.model_file))
+                temp.model_directory = temp.model_file[0].parent
+            elif (temp.type == ['u','v']):
                 # split model file string at semicolon
                 model_file = temp.model_file.split(';')
                 # split model into list of files for each direction
-                model_files = {}
-                model_files['u'] = [pathlib.Path(f).expanduser() for f in
-                    re.split(r'[\s\,]+', model_file[0])]
-                model_files['v'] = [pathlib.Path(f).expanduser() for f in
-                    re.split(r'[\s\,]+', model_file[1])]
-                # copy to model file and directory dictionaries
                 temp.model_file = {}
+                temp.model_file['u'] = [pathlib.Path(f).expanduser() for f in
+                    re.split(r'[\s\,]+', model_file[0])]
+                temp.model_file['v'] = [pathlib.Path(f).expanduser() for f in
+                    re.split(r'[\s\,]+', model_file[1])]
+                # build model directory dictionaries
                 temp.model_directory = {}
-                for key,val in model_files.items():
-                    temp.model_file[key] = copy.copy(val)
+                for key,val in temp.model_file.items():
                     temp.model_directory[key] = val[0].parent
             elif (temp.type == 'z'):
                 temp.model_file = [pathlib.Path(f).expanduser() for f in
