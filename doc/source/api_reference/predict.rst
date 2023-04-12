@@ -9,9 +9,8 @@ predict
   * Time series at a location (``time_series``) such as to compare with tide gauges
 
 - Predicts tidal values from minor constituents inferred using major constituents
-- Predicts solid earth tidal values following IERS Conventions
 - Predicts long-period equilibrium ocean tides
-
+- Predicts solid earth tidal values following IERS Conventions
 
 Calling Sequence
 ----------------

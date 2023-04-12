@@ -304,7 +304,7 @@ def solar_ecef(MJD: np.ndarray):
 _default_kernel = get_data_path(['data','de440s.bsp'])
 
 # PURPOSE: compute coordinates of the sun in an ECEF frame
-def solar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
+def solar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     Computes positional coordinates of the sun in an Earth-centric,
     Earth-Fixed (ECEF) frame using JPL ephemerides [1]_ [2]_
@@ -313,6 +313,8 @@ def solar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
     ----------
     MJD: np.ndarray
         Modified Julian Day (MJD) of input date
+    kernel: str or pathlib.Path
+        Path to JPL ephemerides kernel file
 
     Returns
     -------
@@ -328,6 +330,8 @@ def solar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
         `doi: 10.3847/1538-3881/abd414
         <https://doi.org/10.3847/1538-3881/abd414>`_
     """
+    # set default keyword arguments
+    kwargs.setdefault('kernel', _default_kernel)
     # degrees and arcseconds to radians
     dtr = np.pi/180.0
     # convert from MJD to Julian days
@@ -335,7 +339,7 @@ def solar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
     # convert from Julian days to days relative to 2000-01-01T12:00:00
     T = (JD - 2451545.0)
     # read JPL ephemerides kernel
-    SPK = jplephem.spk.SPK.open(kernel)
+    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the sun
     # Earth to Sun = - EM_Barycenter_to_Earth - Sun_to_EM_Barycenter
     Sun_to_EM_Barycenter = SPK[0,3]
@@ -438,7 +442,7 @@ def lunar_ecef(MJD: np.ndarray):
     return (X, Y, Z)
 
 # PURPOSE: compute coordinates of the moon in an ECEF frame
-def lunar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
+def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     Computes positional coordinates of the moon in an Earth-centric,
     Earth-Fixed (ECEF) frame using JPL ephemerides [1]_ [2]_
@@ -447,6 +451,8 @@ def lunar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
     ----------
     MJD: np.ndarray
         Modified Julian Day (MJD) of input date
+    kernel: str or pathlib.Path
+        Path to JPL ephemerides kernel file
 
     Returns
     -------
@@ -462,6 +468,8 @@ def lunar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
         `doi: 10.3847/1538-3881/abd414
         <https://doi.org/10.3847/1538-3881/abd414>`_
     """
+    # set default keyword arguments
+    kwargs.setdefault('kernel', _default_kernel)
     # degrees and arcseconds to radians
     dtr = np.pi/180.0
     # convert from MJD to Julian days
@@ -469,7 +477,7 @@ def lunar_ephemerides(MJD: np.ndarray, kernel=_default_kernel):
     # convert from Julian days to days relative to 2000-01-01T12:00:00
     T = (JD - 2451545.0)
     # read JPL ephemerides kernel
-    SPK = jplephem.spk.SPK.open(kernel)
+    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the moon
     # Earth to Moon = - EM_Barycenter_to_Earth + EM_Barycenter_to_Moon
     EM_Barycenter_to_Earth = SPK[3,399]
