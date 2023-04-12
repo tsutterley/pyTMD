@@ -414,9 +414,9 @@ class Test_CATS2008:
         assert CFname.exists()
         # run Matlab TMD program with octave
         # MODE: OB time series
-        validation,_ = octave.tmd_tide_pred_plus(CFname,SDtime,
-            station_lat[valid_stations],station_lon[valid_stations],
-            TYPE,nout=2)
+        validation,_ = octave.tmd_tide_pred_plus(str(CFname), SDtime,
+            station_lat[valid_stations], station_lon[valid_stations],
+            TYPE, nout=2)
 
         # for each valid station
         for i,s in enumerate(valid_stations):
@@ -521,8 +521,8 @@ class Test_CATS2008:
             hc1[TYPE] = amp*np.exp(cph)
 
             # extract tidal harmonic constants out of a tidal model
-            amp,ph,D,cons = octave.tmd_extract_HC(CFname,station_lat[i],
-                station_lon[i],TYPE,nout=4)
+            amp,ph,D,cons = octave.tmd_extract_HC(str(CFname),
+                station_lat[i], station_lon[i], TYPE, nout=4)
             # calculate complex phase in radians for Euler's
             cph = -1j*ph*np.pi/180.0
             # calculate constituent oscillation for station
@@ -809,9 +809,9 @@ class Test_AOTIM5_2018:
         assert CFname.exists()
         # run Matlab TMD program with octave
         # MODE: OB time series
-        validation,_ = octave.tmd_tide_pred_plus(CFname,SDtime,
-            station_lat[valid_stations],station_lon[valid_stations],
-            TYPE,nout=2)
+        validation,_ = octave.tmd_tide_pred_plus(str(CFname), SDtime,
+            station_lat[valid_stations], station_lon[valid_stations],
+            TYPE, nout=2)
 
         # for each valid station
         for i,s in enumerate(valid_stations):
@@ -942,9 +942,10 @@ class Test_AOTIM5_2018:
         for attr in attrs:
             val = getattr(model,attr)
             if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+                var = ','.join(str(v) for v in val)
+                fid.write(f'{attr}\t{var}\n')
             else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
+                fid.write(f'{attr}\t{val}\n')
         fid.seek(0)
         # use model definition file as input
         m = pyTMD.io.model().from_file(fid)

@@ -1274,8 +1274,8 @@ class model:
         if isinstance(definition_file, io.IOBase):
             fid = copy.copy(definition_file)
         else:
-            fid = open(pathlib.Path(definition_file).expanduser(),
-                mode="r", encoding='utf8')
+            definition_file = pathlib.Path(definition_file).expanduser()
+            fid = definition_file.open(mode="r", encoding='utf8')
         # for each line in the file will extract the parameter (name and value)
         for fileline in fid:
             # Splitting the input line between parameter name and value

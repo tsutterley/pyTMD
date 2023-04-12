@@ -517,7 +517,7 @@ def from_geotiff(filename: str, **kwargs):
     # Open the geotiff file for reading
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
-        mmap_name = f"/vsigzip/{case_insensitive_filename(filename)}"
+        mmap_name = f"/vsigzip/{str(case_insensitive_filename(filename))}"
         ds = osgeo.gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         # read as GDAL memory-mapped (diskless) geotiff dataset
@@ -526,7 +526,7 @@ def from_geotiff(filename: str, **kwargs):
         ds = osgeo.gdal.Open(mmap_name)
     else:
         # read geotiff dataset
-        ds = osgeo.gdal.Open(case_insensitive_filename(filename),
+        ds = osgeo.gdal.Open(str(case_insensitive_filename(filename)),
             osgeo.gdalconst.GA_ReadOnly)
     # print geotiff file if verbose
     logging.info(str(filename))
@@ -936,7 +936,7 @@ def to_geotiff(
     driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     # set up the dataset with creation options
     filename = pathlib.Path(filename).expanduser().absolute()
-    ds = driver.Create(filename, nx, ny, nband,
+    ds = driver.Create(str(filename), nx, ny, nband,
         kwargs['dtype'], kwargs['options'])
     # top left x, w-e pixel resolution, rotation
     # top left y, rotation, n-s pixel resolution

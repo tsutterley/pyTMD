@@ -255,9 +255,10 @@ def test_definition_file(MODEL):
     for attr in attrs:
         val = getattr(model,attr)
         if isinstance(val,list):
-            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+            var = ','.join(str(v) for v in val)
+            fid.write(f'{attr}\t{var}\n')
         else:
-            fid.write('{0}\t{1}\n'.format(attr,val))
+            fid.write(f'{attr}\t{val}\n')
     fid.seek(0)
     # use model definition file as input
     m = pyTMD.io.model().from_file(fid)

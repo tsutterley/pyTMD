@@ -92,7 +92,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # recursively create model directory
     model.model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve grid file from s3
-    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model.grid_file.stem))
+    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model.grid_file.name))
     response = obj.get()
     # save grid data
     with model.grid_file.open(mode='wb') as destination:
@@ -101,7 +101,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
-        obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model_file.stem))
+        obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model_file.name))
         response = obj.get()
         # save constituent data
         with model_file.open(mode='wb') as destination:
@@ -392,7 +392,8 @@ def test_definition_file(MODEL):
     for attr in attrs:
         val = getattr(model,attr)
         if isinstance(val,list):
-            fid.write(f'{attr}\t{",".join(val)}\n')
+            var = ','.join(str(v) for v in val)
+            fid.write(f'{attr}\t{var}\n')
         else:
             fid.write(f'{attr}\t{val}\n')
     fid.seek(0)
