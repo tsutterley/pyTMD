@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: using pathlib to define and expand paths
+        added function to download ephemeride files from JPL SSD server
     Updated 03/2023: add basic variable typing to function inputs
     Updated 01/2023: updated SSL context to fix some deprecation warnings
     Updated 11/2022: added list program for IERS Bulletin-A https server
@@ -1076,3 +1077,43 @@ def iers_list(
         # sort list of column names and last modified times in reverse order
         # return the list of column names and last modified times
         return (colnames[::-1], collastmod[::-1])
+
+def from_jpl_ssd(
+        kernel='de440s.bsp',
+        timeout: int | None = None,
+        context = _default_ssl_context,
+        hash: str = '',
+        chunk: int = 16384,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
+    """
+    Download `planetary ephemeride kernels`__ from the JPL Solar
+    System Dynamics server
+
+    .. __: https://ssd.jpl.nasa.gov/planets/eph_export.html
+
+    Parameters
+    ----------
+    kernel: str
+        JPL kernel file to download
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+        SSL context for ``urllib`` opener object
+    hash: str, default ''
+        MD5 hash of local file
+    chunk: int, default 16384
+        chunk size for transfer encoding
+    verbose: bool, default False
+        print file transfer information
+    mode: oct, default 0o775
+        permissions mode of output local file
+    """
+    # local path to kernel file
+    local = get_data_path(['data',kernel])
+    # remote host path to kernel file
+    HOST = ['https://ssd.jpl.nasa.gov','ftp','eph','planets','bsp',kernel]
+    # get kernel file from remote host
+    from_http(HOST, timeout=timeout, context=context, local=local,
+        hash=hash, chunk=chunk, verbose=verbose, mode=mode)

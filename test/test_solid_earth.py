@@ -8,6 +8,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 04/2023: added test for using JPL ephemerides for positions
     Written 04/2023
 """
 import pytest
@@ -15,6 +16,7 @@ import numpy as np
 import pyTMD.astro
 import pyTMD.predict
 import pyTMD.time
+import pyTMD.utilities
 from pyTMD.compute_tide_corrections import compute_SET_corrections
 
 def test_out_of_phase_diurnal():
@@ -206,3 +208,55 @@ def test_solid_earth_radial():
     tide_expected = tide_earth + tide_earth_free2mean
     # # sign differences with ATLAS product?
     # assert np.isclose(tide_expected, tide_mean, atol=1e-3).all()
+
+# PURPOSE: Download JPL ephemerides from Solar System Dynamics server
+@pytest.fixture(scope="module", autouse=True)
+def download_jpl_ephemerides():
+    """Download JPL ephemerides from Solar System Dynamics server
+    """
+    # get path to defaultZ ephemerides
+    de440s = pyTMD.astro._default_kernel
+    # download JPL ephemerides if not existing
+    if not de440s.exists():
+        pyTMD.utilities.from_jpl_ssd(de440s.name)
+        # run tests
+        yield
+        # clean up
+        de440s.unlink()
+    else:
+        # run tests
+        yield
+
+def test_solar_ecef():
+    """Test solar ECEF coordinates with ephemeride predictions
+    """
+    # calculate solar ephemerides
+    MJD = 55414.0
+    x1, y1, z1 = pyTMD.astro.solar_ecef(MJD)
+    r1 = np.sqrt(x1**2 + y1**2 + z1**2)
+    # predict solar ephemerides
+    x2, y2, z2 = pyTMD.astro.solar_ephemerides(MJD)
+    r2 = np.sqrt(x2**2 + y2**2 + z2**2)
+    # test distances
+    assert np.isclose(x1, x2, atol=1e9).all()
+    assert np.isclose(y1, y2, atol=1e9).all()
+    assert np.isclose(z1, z2, atol=1e9).all()
+    # test absolute distance
+    assert np.isclose(r1, r2, atol=1e9).all()
+
+def test_lunar_ecef():
+    """Test lunar ECEF coordinates with ephemeride predictions
+    """
+    # calculate solar ephemerides
+    MJD = 55414.0
+    x1, y1, z1 = pyTMD.astro.lunar_ecef(MJD)
+    r1 = np.sqrt(x1**2 + y1**2 + z1**2)
+    # predict solar ephemerides
+    x2, y2, z2 = pyTMD.astro.lunar_ephemerides(MJD)
+    r2 = np.sqrt(x2**2 + y2**2 + z2**2)
+    # test distances
+    assert np.isclose(x1, x2, atol=5e6).all()
+    assert np.isclose(y1, y2, atol=5e6).all()
+    assert np.isclose(z1, z2, atol=5e6).all()
+    # test absolute distance
+    assert np.isclose(r1, r2, atol=5e6).all()

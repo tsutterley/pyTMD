@@ -7,6 +7,7 @@ dependencies:
   - h5py
   - ipyleaflet
   - ipywidgets
+  - jplephem
   - lxml
   - matplotlib
   - mpi4py

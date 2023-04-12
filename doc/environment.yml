@@ -6,6 +6,7 @@ dependencies:
   - fontconfig
   - freetype
   - graphviz
+  - jplephem
   - lxml
   - matplotlib
   - notebook

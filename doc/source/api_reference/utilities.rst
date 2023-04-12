@@ -60,3 +60,5 @@ General Methods
 .. autofunction:: pyTMD.utilities.from_cddis
 
 .. autofunction:: pyTMD.utilities.iers_list
+
+.. autofunction:: pyTMD.utilities.from_jpl_ssd
