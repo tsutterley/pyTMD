@@ -637,7 +637,7 @@ def get_leap_seconds(truncate: bool = True):
     """
     leap_secs = pyTMD.utilities.get_data_path(['data','leap-seconds.list'])
     # find line with file expiration as delta time
-    with open(leap_secs, mode='r', encoding='utf8') as fid:
+    with leap_secs.open(mode='r', encoding='utf8') as fid:
         secs, = [re.findall(r'\d+',i).pop() for i in fid.read().splitlines()
             if re.match(r'^(?=#@)',i)]
     # check that leap seconds file is still valid
@@ -645,7 +645,7 @@ def get_leap_seconds(truncate: bool = True):
     today = datetime.datetime.now()
     update_leap_seconds() if (expiry < today) else None
     # get leap seconds
-    leap_UTC,TAI_UTC = np.loadtxt(pyTMD.utilities.get_data_path(leap_secs)).T
+    leap_UTC,TAI_UTC = np.loadtxt(leap_secs).T
     # TAI time is ahead of GPS by 19 seconds
     TAI_GPS = 19.0
     # convert leap second epochs from NTP to GPS

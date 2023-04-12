@@ -124,7 +124,8 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
     time_leaps = pyTMD.time.count_leap_seconds(gps_seconds)
     # compare output delta times with original values
     output_time = pyTMD.time.convert_delta_time(gps_seconds - time_leaps,
-        epoch1=pyTMD.time._gps_epoch, epoch2=pyTMD.time._atlas_sdp_epoch, scale=1.0)
+        epoch1=pyTMD.time._gps_epoch, epoch2=pyTMD.time._atlas_sdp_epoch,
+        scale=1.0)
     assert (delta_time == output_time)
 
 # PURPOSE: update delta time files and values

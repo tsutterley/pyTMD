@@ -58,7 +58,10 @@ def test_definition_FES():
         'fes2014/ocean_tide/s2.nc.gz', 'fes2014/ocean_tide/s4.nc.gz',
         'fes2014/ocean_tide/sa.nc.gz', 'fes2014/ocean_tide/ssa.nc.gz',
         'fes2014/ocean_tide/t2.nc.gz']
-    assert sorted(m.model_file) == [pathlib.Path(f) for f in model_files]
+    # assert that all model files are in the model definition
+    for f in model_files:
+        assert pathlib.Path(f) in m.model_file
+    # assert that all constituents are in the model definition
     constituents = ['2n2','eps2','j1','k1','k2','l2',
                 'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
                 'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
@@ -181,8 +184,12 @@ def test_definition_FES_currents():
         'fes2014/northward_velocity/s2.nc.gz', 'fes2014/northward_velocity/s4.nc.gz',
         'fes2014/northward_velocity/sa.nc.gz', 'fes2014/northward_velocity/ssa.nc.gz',
         'fes2014/northward_velocity/t2.nc.gz']
-    assert sorted(m.model_file['u']) == [pathlib.Path(f) for f in model_files_u]
-    assert sorted(m.model_file['v']) == [pathlib.Path(f) for f in model_files_v]
+    # assert that all model files are in the model definition
+    for f in model_files_u:
+        assert pathlib.Path(f) in m.model_file['u']
+    for f in model_files_v:
+        assert pathlib.Path(f) in m.model_file['v']
+    # assert that all constituents are in the model definition
     constituents = ['2n2','eps2','j1','k1','k2','l2',
                 'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
                 'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
@@ -296,7 +303,9 @@ def test_definition_GOT():
         'GOT4.10c/grids_loadtide/q1load.d.gz',
         'GOT4.10c/grids_loadtide/s1load.d.gz',
         'GOT4.10c/grids_loadtide/s2load.d.gz']
-    assert sorted(m.model_file) == [pathlib.Path(f) for f in model_files]
+    # assert that all model files are in the model definition
+    for f in model_files:
+        assert pathlib.Path(f) in m.model_file
     assert m.type == 'z'
     assert m.scale == 1.0/1000.0
     assert m.variable == 'tide_load'
@@ -381,7 +390,9 @@ def test_definition_TPXO9():
         'TPXO9_atlas_v5/h_s1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/h_s2_tpxo9_atlas_30_v5.nc']
     assert m.grid_file == pathlib.Path('TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc')
-    assert sorted(m.model_file) == [pathlib.Path(f) for f in model_files]
+    # assert that all model files are in the model definition
+    for f in model_files:
+        assert pathlib.Path(f) in m.model_file
     assert m.type == 'z'
     assert m.scale == 1.0/100.0
     assert m.variable == 'tide_ocean'

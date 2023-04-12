@@ -10,7 +10,7 @@ UPDATE HISTORY:
         made ICESat, ICESat-2 and output file attributes properties
         updated model definition read function for currents
         using pathlib to define and expand tide model paths
-        add basic file searching with glob strings in definition files
+        add basic file searchinisinstanceg with glob strings in definition files
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -60,7 +60,7 @@ class model:
         Model constituents for ``FES`` models
     description: str
         HDF5 ``description`` attribute string for output tide heights
-    directory: str or None, default None
+    directory: str, pathlib.Path or None, default None
         Working data directory for tide models
     flexure: bool
         Flexure adjustment field for tide heights is available
@@ -75,15 +75,15 @@ class model:
             - ``FES``
     gla12: str
         HDF5 dataset string for output GLA12 tide heights
-    grid_file: str
+    grid_file: pathlib.Path
         Model grid file for ``OTIS``, ``ATLAS`` and ``ESR`` models
     gzip: bool
         Suffix if model is compressed
     long_name: str
         HDF5 ``long_name`` attribute string for output tide heights
-    model_directory: str
+    model_directory: pathlib.Path
         Full path to model directory
-    model_file: str
+    model_file: pathlib.Path or list
         Model constituent file or list of files
     name: str
         Model name
@@ -104,19 +104,19 @@ class model:
     version: str
         Tide model version
     """
-    def __init__(self, directory: str | pathlib.Path | None = None, **kwargs):
+    def __init__(self, **kwargs):
         # set default keyword arguments
         kwargs.setdefault('compressed',False)
+        kwargs.setdefault('directory',None)
         kwargs.setdefault('format','netcdf')
         kwargs.setdefault('verify',True)
         # set initial attributes
         self.compressed = copy.copy(kwargs['compressed'])
         self.constituents = None
         # set working data directory
-        if directory is not None:
-            self.directory = pathlib.Path(directory).expanduser()
-        else:
-            self.directory = None
+        self.directory = None
+        if kwargs['directory'] is not None:
+            self.directory = pathlib.Path(kwargs['directory']).expanduser()
         self.flexure = False
         # set tide model format
         self.format = copy.copy(kwargs['format'])
@@ -1388,14 +1388,14 @@ class model:
         """
         Parses tide model files for a list of model constituents
         """
-        if isinstance(self.model_file, (str | pathlib.Path)):
+        if isinstance(self.model_file, (str, pathlib.Path)):
             # single file elevation case
             self.constituents = [self.parse_file(self.model_file)]
         elif isinstance(self.model_file, list):
             # multiple file elevation case
             self.constituents = [self.parse_file(f) for f in self.model_file]
         elif isinstance(self.model_file, dict) and \
-            isinstance(self.model_file['u'], (str | pathlib.Path)):
+            isinstance(self.model_file['u'], (str, pathlib.Path)):
             # single file currents case
             self.constituents = [self.parse_file(self.model_file['u'])]
         elif isinstance(self.model_file, dict) and \

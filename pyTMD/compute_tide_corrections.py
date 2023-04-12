@@ -257,9 +257,10 @@ def compute_tide_corrections(
     """
 
     # check that tide directory is accessible
-    DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
-    if not DIRECTORY.exists():
-        raise FileNotFoundError("Invalid tide directory")
+    if DIRECTORY is not None:
+        DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
+        if not DIRECTORY.exists():
+            raise FileNotFoundError("Invalid tide directory")
 
     # validate input arguments
     assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')

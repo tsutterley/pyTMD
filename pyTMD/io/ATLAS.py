@@ -385,7 +385,7 @@ def read_constants(
     kwargs.setdefault('compressed', True)
 
     # raise warning if model files are entered as a string or path
-    if isinstance(model_files, (str | pathlib.Path)):
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 

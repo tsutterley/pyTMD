@@ -123,7 +123,7 @@ def get_hash(
             return hashlib.md5(local.getvalue()).hexdigest()
         elif (algorithm == 'sha1'):
             return hashlib.sha1(local.getvalue()).hexdigest()
-    elif isinstance(local, (str | pathlib.Path)):
+    elif isinstance(local, (str, pathlib.Path)):
         # generate checksum hash for local file
         local = pathlib.Path(local).expanduser()
         # if file currently doesn't exist, return empty string

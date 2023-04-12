@@ -135,9 +135,10 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
     """
 
     # check that tide directory is accessible
-    DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
-    if not DIRECTORY.exists():
-        raise FileNotFoundError("Invalid tide directory")
+    if DIRECTORY is not None:
+        DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
+        if not DIRECTORY.exists():
+            raise FileNotFoundError("Invalid tide directory")
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:

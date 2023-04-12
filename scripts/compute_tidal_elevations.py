@@ -435,7 +435,7 @@ def arguments():
         help='Computed output file')
     # set data directory containing the tidal data
     parser.add_argument('--directory','-D',
-        type=pathlib.Path, default=pathlib.Path.cwd(),
+        type=pathlib.Path,
         help='Working data directory')
     # tide model to use
     choices = sorted(pyTMD.io.model.ocean_elevation() +

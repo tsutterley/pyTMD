@@ -404,7 +404,7 @@ class Test_CATS2008:
         # compute validation data from Matlab TMD program using octave
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        octave.addpath(octave.genpath(TMDpath))
+        octave.addpath(octave.genpath(str(TMDpath)))
         octave.addpath(filepath)
         octave.addpath(modelpath)
         # turn off octave warnings
@@ -498,7 +498,7 @@ class Test_CATS2008:
         # compute validation data from Matlab TMD program using octave
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        octave.addpath(octave.genpath(TMDpath))
+        octave.addpath(octave.genpath(str(TMDpath)))
         octave.addpath(filepath)
         octave.addpath(modelpath)
         # turn off octave warnings
@@ -799,7 +799,7 @@ class Test_AOTIM5_2018:
         # compute validation data from Matlab TMD program using octave
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        octave.addpath(octave.genpath(TMDpath))
+        octave.addpath(octave.genpath(str(TMDpath)))
         octave.addpath(filepath)
         octave.addpath(modelpath)
         # turn off octave warnings

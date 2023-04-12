@@ -41,7 +41,7 @@ UPDATE HISTORY:
     Updated 10/2020: using argparse to set command line parameters
     Written 08/2020
 """
-from __future__ import print_function
+from __future__ import print_function, annotations
 
 import re
 import logging
