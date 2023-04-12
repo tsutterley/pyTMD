@@ -2,6 +2,8 @@
 test_model.py (04/2023)
 Tests the reading of model definition files
 """
+from __future__ import annotations
+
 import io
 import shutil
 import inspect
@@ -132,8 +134,8 @@ def test_definition_FES_glob():
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files and constituents match
     assert (len(model.model_file) == len(model_files))
-    for model_file in m.model_file:
-        assert model_file.absolute() in model.model_file
+    for f in model_files:
+        assert pathlib.Path(filepath).joinpath(f) in model.model_file
     for c in m.constituents:
         assert c in model.constituents
     # close the glob definition file
@@ -275,10 +277,10 @@ def test_definition_FES_currents_glob():
     # verify that the model files and constituents match
     assert (len(model.model_file['u']) == len(model_files_u))
     assert (len(model.model_file['v']) == len(model_files_v))
-    for model_file in m.model_file['u']:
-        assert model_file.absolute() in model.model_file['u']
-    for model_file in m.model_file['v']:
-        assert model_file.absolute() in model.model_file['v']
+    for f in model_files_u:
+        assert pathlib.Path(filepath).joinpath(f) in model.model_file['u']
+    for f in model_files_v:
+        assert pathlib.Path(filepath).joinpath(f) in model.model_file['v']
     for c in m.constituents:
         assert c in model.constituents
     # close the glob definition file
@@ -360,8 +362,8 @@ def test_definition_GOT_glob():
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files match
     assert (len(model.model_file) == len(model_files))
-    for model_file in m.model_file:
-        assert model_file.absolute() in model.model_file
+    for f in model_files:
+        assert pathlib.Path(filepath).joinpath(f) in model.model_file
     # close the glob definition file
     fid.close()
     # clean up model
@@ -454,8 +456,8 @@ def test_definition_TPXO9_glob():
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files match
     assert (len(model.model_file) == len(model_files))
-    for model_file in m.model_file:
-        assert model_file.absolute() in model.model_file
+    for f in model_files:
+        assert pathlib.Path(filepath).joinpath(f) in model.model_file
     # close the glob definition file
     fid.close()
     # clean up model
@@ -535,8 +537,8 @@ def test_definition_TPXO9_glob():
     # verify that the model files match
     for key,val in model.model_file.items():
         assert (len(val) == len(model_files))
-        for model_file in val:
-            assert model_file.absolute() in model.model_file[key]
+        for f in model_files:
+            assert pathlib.Path(filepath).joinpath(f) in model.model_file[key]
     # close the glob definition file
     fid.close()
     # clean up model

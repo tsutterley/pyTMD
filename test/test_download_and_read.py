@@ -405,8 +405,8 @@ class Test_CATS2008:
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
         octave.addpath(octave.genpath(str(TMDpath)))
-        octave.addpath(filepath)
-        octave.addpath(modelpath)
+        octave.addpath(str(filepath))
+        octave.addpath(str(modelpath))
         # turn off octave warnings
         octave.warning('off', 'all')
         # input control file for model
@@ -499,8 +499,8 @@ class Test_CATS2008:
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
         octave.addpath(octave.genpath(str(TMDpath)))
-        octave.addpath(filepath)
-        octave.addpath(modelpath)
+        octave.addpath(str(filepath))
+        octave.addpath(str(modelpath))
         # turn off octave warnings
         octave.warning('off', 'all')
         # input control file for model
@@ -800,8 +800,8 @@ class Test_AOTIM5_2018:
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
         octave.addpath(octave.genpath(str(TMDpath)))
-        octave.addpath(filepath)
-        octave.addpath(modelpath)
+        octave.addpath(str(filepath))
+        octave.addpath(str(modelpath))
         # turn off octave warnings
         octave.warning('off', 'all')
         # input control file for model
