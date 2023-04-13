@@ -23,6 +23,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
+        added iterative methods for converting from cartesian to geodetic
+        using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 02/2023: use outputs from constants class for WGS84 parameters
         include more possible dimension names for gridded and drift outputs
@@ -60,7 +62,6 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
-import os
 import re
 import io
 import copy
@@ -68,6 +69,7 @@ import gzip
 import uuid
 import yaml
 import logging
+import pathlib
 import datetime
 import warnings
 import numpy as np
@@ -93,7 +95,7 @@ except (ImportError, ModuleNotFoundError) as exc:
 # ignore warnings
 warnings.filterwarnings("ignore")
 
-def case_insensitive_filename(filename: str) -> str:
+def case_insensitive_filename(filename: str | pathlib.Path):
     """
     Searches a directory for a filename without case dependence
 
@@ -103,15 +105,17 @@ def case_insensitive_filename(filename: str) -> str:
         input filename
     """
     # check if file presently exists with input case
-    if not os.access(os.path.expanduser(filename),os.F_OK):
+    filename = pathlib.Path(filename).expanduser().absolute()
+    if not filename.exists():
         # search for filename without case dependence
-        basename = os.path.basename(filename)
-        directory = os.path.dirname(os.path.expanduser(filename))
-        f = [f for f in os.listdir(directory) if re.match(basename,f,re.I)]
+        f = [f.name for f in filename.parent.iterdir() if
+             re.match(filename.name, f.name, re.I)]
+        # raise error if no file found
         if not f:
-            raise FileNotFoundError(f'{filename} not found in file system')
-        filename = os.path.join(directory,f.pop())
-    return os.path.expanduser(filename)
+            raise FileNotFoundError(str(filename))
+        filename = filename.with_name(f.pop())
+    # return the matched filename
+    return filename
 
 def data_type(x: np.ndarray, y: np.ndarray, t: np.ndarray) -> str:
     """
@@ -200,7 +204,7 @@ def from_ascii(filename: str, **kwargs):
     kwargs.setdefault('header',0)
     kwargs.setdefault('parse_dates',False)
     # print filename
-    logging.info(filename)
+    logging.info(str(filename))
     # get column names
     columns = copy.copy(kwargs['columns'])
     # open the ascii file and extract contents
@@ -389,7 +393,7 @@ def from_netCDF4(filename: str, **kwargs):
     # return the spatial variables
     return dinput
 
-def from_HDF5(filename: str, **kwargs):
+def from_HDF5(filename: str | pathlib.Path, **kwargs):
     """
     Read data from a HDF5 file
 
@@ -424,7 +428,7 @@ def from_HDF5(filename: str, **kwargs):
         with gzip.open(case_insensitive_filename(filename),'r') as f:
             fid = io.BytesIO(f.read())
         # set filename of BytesIO object
-        fid.filename = os.path.basename(filename)
+        fid.filename = filename.name
         # rewind to start of file
         fid.seek(0)
         # read as in-memory (diskless) HDF5 dataset from BytesIO object
@@ -513,7 +517,7 @@ def from_geotiff(filename: str, **kwargs):
     # Open the geotiff file for reading
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
-        mmap_name = f"/vsigzip/{case_insensitive_filename(filename)}"
+        mmap_name = f"/vsigzip/{str(case_insensitive_filename(filename))}"
         ds = osgeo.gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         # read as GDAL memory-mapped (diskless) geotiff dataset
@@ -522,10 +526,10 @@ def from_geotiff(filename: str, **kwargs):
         ds = osgeo.gdal.Open(mmap_name)
     else:
         # read geotiff dataset
-        ds = osgeo.gdal.Open(case_insensitive_filename(filename),
+        ds = osgeo.gdal.Open(str(case_insensitive_filename(filename)),
             osgeo.gdalconst.GA_ReadOnly)
     # print geotiff file if verbose
-    logging.info(filename)
+    logging.info(str(filename))
     # create python dictionary for output variables and attributes
     dinput = {}
     dinput['attributes'] = {c:dict() for c in ['x','y','data']}
@@ -620,10 +624,10 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
     # get column names
     columns = copy.copy(kwargs['columns'])
     # output filename
-    filename = os.path.expanduser(filename)
-    logging.info(filename)
+    filename = pathlib.Path(filename).expanduser().absolute()
+    logging.info(str(filename))
     # open the output file
-    fid = open(filename, mode='w', encoding='utf8')
+    fid = filename.open(mode='w', encoding='utf8')
     # create a column stack arranging data in column order
     data_stack = np.c_[[output[col] for col in columns]]
     ncol,nrow = np.shape(data_stack)
@@ -661,7 +665,12 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
     # close the output file
     fid.close()
 
-def to_netCDF4(output: dict, attributes: dict, filename: str, **kwargs):
+def to_netCDF4(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        **kwargs
+    ):
     """
     Wrapper function for writing data to a netCDF4 file
 
@@ -683,7 +692,8 @@ def to_netCDF4(output: dict, attributes: dict, filename: str, **kwargs):
     # default arguments
     kwargs.setdefault('data_type', 'drift')
     # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(filename),'w',format="NETCDF4")
+    filename = pathlib.Path(filename).expanduser().absolute()
+    fileID = netCDF4.Dataset(filename, 'w', format="NETCDF4")
     if kwargs['data_type'] in ('drift',):
         kwargs.pop('data_type')
         _drift_netCDF4(fileID, output, attributes, **kwargs)
@@ -704,7 +714,7 @@ def to_netCDF4(output: dict, attributes: dict, filename: str, **kwargs):
         for att_name,att_val in attributes['ROOT'].items():
             fileID.setncattr(att_name,att_val)
     # Output NetCDF structure information
-    logging.info(filename)
+    logging.info(str(filename))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()
@@ -829,7 +839,12 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         for att_name,att_val in attributes[key].items():
             nc[key].setncattr(att_name,att_val)
 
-def to_HDF5(output: dict, attributes: dict, filename: str, **kwargs):
+def to_HDF5(
+        output: dict,
+        attributes: dict,
+        filename: str,
+        **kwargs
+    ):
     """
     Write data to a HDF5 file
 
@@ -843,6 +858,7 @@ def to_HDF5(output: dict, attributes: dict, filename: str, **kwargs):
         full path of output HDF5 file
     """
     # opening HDF5 file for writing
+    filename = pathlib.Path(filename).expanduser().absolute()
     fileID = h5py.File(filename, 'w')
     # Defining the HDF5 dataset variables
     h5 = {}
@@ -872,12 +888,17 @@ def to_HDF5(output: dict, attributes: dict, filename: str, **kwargs):
         for att_name,att_val in attributes['ROOT'].items():
             fileID.attrs[att_name] = att_val
     # Output HDF5 structure information
-    logging.info(filename)
+    logging.info(str(filename))
     logging.info(list(fileID.keys()))
     # Closing the HDF5 file
     fileID.close()
 
-def to_geotiff(output: dict, attributes: dict, filename: str, **kwargs):
+def to_geotiff(
+        output: dict,
+        attributes: dict,
+        filename: str,
+        **kwargs
+    ):
     """
     Write data to a geotiff file
 
@@ -914,7 +935,8 @@ def to_geotiff(output: dict, attributes: dict, filename: str, **kwargs):
     # output as geotiff or specified driver
     driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     # set up the dataset with creation options
-    ds = driver.Create(filename, nx, ny, nband,
+    filename = pathlib.Path(filename).expanduser().absolute()
+    ds = driver.Create(str(filename), nx, ny, nband,
         kwargs['dtype'], kwargs['options'])
     # top left x, w-e pixel resolution, rotation
     # top left y, rotation, n-s pixel resolution
@@ -935,7 +957,7 @@ def to_geotiff(output: dict, attributes: dict, filename: str, **kwargs):
         # write band to geotiff array
         ds.GetRasterBand(band+1).WriteArray(output[varname][:,:,band])
     # print filename if verbose
-    logging.info(filename)
+    logging.info(str(filename))
     # close dataset
     ds.FlushCache()
 
@@ -1298,11 +1320,210 @@ def to_geodetic(
         y: np.ndarray,
         z: np.ndarray,
         a_axis: float = _wgs84.a_axis,
-        flat: float = _wgs84.flat
+        flat: float = _wgs84.flat,
+        method: str = 'bowring',
+        eps: float = np.finfo(np.float64).eps,
+        iterations: int = 10
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using a closed form solution
+    using either iterative or closed-form methods
+
+    Parameters
+    ----------
+    x, float
+        cartesian x-coordinates
+    y, float
+        cartesian y-coordinates
+    z, float
+        cartesian z-coordinates
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+    method: str, default 'bowring'
+        method to use for conversion
+
+            - ``'moritz'``: iterative solution
+            - ``'bowring'``: iterative solution
+            - ``'zhu'``: closed-form solution
+    eps: float, default np.finfo(np.float64).eps
+        tolerance for iterative methods
+    iterations: int, default 10
+        maximum number of iterations
+    """
+    # verify axes and copy to not modify inputs
+    x = np.atleast_1d(np.copy(x))
+    y = np.atleast_1d(np.copy(y))
+    z = np.atleast_1d(np.copy(z))
+    # calculate the geodetic coordinates using the specified method
+    if (method.lower() == 'moritz'):
+        return _moritz_iterative(x, y, z, a_axis=a_axis, flat=flat,
+            eps=eps, iterations=iterations)
+    elif (method.lower() == 'bowring'):
+        return _bowring_iterative(x, y, z, a_axis=a_axis, flat=flat,
+            eps=eps, iterations=iterations)
+    elif (method.lower() == 'zhu'):
+        return _zhu_closed_form(x, y, z, a_axis=a_axis, flat=flat)
+    else:
+        raise ValueError(f'Unknown conversion method: {method}')
+
+def _moritz_iterative(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat,
+        eps: float = np.finfo(np.float64).eps,
+        iterations: int = 10
+    ):
+    """
+    Convert from cartesian coordinates to geodetic coordinates
+    using the iterative solution of [HofmannWellenhof2006]_
+
+    Parameters
+    ----------
+    x, float
+        cartesian x-coordinates
+    y, float
+        cartesian y-coordinates
+    z, float
+        cartesian z-coordinates
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+    eps: float, default np.finfo(np.float64).eps
+        tolerance for iterative method
+    iterations: int, default 10
+        maximum number of iterations
+
+    References
+    ----------
+    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
+        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
+        `doi: 10.1007/978-3-211-33545-1
+        <https://doi.org/10.1007/978-3-211-33545-1>`_
+    """
+    # Linear eccentricity and first numerical eccentricity
+    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
+    ecc1 = lin_ecc/a_axis
+    # degrees to radians
+    dtr = np.pi/180.0
+    # calculate longitude
+    lon = np.arctan2(y, x)/dtr
+    # set initial estimate of height to 0
+    h = np.zeros_like(lon)
+    h0 = np.inf*np.ones_like(lon)
+    # calculate radius of parallel
+    p = np.sqrt(x**2 + y**2)
+    # initial estimated value for phi using h=0
+    phi = np.arctan(z/(p*(1.0 - ecc1**2)))
+    # iterate to tolerance or to maximum number of iterations
+    i = 0
+    while np.any(np.abs(h - h0) > eps) and (i <= iterations):
+        # copy previous iteration of height
+        h0 = np.copy(h)
+        # calculate radius of curvature
+        N = a_axis/np.sqrt(1.0 - ecc1**2 * np.sin(phi)**2)
+        # estimate new value of height
+        h = p/np.cos(phi) - N
+        # estimate new value for latitude using heights
+        phi = np.arctan(z/(p*(1.0 - ecc1**2*N/(N + h))))
+        # add to iterator
+        i += 1
+    # return latitude, longitude and height
+    return (lon, phi/dtr, h)
+
+def _bowring_iterative(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat,
+        eps: float = np.finfo(np.float64).eps,
+        iterations: int = 10
+    ):
+    """
+    Convert from cartesian coordinates to geodetic coordinates
+    using iterative solution of [Bowring1976]_ [Bowring1985]_
+
+    Parameters
+    ----------
+    x, float
+        cartesian x-coordinates
+    y, float
+        cartesian y-coordinates
+    z, float
+        cartesian z-coordinates
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+    eps: float, default np.finfo(np.float64).eps
+        tolerance for iterative method
+    iterations: int, default 10
+        maximum number of iterations
+
+    References
+    ----------
+    .. [Bowring1976] B. R. Bowring, "Transformation from spatial
+        to geodetic coordinates," *Survey Review*, 23(181),
+        323--327, (1976). `doi: 10.1179/sre.1976.23.181.323
+        <https://doi.org/10.1179/sre.1976.23.181.323>`_
+    .. [Bowring1985] B. R. Bowring, "The Accuracy Of Geodetic
+        Latitude and Height Equations," *Survey Review*, 28(218),
+        202--206, (1985). `doi: 10.1179/sre.1985.28.218.202
+        <https://doi.org/10.1179/sre.1985.28.218.202>`_
+    """
+    # semiminor axis of the WGS84 ellipsoid [m]
+    b_axis = (1.0 - flat)*a_axis
+    # Linear eccentricity
+    lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
+    # square of first and second numerical eccentricity
+    e12 = lin_ecc**2/a_axis**2
+    e22 = lin_ecc**2/b_axis**2
+    # degrees to radians
+    dtr = np.pi/180.0
+    # calculate longitude
+    lon = np.arctan2(y, x)/dtr
+    # calculate radius of parallel
+    p = np.sqrt(x**2 + y**2)
+    # initial estimated value for reduced parametric latitude
+    u = np.arctan(a_axis*z/(b_axis*p))
+    # initial estimated value for latitude
+    phi = np.arctan((z + e22*b_axis*np.sin(u)**3) /
+        (p - e12*a_axis*np.cos(u)**3))
+    phi0 = np.inf*np.ones_like(lon)
+    # iterate to tolerance or to maximum number of iterations
+    i = 0
+    while np.any(np.abs(phi - phi0) > eps) and (i <= iterations):
+        # copy previous iteration of phi
+        phi0 = np.copy(phi)
+        # calculate reduced parametric latitude
+        u = np.arctan(b_axis*np.tan(phi)/a_axis)
+        # estimate new value of latitude
+        phi = np.arctan((z + e22*b_axis*np.sin(u)**3) /
+            (p - e12*a_axis*np.cos(u)**3))
+        # add to iterator
+        i += 1
+    # calculate final radius of curvature
+    N = a_axis/np.sqrt(1.0 - e12 * np.sin(phi)**2)
+    # estimate final height (Bowring, 1985)
+    h = p*np.cos(phi) + z*np.sin(phi) - a_axis**2/N
+    # return latitude, longitude and height
+    return (lon, phi/dtr, h)
+
+def _zhu_closed_form(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat,
+    ):
+    """
+    Convert from cartesian coordinates to geodetic coordinates
+    using the closed-form solution of [Zhu1993]_
 
     Parameters
     ----------
@@ -1319,29 +1540,25 @@ def to_geodetic(
 
     References
     ----------
-    .. [1] J Zhu "Exact conversion of Earth-centered, Earth-fixed
-        coordinates to geodetic coordinates,"
+    .. [Zhu1993] J Zhu, "Exact conversion of Earth-centered,
+        Earth-fixed coordinates to geodetic coordinates,"
         *Journal of Guidance, Control, and Dynamics*,
         16(2), 389--391, (1993). `doi: 10.2514/3.21016
         <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
     """
-    # verify axes and copy to not modify inputs
-    x = np.atleast_1d(np.copy(x))
-    y = np.atleast_1d(np.copy(y))
-    z = np.atleast_1d(np.copy(z))
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
-    # Linear eccentricity and first numerical eccentricity
+    # Linear eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
-    ecc1 = lin_ecc/a_axis
     # square of first numerical eccentricity
-    e12 = ecc1**2
+    e12 = lin_ecc**2/a_axis**2
     # degrees to radians
     dtr = np.pi/180.0
-    # calculate distance
-    w = np.sqrt(x**2 + y**2)
     # calculate longitude
-    lon = np.arctan2(y,x)/dtr
+    lon = np.arctan2(y, x)/dtr
+    # calculate radius of parallel
+    w = np.sqrt(x**2 + y**2)
+    # allocate for output latitude and height
     lat = np.zeros_like(lon)
     h = np.zeros_like(lon)
     if np.any(w == 0):

@@ -24,6 +24,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.astro.solar_ecef
 
+.. autofunction:: pyTMD.astro.solar_ephemerides
+
 .. autofunction:: pyTMD.astro.lunar_ecef
+
+.. autofunction:: pyTMD.astro.lunar_ephemerides
 
 .. autofunction:: pyTMD.astro.polynomial_sum

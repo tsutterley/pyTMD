@@ -14,14 +14,17 @@ PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
+    PyEphem: Astronomical Ephemeris for Python
+        https://rhodesmill.org/pyephem/
 
 REFERENCES:
     Jean Meeus, Astronomical Algorithms, 2nd edition, 1998.
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
-    Updated 04/2023: added low resolution solar and lunar ephemerides
+    Updated 04/2023: added low resolution solar and lunar positions
         added function with more phase angles of the sun and moon
+        functions to calculate solar and lunar positions with ephemerides
     Updated 03/2023: add basic variable typing to function inputs
     Updated 10/2022: fix MEEUS solar perigee rate
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -38,7 +41,15 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
+import logging
 import numpy as np
+from pyTMD.utilities import get_data_path
+
+# attempt imports
+try:
+    import jplephem.spk
+except (ImportError, ModuleNotFoundError) as exc:
+    logging.debug("jplephem not available")
 
 # PURPOSE: calculate the sum of a polynomial function of time
 def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
@@ -289,6 +300,63 @@ def solar_ecef(MJD: np.ndarray):
     # return the ECEF coordinates
     return (X, Y, Z)
 
+# default JPL ephemerides kernel
+_default_kernel = get_data_path(['data','de440s.bsp'])
+
+# PURPOSE: compute coordinates of the sun in an ECEF frame
+def solar_ephemerides(MJD: np.ndarray, **kwargs):
+    """
+    Computes positional coordinates of the sun in an Earth-centric,
+    Earth-Fixed (ECEF) frame using JPL ephemerides [1]_ [2]_
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        Modified Julian Day (MJD) of input date
+    kernel: str or pathlib.Path
+        Path to JPL ephemerides kernel file
+
+    Returns
+    -------
+    X, Y, Z: np.ndarray
+        ECEF coordinates of the sun (meters)
+
+    References
+    ----------
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    .. [2] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
+        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
+        *The Astronomical Journal*, 161(3), 105, (2021).
+        `doi: 10.3847/1538-3881/abd414
+        <https://doi.org/10.3847/1538-3881/abd414>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('kernel', _default_kernel)
+    # degrees and arcseconds to radians
+    dtr = np.pi/180.0
+    # convert from MJD to Julian days
+    JD = np.atleast_1d(MJD) + 2400000.5
+    # convert from Julian days to days relative to 2000-01-01T12:00:00
+    T = (JD - 2451545.0)
+    # read JPL ephemerides kernel
+    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
+    # segments for computing position of the sun
+    # Earth to Sun = - EM_Barycenter_to_Earth - Sun_to_EM_Barycenter
+    Sun_to_EM_Barycenter = SPK[0,3]
+    EM_Barycenter_to_Earth = SPK[3,399]
+    # compute the position of the sun relative to the Earth
+    # converting from kilometers to meters
+    x, y, Z = -EM_Barycenter_to_Earth.compute(JD)*1e3 - \
+        Sun_to_EM_Barycenter.compute(JD)*1e3
+    # Greenwich Mean Sidereal Time (radians)
+    GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*T, 360.0)
+    # rotate to cartesian (ECEF) coordinates
+    # ignoring polar motion and length-of-day variations
+    X = np.cos(GMST)*x + np.sin(GMST)*y
+    Y = np.cos(GMST)*y - np.sin(GMST)*x
+    # return the ECEF coordinates
+    return (X, Y, Z)
+
 # PURPOSE: compute coordinates of the moon in an ECEF frame
 def lunar_ecef(MJD: np.ndarray):
     """
@@ -370,5 +438,59 @@ def lunar_ecef(MJD: np.ndarray):
     # ignoring polar motion and length-of-day variations
     X = np.cos(GMST)*x + np.sin(GMST)*v
     Y = np.cos(GMST)*v - np.sin(GMST)*x
+    # return the ECEF coordinates
+    return (X, Y, Z)
+
+# PURPOSE: compute coordinates of the moon in an ECEF frame
+def lunar_ephemerides(MJD: np.ndarray, **kwargs):
+    """
+    Computes positional coordinates of the moon in an Earth-centric,
+    Earth-Fixed (ECEF) frame using JPL ephemerides [1]_ [2]_
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        Modified Julian Day (MJD) of input date
+    kernel: str or pathlib.Path
+        Path to JPL ephemerides kernel file
+
+    Returns
+    -------
+    X, Y, Z: np.ndarray
+        ECEF coordinates of the moon (meters)
+
+    References
+    ----------
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    .. [2] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
+        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
+        *The Astronomical Journal*, 161(3), 105, (2021).
+        `doi: 10.3847/1538-3881/abd414
+        <https://doi.org/10.3847/1538-3881/abd414>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('kernel', _default_kernel)
+    # degrees and arcseconds to radians
+    dtr = np.pi/180.0
+    # convert from MJD to Julian days
+    JD = np.atleast_1d(MJD) + 2400000.5
+    # convert from Julian days to days relative to 2000-01-01T12:00:00
+    T = (JD - 2451545.0)
+    # read JPL ephemerides kernel
+    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
+    # segments for computing position of the moon
+    # Earth to Moon = - EM_Barycenter_to_Earth + EM_Barycenter_to_Moon
+    EM_Barycenter_to_Earth = SPK[3,399]
+    EM_Barycenter_to_Moon = SPK[3,301]
+    # compute the position of the moon relative to the Earth
+    # converting from kilometers to meters
+    x, y, Z = EM_Barycenter_to_Moon.compute(JD)*1e3 - \
+        EM_Barycenter_to_Earth.compute(JD)*1e3
+    # Greenwich Mean Sidereal Time (radians)
+    GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*T, 360.0)
+    # rotate to cartesian (ECEF) coordinates
+    # ignoring polar motion and length-of-day variations
+    X = np.cos(GMST)*x + np.sin(GMST)*y
+    Y = np.cos(GMST)*y - np.sin(GMST)*x
     # return the ECEF coordinates
     return (X, Y, Z)

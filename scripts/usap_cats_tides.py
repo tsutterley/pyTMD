@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 usap_cats_tides.py
-Written by Tyler Sutterley (11/2022)
+Written by Tyler Sutterley (04/2023)
 Download Circum-Antarctic Tidal Simulations from the US Antarctic Program
 CATS2008: https://www.usap-dc.org/view/dataset/601235
 
@@ -25,6 +25,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
     Updated 10/2021: using python logging for handling verbose output
@@ -36,10 +37,10 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
 import re
 import time
 import logging
+import pathlib
 import zipfile
 import warnings
 import argparse
@@ -61,8 +62,9 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     LOCAL = {}
     LOCAL['CATS2008'] = 'CATS2008'
     # recursively create directories if non-existent
-    if not os.access(os.path.join(DIRECTORY,LOCAL[MODEL]), os.F_OK):
-        os.makedirs(os.path.join(DIRECTORY,LOCAL[MODEL]), MODE)
+    DIRECTORY = pathlib.Path(DIRECTORY).expanduser().absolute()
+    local_dir = DIRECTORY.joinpath(LOCAL[MODEL])
+    local_dir.mkdir(MODE, parents=True, exist_ok=True)
 
     # USAP now requires a captcha to download datasets
     # use a manual download until USAP allows some sort of verification
@@ -70,7 +72,7 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     DATASET['CATS2008'] = ['https://www.usap-dc.org','view','dataset','601235']
     # open USAP url in a new browser window
     webbrowser.open_new_tab(posixpath.join(*DATASET[MODEL]))
-    pyTMD.utilities.file_opener(os.path.join(DIRECTORY,LOCAL[MODEL]))
+    pyTMD.utilities.file_opener(local_dir)
     return
 
     # download CATS2008 zip file and read as virtual file object
@@ -82,12 +84,12 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
     for m in zfile.filelist:
         # strip directories from member filename
         m.filename = posixpath.basename(m.filename)
-        local_file = os.path.join(DIRECTORY,LOCAL[MODEL],m.filename)
-        logger.info(f'\t{local_file}\n')
+        local_file = local_dir.joinpath(m.filename)
+        logger.info(f'\t{str(local_file)}\n')
         # extract file
-        zfile.extract(m, path=os.path.join(DIRECTORY,LOCAL[MODEL]))
+        zfile.extract(m, path=local_dir)
         # change permissions mode
-        os.chmod(local_file, MODE)
+        local_file.chmod(MODE)
     # close the zipfile object
     zfile.close()
 
@@ -103,8 +105,7 @@ def arguments():
     # command line parameters
     # working data directory for location of tide models
     parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path, default=pathlib.Path.cwd(),
         help='Working data directory')
     # Antarctic Ocean tide model to download
     parser.add_argument('--tide','-T',
@@ -131,7 +132,7 @@ def main():
     # check internet connection before attempting to run program
     if pyTMD.utilities.check_connection('https://www.usap-dc.org'):
         for m in args.tide:
-            usap_cats_tides(m,DIRECTORY=args.directory,MODE=args.mode)
+            usap_cats_tides(m, DIRECTORY=args.directory, MODE=args.mode)
 
 # run main program
 if __name__ == '__main__':

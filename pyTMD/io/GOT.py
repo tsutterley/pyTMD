@@ -43,6 +43,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: fix repeated longitudinal convention adjustment
+        using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
@@ -80,12 +81,12 @@ UPDATE HISTORY:
 """
 from __future__ import division, annotations
 
-import os
 import re
 import copy
 import gzip
 import uuid
 import logging
+import pathlib
 import datetime
 import warnings
 import numpy as np
@@ -106,7 +107,7 @@ warnings.filterwarnings("ignore")
 def extract_constants(
         ilon: np.ndarray,
         ilat: np.ndarray,
-        model_files: str | list | None = None,
+        model_files: str | pathlib.Path | list | None = None,
         **kwargs
     ):
     """
@@ -122,7 +123,7 @@ def extract_constants(
         longitude to interpolate
     ilat: np.ndarray
         latitude to interpolate
-    model_files: list or NoneType, default None
+    model_files: str, list, pathlib.Path or NoneType, default None
         list of model files for each constituent
     method: str, default 'spline'
         Interpolation method
@@ -173,8 +174,8 @@ def extract_constants(
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
-    # raise warning if model files are entered as a string
-    if isinstance(model_files,str):
+    # raise warning if model files are entered as a string or path
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -196,16 +197,15 @@ def extract_constants(
     # read and interpolate each constituent
     for i,model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(model_file), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(model_file))
+        model_file = pathlib.Path(model_file).expanduser()
+        if not model_file.exists():
+            raise FileNotFoundError(str(model_file))
         # read constituent from elevation file
         if (kwargs['grid'] == 'ascii'):
-            hc, lon, lat, cons = read_ascii_file(
-                os.path.expanduser(model_file),
+            hc, lon, lat, cons = read_ascii_file(model_file,
                 compressed=kwargs['compressed'])
         elif (kwargs['grid'] == 'netcdf'):
-            hc, lon, lat, cons = read_netcdf_file(
-                os.path.expanduser(model_file),
+            hc, lon, lat, cons = read_netcdf_file(model_file,
                 compressed=kwargs['compressed'])
         # append to the list of constituents
         constituents.append(cons)
@@ -278,7 +278,7 @@ def extract_constants(
 
 # PURPOSE: read harmonic constants from tide models
 def read_constants(
-        model_files: str | list | None = None,
+        model_files: str | pathlib.Path | list | None = None,
         **kwargs
     ):
     """
@@ -286,7 +286,7 @@ def read_constants(
 
     Parameters
     ----------
-    model_files: list or NoneType, default None
+    model_files: str, list, pathlib.path or NoneType, default None
         list of model files for each constituent
     grid: str, default 'ascii'
         Tide model file type to read
@@ -306,7 +306,7 @@ def read_constants(
     kwargs.setdefault('compressed', False)
 
     # raise warning if model files are entered as a string
-    if isinstance(model_files,str):
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -315,16 +315,15 @@ def read_constants(
     # read each model constituent
     for i, model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(model_file), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(model_file))
+        model_file = pathlib.Path(model_file).expanduser()
+        if not model_file.exists():
+            raise FileNotFoundError(str(model_file))
         # read constituent from elevation file
         if (kwargs['grid'] == 'ascii'):
-            hc, lon, lat, cons = read_ascii_file(
-                os.path.expanduser(model_file),
+            hc, lon, lat, cons = read_ascii_file(model_file,
                 compressed=kwargs['compressed'])
         elif (kwargs['grid'] == 'netcdf'):
-            hc, lon, lat, cons = read_netcdf_file(
-                os.path.expanduser(model_file),
+            hc, lon, lat, cons = read_netcdf_file(model_file,
                 compressed=kwargs['compressed'])
         # grid step size of tide model
         dlon = np.abs(lon[1] - lon[0])
@@ -537,7 +536,7 @@ def extend_matrix(input_matrix: np.ndarray):
 
 # PURPOSE: read GOT model grid files
 def read_ascii_file(
-        input_file: str,
+        input_file: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -545,7 +544,7 @@ def read_ascii_file(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         Model file
     compressed: bool, default False
         Input file is gzip compressed
@@ -564,7 +563,7 @@ def read_ascii_file(
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
     # tilde-expand input file
-    input_file = os.path.expanduser(input_file)
+    input_file = pathlib.Path(input_file).expanduser()
     # read input tide model file
     if kwargs['compressed']:
         # read gzipped ascii file
@@ -618,7 +617,7 @@ def read_ascii_file(
 
 # PURPOSE: read GOT netCDF4 tide model files
 def read_netcdf_file(
-        input_file: str,
+        input_file: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -626,7 +625,7 @@ def read_netcdf_file(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         model file
     compressed: bool, default False
         Input file is gzip compressed
@@ -644,13 +643,15 @@ def read_netcdf_file(
     """
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
+    # tilde-expand input file
+    input_file = pathlib.Path(input_file).expanduser()
     # read the netcdf format tide elevation file
     if kwargs['compressed']:
         # read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file),'rb')
+        f = gzip.open(input_file, 'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+        fileID = netCDF4.Dataset(input_file, 'r')
     # variable dimensions
     lon = fileID.variables['longitude'][:]
     lat = fileID.variables['latitude'][:]
@@ -671,9 +672,9 @@ def read_netcdf_file(
     # return output variables
     return (hc, lon, lat, cons)
 
-# PURPOSE: output tidal constituent file in GOT format
+# PURPOSE: output tidal constituent file in GOT netCDF format
 def output_netcdf_file(
-        FILE: str,
+        FILE: str | pathlib.Path,
         hc: np.ndarray,
         lon: np.ndarray,
         lat: np.ndarray,
@@ -684,7 +685,7 @@ def output_netcdf_file(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output GOT model file name
     hc: np.ndarray
         Eulerian form of tidal constituent
@@ -695,8 +696,10 @@ def output_netcdf_file(
     constituent: str
         tidal constituent ID
     """
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
     # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    fileID = netCDF4.Dataset(FILE, 'w', format="NETCDF4")
     # define the NetCDF dimensions
     fileID.createDimension('longitude', len(lon))
     fileID.createDimension('latitude', len(lat))
@@ -746,7 +749,7 @@ def output_netcdf_file(
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
     # Output NetCDF structure information
-    logging.info(FILE)
+    logging.info(str(FILE))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()

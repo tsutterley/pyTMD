@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,8 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
+        added function to download ephemeride files from JPL SSD server
     Updated 03/2023: add basic variable typing to function inputs
     Updated 01/2023: updated SSL context to fix some deprecation warnings
     Updated 11/2022: added list program for IERS Bulletin-A https server
@@ -34,7 +36,6 @@ UPDATE HISTORY:
 from __future__ import print_function, division, annotations
 
 import sys
-import os
 import re
 import io
 import ssl
@@ -46,6 +47,7 @@ import socket
 import inspect
 import hashlib
 import logging
+import pathlib
 import warnings
 import posixpath
 import subprocess
@@ -62,7 +64,7 @@ else:
     import urllib.request as urllib2
 
 # PURPOSE: get absolute path within a package from a relative path
-def get_data_path(relpath: list | str):
+def get_data_path(relpath: list | str | pathlib.Path):
     """
     Get the absolute path within a package from a relative path
 
@@ -73,15 +75,15 @@ def get_data_path(relpath: list | str):
     """
     # current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
-    filepath = os.path.dirname(os.path.abspath(filename))
+    filepath = pathlib.Path(filename).absolute().parent
     if isinstance(relpath, list):
         # use *splat operator to extract from list
-        return os.path.join(filepath,*relpath)
+        return filepath.joinpath(*relpath)
     elif isinstance(relpath, str):
-        return os.path.join(filepath,relpath)
+        return filepath.joinpath(relpath)
 
 # PURPOSE: platform independent file opener
-def file_opener(filename: str):
+def file_opener(filename: str | pathlib.Path):
     """
     Platform independent file opener
 
@@ -90,12 +92,13 @@ def file_opener(filename: str):
     filename: str
         path to file
     """
+    filename = pathlib.Path(filename).expanduser()
     if (sys.platform == "win32"):
-        os.startfile(os.path.expanduser(filename), "explore")
+        pathlib.os.startfile(filename, "explore")
     elif (sys.platform == "darwin"):
-        subprocess.call(["open", os.path.expanduser(filename)])
+        subprocess.call(["open", filename])
     else:
-        subprocess.call(["xdg-open", os.path.expanduser(filename)])
+        subprocess.call(["xdg-open", filename])
 
 # PURPOSE: get the hash value of a file
 def get_hash(
@@ -121,10 +124,14 @@ def get_hash(
             return hashlib.md5(local.getvalue()).hexdigest()
         elif (algorithm == 'sha1'):
             return hashlib.sha1(local.getvalue()).hexdigest()
-    elif os.access(os.path.expanduser(local),os.F_OK):
+    elif isinstance(local, (str, pathlib.Path)):
         # generate checksum hash for local file
+        local = pathlib.Path(local).expanduser()
+        # if file currently doesn't exist, return empty string
+        if not local.exists():
+            return ''
         # open the local_file in binary read mode
-        with open(os.path.expanduser(local), 'rb') as local_buffer:
+        with local.open(mode='rb') as local_buffer:
             # generate checksum hash for a given type
             if (algorithm == 'MD5'):
                 return hashlib.md5(local_buffer.read()).hexdigest()
@@ -150,8 +157,8 @@ def get_git_revision_hash(
     """
     # get path to .git directory from current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
-    basepath = os.path.dirname(os.path.dirname(os.path.abspath(filename)))
-    gitpath = os.path.join(basepath,'.git')
+    basepath = pathlib.Path(filename).absolute().parent.parent
+    gitpath = basepath.joinpath('.git')
     # build command
     cmd = ['git', f'--git-dir={gitpath}', 'rev-parse']
     cmd.append('--short') if short else None
@@ -166,8 +173,8 @@ def get_git_status():
     """
     # get path to .git directory from current file path
     filename = inspect.getframeinfo(inspect.currentframe()).filename
-    basepath = os.path.dirname(os.path.dirname(os.path.abspath(filename)))
-    gitpath = os.path.join(basepath,'.git')
+    basepath = pathlib.Path(filename).absolute().parent.parent
+    gitpath = basepath.joinpath('.git')
     # build command
     cmd = ['git', f'--git-dir={gitpath}', 'status', '--porcelain']
     with warnings.catch_warnings():
@@ -357,14 +364,15 @@ def copy(
     move: bool, default False
         remove the source file
     """
-    source = os.path.abspath(os.path.expanduser(source))
-    destination = os.path.abspath(os.path.expanduser(destination))
+    source = pathlib.Path(source).expanduser().absolute()
+    destination = pathlib.Path(destination).expanduser().absolute()
     # log source and destination
-    logging.info(f'{source} -->\n\t{destination}')
+    logging.info(f'{str(source)} -->\n\t{str(destination)}')
     shutil.copyfile(source, destination)
     shutil.copystat(source, destination)
+    # remove the original file if moving
     if move:
-        os.remove(source)
+        source.unlink()
 
 # PURPOSE: check ftp connection
 def check_ftp_connection(
@@ -484,7 +492,7 @@ def from_ftp(
         username: str | None = None,
         password: str | None = None,
         timeout: int | None = None,
-        local: str | None = None,
+        local: str | pathlib.Path | None = None,
         hash: str = '',
         chunk: int = 8192,
         verbose: bool = False,
@@ -504,7 +512,7 @@ def from_ftp(
         ftp password
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    local: str or NoneType, default None
+    local: str, pathlib.Path or NoneType, default None
         path to local file
     hash: str, default ''
         MD5 hash of local file
@@ -553,21 +561,20 @@ def from_ftp(
         # compare checksums
         if local and (hash != remote_hash):
             # convert to absolute path
-            local = os.path.abspath(local)
+            local = pathlib.Path(local).expanduser().absolute()
             # create directory if non-existent
-            if not os.access(os.path.dirname(local), os.F_OK):
-                os.makedirs(os.path.dirname(local), mode)
+            local.parent.mkdir(mode=mode, parents=True, exist_ok=True)
             # print file information
-            args = (posixpath.join(*HOST),local)
+            args = (posixpath.join(*HOST), str(local))
             logging.info('{0} -->\n\t{1}'.format(*args))
             # store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
-            with open(os.path.expanduser(local), 'wb') as f:
+            with local.open(mode='wb') as f:
                 shutil.copyfileobj(remote_buffer, f, chunk)
             # change the permissions mode
-            os.chmod(local,mode)
+            local.chmod(mode)
             # keep remote modification time of file and local access time
-            os.utime(local, (os.stat(local).st_atime, remote_mtime))
+            pathlib.os.utime(local, (local.stat().st_atime, remote_mtime))
         # close the ftp connection
         ftp.close()
         # return the bytesIO object
@@ -671,7 +678,7 @@ def from_http(
         HOST: str,
         timeout: int | None = None,
         context = _default_ssl_context,
-        local: str | None = None,
+        local: str | pathlib.path | None = None,
         hash: str = '',
         chunk: int = 16384,
         verbose: bool = False,
@@ -689,7 +696,7 @@ def from_http(
         timeout in seconds for blocking operations
     context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
         SSL context for ``urllib`` opener object
-    local: str or NoneType, default None
+    local: str, pathlib.Path or NoneType, default None
         path to local file
     hash: str, default ''
         MD5 hash of local file
@@ -732,19 +739,18 @@ def from_http(
         # compare checksums
         if local and (hash != remote_hash):
             # convert to absolute path
-            local = os.path.abspath(local)
+            local = pathlib.Path(local).expanduser().absolute()
             # create directory if non-existent
-            if not os.access(os.path.dirname(local), os.F_OK):
-                os.makedirs(os.path.dirname(local), mode)
+            local.parent.mkdir(mode=mode, parents=True, exist_ok=True)
             # print file information
-            args = (posixpath.join(*HOST),local)
+            args = (posixpath.join(*HOST), str(local))
             logging.info('{0} -->\n\t{1}'.format(*args))
             # store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
-            with open(os.path.expanduser(local), 'wb') as f:
+            with local.open(mode='wb') as f:
                 shutil.copyfileobj(remote_buffer, f, chunk)
             # change the permissions mode
-            os.chmod(local,mode)
+            local.chmod(mode)
         # return the bytesIO object
         remote_buffer.seek(0)
         return remote_buffer
@@ -808,7 +814,7 @@ def build_opener(
     # add Authorization header to opener
     if authorization_header:
         b64 = base64.b64encode(f'{username}:{password}'.encode())
-        opener.addheaders = [("Authorization","Basic {0}".format(b64.decode()))]
+        opener.addheaders = [("Authorization", f"Basic {b64.decode()}")]
     # Now all calls to urllib2.urlopen use our opener.
     urllib2.install_opener(opener)
     # All calls to urllib2.urlopen will now use handler
@@ -886,8 +892,8 @@ def cddis_list(
     if isinstance(HOST, str):
         HOST = url_split(HOST)
     # Encode username/password for request authorization headers
-    base64_string = base64.b64encode(f'{username}:{password}'.encode())
-    authorization_header = "Basic {0}".format(base64_string.decode())
+    b64 = base64.b64encode(f'{username}:{password}'.encode())
+    authorization_header = f"Basic {b64.decode()}"
     # try listing from https
     try:
         # Create and submit request.
@@ -928,7 +934,7 @@ def from_cddis(
         password: str | None = None,
         build: bool = True,
         timeout: int | None = None,
-        local: str | None = None,
+        local: str | pathlib.Path | None = None,
         hash: str = '',
         chunk: int = 16384,
         verbose: bool = False,
@@ -950,7 +956,7 @@ def from_cddis(
         Build opener and check Earthdata credentials
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    local: str or NoneType, default None
+    local: str, pathlib.Path or NoneType, default None
         path to local file
     hash: str, default ''
         MD5 hash of local file
@@ -985,8 +991,8 @@ def from_cddis(
     if isinstance(HOST, str):
         HOST = url_split(HOST)
     # Encode username/password for request authorization headers
-    base64_string = base64.b64encode(f'{username}:{password}'.encode())
-    authorization_header = "Basic {0}".format(base64_string.decode())
+    b64 = base64.b64encode(f'{username}:{password}'.encode())
+    authorization_header = f"Basic {b64.decode()}"
     # try downloading from https
     try:
         # Create and submit request.
@@ -1007,19 +1013,18 @@ def from_cddis(
         # compare checksums
         if local and (hash != remote_hash):
             # convert to absolute path
-            local = os.path.abspath(local)
+            local = pathlib.Path(local).expanduser().absolute()
             # create directory if non-existent
-            if not os.access(os.path.dirname(local), os.F_OK):
-                os.makedirs(os.path.dirname(local), mode)
+            local.parent.mkdir(mode=mode, parents=True, exist_ok=True)
             # print file information
-            args = (posixpath.join(*HOST),local)
+            args = (posixpath.join(*HOST), str(local))
             logging.info('{0} -->\n\t{1}'.format(*args))
             # store bytes to file using chunked transfer encoding
             remote_buffer.seek(0)
-            with open(os.path.expanduser(local), 'wb') as f:
+            with local.open(mode='wb') as f:
                 shutil.copyfileobj(remote_buffer, f, chunk)
             # change the permissions mode
-            os.chmod(local,mode)
+            local.chmod(mode)
         # return the bytesIO object
         remote_buffer.seek(0)
         return remote_buffer
@@ -1072,3 +1077,43 @@ def iers_list(
         # sort list of column names and last modified times in reverse order
         # return the list of column names and last modified times
         return (colnames[::-1], collastmod[::-1])
+
+def from_jpl_ssd(
+        kernel='de440s.bsp',
+        timeout: int | None = None,
+        context = _default_ssl_context,
+        hash: str = '',
+        chunk: int = 16384,
+        verbose: bool = False,
+        mode: oct = 0o775
+    ):
+    """
+    Download `planetary ephemeride kernels`__ from the JPL Solar
+    System Dynamics server
+
+    .. __: https://ssd.jpl.nasa.gov/planets/eph_export.html
+
+    Parameters
+    ----------
+    kernel: str
+        JPL kernel file to download
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+        SSL context for ``urllib`` opener object
+    hash: str, default ''
+        MD5 hash of local file
+    chunk: int, default 16384
+        chunk size for transfer encoding
+    verbose: bool, default False
+        print file transfer information
+    mode: oct, default 0o775
+        permissions mode of output local file
+    """
+    # local path to kernel file
+    local = get_data_path(['data',kernel])
+    # remote host path to kernel file
+    HOST = ['https://ssd.jpl.nasa.gov','ftp','eph','planets','bsp',kernel]
+    # get kernel file from remote host
+    from_http(HOST, timeout=timeout, context=context, local=local,
+        hash=hash, chunk=chunk, verbose=verbose, mode=mode)

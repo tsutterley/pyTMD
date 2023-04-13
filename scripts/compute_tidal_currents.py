@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (02/2023)
+Written by Tyler Sutterley (04/2023)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -91,6 +91,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
@@ -132,8 +133,8 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
-import os
 import logging
+import pathlib
 import warnings
 import argparse
 import numpy as np
@@ -418,7 +419,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='data')
     # change the permissions level to MODE
-    os.chmod(output_file, MODE)
+    output_file.chmod(MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -429,19 +430,18 @@ def arguments():
         fromfile_prefix_chars="@"
     )
     parser.convert_arg_line_to_args = pyTMD.utilities.convert_arg_line_to_args
-    # command line options
     group = parser.add_mutually_exclusive_group(required=True)
+    # command line options
     # input and output file
     parser.add_argument('infile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=pathlib.Path, nargs='?',
         help='Input file to run')
     parser.add_argument('outfile',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='?',
+        type=pathlib.Path, nargs='?',
         help='Computed output file')
     # set data directory containing the tidal data
     parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path,
         help='Working data directory')
     # tide model to use
     choices = sorted(pyTMD.io.model.ocean_current())
@@ -456,8 +456,8 @@ def arguments():
         help='Tide model files are gzip compressed')
     # tide model definition file to set an undefined model
     group.add_argument('--definition-file',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        help='Tide model definition file for use in calculating currents')
+        type=pathlib.Path,
+        help='Tide model definition file')
     # input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
@@ -533,8 +533,7 @@ def main():
 
     # set output file from input filename if not entered
     if not args.outfile:
-        fileBasename,fileExtension = os.path.splitext(args.infile)
-        vars = (fileBasename,args.tide,'_currents',fileExtension)
+        vars = (args.infile.stem,args.tide,'_currents',args.infile.suffix)
         args.outfile = '{0}_{1}{2}{3}'.format(*vars)
 
     # run tidal current program for input file

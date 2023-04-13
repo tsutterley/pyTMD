@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (01/2023)
+Written by Tyler Sutterley (04/2023)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -31,6 +31,7 @@ REFERENCE:
     https://developer.box.com/guides/
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 01/2023: use default context from utilities module
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
@@ -41,10 +42,10 @@ UPDATE HISTORY:
 """
 from __future__ import print_function
 
-import os
 import re
 import json
 import logging
+import pathlib
 import argparse
 import posixpath
 import pyTMD.utilities
@@ -89,19 +90,21 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
     logger = pyTMD.utilities.build_logger(__name__, level=logging.INFO)
 
     # check if local directory exists and recursively create if not
+    tide_dir = pathlib.Path(tide_dir).expanduser().absolute()
     if (TIDE_MODEL == 'TPXO9-atlas'):
-        localpath = os.path.join(tide_dir,'TPXO9_atlas')
+        localpath = tide_dir.joinpath('TPXO9_atlas')
     elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
-        localpath = os.path.join(tide_dir,'TPXO9_atlas_v2')
+        localpath = tide_dir.joinpath('TPXO9_atlas_v2')
     elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
-        localpath = os.path.join(tide_dir,'TPXO9_atlas_v3')
+        localpath = tide_dir.joinpath('TPXO9_atlas_v3')
     elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
-        localpath = os.path.join(tide_dir,'TPXO9_atlas_v4')
+        localpath = tide_dir.joinpath('TPXO9_atlas_v4')
     elif (TIDE_MODEL == 'TPXO9-atlas-v5'):
-        localpath = os.path.join(tide_dir,'TPXO9_atlas_v5')
+        localpath = tide_dir.joinpath('TPXO9_atlas_v5')
 
     # create output directory if non-existent
-    os.makedirs(localpath,MODE) if not os.path.exists(localpath) else None
+    localpath.mkdir(MODE, parents=True, exist_ok=True)
+
     # regular expression pattern for files of interest
     regex_patterns = []
     regex_patterns.append('grid')
@@ -134,8 +137,8 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         remote_mtime = pyTMD.utilities.get_unix_time(modified_at,
             format='%Y-%m-%dT%H:%M:%S%z')
         # print file information
-        local = os.path.join(localpath,entry['name'])
-        logger.info(f'\t{local}')
+        local = localpath.joinpath(entry['name'])
+        logger.info(f'\t{str(local)}')
         # compare checksums to validate download
         sha1 = pyTMD.utilities.get_hash(local,algorithm='sha1')
         if sha1 != entry['sha1']:
@@ -143,9 +146,9 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
             logger.critical(f'Local checksum: {sha1}')
             raise Exception('Checksum verification failed')
         # keep remote modification time of file and local access time
-        os.utime(local, (os.stat(local).st_atime, remote_mtime))
+        pathlib.os.utime(local, (local.stat().st_atime, remote_mtime))
         # change the permissions mode of the local file
-        os.chmod(local, MODE)
+        local.chmod(MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -159,8 +162,7 @@ def arguments():
     # command line parameters
     # working data directory
     parser.add_argument('--directory','-D',
-        type=lambda p: os.path.abspath(os.path.expanduser(p)),
-        default=os.getcwd(),
+        type=pathlib.Path, default=pathlib.Path.cwd(),
         help='Working data directory')
     # box user access token
     parser.add_argument('--token','-t',

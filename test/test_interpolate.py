@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 u"""
-test_interpolate.py (04/2024)
+test_interpolate.py (04/2023)
 Test the interpolation and extrapolation routines
 
 UPDATE HISTORY:
     Updated 04/2023: test geodetic conversion additionally as arrays
+        using pathlib to define and expand paths
     Updated 12/2022: refactored interpolation routines into new module
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Written 03/2021
 """
-import os
-import inspect
 import pytest
+import inspect
+import pathlib
 import numpy as np
 import scipy.io
 import pyTMD.interpolate
@@ -20,7 +21,7 @@ import pyTMD.utilities
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: Download max determinant nodes from spherepts
 # https://github.com/gradywright/spherepts
@@ -30,11 +31,11 @@ def download_nodes(N=324):
     HOST = ['https://github.com','gradywright','spherepts','raw',
         'master','nodes','max_determinant',matfile]
     pyTMD.utilities.from_http(HOST,
-        local=os.path.join(filepath,matfile),
+        local=filepath.joinpath(matfile),
         verbose=True)
     yield
     # remove the node file
-    os.remove(os.path.join(filepath,matfile))
+    filepath.joinpath(matfile).unlink()
 
 # Franke's 3D evaluation function
 def franke_3d(x,y,z):
@@ -49,7 +50,7 @@ def franke_3d(x,y,z):
 def test_cartesian(N=324):
     # read the node file
     matfile = f'md{N:05d}.mat'
-    xd = scipy.io.loadmat(os.path.join(filepath,matfile))
+    xd = scipy.io.loadmat(filepath.joinpath(matfile))
     x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
     # convert from cartesian to sphere
     lon,lat,r = pyTMD.spatial.to_sphere(x,y,z)
@@ -63,7 +64,7 @@ def test_cartesian(N=324):
 def test_geodetic(N=324):
     # read the node file
     matfile = f'md{N:05d}.mat'
-    xd = scipy.io.loadmat(os.path.join(filepath,matfile))
+    xd = scipy.io.loadmat(filepath.joinpath(matfile))
     # convert from cartesian to sphere
     ln,lt,_ = pyTMD.spatial.to_sphere(xd['x'][:,0],
         xd['x'][:,1],xd['x'][:,2])
@@ -94,7 +95,7 @@ def test_geodetic(N=324):
 def test_interpolate(METHOD, N=324):
     # read the node file
     matfile = f'md{N:05d}.mat'
-    xd = scipy.io.loadmat(os.path.join(filepath,matfile))
+    xd = scipy.io.loadmat(filepath.joinpath(matfile))
     x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
     # convert from cartesian to sphere
     lon,lat,_ = pyTMD.spatial.to_sphere(x,y,z)
@@ -131,7 +132,7 @@ def test_interpolate(METHOD, N=324):
 def test_extrapolate(N=324):
     # read the node file
     matfile = f'md{N:05d}.mat'
-    xd = scipy.io.loadmat(os.path.join(filepath,matfile))
+    xd = scipy.io.loadmat(filepath.joinpath(matfile))
     x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
     # convert from cartesian to sphere
     lon,lat,_ = pyTMD.spatial.to_sphere(x,y,z)
@@ -158,7 +159,7 @@ def test_extrapolate(N=324):
 def test_extrapolation_checks(N=324):
     # read the node file
     matfile = f'md{N:05d}.mat'
-    xd = scipy.io.loadmat(os.path.join(filepath,matfile))
+    xd = scipy.io.loadmat(filepath.joinpath(matfile))
     x,y,z = (xd['x'][:,0],xd['x'][:,1],xd['x'][:,2])
     # convert from cartesian to sphere
     lon,lat,_ = pyTMD.spatial.to_sphere(x,y,z)

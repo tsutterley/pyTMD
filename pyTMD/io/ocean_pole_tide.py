@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ocean_pole_tide.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
@@ -31,6 +31,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor ocean pole tide read programs under io
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -44,13 +45,13 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
-import os
 import re
 import gzip
+import pathlib
 import numpy as np
 
 # PURPOSE: read real and imaginary ocean pole tide coefficients
-def ocean_pole_tide(input_file: str):
+def ocean_pole_tide(input_file: str | pathlib.Path):
     """
     Read real and imaginary ocean pole tide coefficients
 
@@ -81,12 +82,14 @@ def ocean_pole_tide(input_file: str):
         satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015).
         `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
     """
+    # convert input file to tilde-expanded pathlib object
+    input_file = pathlib.Path(input_file).expanduser()
     # check that ocean pole tide file is accessible
-    if not os.access(os.path.expanduser(input_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(input_file))
+    if not input_file.exists():
+        raise FileNotFoundError(str(input_file))
 
     # read GZIP ocean pole tide file
-    with gzip.open(os.path.expanduser(input_file),'rb') as f:
+    with gzip.open(input_file, 'rb') as f:
         file_contents = f.read().splitlines()
 
     # counts the number of lines in the header

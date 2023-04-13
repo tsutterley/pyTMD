@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
@@ -90,11 +91,11 @@ UPDATE HISTORY:
 """
 from __future__ import division, annotations
 
-import os
 import copy
 import gzip
 import uuid
 import logging
+import pathlib
 import datetime
 import warnings
 import numpy as np
@@ -114,8 +115,8 @@ warnings.filterwarnings("ignore")
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(
         ilon: np.ndarray, ilat: np.ndarray,
-        grid_file: str | None = None,
-        model_files: str | list | None = None,
+        grid_file: str | pathlib.Path | None = None,
+        model_files: str | list | pathlib.Path | None = None,
         **kwargs
     ):
     """
@@ -131,9 +132,9 @@ def extract_constants(
         longitude to interpolate
     ilat: np.ndarray
         latitude to interpolate
-    grid_file: str or NoneType, default None
+    grid_file: str, pathlib.Path or NoneType, default None
         grid file for model
-    model_files: list or NoneType, default None
+    model_files: str, list, pathlib.Path or NoneType, default None
         list of model files for each constituent
     type: str, default 'z'
         Tidal variable to read
@@ -189,14 +190,15 @@ def extract_constants(
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
-    # raise warning if model files are entered as a string
-    if isinstance(model_files, str):
+    # raise warning if model files are entered as a string or path
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
     # check that grid file is accessible
-    if not os.access(os.path.expanduser(grid_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(grid_file))
+    grid_file = pathlib.Path(grid_file).expanduser()
+    if not grid_file.exists():
+        raise FileNotFoundError(str(grid_file))
 
     # read the tide grid file for bathymetry and spatial coordinates
     lon, lat, bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
@@ -273,8 +275,9 @@ def extract_constants(
     # read and interpolate each constituent
     for i, model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(model_file), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(model_file))
+        model_file = pathlib.Path(model_file).expanduser()
+        if not model_file.exists():
+            raise FileNotFoundError(str(model_file))
         if (kwargs['type'] == 'z'):
             # read constituent from elevation file
             hc, cons = read_netcdf_elevation(model_file,
@@ -348,8 +351,8 @@ def extract_constants(
 
 # PURPOSE: read harmonic constants from tide models
 def read_constants(
-        grid_file: str | None = None,
-        model_files: str | list | None = None,
+        grid_file: str | pathlib.Path | None = None,
+        model_files: str | list | pathlib.Path | None = None,
         **kwargs
     ):
     """
@@ -357,9 +360,9 @@ def read_constants(
 
     Parameters
     ----------
-    grid_file: str or NoneType, default None
+    grid_file: str, pathlib.Path or NoneType, default None
         grid file for model
-    model_files: list or NoneType, default None
+    model_files: str, list, pathlib.Path or NoneType, default None
         list of model files for each constituent
     type: str, default 'z'
         Tidal variable to read
@@ -381,14 +384,15 @@ def read_constants(
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('compressed', True)
 
-    # raise warning if model files are entered as a string
-    if isinstance(model_files, str):
+    # raise warning if model files are entered as a string or path
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
     # check that grid file is accessible
-    if not os.access(os.path.expanduser(grid_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(grid_file))
+    grid_file = pathlib.Path(grid_file).expanduser()
+    if not grid_file.exists():
+        raise FileNotFoundError(str(grid_file))
 
     # read the tide grid file for bathymetry and spatial coordinates
     lon, lat, bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
@@ -410,8 +414,9 @@ def read_constants(
     # read each model constituent
     for i, model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(model_file), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(model_file))
+        model_file = pathlib.Path(model_file).expanduser()
+        if not model_file.exists():
+            raise FileNotFoundError(str(model_file))
         if (kwargs['type'] == 'z'):
             # read constituent from elevation file
             hc, cons = read_netcdf_elevation(model_file,
@@ -667,7 +672,7 @@ def extend_matrix(input_matrix: np.ndarray):
 
 # PURPOSE: read grid file
 def read_netcdf_grid(
-        input_file: str,
+        input_file: str | pathlib.Path,
         variable: str,
         **kwargs
     ):
@@ -676,7 +681,7 @@ def read_netcdf_grid(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input grid file
     variable: str
         Tidal variable to read
@@ -702,13 +707,14 @@ def read_netcdf_grid(
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
     # read the netcdf format tide grid file
+    input_file = pathlib.Path(input_file).expanduser()
     # reading a combined global solution with localized solutions
     if kwargs['compressed']:
         # read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file), 'rb')
+        f = gzip.open(input_file, 'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+        fileID = netCDF4.Dataset(input_file, 'r')
     # variable dimensions
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
@@ -743,7 +749,7 @@ def read_netcdf_grid(
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
 def read_netcdf_elevation(
-        input_file: str,
+        input_file: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -751,7 +757,7 @@ def read_netcdf_elevation(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input elevation file
     compressed: bool, default False
         Input file is gzip compressed
@@ -766,13 +772,14 @@ def read_netcdf_elevation(
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
     # read the netcdf format tide elevation file
+    input_file = pathlib.Path(input_file).expanduser()
     # reading a combined global solution with localized solutions
     if kwargs['compressed']:
         # read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file), 'rb')
+        f = gzip.open(input_file, 'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+        fileID = netCDF4.Dataset(input_file, 'r')
     # constituent name
     con = fileID.variables['con'][:].tobytes().decode('utf8')
     # variable dimensions
@@ -792,7 +799,7 @@ def read_netcdf_elevation(
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
 def read_netcdf_transport(
-        input_file: str,
+        input_file: str | pathlib.Path,
         variable: str,
         **kwargs
     ):
@@ -801,7 +808,7 @@ def read_netcdf_transport(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input transport file
     variable: str
         Tidal variable to read
@@ -824,13 +831,14 @@ def read_netcdf_transport(
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
     # read the netcdf format tide transport file
+    input_file = pathlib.Path(input_file).expanduser()
     # reading a combined global solution with localized solutions
     if kwargs['compressed']:
         # read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file), 'rb')
+        f = gzip.open(input_file, 'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+        fileID = netCDF4.Dataset(input_file, 'r')
     # constituent name
     con = fileID.variables['con'][:].tobytes().decode('utf8')
     # variable dimensions
@@ -853,7 +861,7 @@ def read_netcdf_transport(
 
 # PURPOSE: output grid file in ATLAS netCDF format
 def output_netcdf_grid(
-        FILE: str,
+        FILE: str | pathlib.Path,
         hz: np.ndarray,
         hu: np.ndarray,
         hv: np.ndarray,
@@ -869,7 +877,7 @@ def output_netcdf_grid(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output ATLAS grid file name
     hz: np.ndarray
         model bathymetry at z-nodes
@@ -890,8 +898,10 @@ def output_netcdf_grid(
     lat_v: np.ndarray
         latitude coordinates at v-nodes
     """
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
     # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    fileID = netCDF4.Dataset(FILE, 'w', format="NETCDF4")
     # define the NetCDF dimensions
     ny, nx = np.shape(hz)
     fileID.createDimension('nx', nx)
@@ -943,14 +953,14 @@ def output_netcdf_grid(
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
     # Output NetCDF structure information
-    logging.info(FILE)
+    logging.info(str(FILE))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()
 
 # PURPOSE: output elevation file in ATLAS netCDF format
 def output_netcdf_elevation(
-        FILE: str,
+        FILE: str | pathlib.Path,
         h: np.ndarray,
         lon_z: np.ndarray,
         lat_z: np.ndarray,
@@ -961,7 +971,7 @@ def output_netcdf_elevation(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output ATLAS elevation file name
     h: np.ndarray
         Eulerian form of tidal elevation oscillation
@@ -972,8 +982,10 @@ def output_netcdf_elevation(
     constituent: str
         tidal constituent ID
     """
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
     # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    fileID = netCDF4.Dataset(FILE, 'w', format="NETCDF4")
     # define the NetCDF dimensions
     ny, nx = np.shape(h)
     fileID.createDimension('nx', nx)
@@ -1025,14 +1037,14 @@ def output_netcdf_elevation(
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
     # Output NetCDF structure information
-    logging.info(FILE)
+    logging.info(str(FILE))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()
 
 # PURPOSE: output transport file in ATLAS netCDF format
 def output_netcdf_transport(
-        FILE: str,
+        FILE: str | pathlib.Path,
         u: np.ndarray,
         v: np.ndarray,
         lon_u: np.ndarray,
@@ -1046,7 +1058,7 @@ def output_netcdf_transport(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output ATLAS transport file name
     u: np.ndarray
         Eulerian form of tidal zonal transport oscillation
@@ -1063,8 +1075,10 @@ def output_netcdf_transport(
     constituents: str
         tidal constituent ID
     """
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
     # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    fileID = netCDF4.Dataset(FILE, 'w', format="NETCDF4")
     # define the NetCDF dimensions
     ny, nx = np.shape(u)
     fileID.createDimension('nx', nx)
@@ -1131,7 +1145,7 @@ def output_netcdf_transport(
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
     # Output NetCDF structure information
-    logging.info(FILE)
+    logging.info(str(FILE))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()

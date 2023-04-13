@@ -1,0 +1,9 @@
+format      netcdf
+name        TPXO9-atlas-v5
+model_file   TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_m4_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_mf_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_mn4_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_ms4_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_n2_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_o1_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_p1_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc,TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc
+grid_file   TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc
+type        u,v
+version     v5
+scale     0.01
+compressed  False
+reference   https://www.tpxo.net/global/tpxo9-atlas

@@ -76,4 +76,10 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.to_geodetic
 
+.. autofunction:: pyTMD.spatial._moritz_iterative
+
+.. autofunction:: pyTMD.spatial._bowring_iterative
+
+.. autofunction:: pyTMD.spatial._zhu_closed_form
+
 .. autofunction:: pyTMD.spatial.scale_areas

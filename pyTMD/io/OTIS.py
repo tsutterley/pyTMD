@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
         new function name for converting coordinate reference systems
     Updated 12/2022: refactor tide read programs under io
@@ -109,9 +110,9 @@ UPDATE HISTORY:
 """
 from __future__ import division, annotations
 
-import os
 import copy
 import struct
+import pathlib
 import warnings
 import numpy as np
 import scipy.interpolate
@@ -132,8 +133,8 @@ warnings.filterwarnings("ignore")
 def extract_constants(
         ilon: np.ndarray,
         ilat: np.ndarray,
-        grid_file: str | None = None,
-        model_file: str | list | None = None,
+        grid_file: str | pathlib.Path | None = None,
+        model_file: str | pathlib.Path | list | None = None,
         EPSG: str | int | None = None,
         **kwargs
     ):
@@ -150,9 +151,9 @@ def extract_constants(
         longitude to interpolate
     ilat: np.ndarray
         latitude to interpolate
-    grid_file: str or NoneType, default None
+    grid_file: str, pathlib.Path or NoneType, default None
         grid file for model
-    model_file: str, list or NoneType, default None
+    model_file: str, pathlib.Path, list or NoneType, default None
         model file containing each constituent
     EPSG: str or NoneType, default None,
         projection of tide model data
@@ -214,8 +215,10 @@ def extract_constants(
             kwargs[new] = copy.copy(kwargs[old])
 
     # check that grid file is accessible
-    if not os.access(os.path.expanduser(grid_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(grid_file))
+    grid_file = pathlib.Path(grid_file).expanduser()
+    if not grid_file.exists():
+        raise FileNotFoundError(str(grid_file))
+
     # read the OTIS-format tide grid file
     if (kwargs['grid'] == 'ATLAS'):
         # if reading a global solution with localized solutions
@@ -455,8 +458,8 @@ def extract_constants(
 
 # PURPOSE: read harmonic constants from tide models
 def read_constants(
-        grid_file: str | None = None,
-        model_file: str | list | None = None,
+        grid_file: str | pathlib.Path | None = None,
+        model_file: str | pathlib.Path | list | None = None,
         EPSG: str | int | None = None,
         **kwargs
     ):
@@ -465,9 +468,9 @@ def read_constants(
 
     Parameters
     ----------
-    grid_file: str or NoneType, default None
+    grid_file: str, pathlib.Path or NoneType, default None
         grid file for model
-    model_file: str, list or NoneType, default None
+    model_file: str, pathlib.Path, list or NoneType, default None
         model file containing each constituent
     EPSG: str or NoneType, default None,
         projection of tide model data
@@ -499,8 +502,10 @@ def read_constants(
     kwargs.setdefault('apply_flexure', False)
 
     # check that grid file is accessible
-    if not os.access(os.path.expanduser(grid_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(grid_file))
+    grid_file = pathlib.Path(grid_file).expanduser()
+    if not grid_file.exists():
+        raise FileNotFoundError(str(grid_file))
+
     # read the OTIS-format tide grid file
     if (kwargs['grid'] == 'ATLAS'):
         # if reading a global solution with localized solutions
@@ -872,13 +877,13 @@ def extend_matrix(input_matrix: np.ndarray):
     return temp
 
 # PURPOSE: read tide grid file
-def read_otis_grid(input_file: str):
+def read_otis_grid(input_file: str | pathlib.Path):
     """
     Read grid file to extract model coordinates, bathymetry, masks and indices
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input grid file
 
     Returns
@@ -896,8 +901,9 @@ def read_otis_grid(input_file: str):
     dt: np.ndarray
         time step
     """
-    # open the file
-    fid = open(os.path.expanduser(input_file),'rb')
+    # open the input file
+    input_file = pathlib.Path(input_file).expanduser()
+    fid = input_file.open(mode='rb')
     fid.seek(4,0)
     # read data as big endian
     # get model dimensions and limits
@@ -935,14 +941,14 @@ def read_otis_grid(input_file: str):
     return (x, y, hz, mz, iob, dt)
 
 # PURPOSE: read tide grid file with localized solutions
-def read_atlas_grid(input_file: str):
+def read_atlas_grid(input_file: str | pathlib.Path):
     """
     Read ATLAS grid file to extract model coordinates, bathymetry, masks and
     indices for both global and local solutions
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input ATLAS grid file
 
     Returns
@@ -966,10 +972,10 @@ def read_atlas_grid(input_file: str):
 
             - ``'depth'``: model bathymetry
     """
-    # read the input file to get file information
-    fd = os.open(os.path.expanduser(input_file), os.O_RDONLY)
-    file_info = os.fstat(fd)
-    fid = os.fdopen(fd, 'rb')
+    # open the input file and get file information
+    input_file = pathlib.Path(input_file).expanduser()
+    file_info = input_file.stat()
+    fid = input_file.open(mode='rb')
     fid.seek(4,0)
     # read data as big endian
     # get model dimensions and limits
@@ -1036,14 +1042,14 @@ def read_atlas_grid(input_file: str):
     return (x, y, hz, mz, iob, dt, pmask, local)
 
 # PURPOSE: read grid file
-def read_netcdf_grid(input_file: str):
+def read_netcdf_grid(input_file: str | pathlib.Path):
     """
     Read netCDF4 grid file to extract model coordinates, bathymetry,
     masks and flexure scaling factors
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input grid file
 
     Returns
@@ -1059,8 +1065,10 @@ def read_netcdf_grid(input_file: str):
     sf: np.ndarray
         scaling factor for applying ice flexure
     """
-    # read the netcdf format tide grid file
-    fileID = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+    # tilde-expand input file
+    input_file = pathlib.Path(input_file).expanduser()
+    # read the netCDF format tide grid file
+    fileID = netCDF4.Dataset(input_file, 'r')
     # read coordinates and flip y orientation
     x = fileID.variables['x'][:].copy()
     y = fileID.variables['y'][::-1].copy()
@@ -1080,7 +1088,7 @@ def read_netcdf_grid(input_file: str):
 
 # PURPOSE: read list of constituents from an elevation or transport file
 def read_constituents(
-        input_file: str,
+        input_file: str | pathlib.Path,
         grid: str = 'OTIS'
     ):
     """
@@ -1088,7 +1096,7 @@ def read_constituents(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input tidal file
     grid: str, default 'OTIS'
         Tide model file type to read
@@ -1104,18 +1112,21 @@ def read_constituents(
     nc: int
         number of constituents
     """
+    # tilde-expand input file
+    input_file = pathlib.Path(input_file).expanduser()
     # check that model file is accessible
-    if not os.access(os.path.expanduser(input_file), os.F_OK):
-        raise FileNotFoundError(os.path.expanduser(input_file))
+    if not input_file.exists():
+        raise FileNotFoundError(str(input_file))
+    # get the constituents from the input file
     if (grid == 'ESR'):
         # open the netCDF4 file
-        fid = netCDF4.Dataset(os.path.expanduser(input_file),'r')
+        fid = netCDF4.Dataset(input_file, 'r')
         constituents = fid.variables['constituents'].constituent_order.split()
         nc = len(constituents)
         fid.close()
     else:
         # open the file
-        fid = open(os.path.expanduser(input_file),'rb')
+        fid = input_file.open(mode='rb')
         ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
         nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
         fid.seek(16,1)
@@ -1126,7 +1137,7 @@ def read_constituents(
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
 def read_otis_elevation(
-        input_file: str,
+        input_file: str | pathlib.Path,
         ic: int
     ):
     """
@@ -1134,7 +1145,7 @@ def read_otis_elevation(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input elevation file
     ic: int
         index of consituent
@@ -1144,8 +1155,9 @@ def read_otis_elevation(
     h: np.ndarray
         tidal elevation
     """
-    # open the file
-    fid = open(os.path.expanduser(input_file),'rb')
+    # open the input file
+    input_file = pathlib.Path(input_file).expanduser()
+    fid = input_file.open(mode='rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
     # extract x and y limits
@@ -1173,7 +1185,7 @@ def read_otis_elevation(
 # PURPOSE: read elevation file with localized solutions to extract real and
 # imaginary components for constituent
 def read_atlas_elevation(
-        input_file: str,
+        input_file: str | pathlib.Path,
         ic: int,
         constituent: str
     ):
@@ -1183,7 +1195,7 @@ def read_atlas_elevation(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input ATLAS elevation file
     ic: int
         index of consituent
@@ -1199,10 +1211,10 @@ def read_atlas_elevation(
 
             - ``'z'``: tidal elevation
     """
-    # read the input file to get file information
-    fd = os.open(os.path.expanduser(input_file), os.O_RDONLY)
-    file_info = os.fstat(fd)
-    fid = os.fdopen(fd, 'rb')
+    # open the input file and get file information
+    input_file = pathlib.Path(input_file).expanduser()
+    file_info = input_file.stat()
+    fid = input_file.open(mode='rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
     # extract x and y limits
@@ -1274,7 +1286,7 @@ def read_atlas_elevation(
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
 def read_otis_transport(
-        input_file: str,
+        input_file: str | pathlib.Path,
         ic: int
     ):
     """
@@ -1282,7 +1294,7 @@ def read_otis_transport(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input transport file
     ic: int
         index of consituent
@@ -1294,8 +1306,9 @@ def read_otis_transport(
     v: float
         meridional zonal transport
     """
-    # open the file
-    fid = open(os.path.expanduser(input_file),'rb')
+    # open the input file
+    input_file = pathlib.Path(input_file).expanduser()
+    fid = input_file.open(mode='rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
     # extract x and y limits
@@ -1329,7 +1342,7 @@ def read_otis_transport(
 # PURPOSE: read transport file with localized solutions to extract real and
 # imaginary components for constituent
 def read_atlas_transport(
-        input_file: str,
+        input_file: str | pathlib.Path,
         ic: int,
         constituent: str
     ):
@@ -1339,7 +1352,7 @@ def read_atlas_transport(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input ATLAS transport file
     ic: int
         index of consituent
@@ -1358,10 +1371,10 @@ def read_atlas_transport(
             - ``'u'``: zonal tidal transport
             - ``'v'``: meridional zonal transport
     """
-    # read the input file to get file information
-    fd = os.open(os.path.expanduser(input_file), os.O_RDONLY)
-    file_info = os.fstat(fd)
-    fid = os.fdopen(fd, 'rb')
+    # open the input file and get file information
+    input_file = pathlib.Path(input_file).expanduser()
+    file_info = input_file.stat()
+    fid = input_file.open(mode='rb')
     ll, = np.fromfile(fid, dtype=np.dtype('>i4'), count=1)
     nx,ny,nc = np.fromfile(fid, dtype=np.dtype('>i4'), count=3)
     # extract x and y limits
@@ -1642,7 +1655,7 @@ def combine_atlas_model(
 # PURPOSE: read netCDF4 file to extract real and imaginary components for
 # constituent
 def read_netcdf_file(
-        input_file: str,
+        input_file: str | pathlib.Path,
         ic: int,
         variable: str | None = None
     ):
@@ -1651,7 +1664,7 @@ def read_netcdf_file(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         input transport file
     ic: int
         index of consituent
@@ -1669,8 +1682,10 @@ def read_netcdf_file(
     hc: complex
         complex form of tidal constituent oscillation
     """
+    # tilde-expand input file
+    input_file = pathlib.Path(input_file).expanduser()
     # read the netcdf format tide grid file
-    fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+    fileID = netCDF4.Dataset(input_file, 'r')
     # variable dimensions
     nx = fileID.dimensions['x'].size
     ny = fileID.dimensions['y'].size
@@ -1694,7 +1709,7 @@ def read_netcdf_file(
 
 # PURPOSE: output grid file in OTIS format
 def output_otis_grid(
-        FILE: str,
+        FILE: str | pathlib.Path,
         xlim: np.ndarray | list,
         ylim: np.ndarray | list,
         hz: np.ndarray,
@@ -1707,7 +1722,7 @@ def output_otis_grid(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output OTIS grid file name
     xlim: np.ndarray
         x-coordinate grid-cell edges of output grid
@@ -1722,8 +1737,10 @@ def output_otis_grid(
     dt: float
         time step
     """
-    # open this way for files
-    fid = open(os.path.expanduser(FILE), 'wb')
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
+    # open output file
+    fid = FILE.open(mode='wb')
     nob = len(iob)
     ny, nx = np.shape(hz)
     reclen = 32
@@ -1760,7 +1777,7 @@ def output_otis_grid(
 
 # PURPOSE: output elevation file in OTIS format
 def output_otis_elevation(
-        FILE: str,
+        FILE: str | pathlib.Path,
         h: np.ndarray,
         xlim: np.ndarray | list,
         ylim: np.ndarray | list,
@@ -1771,7 +1788,7 @@ def output_otis_elevation(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output OTIS elevation file name
     h: np.ndarray
         Eulerian form of tidal height oscillation
@@ -1782,7 +1799,10 @@ def output_otis_elevation(
     constituents: list
         tidal constituent IDs
     """
-    fid = open(os.path.expanduser(FILE), 'wb')
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
+    # open output file
+    fid = FILE.open(mode='wb')
     ny, nx, nc = np.shape(h)
     # length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)
@@ -1810,7 +1830,7 @@ def output_otis_elevation(
 
 # PURPOSE: output transport file in OTIS format
 def output_otis_transport(
-        FILE: str,
+        FILE: str | pathlib.Path,
         u: np.ndarray,
         v: np.ndarray,
         xlim: np.ndarray | list,
@@ -1822,7 +1842,7 @@ def output_otis_transport(
 
     Parameters
     ----------
-    FILE: str
+    FILE: str or pathlib.Path
         output OTIS transport file name
     u: complex
         Eulerian form of tidal zonal transport oscillation
@@ -1835,7 +1855,10 @@ def output_otis_transport(
     constituents: list
         tidal constituent IDs
     """
-    fid = open(os.path.expanduser(FILE), 'wb')
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
+    # open output file
+    fid = FILE.open(mode='wb')
     ny, nx, nc = np.shape(u)
     # length of header: allow for 4 character >i c_id strings
     header_length = 4*(7 + nc)

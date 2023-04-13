@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (12/2022)
+test_fes_predict.py (04/2023)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 09/2021: update check tide points to add compression flags
     Updated 05/2021: added test for check point program
@@ -24,12 +25,12 @@ UPDATE HISTORY:
     Updated 02/2021: replaced numpy bool to prevent deprecation warning
     Written 08/2020
 """
-import os
 import io
 import boto3
 import shutil
 import pytest
 import inspect
+import pathlib
 import posixpath
 import numpy as np
 import pyTMD.io
@@ -41,7 +42,7 @@ import pyTMD.check_tide_points
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = os.path.dirname(os.path.abspath(filename))
+filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: Download FES2014 constituents from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
@@ -59,17 +60,17 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('FES2014')
     # recursively create model directory
-    os.makedirs(model.model_directory)
+    model.model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
-        f = os.path.basename(model_file)
+        f = model_file.name
         obj = bucket.Object(key=posixpath.join('fes2014','ocean_tide',f))
         response = obj.get()
         # save constituent data
-        with open(model_file, 'wb') as destination:
+        with model_file.open(mode='wb') as destination:
             shutil.copyfileobj(response['Body'], destination)
-        assert os.access(model_file, os.F_OK)
+        assert model_file.exists()
     # run tests
     yield
     # clean up model
@@ -88,12 +89,12 @@ def test_check_FES2014():
 # PURPOSE: Tests that interpolated results are comparable to FES program
 def test_verify_FES2014():
     # model parameters for FES2014
-    model_directory = os.path.join(filepath,'fes2014','ocean_tide')
+    model_directory = filepath.joinpath('fes2014','ocean_tide')
     # constituent files included in test
     model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
         'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
         'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     c = ['2n2','k1','k2','m2','m4','mf','mm','msqm','mtm','n2','o1',
         'p1','q1','s1','s2']
     model_format = 'FES'
@@ -106,7 +107,7 @@ def test_verify_FES2014():
     names = ('CNES','Hour','Latitude','Longitude','Short_tide','LP_tide',
         'Pure_tide','Geo_tide','Rad_tide')
     formats = ('f','i','f','f','f','f','f','f','f')
-    file_contents = np.loadtxt(os.path.join(filepath,'fes_slev.txt.gz'),
+    file_contents = np.loadtxt(filepath.joinpath('fes_slev.txt.gz'),
         skiprows=1,dtype=dict(names=names,formats=formats))
     longitude = file_contents['Longitude']
     latitude = file_contents['Latitude']
@@ -154,12 +155,12 @@ def test_verify_FES2014():
 # PURPOSE: Tests that interpolated results are comparable
 def test_compare_FES2014(METHOD):
     # model parameters for FES2014
-    model_directory = os.path.join(filepath,'fes2014','ocean_tide')
+    model_directory = filepath.joinpath('fes2014','ocean_tide')
     # constituent files included in test
     model_files = ['2n2.nc.gz','k1.nc.gz','k2.nc.gz','m2.nc.gz','m4.nc.gz',
         'mf.nc.gz','mm.nc.gz','msqm.nc.gz','mtm.nc.gz','n2.nc.gz','o1.nc.gz',
         'p1.nc.gz','q1.nc.gz','s1.nc.gz','s2.nc.gz']
-    model_file = [os.path.join(model_directory,m) for m in model_files]
+    model_file = [model_directory.joinpath(m) for m in model_files]
     c = ['2n2','k1','k2','m2','m4','mf','mm','msqm','mtm','n2','o1',
         'p1','q1','s1','s2']
     VERSION = 'FES2014'
@@ -171,7 +172,7 @@ def test_compare_FES2014(METHOD):
     names = ('CNES','Hour','Latitude','Longitude','Short_tide','LP_tide',
         'Pure_tide','Geo_tide','Rad_tide')
     formats = ('f','i','f','f','f','f','f','f','f')
-    file_contents = np.loadtxt(os.path.join(filepath,'fes_slev.txt.gz'),
+    file_contents = np.loadtxt(filepath.joinpath('fes_slev.txt.gz'),
         skiprows=1,dtype=dict(names=names,formats=formats))
     longitude = file_contents['Longitude']
     latitude = file_contents['Latitude']
@@ -225,9 +226,10 @@ def test_definition_file(MODEL):
     for attr in attrs:
         val = getattr(model,attr)
         if isinstance(val,list):
-            fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
+            var = ','.join(str(v) for v in val)
+            fid.write(f'{attr}\t{var}\n')
         else:
-            fid.write('{0}\t{1}\n'.format(attr,val))
+            fid.write(f'{attr}\t{val}\n')
     fid.seek(0)
     # use model definition file as input
     m = pyTMD.io.model().from_file(fid)

@@ -53,7 +53,7 @@ setup-miniconda-patched-environment.yml
 ehthumbs.db
 Thumbs.db
 # LaTeX and Vim #
-######################
+#################
 *.aux
 *.bbl
 *.blg
@@ -84,6 +84,9 @@ Thumbs.db
 *.sw*
 *.hidden
 None*.png
+# JPL ephemerides #
+# #################
+*.bsp
 # Jupyter Checkpoints #
 #######################
 .ipynb_checkpoints

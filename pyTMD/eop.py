@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 eop.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 Utilities for maintaining and calculating Earth Orientation Parameters (EOP)
 
 PYTHON DEPENDENCIES:
@@ -14,6 +14,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add secular pole model from IERS 2018 conventions
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
@@ -23,8 +24,8 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
-import os
 import logging
+import pathlib
 import numpy as np
 import pyTMD.utilities
 
@@ -118,8 +119,8 @@ def calculate_mean_pole(verbose: bool = False, mode: oct = 0o775):
     ym = np.zeros((nlines))
     # output file with mean pole coordinates
     LOCAL = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    fid = open(LOCAL, mode='w', encoding='utf8')
-    logging.info(LOCAL)
+    fid = LOCAL.open(mode='w', encoding='utf8')
+    logging.info(str(LOCAL))
     for i,T in enumerate(data['an']):
         # mean pole is Gaussian Weight of all dates with a = 3.40 years.
         Wi = np.exp(-0.5*((data['an']-T)/3.4)**2)
@@ -129,7 +130,7 @@ def calculate_mean_pole(verbose: bool = False, mode: oct = 0o775):
     # close the output file
     fid.close()
     # change the permissions mode of the output mean pole file
-    os.chmod(LOCAL, mode)
+    LOCAL.chmod(mode)
 
 # PURPOSE: connects to servers and downloads IERS pole coordinates files
 def pull_pole_coordinates(FILE: str, verbose: bool = False):
@@ -275,7 +276,7 @@ def update_finals_file(
 _conventions = ('2003','2010','2015','2018')
 # read table of mean pole values, calculate angular coordinates at epoch
 def iers_mean_pole(
-        input_file: str,
+        input_file: str | pathlib.Path,
         input_epoch: np.ndarray,
         convention: str,
         **kwargs
@@ -286,7 +287,7 @@ def iers_mean_pole(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         Full path to mean-pole.tab file provided by IERS
     input_epoch: np.ndarray
         Dates for the angular coordinates of the Conventional Mean Pole
@@ -314,14 +315,16 @@ def iers_mean_pole(
     ----------
     .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
         International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # set default keyword arguments
     kwargs.setdefault('fill_value', np.nan)
     # verify IERS model version
     assert convention in _conventions, "Incorrect IERS model convention"
     # read mean pole file
-    table = np.loadtxt(os.path.expanduser(input_file))
+    input_file = pathlib.Path(input_file).expanduser().absolute()
+    table = np.loadtxt(input_file)
     # reduce to 1971 to end date
     ii, = np.nonzero(table[:,0] >= 1971)
     table = np.copy(table[ii,:])
@@ -337,12 +340,12 @@ def iers_mean_pole(
     flag = np.zeros_like(input_epoch, dtype=bool)
     for t, epoch in enumerate(input_epoch):
         # Conventional mean pole model in IERS Conventions 2003
-        if (convention == '2003') and (epoch >= 1975) and (epoch < end_time):
+        if (convention == '2003') and (epoch >= 1975):
             x[t] = 0.054 + 0.00083*(epoch - 2000.0)
             y[t] = 0.357 + 0.00395*(epoch - 2000.0)
             flag[t] = True
         # Conventional mean pole model in IERS Conventions 2010
-        elif (convention == '2010') and (epoch >= 1975) and (epoch < end_time):
+        elif (convention == '2010') and (epoch >= 1975):
             dx = epoch - 2000.0
             if (dx < 10.0):
                 x[t] = 0.055974 + 1.8243e-3*dx + 1.8413e-4*dx**2 + 7.024e-6*dx**3
@@ -404,15 +407,16 @@ def iers_daily_EOP(input_file: str):
     ----------
     .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
         International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36 <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # tilde-expansion of input file
-    input_file = os.path.expanduser(input_file)
+    input_file = pathlib.Path(input_file).expanduser().absolute()
     # check that IERS finals file is accessible
-    if not os.access(input_file, os.F_OK):
+    if not input_file.exists():
         raise FileNotFoundError(input_file)
     # read data file splitting at line breaks
-    with open(input_file, mode='r', encoding='utf8') as f:
+    with input_file.open(mode='r', encoding='utf8') as f:
         file_contents = f.read().splitlines()
     # number of data lines
     n_lines = len(file_contents)

@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: added global HAMTIDE11 model
+        using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
         new functions to read and interpolate from constituents class
@@ -89,11 +90,11 @@ UPDATE HISTORY:
 """
 from __future__ import division, annotations
 
-import os
 import copy
 import gzip
 import uuid
 import logging
+import pathlib
 import datetime
 import warnings
 import numpy as np
@@ -114,7 +115,7 @@ warnings.filterwarnings("ignore")
 def extract_constants(
         ilon: np.ndarray,
         ilat: np.ndarray,
-        model_files: str | list | None = None,
+        model_files: str | list | pathlib.Path | None = None,
         **kwargs
     ):
     """
@@ -130,7 +131,7 @@ def extract_constants(
         longitude to interpolate
     ilat: np.ndarray
         latitude to interpolate
-    model_files: list or NoneType, default None
+    model_files: str, list, pathlib.Path or NoneType, default None
         list of model files for each constituent
     type: str, default 'z'
         Tidal variable to read
@@ -190,8 +191,8 @@ def extract_constants(
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
-    # raise warning if model files are entered as a string
-    if isinstance(model_files, str):
+    # raise warning if model files are entered as a string or path
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
@@ -209,17 +210,18 @@ def extract_constants(
     ph = np.ma.zeros((npts,nc))
     ph.mask = np.zeros((npts,nc),dtype=bool)
     # read and interpolate each constituent
-    for i, fi in enumerate(model_files):
+    for i, model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(fi), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(fi))
+        model_file = pathlib.Path(model_file).expanduser()
+        if not model_file.exists():
+            raise FileNotFoundError(str(model_file))
         # read constituent from elevation file
         if kwargs['version'] in ('FES1999','FES2004'):
             # FES ascii constituent files
-            hc,lon,lat = read_ascii_file(os.path.expanduser(fi), **kwargs)
+            hc, lon, lat = read_ascii_file(model_file, **kwargs)
         elif kwargs['version'] in ('FES2012','FES2014','EOT20','HAMTIDE11'):
             # FES netCDF4 constituent files
-            hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
+            hc, lon, lat = read_netcdf_file(model_file, **kwargs)
         # adjust longitudinal convention of input latitude and longitude
         # to fit tide model convention
         if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -302,7 +304,7 @@ def extract_constants(
 
 # PURPOSE: read harmonic constants from tide models
 def read_constants(
-        model_files: str | list | None = None,
+        model_files: str | list | pathlib.Path | None = None,
         **kwargs
     ):
     """
@@ -310,7 +312,7 @@ def read_constants(
 
     Parameters
     ----------
-    model_files: list or NoneType, default None
+    model_files: str, list, pathlib.Path or NoneType, default None
         list of model files for each constituent
     type: str, default 'z'
         Tidal variable to read
@@ -340,25 +342,26 @@ def read_constants(
     kwargs.setdefault('version', None)
     kwargs.setdefault('compressed', False)
 
-    # raise warning if model files are entered as a string
-    if isinstance(model_files, str):
+    # raise warning if model files are entered as a string or path
+    if isinstance(model_files, (str, pathlib.Path)):
         warnings.warn("Tide model is entered as a string")
         model_files = [model_files]
 
     # save output constituents
     constituents = pyTMD.io.constituents()
     # read each model constituent
-    for i, fi in enumerate(model_files):
+    for i, model_file in enumerate(model_files):
         # check that model file is accessible
-        if not os.access(os.path.expanduser(fi), os.F_OK):
-            raise FileNotFoundError(os.path.expanduser(fi))
+        model_file = pathlib.Path(model_file).expanduser()
+        if not model_file.exists():
+            raise FileNotFoundError(str(model_file))
         # read constituent from elevation file
         if kwargs['version'] in ('FES1999','FES2004'):
             # FES ascii constituent files
-            hc,lon,lat = read_ascii_file(os.path.expanduser(fi), **kwargs)
+            hc, lon, lat = read_ascii_file(model_file, **kwargs)
         elif kwargs['version'] in ('FES2012','FES2014','EOT20','HAMTIDE11'):
             # FES netCDF4 constituent files
-            hc,lon,lat = read_netcdf_file(os.path.expanduser(fi), **kwargs)
+            hc, lon, lat = read_netcdf_file(model_file, **kwargs)
         # grid step size of tide model
         dlon = lon[1] - lon[0]
         # replace original values with extend arrays/matrices
@@ -573,13 +576,16 @@ def extend_matrix(input_matrix: np.ndarray):
     return temp
 
 # PURPOSE: read FES ascii tide model grid files
-def read_ascii_file(input_file: str, **kwargs):
+def read_ascii_file(
+        input_file: str | pathlib.Path,
+        **kwargs
+    ):
     """
     Read FES (Finite Element Solution) tide model file
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         model file
     compressed: bool, default False
         Input file is gzip compressed
@@ -596,7 +602,7 @@ def read_ascii_file(input_file: str, **kwargs):
     # set default keyword arguments
     kwargs.setdefault('compressed', False)
     # tilde-expand input file
-    input_file = os.path.expanduser(input_file)
+    input_file = pathlib.Path(input_file).expanduser()
     # read input tide model file
     if kwargs['compressed']:
         # read gzipped ascii file
@@ -653,7 +659,7 @@ def read_ascii_file(input_file: str, **kwargs):
 
 # PURPOSE: read FES netCDF4 tide model files
 def read_netcdf_file(
-        input_file: str,
+        input_file: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -661,7 +667,7 @@ def read_netcdf_file(
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or pathlib.Path
         model file
     type: str or NoneType, default None
         Tidal variable to read
@@ -692,13 +698,15 @@ def read_netcdf_file(
     kwargs.setdefault('type', None)
     kwargs.setdefault('version', None)
     kwargs.setdefault('compressed', False)
+    # tilde-expand input file
+    input_file = pathlib.Path(input_file).expanduser()
     # read the netcdf format tide elevation file
     if kwargs['compressed']:
         # read gzipped netCDF4 file
-        f = gzip.open(os.path.expanduser(input_file),'rb')
+        f = gzip.open(input_file, 'rb')
         fileID = netCDF4.Dataset(uuid.uuid4().hex, 'r', memory=f.read())
     else:
-        fileID = netCDF4.Dataset(os.path.expanduser(input_file), 'r')
+        fileID = netCDF4.Dataset(input_file, 'r')
     # variable dimensions for each model
     # amplitude and phase components for each type
     if kwargs['version'] in ('FES2012',):
@@ -733,7 +741,7 @@ def read_netcdf_file(
 
 # PURPOSE: output tidal constituent file in FES2014 format
 def output_netcdf_file(
-        FILE: str,
+        FILE: str | pathlib.Path,
         hc: np.ndarray,
         lon: np.ndarray,
         lat: np.ndarray,
@@ -764,8 +772,10 @@ def output_netcdf_file(
     """
     # set default keyword arguments
     kwargs.setdefault('type', None)
+    # tilde-expand output file
+    FILE = pathlib.Path(FILE).expanduser()
     # opening NetCDF file for writing
-    fileID = netCDF4.Dataset(os.path.expanduser(FILE), 'w', format="NETCDF4")
+    fileID = netCDF4.Dataset(FILE, 'w', format="NETCDF4")
     # define the NetCDF dimensions
     fileID.createDimension('lon', len(lon))
     fileID.createDimension('lat', len(lat))
@@ -832,7 +842,7 @@ def output_netcdf_file(
     fileID.software_reference = pyTMD.version.project_name
     fileID.software_version = pyTMD.version.full_version
     # Output NetCDF structure information
-    logging.info(FILE)
+    logging.info(str(FILE))
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()

@@ -677,11 +677,29 @@ def solid_earth_tide(
     # return the solid earth tide
     return dxt
 
-def _out_of_phase_diurnal(XYZ: np.ndarray, SXYZ: np.ndarray,
-    LXYZ: np.ndarray, F2_solar: np.ndarray, F2_lunar: np.ndarray):
+def _out_of_phase_diurnal(
+        XYZ: np.ndarray,
+        SXYZ: np.ndarray,
+        LXYZ: np.ndarray,
+        F2_solar: np.ndarray,
+        F2_lunar: np.ndarray
+    ):
     """
     Computes the out-of-phase corrections induced by mantle
     anelasticity in the diurnal band
+
+    Parameters
+    ----------
+    XYZ: np.ndarray
+        Cartesian coordinates of the station (meters)
+    SXYZ: np.ndarray
+        Earth-centered Earth-fixed coordinates of the sun (meters)
+    LXYZ: np.ndarray
+        Earth-centered Earth-fixed coordinates of the moon (meters)
+    F2_solar: np.ndarray
+        Factors for the sun
+    F2_lunar: np.ndarray
+        Factors for the moon
     """
     # love number corrections
     dhi = -0.0025
@@ -714,17 +732,35 @@ def _out_of_phase_diurnal(XYZ: np.ndarray, SXYZ: np.ndarray,
     DN = dn_solar + dn_lunar
     DE = de_solar + de_lunar
     # compute corrections
-    DX = DR*cosla*cosphi - DE*sinla - DN*sinphi*cosla
-    DY = DR*sinla*cosphi + DE*cosla - DN*sinphi*sinla
+    DX = DR*cosla*cosphi - DE*sinla - DN*cosla*sinphi
+    DY = DR*sinla*cosphi + DE*cosla - DN*sinla*sinphi
     DZ = DR*sinphi + DN*cosphi
     # return the corrections
     return (DX, DY, DZ)
 
-def _out_of_phase_semidiurnal(XYZ: np.ndarray, SXYZ: np.ndarray,
-    LXYZ: np.ndarray, F2_solar: np.ndarray, F2_lunar: np.ndarray):
+def _out_of_phase_semidiurnal(
+        XYZ: np.ndarray,
+        SXYZ: np.ndarray,
+        LXYZ: np.ndarray,
+        F2_solar: np.ndarray,
+        F2_lunar: np.ndarray
+    ):
     """
     Computes the out-of-phase corrections induced by mantle
     anelasticity in the semi-diurnal band
+
+    Parameters
+    ----------
+    XYZ: np.ndarray
+        Cartesian coordinates of the station (meters)
+    SXYZ: np.ndarray
+        Earth-centered Earth-fixed coordinates of the sun (meters)
+    LXYZ: np.ndarray
+        Earth-centered Earth-fixed coordinates of the moon (meters)
+    F2_solar: np.ndarray
+        Factors for the sun
+    F2_lunar: np.ndarray
+        Factors for the moon
     """
     # love number corrections
     dhi = -0.0022
@@ -764,17 +800,35 @@ def _out_of_phase_semidiurnal(XYZ: np.ndarray, SXYZ: np.ndarray,
     DN = dn_solar + dn_lunar
     DE = de_solar + de_lunar
     # compute corrections
-    DX = DR*cosla*cosphi - DE*sinla - DN*sinphi*cosla
-    DY = DR*sinla*cosphi + DE*cosla - DN*sinphi*sinla
+    DX = DR*cosla*cosphi - DE*sinla - DN*cosla*sinphi
+    DY = DR*sinla*cosphi + DE*cosla - DN*sinla*sinphi
     DZ = DR*sinphi + DN*cosphi
     # return the corrections
     return (DX, DY, DZ)
 
-def _latitude_dependence(XYZ: np.ndarray, SXYZ: np.ndarray,
-    LXYZ: np.ndarray, F2_solar, F2_lunar):
+def _latitude_dependence(
+        XYZ: np.ndarray,
+        SXYZ: np.ndarray,
+        LXYZ: np.ndarray,
+        F2_solar: np.ndarray,
+        F2_lunar: np.ndarray
+    ):
     """
     Computes the corrections induced by the latitude of the
     dependence given by L\ :sup:`1`
+
+    Parameters
+    ----------
+    XYZ: np.ndarray
+        Cartesian coordinates of the station (meters)
+    SXYZ: np.ndarray
+        Earth-centered Earth-fixed coordinates of the sun (meters)
+    LXYZ: np.ndarray
+        Earth-centered Earth-fixed coordinates of the moon (meters)
+    F2_solar: np.ndarray
+        Factors for the sun
+    F2_lunar: np.ndarray
+        Factors for the moon
     """
     # love number corrections (diurnal and semi-diurnal)
     l1d = 0.0012
@@ -816,16 +870,26 @@ def _latitude_dependence(XYZ: np.ndarray, SXYZ: np.ndarray,
     DN = 3.0*(dn_d_solar + dn_d_lunar + dn_s_solar + dn_s_lunar)
     DE = 3.0*(de_d_solar + de_d_lunar + de_s_solar + de_s_lunar)
     # compute combined diurnal and semi-diurnal corrections
-    DX = -DE*sinla - DN*sinphi*cosla
-    DY = DE*cosla - DN*sinphi*sinla
+    DX = -DE*sinla - DN*cosla*sinphi
+    DY = DE*cosla - DN*sinla*sinphi
     DZ = DN*cosphi
     # return the corrections
     return (DX, DY, DZ)
 
-def _frequency_dependence_diurnal(XYZ: np.ndarray, MJD: np.ndarray):
+def _frequency_dependence_diurnal(
+        XYZ: np.ndarray,
+        MJD: np.ndarray
+    ):
     """
     Computes the in-phase and out-of-phase corrections induced by mantle
     anelasticity in the diurnal band
+
+    Parameters
+    ----------
+    XYZ: np.ndarray
+        Cartesian coordinates of the station (meters)
+    MJD: np.ndarray
+        Modified Julian Day (MJD)
     """
     # number of time steps
     nt = len(np.atleast_1d(MJD))
@@ -888,16 +952,26 @@ def _frequency_dependence_diurnal(XYZ: np.ndarray, MJD: np.ndarray):
             row[8]*(cosphi**2 - sinphi**2)*np.cos(thetaf + zla)
         de = row[7]*sinphi*np.cos(thetaf + zla) - \
             row[8]*sinphi*np.sin(thetaf + zla)
-        DX += 1e-3*(dr*cosla*cosphi - de*sinla - dn*sinphi*cosla)
-        DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinphi*sinla)
+        DX += 1e-3*(dr*cosla*cosphi - de*sinla - dn*cosla*sinphi)
+        DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinla*sinphi)
         DZ += 1e-3*(dr*sinphi + dn*cosphi)
     # return the corrections
     return (DX, DY, DZ)
 
-def _frequency_dependence_long_period(XYZ: np.ndarray, MJD: np.ndarray):
+def _frequency_dependence_long_period(
+        XYZ: np.ndarray,
+        MJD: np.ndarray
+    ):
     """
     Computes the in-phase and out-of-phase corrections induced by mantle
     anelasticity in the long-period band
+
+    Parameters
+    ----------
+    XYZ: np.ndarray
+        Cartesian coordinates of the station (meters)
+    MJD: np.ndarray
+        Modified Julian Day (MJD)
     """
     # number of time steps
     nt = len(np.atleast_1d(MJD))
@@ -931,17 +1005,29 @@ def _frequency_dependence_long_period(XYZ: np.ndarray, MJD: np.ndarray):
         dn = row[6]*(2.0*cosphi*sinphi)*np.cos(thetaf) + \
             row[8]*(2.0*cosphi*sinphi)*np.sin(thetaf)
         de = 0.0
-        DX += 1e-3*(dr*cosla*cosphi - de*sinla - dn*sinphi*cosla)
-        DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinphi*sinla)
+        DX += 1e-3*(dr*cosla*cosphi - de*sinla - dn*cosla*sinphi)
+        DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinla*sinphi)
         DZ += 1e-3*(dr*sinphi + dn*cosphi)
     # return the corrections
     return (DX, DY, DZ)
 
-def _free_to_mean(XYZ: np.ndarray, h2: float | np.ndarray,
-    l2: float | np.ndarray):
+def _free_to_mean(
+        XYZ: np.ndarray,
+        h2: float | np.ndarray,
+        l2: float | np.ndarray
+    ):
     """
     Calculate offsets for converting the permanent tide from
     a tide-free to a mean-tide state
+
+    Parameters
+    ----------
+    XYZ: np.ndarray
+        Cartesian coordinates of the station (meters)
+    h2: float or np.ndarray
+        Degree-2 Love number of vertical displacement
+    l2: float or np.ndarray
+        Degree-2 Love number of horizontal displacement
     """
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))

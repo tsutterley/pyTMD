@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_tide_points.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (04/2023)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactored tide read programs under io
         refactored bilinear interpolation routine
@@ -67,7 +68,7 @@ UPDATE HISTORY:
 """
 from __future__ import print_function, annotations
 
-import os
+import pathlib
 import warnings
 import numpy as np
 import scipy.interpolate
@@ -88,11 +89,11 @@ warnings.filterwarnings("ignore")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
 def check_tide_points(x: np.ndarray, y: np.ndarray,
-        DIRECTORY: str | None = None,
+        DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
         ATLAS_FORMAT: str = 'netcdf',
         GZIP: bool = False,
-        DEFINITION_FILE: str | None = None,
+        DEFINITION_FILE: str | pathlib.Path | None = None,
         EPSG: str | int = 3031,
         METHOD: str = 'spline'
     ):
@@ -134,14 +135,15 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
     """
 
     # check that tide directory is accessible
-    try:
-        os.access(DIRECTORY, os.F_OK)
-    except:
-        raise FileNotFoundError("Invalid tide directory")
+    if DIRECTORY is not None:
+        DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
+        if not DIRECTORY.exists():
+            raise FileNotFoundError("Invalid tide directory")
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
+        model = pyTMD.io.model(DIRECTORY).from_file(
+            pathlib.Path(DEFINITION_FILE).expanduser())
     else:
         model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).elevation(MODEL)
@@ -166,7 +168,7 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
     if model.format in ('OTIS','ATLAS','ESR'):
         # if reading a single OTIS solution
         xi, yi, hz, mz, iob, dt = pyTMD.io.OTIS.read_otis_grid(
-            model.grid_file)
+            pathlib.Path(model.grid_file).expanduser())
         # invert model mask
         mz = np.logical_not(mz)
         # adjust dimensions of input coordinates to be iterable
@@ -174,7 +176,8 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
         X, Y = pyTMD.convert_crs(lon, lat, model.projection, 'F')
     elif (model.format == 'netcdf'):
         # if reading a netCDF OTIS atlas solution
-        xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(model.grid_file,
+        xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(
+            pathlib.Path(model.grid_file).expanduser(),
             compressed=model.compressed, type=model.type)
         # copy bathymetry mask
         mz = np.copy(hz.mask)
@@ -185,7 +188,8 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
     elif (model.format == 'GOT'):
         # if reading a NASA GOT solution
         hc, xi, yi, c = pyTMD.io.GOT.read_ascii_file(
-            model.model_file[0], compressed=model.compressed)
+            pathlib.Path(model.model_file[0]).expanduser(),
+            compressed=model.compressed)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
         # copy latitude and longitude and adjust longitudes
@@ -195,8 +199,9 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
     elif (model.format == 'FES'):
         # if reading a FES netCDF solution
         hc, xi, yi = pyTMD.io.FES.read_netcdf_file(
-            model.model_file[0], compressed=model.compressed,
-            type=model.type, version=model.version)
+            pathlib.Path(model.model_file[0]).expanduser(),
+            compressed=model.compressed, type=model.type,
+            version=model.version)
         # copy tidal constituent mask
         mz = np.copy(hc.mask)
         # copy latitude and longitude and adjust longitudes
