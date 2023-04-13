@@ -34,6 +34,7 @@ def test_definition_CATS2008():
     assert m.atl11 == 'tide_ocean'
     assert m.atl12 == 'tide_ocean_seg'
     assert m.gla12 == 'd_ocElv'
+    assert m.long_name == 'ocean_tide_elevation'
 
 def test_definition_FES():
     """Tests the reading of the FES2014 model definition file
@@ -84,6 +85,7 @@ def test_definition_FES():
     assert m.atl11 == 'tide_ocean'
     assert m.atl12 == 'tide_ocean_seg'
     assert m.gla12 == 'd_ocElv'
+    assert m.long_name == 'ocean_tide_elevation'
 
 # PURPOSE: test glob file functionality
 def test_definition_FES_glob():
@@ -203,6 +205,9 @@ def test_definition_FES_currents():
     # check validity of parsed constituents
     parsed_constituents = [pyTMD.io.model.parse_file(f) for f in model_files_u]
     assert parsed_constituents == constituents
+    # test derived properties
+    assert m.long_name['u'] == 'zonal_tidal_current'
+    assert m.long_name['v'] == 'meridional_tidal_current'
 
 # PURPOSE: test glob file functionality
 def test_definition_FES_currents_glob():
@@ -320,6 +325,7 @@ def test_definition_GOT():
     assert m.atl11 == 'tide_load'
     assert m.atl12 == 'tide_load_seg'
     assert m.gla12 == 'd_ldElv'
+    assert m.long_name == 'load_tide_elevation'
 
 # PURPOSE: test glob file functionality
 def test_definition_GOT_glob():
@@ -407,6 +413,7 @@ def test_definition_TPXO9():
     assert m.atl11 == 'tide_ocean'
     assert m.atl12 == 'tide_ocean_seg'
     assert m.gla12 == 'd_ocElv'
+    assert m.long_name == 'ocean_tide_elevation'
 
 # PURPOSE: test glob file functionality
 def test_definition_TPXO9_glob():
@@ -490,6 +497,9 @@ def test_definition_TPXO9_currents():
     assert m.type == ['u', 'v']
     assert m.scale == 1.0/100.0
     assert m.compressed is False
+    # test derived properties
+    assert m.long_name['u'] == 'zonal_tidal_current'
+    assert m.long_name['v'] == 'meridional_tidal_current'
 
 # PURPOSE: test glob file functionality
 def test_definition_TPXO9_glob():

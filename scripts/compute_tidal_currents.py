@@ -79,10 +79,10 @@ PROGRAM DEPENDENCIES:
     time.py: utilities for calculating time operations
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
+    arguments.py: load the nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
     convert_crs.py: convert points to and from Coordinates Reference Systems
     load_constituent.py: loads parameters for a given tidal constituent
-    load_nodal_corrections.py: load the nodal corrections for tidal constituents
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     io/ATLAS.py: extract tidal harmonic constants from netcdf models
@@ -92,6 +92,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: using pathlib to define and expand paths
+        using long_name and description attributes from model class
     Updated 02/2023: added functionality for time series type
     Updated 01/2023: added default field mapping for reading from netCDF4/HDF5
         added data type keyword for netCDF4 output
@@ -223,21 +224,19 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     attrib['lon']['units'] = 'Degrees_East'
     # zonal tidal currents
     attrib['u'] = {}
-    attrib['u']['description'] = ('depth_averaged_tidal_zonal_current_'
-        'from_harmonic_constants')
+    attrib['u']['description'] = model.description['u']
     attrib['u']['reference'] = model.reference
     attrib['u']['model'] = model.name
     attrib['u']['units'] = 'cm/s'
-    attrib['u']['long_name'] = 'zonal_tidal_current'
+    attrib['u']['long_name'] = model.long_name['u']
     attrib['u']['_FillValue'] = fill_value
     # meridional tidal currents
     attrib['v'] = {}
-    attrib['v']['description'] = ('depth_averaged_tidal_meridional_current_'
-        'from_harmonic_constants')
+    attrib['v']['description'] = model.description['v']
     attrib['v']['reference'] =  model.reference
     attrib['v']['model'] = model.name
     attrib['v']['units'] = 'cm/s'
-    attrib['v']['long_name'] = 'meridional_tidal_current'
+    attrib['v']['long_name'] = model.long_name['v']
     attrib['v']['_FillValue'] = fill_value
     # time
     attrib['time'] = {}

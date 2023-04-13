@@ -11,6 +11,7 @@ UPDATE HISTORY:
         updated model definition read function for currents
         using pathlib to define and expand tide model paths
         add basic file searching with glob strings in definition files
+        add long_name and description attributes for current variables
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -1064,9 +1065,11 @@ class model:
         """Returns ``long_name`` attribute string for a given variable
         """
         if (self.type == 'z') and (self.variable == 'tide_ocean'):
-            return 'Ocean Tide'
+            return 'ocean_tide_elevation'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
-            return 'Load Tide'
+            return 'load_tide_elevation'
+        elif (self.type == ['u','v']):
+            return dict(u='zonal_tidal_current', v='meridional_tidal_current')
         else:
             return None
 
@@ -1075,12 +1078,17 @@ class model:
         """Returns ``description`` attribute string for a given variable
         """
         if (self.type == 'z') and (self.variable == 'tide_ocean'):
-            return ("Ocean Tides including diurnal and "
-                "semi-diurnal (harmonic analysis), and longer period "
-                "tides (dynamic and self-consistent equilibrium).")
+            return "Ocean tidal elevations derived from harmonic constants"
         elif (self.type == 'z') and (self.variable == 'tide_load'):
-            return ("Local displacement due to Ocean "
-                "Loading (-6 to 0 cm)")
+            return ("Local displacement due to ocean tidal loading "
+                "derived from harmonic constants")
+        elif (self.type == ['u','v']):
+            attr = {}
+            attr['u'] = ('Depth-averaged tidal zonal current '
+                'derived from harmonic constants')
+            attr['v'] = ('Depth-averaged tidal meridional current '
+                'derived from harmonic constants')
+            return attr
         else:
             return None
 
