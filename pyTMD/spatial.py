@@ -1446,7 +1446,7 @@ def _bowring_iterative(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using iterative solution of [Bowring1976]_ [Bowring1985]_
+    using the iterative solution of [Bowring1976]_ [Bowring1985]_
 
     Parameters
     ----------

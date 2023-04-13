@@ -13,14 +13,15 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 PROGRAM DEPENDENCIES:
+    arguments.py: loads nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
     constants.py: calculate reference parameters for common ellipsoids
     load_constituent.py: loads parameters for a given tidal constituent
-    load_nodal_corrections.py: loads nodal corrections for tidal constituents
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
     Updated 04/2023: using renamed astro mean_longitudes function
+        using renamed arguments function for nodal corrections
         adding prediction routine for solid earth tides
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: merged prediction functions into a single module
@@ -40,9 +41,9 @@ from __future__ import annotations
 
 import numpy as np
 import pyTMD.astro
+from pyTMD.arguments import arguments
 from pyTMD.constants import constants
 from pyTMD.load_constituent import load_constituent
-from pyTMD.load_nodal_corrections import load_nodal_corrections
 
 # PURPOSE: Predict tides at single times
 def map(t: float | np.ndarray,
@@ -85,7 +86,7 @@ def map(t: float | np.ndarray,
     npts,nc = np.shape(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
+    pu,pf,G = arguments(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
     # allocate for output tidal elevation
     ht = np.ma.zeros((npts))
@@ -147,7 +148,7 @@ def drift(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
+    pu,pf,G = arguments(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
     # allocate for output time series
     ht = np.ma.zeros((nt))
@@ -209,7 +210,7 @@ def time_series(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = load_nodal_corrections(t + 48622.0, constituents,
+    pu,pf,G = arguments(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
     # allocate for output time series
     ht = np.ma.zeros((nt))
