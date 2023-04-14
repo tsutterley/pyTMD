@@ -1036,9 +1036,16 @@ def _free_to_mean(
     cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
     sinla = XYZ[:,1]/cosphi/radius
     cosla = XYZ[:,0]/cosphi/radius
-    dr = -np.sqrt(5.0/(4.0*np.pi))*h2*0.31460*(3.0/2.0*sinphi**2 - 0.5)
-    dn = -np.sqrt(5.0/(4.0*np.pi))*l2*0.31460*3.0*cosphi*sinphi
-    # compute as an additive correction
+    # time-independent constituent of amplitude (Mathews et al. 1997)
+    H0 = -0.31460
+    # in Mathews et al. (1997): dR0=-0.1196 m with h2=0.6026
+    dR0 = np.sqrt(5.0/(4.0*np.pi))*h2*H0
+    # in Mathews et al. (1997): dN0=-0.0247 m with l2=0.0831
+    dN0 = np.sqrt(45.0/(16.0*np.pi))*l2*H0
+    # use double angle formula for sin(2*phi)
+    dr = dR0*(3.0/2.0*sinphi**2 - 1.0/2.0)
+    dn = 2.0*dN0*cosphi*sinphi
+    # compute as an additive correction (Mathews et al. 1997)
     DX = -dr*cosla*cosphi + dn*cosla*sinphi
     DY = -dr*sinla*cosphi + dn*sinla*sinphi
     DZ = -dr*sinphi - dn*cosphi
