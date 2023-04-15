@@ -874,7 +874,7 @@ def merge_bulletin_a_files(
         iers_delta_time(COPY, verbose=verbose, mode=mode)
     except Exception as exc:
         logging.debug(traceback.format_exc())
-        COPY.unlink() if copy.exists() else None
+        COPY.unlink() if COPY.exists() else None
         pass
     else:
         pyTMD.utilities.copy(COPY, LOCAL, move=True)
@@ -885,7 +885,7 @@ def merge_bulletin_a_files(
         iers_ftp_delta_time(COPY, verbose=verbose, mode=mode)
     except Exception as exc:
         logging.debug(traceback.format_exc())
-        COPY.unlink() if copy.exists() else None
+        COPY.unlink() if COPY.exists() else None
         pass
     else:
         pyTMD.utilities.copy(COPY, LOCAL, move=True)
@@ -897,7 +897,7 @@ def merge_bulletin_a_files(
             verbose=verbose, mode=mode)
     except Exception as exc:
         logging.debug(traceback.format_exc())
-        COPY.unlink() if copy.exists() else None
+        COPY.unlink() if COPY.exists() else None
         pass
     else:
         pyTMD.utilities.copy(COPY, LOCAL, move=True)
