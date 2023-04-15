@@ -205,9 +205,12 @@ def test_solid_earth_radial():
     assert np.isclose(tide_earth, tide_free, atol=1e-3).all()
     # check permanent tide offsets (additive correction in ICESat-2)
     # expected results (mean-tide)
-    tide_expected = tide_earth + tide_earth_free2mean
-    # # sign differences with ATLAS product?
-    # assert np.isclose(tide_expected, tide_mean, atol=1e-3).all()
+    tide_expected = tide_earth - tide_earth_free2mean
+    # sign differences with ATLAS product: correction is subtractive
+    predicted = -0.06029 + 0.180873*np.sin(latitudes*np.pi/180.0)**2
+    assert np.isclose(tide_expected, tide_mean, atol=1e-3).all()
+    assert np.isclose(-tide_earth_free2mean, predicted, atol=1e-3).all()
+    assert np.isclose(tide_mean-tide_free, predicted, atol=1e-3).all()
 
 # PURPOSE: Download JPL ephemerides from Solar System Dynamics server
 @pytest.fixture(scope="module", autouse=True)

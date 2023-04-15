@@ -12,6 +12,7 @@ UPDATE HISTORY:
         using pathlib to define and expand tide model paths
         add basic file searching with glob strings in definition files
         add long_name and description attributes for current variables
+        added exceptions for files missing when using glob patterns
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -767,13 +768,15 @@ class model:
                 'u_n2_tpxo9_atlas_30_v3','u_m2_tpxo9_atlas_30_v3',
                 'u_s2_tpxo9_atlas_30_v3','u_k2_tpxo9_atlas_30_v3',
                 'u_m4_tpxo9_atlas_30_v3','u_ms4_tpxo9_atlas_30_v3',
-                'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3']
+                'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
+                'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
             model_files['v'] = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
                 'u_p1_tpxo9_atlas_30_v3','u_k1_tpxo9_atlas_30_v3',
                 'u_n2_tpxo9_atlas_30_v3','u_m2_tpxo9_atlas_30_v3',
                 'u_s2_tpxo9_atlas_30_v3','u_k2_tpxo9_atlas_30_v3',
                 'u_m4_tpxo9_atlas_30_v3','u_ms4_tpxo9_atlas_30_v3',
-                'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3']
+                'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
+                'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -791,13 +794,15 @@ class model:
                 'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
                 'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
                 'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
-                'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4']
+                'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
+                'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
             model_files['v'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
                 'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
                 'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
                 'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
                 'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
-                'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4']
+                'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
+                'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -816,14 +821,16 @@ class model:
                 'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
                 'u_k2_tpxo9_atlas_30_v5','u_m4_tpxo9_atlas_30_v5',
                 'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
-                'u_2n2_tpxo9_atlas_30_v5']
+                'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
+                'u_mm_tpxo9_atlas_30_v5']
             model_files['v'] = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
                 'u_p1_tpxo9_atlas_30_v5','u_k1_tpxo9_atlas_30_v5',
                 'u_n2_tpxo9_atlas_30_v5','u_m2_tpxo9_atlas_30_v5',
                 'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
                 'u_k2_tpxo9_atlas_30_v5','u_m4_tpxo9_atlas_30_v5',
                 'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
-                'u_2n2_tpxo9_atlas_30_v5']
+                'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
+                'u_mm_tpxo9_atlas_30_v5']
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -1188,7 +1195,7 @@ class model:
         """
         Returns list of tidal current models
         """
-        return ['CATS0201','CATS2008','CATS2022''TPXO9-atlas',
+        return ['CATS0201','CATS2008','CATS2022','TPXO9-atlas',
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
@@ -1312,7 +1319,12 @@ class model:
         # extract full path to tide grid file
         if temp.format in ('OTIS','ATLAS','ESR','netcdf'):
             assert temp.grid_file
-            temp.grid_file = pathlib.Path(temp.grid_file).expanduser()
+            # check if grid file is relative
+            if (temp.directory is not None):
+                temp.grid_file = temp.directory.joinpath(temp.grid_file).resolve()
+            else:
+                temp.grid_file = pathlib.Path(temp.grid_file).expanduser()
+            # check if model files are as a delimited string
             multi_file = re.search(r'[\s\,]+', temp.model_file)
             # extract model files
             if (temp.type == ['u','v']) and multi_file:
@@ -1327,15 +1339,28 @@ class model:
                 temp.model_directory = temp.model_file[0].parent
             elif (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
-                model_file = list(temp.directory.glob(temp.model_file))
+                glob_string = copy.copy(temp.model_file)
+                model_file = list(temp.directory.glob(glob_string))
                 # copy to model file and directory dictionaries
                 temp.model_file = dict(u=model_file, v=model_file)
-                temp.model_directory = temp.model_file['u'][0].parent
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file['u'][0].parent
+                except (IndexError, AttributeError):
+                    exc = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(exc)
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
-                temp.model_file = list(temp.directory.glob(temp.model_file))
-                temp.model_directory = temp.model_file[0].parent
+                glob_string = copy.copy(temp.model_file)
+                temp.model_file = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file[0].parent
+                except (IndexError, AttributeError):
+                    exc = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(exc)
             else:
+                # fully defined single file case
                 temp.model_file = pathlib.Path(temp.model_file).expanduser()
                 temp.model_directory = temp.model_file.parent
         elif temp.format in ('FES','GOT'):
@@ -1343,18 +1368,31 @@ class model:
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # split model file string at semicolon
                 model_file = temp.model_file.split(';')
+                glob_string = dict(u=model_file[0], v=model_file[1])
                 # use glob strings to find files in directory
                 temp.model_file = {}
-                temp.model_file['u'] = list(temp.directory.glob(model_file[0]))
-                temp.model_file['v'] = list(temp.directory.glob(model_file[1]))
+                temp.model_file['u'] = list(temp.directory.glob(glob_string['u']))
+                temp.model_file['v'] = list(temp.directory.glob(glob_string['v']))
                 # build model directory dictionaries
                 temp.model_directory = {}
                 for key,val in temp.model_file.items():
-                    temp.model_directory[key] = val[0].parent
+                    # attempt to extract model directory
+                    try:
+                        temp.model_directory[key] = val[0].parent
+                    except (IndexError, AttributeError):
+                        exc = f'No model files found with {glob_string[key]}'
+                        raise FileNotFoundError(exc)
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
-                temp.model_file = list(temp.directory.glob(temp.model_file))
+                glob_string = copy.copy(temp.model_file)
+                temp.model_file = list(temp.directory.glob(glob_string))
                 temp.model_directory = temp.model_file[0].parent
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file[0].parent
+                except (IndexError, AttributeError):
+                    exc = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(exc)
             elif (temp.type == ['u','v']):
                 # split model file string at semicolon
                 model_file = temp.model_file.split(';')
@@ -1434,7 +1472,7 @@ class model:
         """
         # list of tidal constituents (not all are included in tidal program)
         # include negative look-behind and look-ahead for complex cases
-        cindex = [r'(?<!s)sa','ssa','mm','msf',r'mt(?!m)','mf','alpha1',
+        cindex = [r'(?<!s)sa','ssa','mm','msf',r'mt(?!m)(?!ide)','mf','alpha1',
             '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)o1','tau1',
             'm1','chi1','pi1','p1','s1','k1','psi1','phi1','theta1','j1',
             'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
@@ -1454,7 +1492,7 @@ class model:
         # iterate over known remapped cases
         for m in mapping:
             # check if tide model is a remapped case
-            if m[0] in model_file.name:
+            if m[0] in model_file.name.lower():
                 return m[1]
         # if no constituent name is found
         if raise_error:

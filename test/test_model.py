@@ -5,6 +5,7 @@ Tests the reading of model definition files
 from __future__ import annotations
 
 import io
+import pytest
 import shutil
 import inspect
 import pathlib
@@ -444,9 +445,12 @@ def test_definition_TPXO9_glob():
         local = filepath.joinpath(model_file)
         local.parent.mkdir(parents=True, exist_ok=True)
         local.touch(exist_ok=True)
+    # create temporary grid file
+    local = filepath.joinpath(m.grid_file)
+    local.touch(exist_ok=True)
     # create model definition file
     fid = io.StringIO()
-    attrs = ['name','format','grid_file','compressed','type','scale']
+    attrs = ['name','format','compressed','type','scale']
     for attr in attrs:
         val = getattr(m,attr)
         if isinstance(val,list):
@@ -456,6 +460,7 @@ def test_definition_TPXO9_glob():
     # append glob strings for model file
     glob_string = r'TPXO9_atlas_v5/h*.nc'
     fid.write('{0}\t{1}\n'.format('model_file',glob_string))
+    fid.write('{0}\t{1}\n'.format('grid_file',m.grid_file))
     fid.seek(0)
     # use model definition file as input
     model = pyTMD.io.model(directory=filepath).from_file(fid)
@@ -527,9 +532,12 @@ def test_definition_TPXO9_glob():
         local = filepath.joinpath(model_file)
         local.parent.mkdir(parents=True, exist_ok=True)
         local.touch(exist_ok=True)
+    # create temporary grid file
+    local = filepath.joinpath(m.grid_file)
+    local.touch(exist_ok=True)
     # create model definition file
     fid = io.StringIO()
-    attrs = ['name','format','grid_file','compressed','type','scale']
+    attrs = ['name','format','compressed','type','scale']
     for attr in attrs:
         val = getattr(m,attr)
         if isinstance(val,list):
@@ -539,6 +547,7 @@ def test_definition_TPXO9_glob():
     # append glob strings for model file
     glob_string = r'TPXO9_atlas_v5/u*.nc'
     fid.write('{0}\t{1}\n'.format('model_file',glob_string))
+    fid.write('{0}\t{1}\n'.format('grid_file',m.grid_file))
     fid.seek(0)
     # use model definition file as input
     model = pyTMD.io.model(directory=filepath).from_file(fid)
@@ -553,3 +562,66 @@ def test_definition_TPXO9_glob():
     fid.close()
     # clean up model
     shutil.rmtree(filepath.joinpath('TPXO9_atlas_v5'))
+
+# parameterize model
+@pytest.mark.parametrize("MODEL", pyTMD.io.model.FES())
+def test_parse_FES_elevation(MODEL):
+    """Tests the parsing of FES-type elevation model files
+    """
+    m = pyTMD.io.model(verify=False).elevation(MODEL)
+    constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file]
+    assert (m.constituents == constituents)
+
+# parameterize model
+current_models = set(pyTMD.io.model.FES()) & set(pyTMD.io.model.ocean_current())
+@pytest.mark.parametrize("MODEL", sorted(current_models))
+def test_parse_FES_currents(MODEL):
+    """Tests the parsing of FES-type current model files
+    """
+    # test ocean current constituents
+    m = pyTMD.io.model(verify=False).current(MODEL)
+    constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file['u']]
+    assert (m.constituents == constituents)
+    constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file['v']]
+    assert (m.constituents == constituents)
+
+# parameterize model
+@pytest.mark.parametrize("MODEL", pyTMD.io.model.GOT())
+def test_parse_GOT_elevation(MODEL):
+    """Tests the parsing of GOT-type elevation model files
+    """
+    m = pyTMD.io.model(verify=False).elevation(MODEL)
+    m.constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file]
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+    assert all(c in m.constituents for c in constituents)
+
+# parameterize model
+@pytest.mark.parametrize("MODEL", pyTMD.io.model.ATLAS())
+def test_parse_TPXO9_elevation(MODEL):
+    """Tests the parsing of ATLAS-type elevation model files
+    """
+    m = pyTMD.io.model(verify=False).elevation(MODEL)
+    m.constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file]
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
+    assert all(c in m.constituents for c in constituents)
+    # test additional constituents found in newer models
+    if MODEL in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
+        assert all(c in m.constituents for c in ['mf','mm'])
+    if MODEL in ('TPXO9-atlas-v5',):
+        assert all(c in m.constituents for c in ['s1',])
+
+# parameterize model
+current_models = set(pyTMD.io.model.ATLAS()) & set(pyTMD.io.model.ocean_current())
+@pytest.mark.parametrize("MODEL", sorted(current_models))
+def test_parse_TPXO9_currents(MODEL):
+    """Tests the parsing of ATLAS-type current model files
+    """
+    m = pyTMD.io.model(verify=False).current(MODEL)
+    m.constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file['u']]
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
+    assert all(c in m.constituents for c in constituents)
+    # test additional constituents found in newer models
+    if MODEL in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
+        assert all(c in m.constituents for c in ['mf','mm'])
+    if MODEL in ('TPXO9-atlas-v5',):
+        assert all(c in m.constituents for c in ['s1',])
