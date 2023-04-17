@@ -34,11 +34,10 @@ def test_out_of_phase_diurnal():
     dy_expected = 0.1125342324347507444e-3
     dz_expected = -0.2471186224343683169e-3
     # calculate displacements
-    dx, dy, dz = pyTMD.predict._out_of_phase_diurnal(XYZ, SXYZ, LXYZ,
+    dXYZ = pyTMD.predict._out_of_phase_diurnal(XYZ, SXYZ, LXYZ,
         F2_solar, F2_lunar)
     # assert matching
-    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],
-        np.c_[dx, dy, dz]).all()
+    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected], dXYZ).all()
 
 def test_out_of_phase_semidiurnal():
     """Test out-of-phase semidiurnal corrections with IERS outputs
@@ -55,11 +54,10 @@ def test_out_of_phase_semidiurnal():
     dy_expected = 0.2939522229284325029e-4
     dz_expected = -0.6051677912316721561e-4
     # calculate displacements
-    dx, dy, dz = pyTMD.predict._out_of_phase_semidiurnal(XYZ, SXYZ, LXYZ,
+    dXYZ = pyTMD.predict._out_of_phase_semidiurnal(XYZ, SXYZ, LXYZ,
         F2_solar, F2_lunar)
     # assert matching
-    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],
-        np.c_[dx, dy, dz]).all()
+    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected], dXYZ).all()
 
 def test_latitude_dependence():
     """Test latitude dependence corrections with IERS outputs
@@ -76,11 +74,10 @@ def test_latitude_dependence():
     dy_expected = 0.5181609907284959182e-3
     dz_expected = -0.3014881422940427977e-3
     # calculate displacements
-    dx, dy, dz = pyTMD.predict._latitude_dependence(XYZ, SXYZ, LXYZ,
+    dXYZ = pyTMD.predict._latitude_dependence(XYZ, SXYZ, LXYZ,
         F2_solar, F2_lunar)
     # assert matching
-    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],
-        np.c_[dx, dy, dz]).all()
+    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected], dXYZ).all()
 
 def test_frequency_dependence_diurnal():
     """Test diurnal band frequency dependence corrections
@@ -98,10 +95,9 @@ def test_frequency_dependence_diurnal():
     dy_expected = 0.1456681241014607395e-2
     dz_expected = 0.5123366597450316508e-2
     # calculate displacements
-    dx, dy, dz = pyTMD.predict._frequency_dependence_diurnal(XYZ, MJD)
+    dXYZ = pyTMD.predict._frequency_dependence_diurnal(XYZ, MJD)
     # assert matching
-    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],
-        np.c_[dx, dy, dz]).all()
+    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected], dXYZ).all()
 
 def test_frequency_dependence_long_period():
     """Test long period band frequency dependence corrections
@@ -119,10 +115,9 @@ def test_frequency_dependence_long_period():
     dy_expected = -0.2236349699932734273e-4
     dz_expected = 0.3561945821351565926e-3
     # calculate displacements
-    dx, dy, dz = pyTMD.predict._frequency_dependence_long_period(XYZ, MJD)
+    dXYZ = pyTMD.predict._frequency_dependence_long_period(XYZ, MJD)
     # assert matching
-    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],
-        np.c_[dx, dy, dz]).all()
+    assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected], dXYZ).all()
 
 def test_phase_angles():
     """Test that longitudes and phase angles match between functions
@@ -201,23 +196,21 @@ def test_solid_earth_radial():
     tide_mean = compute_SET_corrections(longitudes, latitudes, times,
         EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
         TIDE_SYSTEM='mean_tide')
-    # as using estimated ephemerides, assert within 1 mm
-    assert np.isclose(tide_earth, tide_free, atol=1e-3).all()
+    # as using estimated ephemerides, assert within 1/2 mm
+    assert np.isclose(tide_earth, tide_free, atol=5e-4).all()
     # check permanent tide offsets (additive correction in ICESat-2)
-    # expected results (mean-tide)
-    tide_expected = tide_earth - tide_earth_free2mean
-    # sign differences with ATLAS product: correction is subtractive
-    predicted = -0.06029 + 0.180873*np.sin(latitudes*np.pi/180.0)**2
-    assert np.isclose(tide_expected, tide_mean, atol=1e-3).all()
-    assert np.isclose(-tide_earth_free2mean, predicted, atol=1e-3).all()
-    assert np.isclose(tide_mean-tide_free, predicted, atol=1e-3).all()
+    tide_expected = tide_earth + tide_earth_free2mean
+    predicted = 0.06029 - 0.180873*np.sin(latitudes*np.pi/180.0)**2
+    assert np.isclose(tide_expected, tide_mean, atol=5e-4).all()
+    assert np.isclose(tide_earth_free2mean, predicted, atol=5e-4).all()
+    assert np.isclose(tide_mean-tide_free, predicted, atol=5e-4).all()
 
 # PURPOSE: Download JPL ephemerides from Solar System Dynamics server
 @pytest.fixture(scope="module", autouse=True)
 def download_jpl_ephemerides():
     """Download JPL ephemerides from Solar System Dynamics server
     """
-    # get path to defaultZ ephemerides
+    # get path to default ephemerides
     de440s = pyTMD.astro._default_kernel
     # download JPL ephemerides if not existing
     if not de440s.exists():
@@ -241,9 +234,7 @@ def test_solar_ecef():
     x2, y2, z2 = pyTMD.astro.solar_ephemerides(MJD)
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
-    assert np.isclose(x1, x2, atol=1e9).all()
-    assert np.isclose(y1, y2, atol=1e9).all()
-    assert np.isclose(z1, z2, atol=1e9).all()
+    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=1e9).all()
     # test absolute distance
     assert np.isclose(r1, r2, atol=1e9).all()
 
@@ -258,8 +249,6 @@ def test_lunar_ecef():
     x2, y2, z2 = pyTMD.astro.lunar_ephemerides(MJD)
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
-    assert np.isclose(x1, x2, atol=5e6).all()
-    assert np.isclose(y1, y2, atol=5e6).all()
-    assert np.isclose(z1, z2, atol=5e6).all()
+    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=5e6).all()
     # test absolute distance
     assert np.isclose(r1, r2, atol=5e6).all()

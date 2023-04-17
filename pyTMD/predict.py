@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 u"""
-predict.py (04/2023)
-Predict tide values using harmonic constants
+predict.py
+Written by Tyler Sutterley (04/2023)
+Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
     G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
@@ -23,6 +24,7 @@ UPDATE HISTORY:
     Updated 04/2023: using renamed astro mean_longitudes function
         using renamed arguments function for nodal corrections
         adding prediction routine for solid earth tides
+        output solid earth tide corrections as combined XYZ components
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: merged prediction functions into a single module
     Updated 05/2022: added ESR netCDF4 formats to list of model types
@@ -554,7 +556,8 @@ def solid_earth_tide(
         SXYZ: np.ndarray,
         LXYZ: np.ndarray,
         a_axis: float = _iers.a_axis,
-        tide_system: str = 'tide_free'
+        tide_system: str = 'tide_free',
+        **kwargs
     ):
     """
     Compute the solid Earth tides due to the gravitational attraction
@@ -581,7 +584,7 @@ def solid_earth_tide(
     Returns
     -------
     dxt: np.ndarray
-        Solid Earth tide in meters
+        Solid Earth tide in meters in Cartesian coordinates
 
     References
     ----------
@@ -605,18 +608,19 @@ def solid_earth_tide(
         `doi: 10.1111/j.1365-246X.1981.tb02690.x
         <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
     """
+    # set default keyword arguments
+    # nominal Love and Shida numbers
+    kwargs.setdefault('h2', 0.6078)
+    kwargs.setdefault('l2', 0.0847)
+    kwargs.setdefault('h3', 0.292)
+    kwargs.setdefault('l3', 0.015)
+    # mass ratios between earth and sun/moon
+    kwargs.setdefault('mass_ratio_solar', 332946.0482)
+    kwargs.setdefault('mass_ratio_lunar', 0.0123000371)
     # validate output tide system
     assert tide_system in ('tide_free', 'mean_tide')
     # number of input coordinates
     nt = len(np.atleast_1d(t))
-    # nominal Love and Shida numbers
-    h20 = 0.6078
-    l20 = 0.0847
-    h3 = 0.292
-    l3 = 0.015
-    # mass ratios between earth and sun/moon
-    mass_ratio_solar = 332946.0482
-    mass_ratio_lunar = 0.0123000371
     # convert time to Modified Julian Days (MJD)
     MJD = t + 48622.0
     # scalar product of input coordinates with sun/moon vectors
@@ -629,26 +633,26 @@ def solid_earth_tide(
         XYZ[:,2]*LXYZ[:,2])/(radius*lunar_radius)
     # compute new h2 and l2 (Mathews et al., 1997)
     cosphi = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2)/radius
-    h2 = h20 - 0.0006*(1.0 - 3.0/2.0*cosphi**2)
-    l2 = l20 + 0.0002*(1.0 - 3.0/2.0*cosphi**2)
+    h2 = kwargs['h2'] - 0.0006*(1.0 - 3.0/2.0*cosphi**2)
+    l2 = kwargs['l2'] + 0.0002*(1.0 - 3.0/2.0*cosphi**2)
     # compute P2 terms
     P2_solar = 3.0*(h2/2.0 - l2)*solar_scalar**2 - h2/2.0
     P2_lunar = 3.0*(h2/2.0 - l2)*lunar_scalar**2 - h2/2.0
     # compute P3 terms
-    P3_solar = 5.0/2.0*(h3 - 3.0*l3)*solar_scalar**3 + \
-        3.0/2.0*(l3 - h3)*solar_scalar
-    P3_lunar = 5.0/2.0*(h3 - 3.0*l3)*lunar_scalar**3 + \
-        3.0/2.0*(l3 - h3)*lunar_scalar
+    P3_solar = 5.0/2.0*(kwargs['h3'] - 3.0*kwargs['l3'])*solar_scalar**3 + \
+        3.0/2.0*(kwargs['l3'] - kwargs['h3'])*solar_scalar
+    P3_lunar = 5.0/2.0*(kwargs['h3'] - 3.0*kwargs['l3'])*lunar_scalar**3 + \
+        3.0/2.0*(kwargs['l3'] - kwargs['h3'])*lunar_scalar
     # compute terms in direction of sun/moon vectors
     X2_solar = 3.0*l2*solar_scalar
     X2_lunar = 3.0*l2*lunar_scalar
-    X3_solar = 3.0*l3/2.0*(5.0*solar_scalar**2 - 1.0)
-    X3_lunar = 3.0*l3/2.0*(5.0*lunar_scalar**2 - 1.0)
+    X3_solar = 3.0*kwargs['l3']/2.0*(5.0*solar_scalar**2 - 1.0)
+    X3_lunar = 3.0*kwargs['l3']/2.0*(5.0*lunar_scalar**2 - 1.0)
     # factors for sun and moon using IAU estimates of mass ratios
-    F2_solar = mass_ratio_solar*a_axis*(a_axis/solar_radius)**3
-    F2_lunar = mass_ratio_lunar*a_axis*(a_axis/lunar_radius)**3
-    F3_solar = mass_ratio_lunar*a_axis*(a_axis/solar_radius)**4
-    F3_lunar = mass_ratio_lunar*a_axis*(a_axis/lunar_radius)**4
+    F2_solar = kwargs['mass_ratio_solar']*a_axis*(a_axis/solar_radius)**3
+    F2_lunar = kwargs['mass_ratio_lunar']*a_axis*(a_axis/lunar_radius)**3
+    F3_solar = kwargs['mass_ratio_solar']*a_axis*(a_axis/solar_radius)**4
+    F3_lunar = kwargs['mass_ratio_lunar']*a_axis*(a_axis/lunar_radius)**4
     # compute total displacement (Mathews et al. 1997)
     dxt = np.zeros((nt, 3))
     for i in range(3):
@@ -657,24 +661,17 @@ def solid_earth_tide(
         S3 = F3_solar*(X3_solar*SXYZ[:,i]/solar_radius+P3_solar*XYZ[:,i]/radius)
         L3 = F3_lunar*(X3_lunar*LXYZ[:,i]/lunar_radius+P3_lunar*XYZ[:,i]/radius)
         dxt[:,i] = S2 + L2 + S3 + L3
-    # corrections for out-of-phase portions of the love numbers
-    DDX, DDY, DDZ = _out_of_phase_diurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
-    DSX, DSY, DSZ = _out_of_phase_semidiurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
+    # corrections for out-of-phase portions of the Love and Shida numbers
+    dxt += _out_of_phase_diurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
+    dxt += _out_of_phase_semidiurnal(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
     # corrections for the latitudinal dependence
-    DLX, DLY, DLZ = _latitude_dependence(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
+    dxt += _latitude_dependence(XYZ, SXYZ, LXYZ, F2_solar, F2_lunar)
     # corrections for the frequency dependence
-    DFDX, DFDY, DFDZ = _frequency_dependence_diurnal(XYZ, MJD)
-    DFLX, DFLY, DFLZ = _frequency_dependence_long_period(XYZ, MJD)
-    # add the corrections to the total displacement
-    dxt += np.c_[DDX, DDY, DDZ]
-    dxt += np.c_[DSX, DSY, DSZ]
-    dxt += np.c_[DLX, DLY, DLZ]
-    dxt += np.c_[DFDX, DFDY, DFDZ]
-    dxt += np.c_[DFLX, DFLY, DFLZ]
+    dxt += _frequency_dependence_diurnal(XYZ, MJD)
+    dxt += _frequency_dependence_long_period(XYZ, MJD)
     # convert the permanent tide system if specified
     if (tide_system.lower() == 'mean_tide'):
-        DPTX, DPTY, DPTZ = _free_to_mean(XYZ, h2, l2)
-        dxt += np.c_[DPTX, DPTY, DPTZ]
+        dxt += _free_to_mean(XYZ, h2, l2)
     # return the solid earth tide
     return dxt
 
@@ -702,7 +699,7 @@ def _out_of_phase_diurnal(
     F2_lunar: np.ndarray
         Factors for the moon
     """
-    # love number corrections
+    # Love and Shida number corrections
     dhi = -0.0025
     dli = -0.0007
     # Compute the normalized position vector of coordinates
@@ -737,7 +734,7 @@ def _out_of_phase_diurnal(
     DY = DR*sinla*cosphi + DE*cosla - DN*sinla*sinphi
     DZ = DR*sinphi + DN*cosphi
     # return the corrections
-    return (DX, DY, DZ)
+    return np.c_[DX, DY, DZ]
 
 def _out_of_phase_semidiurnal(
         XYZ: np.ndarray,
@@ -763,7 +760,7 @@ def _out_of_phase_semidiurnal(
     F2_lunar: np.ndarray
         Factors for the moon
     """
-    # love number corrections
+    # Love and Shida number corrections
     dhi = -0.0022
     dli = -0.0007
     # Compute the normalized position vector of coordinates
@@ -805,7 +802,7 @@ def _out_of_phase_semidiurnal(
     DY = DR*sinla*cosphi + DE*cosla - DN*sinla*sinphi
     DZ = DR*sinphi + DN*cosphi
     # return the corrections
-    return (DX, DY, DZ)
+    return np.c_[DX, DY, DZ]
 
 def _latitude_dependence(
         XYZ: np.ndarray,
@@ -831,7 +828,7 @@ def _latitude_dependence(
     F2_lunar: np.ndarray
         Factors for the moon
     """
-    # love number corrections (diurnal and semi-diurnal)
+    # Love/Shida number corrections (diurnal and semi-diurnal)
     l1d = 0.0012
     l1sd = 0.0024
     # Compute the normalized position vector of coordinates
@@ -875,7 +872,7 @@ def _latitude_dependence(
     DY = DE*cosla - DN*sinla*sinphi
     DZ = DN*cosphi
     # return the corrections
-    return (DX, DY, DZ)
+    return np.c_[DX, DY, DZ]
 
 def _frequency_dependence_diurnal(
         XYZ: np.ndarray,
@@ -895,7 +892,7 @@ def _frequency_dependence_diurnal(
     # number of time steps
     nt = len(np.atleast_1d(MJD))
     # Corrections to Diurnal Tides for Frequency Dependence
-    # of Love Number Parameters
+    # of Love and Shida Number Parameters
     # table 7.3a of IERS conventions
     table = np.array([
         [-3.0, 0.0, 2.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
@@ -957,7 +954,7 @@ def _frequency_dependence_diurnal(
         DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinla*sinphi)
         DZ += 1e-3*(dr*sinphi + dn*cosphi)
     # return the corrections
-    return (DX, DY, DZ)
+    return np.c_[DX, DY, DZ]
 
 def _frequency_dependence_long_period(
         XYZ: np.ndarray,
@@ -977,7 +974,7 @@ def _frequency_dependence_long_period(
     # number of time steps
     nt = len(np.atleast_1d(MJD))
     # Corrections to Long-Peroid Tides for Frequency Dependence
-    # of Love Number Parameters
+    # of Love and Shida Number Parameters
     # table 7.3b of IERS conventions
     table = np.array([
         [0.0, 0.0, 0.0, 1.0, 0.0, 0.47, 0.23, 0.16, 0.07],
@@ -1010,7 +1007,7 @@ def _frequency_dependence_long_period(
         DY += 1e-3*(dr*sinla*cosphi + de*cosla - dn*sinla*sinphi)
         DZ += 1e-3*(dr*sinphi + dn*cosphi)
     # return the corrections
-    return (DX, DY, DZ)
+    return np.c_[DX, DY, DZ]
 
 def _free_to_mean(
         XYZ: np.ndarray,
@@ -1028,7 +1025,7 @@ def _free_to_mean(
     h2: float or np.ndarray
         Degree-2 Love number of vertical displacement
     l2: float or np.ndarray
-        Degree-2 Love number of horizontal displacement
+        Degree-2 Love (Shida) number of horizontal displacement
     """
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))
@@ -1046,8 +1043,8 @@ def _free_to_mean(
     dr = dR0*(3.0/2.0*sinphi**2 - 1.0/2.0)
     dn = 2.0*dN0*cosphi*sinphi
     # compute as an additive correction (Mathews et al. 1997)
-    DX = -dr*cosla*cosphi + dn*cosla*sinphi
-    DY = -dr*sinla*cosphi + dn*sinla*sinphi
-    DZ = -dr*sinphi - dn*cosphi
+    DX = dr*cosla*cosphi - dn*cosla*sinphi
+    DY = dr*sinla*cosphi - dn*sinla*sinphi
+    DZ = dr*sinphi + dn*cosphi
     # return the corrections
-    return (DX, DY, DZ)
+    return np.c_[DX, DY, DZ]

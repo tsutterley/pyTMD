@@ -231,7 +231,7 @@ class model:
             self.grid_file = self.pathfinder('grid_Greenland8.v2')
             self.version = 'v2'
         else:
-            raise Exception("Unlisted tide model")
+            raise ValueError(f"Unlisted tide model {m}")
         # return the model parameters
         return self
 
@@ -668,7 +668,7 @@ class model:
             self.reference = 'https://doi.org/10.1002/2013JC009766'
             self.variable = 'tide_ocean'
         else:
-            raise Exception("Unlisted tide model")
+            raise ValueError(f"Unlisted tide model {m}")
         # return the model parameters
         return self
 
@@ -974,7 +974,7 @@ class model:
             # model description and references
             self.reference = 'https://doi.org/10.1002/2013JC009766'
         else:
-            raise Exception("Unlisted tide model")
+            raise ValueError(f"Unlisted tide model {m}")
         # return the model parameters
         return self
 
@@ -1346,9 +1346,9 @@ class model:
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file['u'][0].parent
-                except (IndexError, AttributeError):
-                    exc = f'No model files found with {glob_string}'
-                    raise FileNotFoundError(exc)
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
@@ -1356,9 +1356,9 @@ class model:
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent
-                except (IndexError, AttributeError):
-                    exc = f'No model files found with {glob_string}'
-                    raise FileNotFoundError(exc)
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
             else:
                 # fully defined single file case
                 temp.model_file = pathlib.Path(temp.model_file).expanduser()
@@ -1379,9 +1379,9 @@ class model:
                     # attempt to extract model directory
                     try:
                         temp.model_directory[key] = val[0].parent
-                    except (IndexError, AttributeError):
-                        exc = f'No model files found with {glob_string[key]}'
-                        raise FileNotFoundError(exc)
+                    except (IndexError, AttributeError) as exc:
+                        message = f'No model files found with {glob_string[key]}'
+                        raise FileNotFoundError(message) from exc
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
@@ -1391,8 +1391,8 @@ class model:
                 try:
                     temp.model_directory = temp.model_file[0].parent
                 except (IndexError, AttributeError):
-                    exc = f'No model files found with {glob_string}'
-                    raise FileNotFoundError(exc)
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
             elif (temp.type == ['u','v']):
                 # split model file string at semicolon
                 model_file = temp.model_file.split(';')
