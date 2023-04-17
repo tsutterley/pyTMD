@@ -1390,7 +1390,7 @@ class model:
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent
-                except (IndexError, AttributeError):
+                except (IndexError, AttributeError) as exc:
                     message = f'No model files found with {glob_string}'
                     raise FileNotFoundError(message) from exc
             elif (temp.type == ['u','v']):
