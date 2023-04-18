@@ -5,8 +5,8 @@ Written by Tyler Sutterley (03/2023)
 Converts points to and from Coordinates Reference Systems (CRS)
 
 CALLING SEQUENCE:
-    x,y = convert_crs(lon,lat,PROJ,'F')
-    lon,lat = convert_crs(x,y,PROJ,'B')
+    x, y = convert_crs(lon, lat, PROJ, 'F')
+    lon, lat = convert_crs(x, y, PROJ, 'B')
 
 INPUTS:
     i1: longitude ('F') or projection easting x ('B')
@@ -132,14 +132,14 @@ def crs_from_input(PROJECTION: int | str):
     # EPSG projection code
     try:
         crs = pyproj.CRS.from_epsg(int(PROJECTION))
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError, pyproj.exceptions.CRSError):
         pass
     else:
         return crs
     # coordinate reference system string
     try:
         crs = pyproj.CRS.from_string(PROJECTION)
-    except (ValueError,pyproj.exceptions.CRSError):
+    except (ValueError, pyproj.exceptions.CRSError):
         pass
     else:
         return crs
@@ -368,19 +368,19 @@ def _PSNorth(
     # convert lat/lon to (idealized) Polar-Stereographic x/y
     if (BF.upper() == 'F'):
         direction = pyproj.enums.TransformDirection.FORWARD
-        lon,lat = transformer.transform(i1, i2, direction=direction)
+        lon, lat = transformer.transform(i1, i2, direction=direction)
         o1 = (90.0-lat)*111.7*np.cos(lon/180.0*np.pi)
         o2 = (90.0-lat)*111.7*np.sin(lon/180.0*np.pi)
     # convert (idealized) Polar-Stereographic x/y to lat/lon
     elif (BF.upper() == 'B'):
         direction = pyproj.enums.TransformDirection.INVERSE
-        lon = np.arctan2(i2,i1)*180.0/np.pi
+        lon = np.arctan2(i2, i1)*180.0/np.pi
         lat = 90.0 - np.sqrt(i1**2+i2**2)/111.7
         ii, = np.nonzero(lon < 0)
         lon[ii] += 360.0
-        o1,o2 = transformer.transform(lon, lat, direction=direction)
+        o1, o2 = transformer.transform(lon, lat, direction=direction)
     # return the output variables
-    return (o1,o2)
+    return (o1, o2)
 
 # wrapper function to pass lat/lon values or convert if EPSG
 def _EPSG4326(

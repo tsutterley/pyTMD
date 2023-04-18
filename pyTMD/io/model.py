@@ -108,9 +108,9 @@ class model:
     """
     def __init__(self, directory: str | pathlib.Path | None = None, **kwargs):
         # set default keyword arguments
-        kwargs.setdefault('compressed',False)
-        kwargs.setdefault('format','netcdf')
-        kwargs.setdefault('verify',True)
+        kwargs.setdefault('compressed', False)
+        kwargs.setdefault('format', 'netcdf')
+        kwargs.setdefault('verify', True)
         # set initial attributes
         self.compressed = copy.copy(kwargs['compressed'])
         self.constituents = None
@@ -727,7 +727,7 @@ class model:
                 'u_m4_tpxo9_atlas_30','u_ms4_tpxo9_atlas_30',
                 'u_mn4_tpxo9_atlas_30','u_2n2_tpxo9_atlas_30']
             self.model_file = {}
-            for key,val in model_files.items():
+            for key, val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
@@ -752,7 +752,7 @@ class model:
                 'u_m4_tpxo9_atlas_30_v2','u_ms4_tpxo9_atlas_30_v2',
                 'u_mn4_tpxo9_atlas_30_v2','u_2n2_tpxo9_atlas_30_v2']
             self.model_file = {}
-            for key,val in model_files.items():
+            for key, val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
@@ -778,7 +778,7 @@ class model:
                 'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
                 'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
             self.model_file = {}
-            for key,val in model_files.items():
+            for key, val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
@@ -804,7 +804,7 @@ class model:
                 'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
                 'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
             self.model_file = {}
-            for key,val in model_files.items():
+            for key, val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
@@ -832,7 +832,7 @@ class model:
                 'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
                 'u_mm_tpxo9_atlas_30_v5']
             self.model_file = {}
-            for key,val in model_files.items():
+            for key, val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1.0/100.0
@@ -942,7 +942,7 @@ class model:
                 'q1.nc','r2.nc','s1.nc','s2.nc','s4.nc','sa.nc',
                 'ssa.nc','t2.nc']
             self.model_file = {}
-            for key,val in model_directory.items():
+            for key, val in model_directory.items():
                 self.model_directory = copy.copy(val)
                 self.model_file[key] = self.pathfinder(model_files)
             self.constituents = ['2n2','eps2','j1','k1','k2','l2','lambda2',
@@ -965,7 +965,7 @@ class model:
                 'HAMcurrent11a_p1.nc','HAMcurrent11a_q1.nc',
                 'HAMcurrent11a_s2.nc']
             self.model_file = {}
-            for key,val in model_directory.items():
+            for key, val in model_directory.items():
                 self.model_directory = copy.copy(val)
                 self.model_file[key] = self.pathfinder(model_files)
             self.constituents = ['2n2','k1','k2','m2','n2','o1','p1','q1','s2']
@@ -1260,13 +1260,13 @@ class model:
         if self.directory is None:
             self.directory = pathlib.Path().absolute()
         # complete model file paths
-        if isinstance(model_file,list):
+        if isinstance(model_file, list):
             output_file = [self.model_directory.joinpath(
-                ''.join([f,self.suffix,self.gzip])) for f in model_file]
+                ''.join([f, self.suffix, self.gzip])) for f in model_file]
             valid = all([f.exists() for f in output_file])
-        elif isinstance(model_file,str):
+        elif isinstance(model_file, str):
             output_file = self.model_directory.joinpath(
-                ''.join([model_file,self.suffix,self.gzip]))
+                ''.join([model_file, self.suffix, self.gzip]))
             valid = output_file.exists()
         # check that (all) output files exist
         if self.verify and not valid:
@@ -1308,11 +1308,11 @@ class model:
         assert temp.model_file
         # split type into list if currents (u,v)
         if re.search(r'[\s\,]+', temp.type):
-            temp.type = re.split(r'[\s\,]+',temp.type)
+            temp.type = re.split(r'[\s\,]+', temp.type)
         # split constituents into list if delimited-string
         if isinstance(temp.constituents, str) and \
             re.search(r'[\s\,]+', temp.constituents):
-            temp.constituents = re.split(r'[\s\,]+',temp.constituents)
+            temp.constituents = re.split(r'[\s\,]+', temp.constituents)
         # split model file into list if an ATLAS, GOT or FES file
         # model files can be comma, tab or space delimited
         # extract full path to tide model files
@@ -1335,7 +1335,7 @@ class model:
                 temp.model_directory = temp.model_file['u'][0].parent
             elif (temp.type == 'z') and multi_file:
                 temp.model_file = [pathlib.Path(f).expanduser() for f in
-                    re.split(r'[\s\,]+',temp.model_file)]
+                    re.split(r'[\s\,]+', temp.model_file)]
                 temp.model_directory = temp.model_file[0].parent
             elif (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
@@ -1375,7 +1375,7 @@ class model:
                 temp.model_file['v'] = list(temp.directory.glob(glob_string['v']))
                 # build model directory dictionaries
                 temp.model_directory = {}
-                for key,val in temp.model_file.items():
+                for key, val in temp.model_file.items():
                     # attempt to extract model directory
                     try:
                         temp.model_directory[key] = val[0].parent
@@ -1404,7 +1404,7 @@ class model:
                     re.split(r'[\s\,]+', model_file[1])]
                 # build model directory dictionaries
                 temp.model_directory = {}
-                for key,val in temp.model_file.items():
+                for key, val in temp.model_file.items():
                     temp.model_directory[key] = val[0].parent
             elif (temp.type == 'z'):
                 temp.model_file = [pathlib.Path(f).expanduser() for f in
@@ -1424,7 +1424,7 @@ class model:
             if (temp.constituents is None):
                 temp.parse_constituents()
         # convert boolean strings
-        if isinstance(temp.compressed,str):
+        if isinstance(temp.compressed, str):
             temp.compressed = self.to_bool(temp.compressed)
         # return the model parameters
         return temp
@@ -1509,7 +1509,7 @@ class model:
         d: dict
             Python dictionary for creating model object
         """
-        for key,val in d.items():
+        for key, val in d.items():
             setattr(self, key, copy.copy(val))
         # return the model parameters
         return self
@@ -1523,9 +1523,9 @@ class model:
         val: str
             string for converting to True/False
         """
-        if val.lower() in ('y','yes','t','true','1'):
+        if val.lower() in ('y', 'yes', 't', 'true', '1'):
             return True
-        elif val.lower() in ('n','no','f','false','0'):
+        elif val.lower() in ('n', 'no', 'f', 'false', '0'):
             return False
         else:
             raise ValueError(f'Invalid boolean string {val}')

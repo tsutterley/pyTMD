@@ -21,7 +21,7 @@ If you have used ``pyTMD`` in your work, please consider citing our library:
 
     T. C. Sutterley, K. Alley, K. Brunt, S. Howard, L. Padman, and M. Siegfried,
     "pyTMD: Python-based tidal prediction software", (2017).
-    `doi: 10.5281/zenodo.7714186 <https://doi.org/10.5281/zenodo.7714186>`_
+    `doi: 10.5281/zenodo.5555395 <https://doi.org/10.5281/zenodo.5555395>`_
 
 Contributors
 ############

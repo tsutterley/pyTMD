@@ -36,9 +36,8 @@ pyTMD
 .. |Pangeo| image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=PangeoBinderAWS&message=us-west-2&color=orange
    :target: https://aws-uswest2-binder.pangeo.io/v2/gh/tsutterley/pyTMD/main?urlpath=lab
 
-.. |zenodo| image:: https://zenodo.org/badge/107997403.svg
-   :target: https://zenodo.org/badge/latestdoi/107997403
-
+.. |zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5555395.svg
+   :target: https://doi.org/10.5281/zenodo.5555395
 
 Python-based tidal prediction software for estimating ocean, load, solid Earth and pole tides
 

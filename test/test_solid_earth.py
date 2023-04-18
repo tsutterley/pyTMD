@@ -234,9 +234,9 @@ def test_solar_ecef():
     x2, y2, z2 = pyTMD.astro.solar_ephemerides(MJD)
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
-    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=1e9).all()
+    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=5e8).all()
     # test absolute distance
-    assert np.isclose(r1, r2, atol=1e9).all()
+    assert np.isclose(r1, r2, atol=5e8).all()
 
 def test_lunar_ecef():
     """Test lunar ECEF coordinates with ephemeride predictions

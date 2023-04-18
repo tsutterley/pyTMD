@@ -24,6 +24,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
+        allow netCDF4 and HDF5 outputs to be appended to existing files
         using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 02/2023: use outputs from constants class for WGS84 parameters
@@ -188,9 +189,9 @@ def from_ascii(filename: str, **kwargs):
         full path of input ascii file
     compression: str or NoneType, default None
         file compression type
-    columns: list, default ['time','y','x','data']
+    columns: list, default ['time', 'y', 'x', 'data']
         column names of ascii file
-    delimiter: str,
+    delimiter: str, default ','
         Delimiter for csv or ascii files
     header: int, default 0
         header lines to skip from start of file
@@ -198,11 +199,11 @@ def from_ascii(filename: str, **kwargs):
         Try parsing the time column
     """
     # set default keyword arguments
-    kwargs.setdefault('compression',None)
-    kwargs.setdefault('columns',['time','y','x','data'])
-    kwargs.setdefault('delimiter',',')
-    kwargs.setdefault('header',0)
-    kwargs.setdefault('parse_dates',False)
+    kwargs.setdefault('compression', None)
+    kwargs.setdefault('columns', ['time', 'y', 'x', 'data'])
+    kwargs.setdefault('delimiter', ',')
+    kwargs.setdefault('header', 0)
+    kwargs.setdefault('parse_dates', False)
     # print filename
     logging.info(str(filename))
     # get column names
@@ -237,7 +238,7 @@ def from_ascii(filename: str, **kwargs):
             # file line at count
             line = file_contents[count]
             # if End of YAML Header is found: set YAML flag
-            YAML = bool(re.search(r"\# End of YAML header",line))
+            YAML = bool(re.search(r"\# End of YAML header", line))
             # add 1 to counter
             count += 1
         # parse the YAML header (specifying yaml loader)
@@ -250,7 +251,7 @@ def from_ascii(filename: str, **kwargs):
         # allocate for each variable and copy variable attributes
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-count),dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ms]')
             else:
                 dinput[c] = np.zeros((file_lines-count))
             dinput['attributes'][c] = YAML_HEADER['header']['variables'][c]
@@ -262,19 +263,21 @@ def from_ascii(filename: str, **kwargs):
         header = int(kwargs['header'])
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-header),dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ms]')
             else:
                 dinput[c] = np.zeros((file_lines-header))
         dinput['attributes'] = {c:dict() for c in columns}
     # extract spatial data array
     # for each line in the file
-    for i,line in enumerate(file_contents[header:]):
+    for i, line in enumerate(file_contents[header:]):
         # extract columns of interest and assign to dict
         # convert fortran exponentials if applicable
         if kwargs['delimiter']:
-            column = {c:l.replace('D','E') for c,l in zip(columns,line.split(kwargs['delimiter']))}
+            column = {c:l.replace('D', 'E') for c, l in
+                zip(columns, line.split(kwargs['delimiter']))}
         else:
-            column = {c:r.replace('D','E') for c,r in zip(columns,rx.findall(line))}
+            column = {c:r.replace('D', 'E') for c, r in
+                zip(columns, rx.findall(line))}
         # copy variables from column dict to output dictionary
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
@@ -311,21 +314,21 @@ def from_netCDF4(filename: str, **kwargs):
         mapping between output variables and input netCDF4
     """
     # set default keyword arguments
-    kwargs.setdefault('compression',None)
-    kwargs.setdefault('timename','time')
-    kwargs.setdefault('xname','lon')
-    kwargs.setdefault('yname','lat')
-    kwargs.setdefault('varname','data')
-    kwargs.setdefault('field_mapping',{})
+    kwargs.setdefault('compression', None)
+    kwargs.setdefault('timename', 'time')
+    kwargs.setdefault('xname', 'lon')
+    kwargs.setdefault('yname', 'lat')
+    kwargs.setdefault('varname', 'data')
+    kwargs.setdefault('field_mapping', {})
     # read data from netCDF4 file
     # Open the NetCDF4 file for reading
     if (kwargs['compression'] == 'gzip'):
         # read as in-memory (diskless) netCDF4 dataset
-        with gzip.open(case_insensitive_filename(filename),'r') as f:
-            fileID = netCDF4.Dataset(uuid.uuid4().hex,memory=f.read())
+        with gzip.open(case_insensitive_filename(filename), 'r') as f:
+            fileID = netCDF4.Dataset(uuid.uuid4().hex, memory=f.read())
     elif (kwargs['compression'] == 'bytes'):
         # read as in-memory (diskless) netCDF4 dataset
-        fileID = netCDF4.Dataset(uuid.uuid4().hex,memory=filename.read())
+        fileID = netCDF4.Dataset(uuid.uuid4().hex, memory=filename.read())
     else:
         # read netCDF4 dataset
         fileID = netCDF4.Dataset(case_insensitive_filename(filename), 'r')
@@ -336,16 +339,16 @@ def from_netCDF4(filename: str, **kwargs):
     dinput = {}
     dinput['attributes'] = {}
     # get attributes for the file
-    for attr in ['title','description','projection']:
+    for attr in ['title', 'description', 'projection']:
         # try getting the attribute
         try:
-            ncattr, = [s for s in fileID.ncattrs() if re.match(attr,s,re.I)]
+            ncattr, = [s for s in fileID.ncattrs() if re.match(attr, s, re.I)]
             dinput['attributes'][attr] = fileID.getncattr(ncattr)
-        except (ValueError,AttributeError):
+        except (ValueError, AttributeError):
             pass
     # list of attributes to attempt to retrieve from included variables
-    attributes_list = ['description','units','long_name','calendar',
-        'standard_name','grid_mapping','_FillValue']
+    attributes_list = ['description', 'units', 'long_name', 'calendar',
+        'standard_name', 'grid_mapping', '_FillValue']
     # mapping between netCDF4 variable names and output names
     if not kwargs['field_mapping']:
         kwargs['field_mapping']['x'] = copy.copy(kwargs['xname'])
@@ -355,7 +358,7 @@ def from_netCDF4(filename: str, **kwargs):
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
     # for each variable
-    for key,nc in kwargs['field_mapping'].items():
+    for key, nc in kwargs['field_mapping'].items():
         # Getting the data from each NetCDF variable
         dinput[key] = fileID.variables[nc][:]
         # get attributes for the included variables
@@ -364,10 +367,10 @@ def from_netCDF4(filename: str, **kwargs):
             # try getting the attribute
             try:
                 ncattr, = [s for s in fileID.variables[nc].ncattrs()
-                    if re.match(attr,s,re.I)]
+                    if re.match(attr, s, re.I)]
                 dinput['attributes'][key][attr] = \
                     fileID.variables[nc].getncattr(ncattr)
-            except (ValueError,AttributeError):
+            except (ValueError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
     if 'data' in dinput.keys() and 'grid_mapping' in dinput['attributes']['data'].keys():
@@ -415,17 +418,17 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         mapping between output variables and input HDF5
     """
     # set default keyword arguments
-    kwargs.setdefault('compression',None)
-    kwargs.setdefault('timename','time')
-    kwargs.setdefault('xname','lon')
-    kwargs.setdefault('yname','lat')
-    kwargs.setdefault('varname','data')
-    kwargs.setdefault('field_mapping',{})
+    kwargs.setdefault('compression', None)
+    kwargs.setdefault('timename', 'time')
+    kwargs.setdefault('xname', 'lon')
+    kwargs.setdefault('yname', 'lat')
+    kwargs.setdefault('varname', 'data')
+    kwargs.setdefault('field_mapping', {})
     # read data from HDF5 file
     # Open the HDF5 file for reading
     if (kwargs['compression'] == 'gzip'):
         # read gzip compressed file and extract into in-memory file object
-        with gzip.open(case_insensitive_filename(filename),'r') as f:
+        with gzip.open(case_insensitive_filename(filename), 'r') as f:
             fid = io.BytesIO(f.read())
         # set filename of BytesIO object
         fid.filename = filename.name
@@ -446,15 +449,15 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
     dinput = {}
     dinput['attributes'] = {}
     # get attributes for the file
-    for attr in ['title','description','projection']:
+    for attr in ['title', 'description', 'projection']:
         # try getting the attribute
         try:
             dinput['attributes'][attr] = fileID.attrs[attr]
-        except (KeyError,AttributeError):
+        except (KeyError, AttributeError):
             pass
     # list of attributes to attempt to retrieve from included variables
-    attributes_list = ['description','units','long_name','calendar',
-        'standard_name','grid_mapping','_FillValue']
+    attributes_list = ['description', 'units', 'long_name', 'calendar',
+        'standard_name', 'grid_mapping', '_FillValue']
     # mapping between HDF5 variable names and output names
     if not kwargs['field_mapping']:
         kwargs['field_mapping']['x'] = copy.copy(kwargs['xname'])
@@ -464,7 +467,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
     # for each variable
-    for key,h5 in kwargs['field_mapping'].items():
+    for key, h5 in kwargs['field_mapping'].items():
         # Getting the data from each HDF5 variable
         dinput[key] = np.copy(fileID[h5][:])
         # get attributes for the included variables
@@ -473,7 +476,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             # try getting the attribute
             try:
                 dinput['attributes'][key][attr] = fileID[h5].attrs[attr]
-            except (KeyError,AttributeError):
+            except (KeyError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
     if 'data' in dinput.keys() and 'grid_mapping' in dinput['attributes']['data'].keys():
@@ -481,7 +484,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name,att_val in fileID[grid_mapping].attrs.items():
+        for att_name, att_val in fileID[grid_mapping].attrs.items():
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
@@ -512,8 +515,8 @@ def from_geotiff(filename: str, **kwargs):
         extent of the file to read: ``[xmin, xmax, ymin, ymax]``
     """
     # set default keyword arguments
-    kwargs.setdefault('compression',None)
-    kwargs.setdefault('bounds',None)
+    kwargs.setdefault('compression', None)
+    kwargs.setdefault('bounds', None)
     # Open the geotiff file for reading
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
@@ -532,7 +535,7 @@ def from_geotiff(filename: str, **kwargs):
     logging.info(str(filename))
     # create python dictionary for output variables and attributes
     dinput = {}
-    dinput['attributes'] = {c:dict() for c in ['x','y','data']}
+    dinput['attributes'] = {c:dict() for c in ['x', 'y', 'data']}
     # get the spatial projection reference information
     srs = ds.GetSpatialRef()
     dinput['attributes']['projection'] = srs.ExportToProj4()
@@ -543,7 +546,7 @@ def from_geotiff(filename: str, **kwargs):
     bsize = ds.RasterCount
     # get geotiff info
     info_geotiff = ds.GetGeoTransform()
-    dinput['attributes']['spacing'] = (info_geotiff[1],info_geotiff[5])
+    dinput['attributes']['spacing'] = (info_geotiff[1], info_geotiff[5])
     # calculate image extents
     xmin = info_geotiff[0]
     ymax = info_geotiff[3]
@@ -555,8 +558,8 @@ def from_geotiff(filename: str, **kwargs):
     # if reducing to specified bounds
     if kwargs['bounds'] is not None:
         # reduced x and y limits
-        xlimits = (kwargs['bounds'][0],kwargs['bounds'][1])
-        ylimits = (kwargs['bounds'][2],kwargs['bounds'][3])
+        xlimits = (kwargs['bounds'][0], kwargs['bounds'][1])
+        ylimits = (kwargs['bounds'][2], kwargs['bounds'][3])
         # Specify offset and rows and columns to read
         xoffset = int((xlimits[0] - xmin)/info_geotiff[1])
         yoffset = int((ymax - ylimits[1])/np.abs(info_geotiff[5]))
@@ -585,7 +588,7 @@ def from_geotiff(filename: str, **kwargs):
     dinput.setdefault('time', np.zeros((bsize)))
     # check if image has fill values
     dinput['data'] = np.ma.asarray(dinput['data'])
-    dinput['data'].mask = np.zeros_like(dinput['data'],dtype=bool)
+    dinput['data'].mask = np.zeros_like(dinput['data'], dtype=bool)
     if ds.GetRasterBand(1).GetNoDataValue():
         # mask invalid values
         dinput['data'].fill_value = ds.GetRasterBand(1).GetNoDataValue()
@@ -612,15 +615,15 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         full path of output ascii file
     delimiter: str, default ','
         delimiter for output spatial file
-    columns: list, default ['time','y','x','data']
+    columns: list, default ['time', 'y', 'x', 'data']
         column names of ascii file
     header: bool, default False
         create a YAML header with data attributes
     """
     # set default keyword arguments
-    kwargs.setdefault('delimiter',',')
-    kwargs.setdefault('columns',['time','lat','lon','tide'])
-    kwargs.setdefault('header',False)
+    kwargs.setdefault('delimiter', ',')
+    kwargs.setdefault('columns', ['time', 'lat', 'lon', 'tide'])
+    kwargs.setdefault('header', False)
     # get column names
     columns = copy.copy(kwargs['columns'])
     # output filename
@@ -630,17 +633,17 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
     fid = filename.open(mode='w', encoding='utf8')
     # create a column stack arranging data in column order
     data_stack = np.c_[[output[col] for col in columns]]
-    ncol,nrow = np.shape(data_stack)
+    ncol, nrow = np.shape(data_stack)
     # print YAML header to top of file
     if kwargs['header']:
         fid.write('{0}:\n'.format('header'))
         # data dimensions
         fid.write('\n  {0}:\n'.format('dimensions'))
-        fid.write('    {0:22}: {1:d}\n'.format('time',nrow))
+        fid.write('    {0:22}: {1:d}\n'.format('time', nrow))
         # non-standard attributes
         fid.write('  {0}:\n'.format('non-standard_attributes'))
         # data format
-        fid.write('    {0:22}: ({1:d}f0.8)\n'.format('formatting_string',ncol))
+        fid.write('    {0:22}: ({1:d}f0.8)\n'.format('formatting_string', ncol))
         fid.write('\n')
         # global attributes
         fid.write('\n  {0}:\n'.format('global_attributes'))
@@ -649,18 +652,18 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         # print variable descriptions to YAML header
         fid.write('\n  {0}:\n'.format('variables'))
         # print YAML header with variable attributes
-        for i,v in enumerate(columns):
+        for i, v in enumerate(columns):
             fid.write('    {0:22}:\n'.format(v))
-            for atn,atv in attributes[v].items():
-                fid.write('      {0:20}: {1}\n'.format(atn,atv))
+            for atn, atv in attributes[v].items():
+                fid.write('      {0:20}: {1}\n'.format(atn, atv))
             # add precision and column attributes for ascii yaml header
             fid.write('      {0:20}: double_precision\n'.format('precision'))
-            fid.write('      {0:20}: column {1:d}\n'.format('comment',i+1))
+            fid.write('      {0:20}: column {1:d}\n'.format('comment', i+1))
         # end of header
         fid.write('\n\n# End of YAML header\n')
     # write to file for each data point
     for line in range(nrow):
-        line_contents = [f'{d:0.8f}' for d in data_stack[:,line]]
+        line_contents = [f'{d:0.8f}' for d in data_stack[:, line]]
         print(kwargs['delimiter'].join(line_contents), file=fid)
     # close the output file
     fid.close()
@@ -690,10 +693,11 @@ def to_netCDF4(
             - ``'grid'``
     """
     # default arguments
+    kwargs.setdefault('mode', 'w')
     kwargs.setdefault('data_type', 'drift')
     # opening NetCDF file for writing
     filename = pathlib.Path(filename).expanduser().absolute()
-    fileID = netCDF4.Dataset(filename, 'w', format="NETCDF4")
+    fileID = netCDF4.Dataset(filename, kwargs['mode'], format="NETCDF4")
     if kwargs['data_type'] in ('drift',):
         kwargs.pop('data_type')
         _drift_netCDF4(fileID, output, attributes, **kwargs)
@@ -711,8 +715,8 @@ def to_netCDF4(
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
-        for att_name,att_val in attributes['ROOT'].items():
-            fileID.setncattr(att_name,att_val)
+        for att_name, att_val in attributes['ROOT'].items():
+            fileID.setncattr(att_name, att_val)
     # Output NetCDF structure information
     logging.info(str(filename))
     logging.info(list(fileID.variables.keys()))
@@ -737,8 +741,10 @@ def _drift_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     fileID.createDimension('time', len(np.atleast_1d(output['time'])))
     # defining the NetCDF variables
     nc = {}
-    for key,val in output.items():
-        if '_FillValue' in attributes[key].keys():
+    for key, val in output.items():
+        if key in fileID.variables:
+            nc[key] = fileID.variables[key]
+        elif '_FillValue' in attributes[key].keys():
             nc[key] = fileID.createVariable(key, val.dtype, ('time',),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
             attributes[key].pop('_FillValue')
@@ -749,8 +755,8 @@ def _drift_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         # filling NetCDF variables
         nc[key][:] = val
         # Defining attributes for variable
-        for att_name,att_val in attributes[key].items():
-            nc[key].setncattr(att_name,att_val)
+        for att_name, att_val in attributes[key].items():
+            nc[key].setncattr(att_name, att_val)
 
 def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
@@ -766,24 +772,26 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         python dictionary of output attributes
     """
     # input data fields
-    dimensions = ['time','lon','lat','t','x','y']
+    dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
     fields = sorted(set(output.keys()) - set(dimensions))
     # Defining the NetCDF dimensions
-    ny,nx,nt = output[fields[0]].shape
+    ny, nx, nt = output[fields[0]].shape
     fileID.createDimension('y', ny)
     fileID.createDimension('x', nx)
     fileID.createDimension('time', nt)
     # defining the NetCDF variables
     nc = {}
-    for key,val in output.items():
-        if '_FillValue' in attributes[key].keys():
-            nc[key] = fileID.createVariable(key, val.dtype, ('y','x','time'),
+    for key, val in output.items():
+        if key in fileID.variables:
+            nc[key] = fileID.variables[key]
+        elif '_FillValue' in attributes[key].keys():
+            nc[key] = fileID.createVariable(key, val.dtype, ('y', 'x', 'time'),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
             attributes[key].pop('_FillValue')
         elif (val.ndim == 3):
-            nc[key] = fileID.createVariable(key, val.dtype, ('y','x','time'))
+            nc[key] = fileID.createVariable(key, val.dtype, ('y', 'x', 'time'))
         elif (val.ndim == 2):
-            nc[key] = fileID.createVariable(key, val.dtype, ('y','x'))
+            nc[key] = fileID.createVariable(key, val.dtype, ('y', 'x'))
         elif val.shape and (len(val) == ny):
             nc[key] = fileID.createVariable(key, val.dtype, ('y',))
         elif val.shape and (len(val) == nx):
@@ -795,8 +803,8 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         # filling NetCDF variables
         nc[key][:] = val
         # Defining attributes for variable
-        for att_name,att_val in attributes[key].items():
-            nc[key].setncattr(att_name,att_val)
+        for att_name, att_val in attributes[key].items():
+            nc[key].setncattr(att_name, att_val)
 
 def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     """
@@ -812,21 +820,23 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         python dictionary of output attributes
     """
     # input data fields
-    dimensions = ['time','lon','lat','t','x','y']
+    dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
     fields = sorted(set(output.keys()) - set(dimensions))
     # Defining the NetCDF dimensions
-    nstation,nt = output[fields[0]].shape
+    nstation, nt = output[fields[0]].shape
     fileID.createDimension('station', nstation)
     fileID.createDimension('time', nt)
     # defining the NetCDF variables
     nc = {}
-    for key,val in output.items():
-        if '_FillValue' in attributes[key].keys():
-            nc[key] = fileID.createVariable(key, val.dtype, ('station','time'),
+    for key, val in output.items():
+        if key in fileID.variables:
+            nc[key] = fileID.variables[key]
+        elif '_FillValue' in attributes[key].keys():
+            nc[key] = fileID.createVariable(key, val.dtype, ('station', 'time'),
                 fill_value=attributes[key]['_FillValue'], zlib=True)
             attributes[key].pop('_FillValue')
         elif (val.ndim == 2):
-            nc[key] = fileID.createVariable(key, val.dtype, ('station','time'))
+            nc[key] = fileID.createVariable(key, val.dtype, ('station', 'time'))
         elif val.shape and (len(val) == nt):
             nc[key] = fileID.createVariable(key, val.dtype, ('time',))
         elif val.shape and (len(val) == nstation):
@@ -836,8 +846,8 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         # filling NetCDF variables
         nc[key][:] = val
         # Defining attributes for variable
-        for att_name,att_val in attributes[key].items():
-            nc[key].setncattr(att_name,att_val)
+        for att_name, att_val in attributes[key].items():
+            nc[key].setncattr(att_name, att_val)
 
 def to_HDF5(
         output: dict,
@@ -857,13 +867,17 @@ def to_HDF5(
     filename: str
         full path of output HDF5 file
     """
+    # set default keyword arguments
+    kwargs.setdefault('mode', 'w')
     # opening HDF5 file for writing
     filename = pathlib.Path(filename).expanduser().absolute()
-    fileID = h5py.File(filename, 'w')
+    fileID = h5py.File(filename, mode=kwargs['mode'])
     # Defining the HDF5 dataset variables
     h5 = {}
-    for key,val in output.items():
-        if '_FillValue' in attributes[key].keys():
+    for key, val in output.items():
+        if key in fileID:
+            fileID[key][...] = val[:]
+        elif '_FillValue' in attributes[key].keys():
             h5[key] = fileID.create_dataset(key, val.shape, data=val,
                 dtype=val.dtype, fillvalue=attributes[key]['_FillValue'],
                 compression='gzip')
@@ -875,7 +889,7 @@ def to_HDF5(
             h5[key] = fileID.create_dataset(key, val.shape,
                 dtype=val.dtype)
         # Defining attributes for variable
-        for att_name,att_val in attributes[key].items():
+        for att_name, att_val in attributes[key].items():
             h5[key].attrs[att_name] = att_val
     # add attribute for date created
     fileID.attrs['date_created'] = datetime.datetime.now().isoformat()
@@ -885,7 +899,7 @@ def to_HDF5(
     # add file-level attributes if applicable
     if 'ROOT' in attributes.keys():
         # Defining attributes for file
-        for att_name,att_val in attributes['ROOT'].items():
+        for att_name, att_val in attributes['ROOT'].items():
             fileID.attrs[att_name] = att_val
     # Output HDF5 structure information
     logging.info(str(filename))
@@ -923,15 +937,15 @@ def to_geotiff(
         GDAL driver creation options
     """
     # set default keyword arguments
-    kwargs.setdefault('varname','data')
-    kwargs.setdefault('driver','cog')
-    kwargs.setdefault('dtype',osgeo.gdal.GDT_Float64)
-    kwargs.setdefault('options',['COMPRESS=LZW'])
+    kwargs.setdefault('varname', 'data')
+    kwargs.setdefault('driver', 'cog')
+    kwargs.setdefault('dtype', osgeo.gdal.GDT_Float64)
+    kwargs.setdefault('options', ['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
     # verify grid dimensions to be iterable
     output = expand_dims(output, varname=varname)
     # grid shape
-    ny,nx,nband = np.shape(output[varname])
+    ny, nx, nband = np.shape(output[varname])
     # output as geotiff or specified driver
     driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     # set up the dataset with creation options
@@ -940,9 +954,9 @@ def to_geotiff(
         kwargs['dtype'], kwargs['options'])
     # top left x, w-e pixel resolution, rotation
     # top left y, rotation, n-s pixel resolution
-    xmin,xmax,ymin,ymax = attributes['extent']
-    dx,dy = attributes['spacing']
-    ds.SetGeoTransform([xmin,dx,0,ymax,0,dy])
+    xmin, xmax, ymin, ymax = attributes['extent']
+    dx, dy = attributes['spacing']
+    ds.SetGeoTransform([xmin, dx, 0, ymax, 0, dy])
     # set the spatial projection reference information
     srs = osgeo.osr.SpatialReference()
     srs.ImportFromWkt(attributes['wkt'])
@@ -955,7 +969,7 @@ def to_geotiff(
             fill_value = attributes[varname]['_FillValue']
             ds.GetRasterBand(band+1).SetNoDataValue(fill_value)
         # write band to geotiff array
-        ds.GetRasterBand(band+1).WriteArray(output[varname][:,:,band])
+        ds.GetRasterBand(band+1).WriteArray(output[varname][:, :, band])
     # print filename if verbose
     logging.info(str(filename))
     # close dataset
@@ -978,10 +992,10 @@ def expand_dims(obj: dict, varname: str = 'data'):
     except:
         pass
     # output spatial with a third dimension
-    if isinstance(varname,list):
+    if isinstance(varname, list):
         for v in varname:
             obj[v] = np.atleast_3d(obj[v])
-    elif isinstance(varname,str):
+    elif isinstance(varname, str):
         obj[varname] = np.atleast_3d(obj[varname])
     # return reformed spatial dictionary
     return obj
@@ -1008,7 +1022,7 @@ def default_field_mapping(variables: list | np.ndarray):
     """
     # get each variable name and add to field mapping dictionary
     field_mapping = {}
-    for i,var in enumerate(['time','y','x','data']):
+    for i, var in enumerate(['time', 'y', 'x', 'data']):
         try:
             field_mapping[var] = copy.copy(variables[i])
         except IndexError as exc:
@@ -1301,7 +1315,7 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     rad = np.sqrt(x**2.0 + y**2.0 + z**2.0)
     # calculate angular coordinates
     # phi: azimuthal angle
-    phi = np.arctan2(y,x)
+    phi = np.arctan2(y, x)
     # th: polar angle
     th = np.arccos(z/rad)
     # convert to degrees and fix to 0:360
@@ -1637,5 +1651,5 @@ def scale_areas(
     k = (mref/m)*(t/tref)
     kp = 0.5*mref*np.sqrt(((1.0+ecc)**(1.0+ecc))*((1.0-ecc)**(1.0-ecc)))/tref
     # area scaling
-    scale = np.where(np.isclose(theta,np.pi/2.0),1.0/(kp**2),1.0/(k**2))
+    scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/(kp**2), 1.0/(k**2))
     return scale
