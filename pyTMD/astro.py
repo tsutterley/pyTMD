@@ -25,6 +25,8 @@ UPDATE HISTORY:
     Updated 04/2023: added low resolution solar and lunar positions
         added function with more phase angles of the sun and moon
         functions to calculate solar and lunar positions with ephemerides
+        add jplephem documentation to Spacecraft and Planet Kernel segments
+        fix solar ephemeride function to include SSB to sun segment
     Updated 03/2023: add basic variable typing to function inputs
     Updated 10/2022: fix MEEUS solar perigee rate
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -65,7 +67,7 @@ def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
     """
     # convert time to array if importing a single value
     t = np.atleast_1d(t)
-    return np.sum([c * (t ** i) for i,c in enumerate(coefficients)],axis=0)
+    return np.sum([c * (t ** i) for i, c in enumerate(coefficients)], axis=0)
 
 # PURPOSE: compute the basic astronomical mean longitudes
 def mean_longitudes(
@@ -112,19 +114,19 @@ def mean_longitudes(
         # mean longitude of moon
         lunar_longitude = np.array([218.3164591, 13.17639647754579,
             -9.9454632e-13, 3.8086292e-20, -8.6184958e-27])
-        S = polynomial_sum(lunar_longitude,T)
+        S = polynomial_sum(lunar_longitude, T)
         # mean longitude of sun
         solar_longitude = np.array([280.46645, 0.985647360164271,
             2.2727347e-13])
-        H = polynomial_sum(solar_longitude,T)
+        H = polynomial_sum(solar_longitude, T)
         # mean longitude of lunar perigee
         lunar_perigee = np.array([83.3532430, 0.11140352391786447,
             -7.7385418e-12, -2.5636086e-19, 2.95738836e-26])
-        P = polynomial_sum(lunar_perigee,T)
+        P = polynomial_sum(lunar_perigee, T)
         # mean longitude of ascending lunar node
         lunar_node = np.array([125.0445550, -0.052953762762491446,
             1.55628359e-12, 4.390675353e-20, -9.26940435e-27])
-        N = polynomial_sum(lunar_node,T)
+        N = polynomial_sum(lunar_node, T)
         # mean longitude of solar perigee (Simon et al., 1994)
         PP = 282.94 + 1.7192 * T / 36525.0
     elif ASTRO5:
@@ -133,18 +135,18 @@ def mean_longitudes(
         # mean longitude of moon (p. 338)
         lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
              1.855835e-6, -1.53388e-8])
-        S = polynomial_sum(lunar_longitude,T)
+        S = polynomial_sum(lunar_longitude, T)
         # mean longitude of sun (p. 338)
         lunar_elongation = np.array([297.8501921, 445267.1114034, -1.8819e-3,
              1.83195e-6, -8.8445e-9])
-        H = polynomial_sum(lunar_longitude-lunar_elongation,T)
+        H = polynomial_sum(lunar_longitude-lunar_elongation, T)
         # mean longitude of lunar perigee (p. 343)
         lunar_perigee = np.array([83.3532465, 4069.0137287, -1.032e-2,
             -1.249172e-5])
-        P = polynomial_sum(lunar_perigee,T)
+        P = polynomial_sum(lunar_perigee, T)
         # mean longitude of ascending lunar node (p. 144)
         lunar_node = np.array([125.04452, -1934.136261, 2.0708e-3, 2.22222e-6])
-        N = polynomial_sum(lunar_node,T)
+        N = polynomial_sum(lunar_node, T)
         # mean longitude of solar perigee (Simon et al., 1994)
         PP = 282.94 + 1.7192 * T
     else:
@@ -300,7 +302,7 @@ def solar_ecef(MJD: np.ndarray):
     # return the ECEF coordinates
     return (X, Y, Z)
 
-# default JPL ephemerides kernel
+# default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])
 
 # PURPOSE: compute coordinates of the sun in an ECEF frame
@@ -341,13 +343,17 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     # read JPL ephemerides kernel
     SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the sun
-    # Earth to Sun = - EM_Barycenter_to_Earth - Sun_to_EM_Barycenter
-    Sun_to_EM_Barycenter = SPK[0,3]
-    EM_Barycenter_to_Earth = SPK[3,399]
-    # compute the position of the sun relative to the Earth
-    # converting from kilometers to meters
-    x, y, Z = -EM_Barycenter_to_Earth.compute(JD)*1e3 - \
-        Sun_to_EM_Barycenter.compute(JD)*1e3
+    # segment 0 SOLAR SYSTEM BARYCENTER -> segment 10 SUN
+    SSB_to_Sun = SPK[0, 10]
+    # segment 0 SOLAR SYSTEM BARYCENTER -> segment 3 EARTH BARYCENTER
+    SSB_to_EMB = SPK[0, 3]
+    # segment 3 EARTH BARYCENTER -> segment 399 EARTH
+    EMB_to_Earth = SPK[3, 399]
+    # compute the position of the sun relative to the Earth in meters
+    # Earth_to_Sun = Earth_to_EMB + EMB_to_SSB + SSB_to_Sun
+    #              = -EMB_to_Earth - SSB_to_EMB + SSB_to_Sun
+    x, y, Z = 1e3*(SSB_to_Sun.compute(JD) - SSB_to_EMB.compute(JD) -
+        EMB_to_Earth.compute(JD))
     # Greenwich Mean Sidereal Time (radians)
     GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*T, 360.0)
     # rotate to cartesian (ECEF) coordinates
@@ -387,14 +393,14 @@ def lunar_ecef(MJD: np.ndarray):
     # mean longitude of moon (p. 338)
     lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
             1.855835e-6, -1.53388e-8])
-    s = dtr*polynomial_sum(lunar_longitude,T)
+    s = dtr*polynomial_sum(lunar_longitude, T)
     # difference between the mean longitude of sun and moon (p. 338)
     lunar_elongation = np.array([297.8501921, 445267.1114034, -1.8819e-3,
             1.83195e-6, -8.8445e-9])
     D = dtr*polynomial_sum(lunar_elongation, T)
     # mean longitude of ascending lunar node (p. 144)
     lunar_node = np.array([125.04452, -1934.136261, 2.0708e-3, 2.22222e-6])
-    N = dtr*polynomial_sum(lunar_node,T)
+    N = dtr*polynomial_sum(lunar_node, T)
     F = s - N
     # mean anomaly of the sun (radians)
     M = dtr*(357.5256 + 35999.049*T)
@@ -479,13 +485,14 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     # read JPL ephemerides kernel
     SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the moon
-    # Earth to Moon = - EM_Barycenter_to_Earth + EM_Barycenter_to_Moon
-    EM_Barycenter_to_Earth = SPK[3,399]
-    EM_Barycenter_to_Moon = SPK[3,301]
-    # compute the position of the moon relative to the Earth
-    # converting from kilometers to meters
-    x, y, Z = EM_Barycenter_to_Moon.compute(JD)*1e3 - \
-        EM_Barycenter_to_Earth.compute(JD)*1e3
+    # segment 3 EARTH BARYCENTER -> segment 399 EARTH
+    EMB_to_Earth = SPK[3, 399]
+    # segment 3 EARTH BARYCENTER -> segment 301 MOON
+    EMB_to_Moon = SPK[3, 301]
+    # compute the position of the moon relative to the Earth in meters
+    # Earth_to_Moon = Earth_to_EMB + EMB_to_Moon
+    #               = -EMB_to_Earth + EMB_to_Moon
+    x, y, Z = 1e3*(EMB_to_Moon.compute(JD) - EMB_to_Earth.compute(JD))
     # Greenwich Mean Sidereal Time (radians)
     GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*T, 360.0)
     # rotate to cartesian (ECEF) coordinates

@@ -3,9 +3,12 @@ u"""
 test_spatial.py (11/2020)
 Verify file read and write with spatial utilities
 """
+import boto3
 import pytest
+import shutil
 import inspect
 import pathlib
+import posixpath
 import numpy as np
 import pyTMD.spatial
 import pyTMD.utilities
@@ -246,8 +249,9 @@ def test_HDF5(TYPE):
     # remove the test file
     output_file.unlink()
 
-# PURPOSE: test the read and write of geotiff files
-def test_geotiff(username, password):
+# PURPOSE: Download IODEM3 from NSIDC
+@pytest.fixture(scope="module", autouse=False)
+def nsidc_IODEM3(username, password):
     # build urllib2 opener for NSIDC with NASA Earthdata credentials
     pyTMD.utilities.build_opener(username, password,
         password_manager=True, get_ca_certs=False, redirect=False,
@@ -255,10 +259,45 @@ def test_geotiff(username, password):
     # download NASA Operation IceBridge DMS L3 Photogrammetric DEM
     HOST = ['https://n5eil01u.ecs.nsidc.org','ICEBRIDGE','IODEM3.001',
         '2009.10.25','IODEM3_20091025_212618_02720_DEM.tif']
-    input_file = filepath.joinpath(HOST[-1])
-    remote_buffer = pyTMD.utilities.from_http(HOST, local=input_file,
+    granule = filepath.joinpath(HOST[-1])
+    # attempt to download file from NSIDC
+    remote_buffer = pyTMD.utilities.from_http(HOST, local=granule,
         context=None, verbose=True, mode=0o775)
-    dinput = pyTMD.spatial.from_geotiff(input_file, verbose=True)
+    # run tests
+    yield
+    # clean up
+    granule.unlink()
+
+# PURPOSE: Download IODEM3 from AWS S3 bucket
+@pytest.fixture(scope="module", autouse=True)
+def AWS_IODEM3(aws_access_key_id, aws_secret_access_key, aws_region_name):
+    # get aws session object
+    session = boto3.Session(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        region_name=aws_region_name)
+    # get s3 object and bucket object for pytmd data
+    s3 = session.resource('s3')
+    bucket = s3.Bucket('pytmd')
+    # retrieve IODEM3 files
+    HOST = ['ICEBRIDGE','IODEM3.001','2009','10','25',
+        'IODEM3_20091025_212618_02720_DEM.tif']
+    obj = bucket.Object(key=posixpath.join(*HOST))
+    response = obj.get()
+    granule = filepath.joinpath(HOST[-1])
+    with granule.open(mode='wb') as destination:
+        shutil.copyfileobj(response['Body'], destination)
+    assert granule.exists()
+    # run tests
+    yield
+    # clean up
+    granule.unlink()
+
+# PURPOSE: test the read and write of geotiff files
+def test_geotiff():
+    # read IODEM3 geotiff file
+    granule = filepath.joinpath('IODEM3_20091025_212618_02720_DEM.tif')
+    dinput = pyTMD.spatial.from_geotiff(granule, verbose=True)
     # copy global geotiff attributes for projection and grid parameters
     attrib = {a:dinput['attributes'][a] for a in ['wkt','spacing','extent']}
     # copy variable attributes for data
@@ -278,11 +317,11 @@ def test_geotiff(username, password):
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
     # check that data is valid from in-memory object
-    test = pyTMD.spatial.from_geotiff(remote_buffer, compression='bytes')
+    with granule.open(mode='rb') as fid:
+        test = pyTMD.spatial.from_geotiff(fid, compression='bytes')
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
     # remove the test files
-    input_file.unlink()
     output_file.unlink()
 
 # PURPOSE: test the default field mapping function
