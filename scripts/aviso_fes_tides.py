@@ -15,7 +15,8 @@ CALLING SEQUENCE:
 COMMAND LINE OPTIONS:
     --help: list the command line options
     --directory X: working data directory
-    --user X: username for AVISO FTP servers (email)
+    -U X, --user: username for AVISO FTP servers (email)
+    -P X, --password: password for AVISO FTP servers
     -N X, --netrc X: path to .netrc file for authentication
     --tide X: FES tide model to download
         FES1999
@@ -36,6 +37,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: using pathlib to define and expand paths
+        added option to include AVISO FTP password as argument
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
     Updated 04/2022: use argparse descriptions within documentation
@@ -52,6 +54,7 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
+import os
 import io
 import gzip
 import netrc
@@ -229,8 +232,11 @@ def arguments():
     # command line parameters
     # AVISO FTP credentials
     parser.add_argument('--user','-U',
-        type=str, default='',
-        help='Username for AVISO FTP servers')
+        type=str, default=os.environ.get('AVISO_USERNAME'),
+        help='Username for AVISO Login')
+    parser.add_argument('--password','-W',
+        type=str, default=os.environ.get('AVISO_PASSWORD'),
+        help='Password for AVISO Login')
     parser.add_argument('--netrc','-N',
         type=pathlib.Path, default=pathlib.Path().home().joinpath('.netrc'),
         help='Path to .netrc file for authentication')
@@ -275,24 +281,30 @@ def main():
 
     # AVISO FTP Server hostname
     HOST = 'ftp-access.aviso.altimetry.fr'
-    # get AVISO FTP Server credentials
-    try:
-        args.user,_,PASSWORD = netrc.netrc(args.netrc).authenticators(HOST)
-    except:
-        # check that AVISO FTP Server credentials were entered
-        if not args.user:
-            prompt = f'Username for {HOST}: '
-            args.user = builtins.input(prompt)
+    # get authentication
+    if not args.user and not args.netrc.exists():
+        # check that AVISO credentials were entered
+        args.user = builtins.input(f'Username for {HOST}: ')
         # enter password securely from command-line
-        prompt = f'Password for {args.user}@{HOST}: '
-        PASSWORD = getpass.getpass(prompt)
+        args.password = getpass.getpass(f'Password for {args.user}@{HOST}: ')
+    elif args.netrc.exists():
+        args.user,_,args.password = netrc.netrc(args.netrc).authenticators(HOST)
+    elif args.user and not args.password:
+        # enter password securely from command-line
+        args.password = getpass.getpass(f'Password for {args.user}@{HOST}: ')
 
     # check internet connection before attempting to run program
-    if pyTMD.utilities.check_ftp_connection(HOST,args.user,PASSWORD):
+    if pyTMD.utilities.check_ftp_connection(HOST,args.user,args.password):
         for m in args.tide:
-            aviso_fes_tides(m, DIRECTORY=args.directory, USER=args.user,
-                PASSWORD=PASSWORD, LOAD=args.load, CURRENTS=args.currents,
-                GZIP=args.gzip, LOG=args.log, MODE=args.mode)
+            aviso_fes_tides(m,
+                DIRECTORY=args.directory,
+                USER=args.user,
+                PASSWORD=args.password,
+                LOAD=args.load,
+                CURRENTS=args.currents,
+                GZIP=args.gzip,
+                LOG=args.log,
+                MODE=args.mode)
 
 # run main program
 if __name__ == '__main__':

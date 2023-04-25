@@ -86,6 +86,7 @@ Thumbs.db
 None*.png
 # JPL ephemerides #
 # #################
+*.bpc
 *.bsp
 # Jupyter Checkpoints #
 #######################

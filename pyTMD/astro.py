@@ -27,6 +27,7 @@ UPDATE HISTORY:
         functions to calculate solar and lunar positions with ephemerides
         add jplephem documentation to Spacecraft and Planet Kernel segments
         fix solar ephemeride function to include SSB to sun segment
+        use a higher resolution estimate of the Greenwich hour angle
     Updated 03/2023: add basic variable typing to function inputs
     Updated 10/2022: fix MEEUS solar perigee rate
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -293,12 +294,12 @@ def solar_ecef(MJD: np.ndarray):
     x = r_sun*np.cos(lambda_sun)
     y = r_sun*np.sin(lambda_sun)*np.cos(epsilon_j2000)
     Z = r_sun*np.sin(lambda_sun)*np.sin(epsilon_j2000)
-    # Greenwich Mean Sidereal Time (radians)
-    GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*(T*36525.0), 360.0)
+    # Greenwich hour angle (radians)
+    GHAD = _gha(T)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GMST)*x + np.sin(GMST)*y
-    Y = np.cos(GMST)*y - np.sin(GMST)*x
+    X = np.cos(GHAD)*x + np.sin(GHAD)*y
+    Y = np.cos(GHAD)*y - np.sin(GHAD)*x
     # return the ECEF coordinates
     return (X, Y, Z)
 
@@ -354,12 +355,14 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     #              = -EMB_to_Earth - SSB_to_EMB + SSB_to_Sun
     x, y, Z = 1e3*(SSB_to_Sun.compute(JD) - SSB_to_EMB.compute(JD) -
         EMB_to_Earth.compute(JD))
-    # Greenwich Mean Sidereal Time (radians)
-    GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*T, 360.0)
+    # Greenwich hour angle (radians)
+    GHAD = _gha(T/36525.0)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GMST)*x + np.sin(GMST)*y
-    Y = np.cos(GMST)*y - np.sin(GMST)*x
+    X = np.cos(GHAD)*x + np.sin(GHAD)*y
+    Y = np.cos(GHAD)*y - np.sin(GHAD)*x
+    # close the ephemerides kernel
+    SPK.close()
     # return the ECEF coordinates
     return (X, Y, Z)
 
@@ -438,12 +441,12 @@ def lunar_ecef(MJD: np.ndarray):
     # rotate by ecliptic
     v = y*np.cos(-epsilon_j2000) + z*np.sin(-epsilon_j2000)
     Z = z*np.cos(-epsilon_j2000) - y*np.sin(-epsilon_j2000)
-    # Greenwich Mean Sidereal Time (radians)
-    GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*(T*36525.0), 360.0)
+    # Greenwich hour angle (radians)
+    GHAD = _gha(T)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GMST)*x + np.sin(GMST)*v
-    Y = np.cos(GMST)*v - np.sin(GMST)*x
+    X = np.cos(GHAD)*x + np.sin(GHAD)*v
+    Y = np.cos(GHAD)*v - np.sin(GHAD)*x
     # return the ECEF coordinates
     return (X, Y, Z)
 
@@ -493,11 +496,43 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     # Earth_to_Moon = Earth_to_EMB + EMB_to_Moon
     #               = -EMB_to_Earth + EMB_to_Moon
     x, y, Z = 1e3*(EMB_to_Moon.compute(JD) - EMB_to_Earth.compute(JD))
-    # Greenwich Mean Sidereal Time (radians)
-    GMST = dtr*np.mod(280.46061837504 + 360.9856473662862*T, 360.0)
+    # Greenwich hour angle (radians)
+    GHAD = _gha(T/36525.0)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GMST)*x + np.sin(GMST)*y
-    Y = np.cos(GMST)*y - np.sin(GMST)*x
+    X = np.cos(GHAD)*x + np.sin(GHAD)*y
+    Y = np.cos(GHAD)*y - np.sin(GHAD)*x
+    # close the ephemerides kernel
+    SPK.close()
     # return the ECEF coordinates
     return (X, Y, Z)
+
+def _gmst(T):
+    """Greenwich Mean Sidereal Time (GMST)
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+
+    References
+    ----------
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    """
+    GMST = np.array([24110.54841, 8640184.812866, 9.3104e-2, -6.2e-6])
+    # convert from seconds to days
+    return polynomial_sum(GMST, T)/86400.0
+
+def _gha(T):
+    """Greenwich Hour Angle (GHA)
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+
+    References
+    ----------
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    """
+    return np.mod(_gmst(T)*360.0 + 360.0*T*36525.0 + 180.0, 360.0)

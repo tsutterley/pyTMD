@@ -252,3 +252,15 @@ def test_lunar_ecef():
     assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=5e6).all()
     # test absolute distance
     assert np.isclose(r1, r2, atol=5e6).all()
+
+def test_greenwich():
+    """Test approximations of Greenwich Hour Angle in degrees
+    using Meeus approximation and calculation within pyTMD
+    """
+    MJD = 55414.0
+    # convert from MJD to centuries relative to 2000-01-01T12:00:00
+    T = (MJD - 51544.5)/36525.0
+    # Meeus approximation
+    GHAD = np.mod(280.46061837504 + 360.9856473662862*(T*36525.0), 360.0)
+    # compare with pyTMD calculation
+    assert np.isclose(GHAD, pyTMD.astro._gha(T))
