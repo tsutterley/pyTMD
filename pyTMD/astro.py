@@ -295,11 +295,11 @@ def solar_ecef(MJD: np.ndarray):
     y = r_sun*np.sin(lambda_sun)*np.cos(epsilon_j2000)
     Z = r_sun*np.sin(lambda_sun)*np.sin(epsilon_j2000)
     # Greenwich hour angle (radians)
-    GHAD = _gha(T)*dtr
+    hour_angle = _gha(T)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GHAD)*x + np.sin(GHAD)*y
-    Y = np.cos(GHAD)*y - np.sin(GHAD)*x
+    X = np.cos(hour_angle)*x + np.sin(hour_angle)*y
+    Y = np.cos(hour_angle)*y - np.sin(hour_angle)*x
     # return the ECEF coordinates
     return (X, Y, Z)
 
@@ -356,11 +356,11 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     x, y, Z = 1e3*(SSB_to_Sun.compute(JD) - SSB_to_EMB.compute(JD) -
         EMB_to_Earth.compute(JD))
     # Greenwich hour angle (radians)
-    GHAD = _gha(T/36525.0)*dtr
+    hour_angle = _gha(T/36525.0)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GHAD)*x + np.sin(GHAD)*y
-    Y = np.cos(GHAD)*y - np.sin(GHAD)*x
+    X = np.cos(hour_angle)*x + np.sin(hour_angle)*y
+    Y = np.cos(hour_angle)*y - np.sin(hour_angle)*x
     # close the ephemerides kernel
     SPK.close()
     # return the ECEF coordinates
@@ -442,11 +442,11 @@ def lunar_ecef(MJD: np.ndarray):
     v = y*np.cos(-epsilon_j2000) + z*np.sin(-epsilon_j2000)
     Z = z*np.cos(-epsilon_j2000) - y*np.sin(-epsilon_j2000)
     # Greenwich hour angle (radians)
-    GHAD = _gha(T)*dtr
+    hour_angle = _gha(T)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GHAD)*x + np.sin(GHAD)*v
-    Y = np.cos(GHAD)*v - np.sin(GHAD)*x
+    X = np.cos(hour_angle)*x + np.sin(hour_angle)*v
+    Y = np.cos(hour_angle)*v - np.sin(hour_angle)*x
     # return the ECEF coordinates
     return (X, Y, Z)
 
@@ -497,11 +497,11 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     #               = -EMB_to_Earth + EMB_to_Moon
     x, y, Z = 1e3*(EMB_to_Moon.compute(JD) - EMB_to_Earth.compute(JD))
     # Greenwich hour angle (radians)
-    GHAD = _gha(T/36525.0)*dtr
+    hour_angle = _gha(T/36525.0)*dtr
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
-    X = np.cos(GHAD)*x + np.sin(GHAD)*y
-    Y = np.cos(GHAD)*y - np.sin(GHAD)*x
+    X = np.cos(hour_angle)*x + np.sin(hour_angle)*y
+    Y = np.cos(hour_angle)*y - np.sin(hour_angle)*x
     # close the ephemerides kernel
     SPK.close()
     # return the ECEF coordinates

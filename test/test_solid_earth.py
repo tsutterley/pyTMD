@@ -261,6 +261,6 @@ def test_greenwich():
     # convert from MJD to centuries relative to 2000-01-01T12:00:00
     T = (MJD - 51544.5)/36525.0
     # Meeus approximation
-    GHAD = np.mod(280.46061837504 + 360.9856473662862*(T*36525.0), 360.0)
+    GHA = np.mod(280.46061837504 + 360.9856473662862*(T*36525.0), 360.0)
     # compare with pyTMD calculation
-    assert np.isclose(GHAD, pyTMD.astro._gha(T))
+    assert np.isclose(GHA, pyTMD.astro._gha(T))
