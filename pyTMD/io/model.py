@@ -13,6 +13,7 @@ UPDATE HISTORY:
         add basic file searching with glob strings in definition files
         add long_name and description attributes for current variables
         added exceptions for files missing when using glob patterns
+        simplify TPXO9-atlas currents dictionaries to single list
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: moved to io and added deprecation warning to old
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -713,22 +714,14 @@ class model:
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
-            model_files = {}
-            model_files['u'] = ['u_q1_tpxo9_atlas_30','u_o1_tpxo9_atlas_30',
+            model_files = ['u_q1_tpxo9_atlas_30','u_o1_tpxo9_atlas_30',
                 'u_p1_tpxo9_atlas_30','u_k1_tpxo9_atlas_30',
                 'u_n2_tpxo9_atlas_30','u_m2_tpxo9_atlas_30',
                 'u_s2_tpxo9_atlas_30','u_k2_tpxo9_atlas_30',
                 'u_m4_tpxo9_atlas_30','u_ms4_tpxo9_atlas_30',
                 'u_mn4_tpxo9_atlas_30','u_2n2_tpxo9_atlas_30']
-            model_files['v'] = ['u_q1_tpxo9_atlas_30','u_o1_tpxo9_atlas_30',
-                'u_p1_tpxo9_atlas_30','u_k1_tpxo9_atlas_30',
-                'u_n2_tpxo9_atlas_30','u_m2_tpxo9_atlas_30',
-                'u_s2_tpxo9_atlas_30','u_k2_tpxo9_atlas_30',
-                'u_m4_tpxo9_atlas_30','u_ms4_tpxo9_atlas_30',
-                'u_mn4_tpxo9_atlas_30','u_2n2_tpxo9_atlas_30']
-            self.model_file = {}
-            for key, val in model_files.items():
-                self.model_file[key] = self.pathfinder(val)
+            self.model_file = dict(u=self.pathfinder(model_files),
+                                   v=self.pathfinder(model_files))
             self.projection = '4326'
             self.scale = 1.0/100.0
             self.version = 'v1'
@@ -738,22 +731,14 @@ class model:
         elif (m == 'TPXO9-atlas-v2'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v2')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v2')
-            model_files = {}
-            model_files['u'] = ['u_q1_tpxo9_atlas_30_v2','u_o1_tpxo9_atlas_30_v2',
+            model_files = ['u_q1_tpxo9_atlas_30_v2','u_o1_tpxo9_atlas_30_v2',
                 'u_p1_tpxo9_atlas_30_v2','u_k1_tpxo9_atlas_30_v2',
                 'u_n2_tpxo9_atlas_30_v2','u_m2_tpxo9_atlas_30_v2',
                 'u_s2_tpxo9_atlas_30_v2','u_k2_tpxo9_atlas_30_v2',
                 'u_m4_tpxo9_atlas_30_v2','u_ms4_tpxo9_atlas_30_v2',
                 'u_mn4_tpxo9_atlas_30_v2','u_2n2_tpxo9_atlas_30_v2']
-            model_files['v'] = ['u_q1_tpxo9_atlas_30_v2','u_o1_tpxo9_atlas_30_v2',
-                'u_p1_tpxo9_atlas_30_v2','u_k1_tpxo9_atlas_30_v2',
-                'u_n2_tpxo9_atlas_30_v2','u_m2_tpxo9_atlas_30_v2',
-                'u_s2_tpxo9_atlas_30_v2','u_k2_tpxo9_atlas_30_v2',
-                'u_m4_tpxo9_atlas_30_v2','u_ms4_tpxo9_atlas_30_v2',
-                'u_mn4_tpxo9_atlas_30_v2','u_2n2_tpxo9_atlas_30_v2']
-            self.model_file = {}
-            for key, val in model_files.items():
-                self.model_file[key] = self.pathfinder(val)
+            self.model_file = dict(u=self.pathfinder(model_files),
+                                   v=self.pathfinder(model_files))
             self.projection = '4326'
             self.scale = 1.0/100.0
             self.version = 'v2'
@@ -762,24 +747,15 @@ class model:
         elif (m == 'TPXO9-atlas-v3'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v3')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v3')
-            model_files = {}
-            model_files['u'] = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
+            model_files = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
                 'u_p1_tpxo9_atlas_30_v3','u_k1_tpxo9_atlas_30_v3',
                 'u_n2_tpxo9_atlas_30_v3','u_m2_tpxo9_atlas_30_v3',
                 'u_s2_tpxo9_atlas_30_v3','u_k2_tpxo9_atlas_30_v3',
                 'u_m4_tpxo9_atlas_30_v3','u_ms4_tpxo9_atlas_30_v3',
                 'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
                 'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
-            model_files['v'] = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
-                'u_p1_tpxo9_atlas_30_v3','u_k1_tpxo9_atlas_30_v3',
-                'u_n2_tpxo9_atlas_30_v3','u_m2_tpxo9_atlas_30_v3',
-                'u_s2_tpxo9_atlas_30_v3','u_k2_tpxo9_atlas_30_v3',
-                'u_m4_tpxo9_atlas_30_v3','u_ms4_tpxo9_atlas_30_v3',
-                'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
-                'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
-            self.model_file = {}
-            for key, val in model_files.items():
-                self.model_file[key] = self.pathfinder(val)
+            self.model_file = dict(u=self.pathfinder(model_files),
+                                   v=self.pathfinder(model_files))
             self.projection = '4326'
             self.scale = 1.0/100.0
             self.version = 'v3'
@@ -788,24 +764,15 @@ class model:
         elif (m == 'TPXO9-atlas-v4'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v4')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
-            model_files = {}
-            model_files['u'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
+            model_files = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
                 'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
                 'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
                 'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
                 'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
                 'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
                 'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
-            model_files['v'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
-                'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
-                'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
-                'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
-                'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
-                'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
-                'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
-            self.model_file = {}
-            for key, val in model_files.items():
-                self.model_file[key] = self.pathfinder(val)
+            self.model_file = dict(u=self.pathfinder(model_files),
+                                   v=self.pathfinder(model_files))
             self.projection = '4326'
             self.scale = 1.0/100.0
             self.version = 'v4'
@@ -814,8 +781,7 @@ class model:
         elif (m == 'TPXO9-atlas-v5'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v5')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v5')
-            model_files = {}
-            model_files['u'] = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
+            model_files = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
                 'u_p1_tpxo9_atlas_30_v5','u_k1_tpxo9_atlas_30_v5',
                 'u_n2_tpxo9_atlas_30_v5','u_m2_tpxo9_atlas_30_v5',
                 'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
@@ -823,17 +789,8 @@ class model:
                 'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
                 'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
                 'u_mm_tpxo9_atlas_30_v5']
-            model_files['v'] = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
-                'u_p1_tpxo9_atlas_30_v5','u_k1_tpxo9_atlas_30_v5',
-                'u_n2_tpxo9_atlas_30_v5','u_m2_tpxo9_atlas_30_v5',
-                'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
-                'u_k2_tpxo9_atlas_30_v5','u_m4_tpxo9_atlas_30_v5',
-                'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
-                'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
-                'u_mm_tpxo9_atlas_30_v5']
-            self.model_file = {}
-            for key, val in model_files.items():
-                self.model_file[key] = self.pathfinder(val)
+            self.model_file = dict(u=self.pathfinder(model_files),
+                                   v=self.pathfinder(model_files))
             self.projection = '4326'
             self.scale = 1.0/100.0
             self.version = 'v5'
