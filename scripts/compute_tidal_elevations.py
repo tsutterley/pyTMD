@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -94,6 +94,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds
         using pathlib to define and expand paths
     Updated 02/2023: added functionality for time series type
@@ -284,53 +285,18 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
         epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    # convert time to seconds
-    if (TIME_STANDARD.lower() != 'datetime'):
-        delta_time = to_secs*dinput['time'].flatten()
 
-    # calculate leap seconds if specified
-    if (TIME_STANDARD.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME_STANDARD.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME_STANDARD.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to days relative to 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_datetime(dinput['time'].flatten(),
-            epoch=pyTMD.time._tide_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            dinput['time'].flatten())
     else:
-        # convert time from units to days since 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=epoch1, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
+        # convert time to seconds
+        delta_time = to_secs*dinput['time'].flatten()
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=epoch1, standard=TIME_STANDARD)
     # number of time points
-    nt = len(tide_time)
-    # delta time (TT - UT1) file
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+    nt = len(timescale)
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
@@ -349,8 +315,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon.flatten(), lat.flatten(),
             model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
-        # interpolate delta times from calendar dates to tide time
-        deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+        # delta time (TT - UT1)
+        deltat = timescale.tt_ut1
     elif (model.format == 'FES'):
         amp,ph = pyTMD.io.FES.extract_constants(lon.flatten(), lat.flatten(),
             model.model_file, type=model.type, version=model.version,
@@ -358,8 +324,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             scale=model.scale, compressed=model.compressed)
         # available model constituents
         c = model.constituents
-        # interpolate delta times from calendar dates to tide time
-        deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+        # delta time (TT - UT1)
+        deltat = timescale.tt_ut1
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -371,9 +337,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         tide = np.ma.zeros((ny,nx,nt),fill_value=fill_value)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            TIDE = pyTMD.predict.map(tide_time[i], hc, c,
+            TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            MINOR = pyTMD.predict.infer_minor(tide_time[i], hc, c,
+            MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
             # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
@@ -381,9 +347,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (TYPE == 'drift'):
         tide = np.ma.zeros((nt), fill_value=fill_value)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict.drift(tide_time, hc, c,
+        tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
             deltat=deltat, corrections=model.format)
-        minor = pyTMD.predict.infer_minor(tide_time, hc, c,
+        minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     elif (TYPE == 'time series'):
@@ -391,9 +357,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         tide.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
             # calculate constituent oscillation for station
-            TIDE = pyTMD.predict.time_series(tide_time, hc[s,None,:], c,
+            TIDE = pyTMD.predict.time_series(timescale.tide, hc[s,None,:], c,
                 deltat=deltat, corrections=model.format)
-            MINOR = pyTMD.predict.infer_minor(tide_time, hc[s,None,:], c,
+            MINOR = pyTMD.predict.infer_minor(timescale.tide, hc[s,None,:], c,
                 deltat=deltat, corrections=model.format)
             tide.data[s,:] = TIDE.data[:] + MINOR.data[:]
             tide.mask[s,:] = (TIDE.mask | MINOR.mask)
@@ -401,7 +367,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     tide.data[tide.mask] = tide.fill_value
 
     # output to file
-    output = {'time':tide_time, 'lon':lon, 'lat':lat, output_variable:tide}
+    output = {'time':timescale.tide, 'lon':lon, 'lat':lat, output_variable:tide}
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,

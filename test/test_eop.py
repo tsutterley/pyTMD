@@ -46,7 +46,8 @@ def test_read_EOP(EPOCH):
     pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean pole at time
     # iterate over different IERS conventional mean pole (CMP) formulations
-    mpx,mpy,fl = pyTMD.eop.iers_mean_pole(mean_pole_file,time_decimal,EPOCH)
+    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal,
+        convention=EPOCH, file=mean_pole_file)
     # check flags
     assert np.all(fl)
     # read IERS daily polar motion values
@@ -58,6 +59,9 @@ def test_read_EOP(EPOCH):
     ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
     px = xSPL(MJD)
     py = ySPL(MJD)
+    # test interpolation of polar motion values
+    PX, PY = pyTMD.eop.iers_polar_motion(MJD)
+    assert np.isclose(px, PX).all() & np.isclose(py, PY).all()
     # calculate differentials from mean pole positions
     mx = px - mpx
     my = -(py - mpy)

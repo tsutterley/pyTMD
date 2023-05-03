@@ -64,6 +64,9 @@ General Methods
 
 .. autofunction:: pyTMD.time.convert_julian
 
+.. autoclass:: pyTMD.time.timescale
+   :members:
+
 .. autofunction:: pyTMD.time.interpolate_delta_time
 
 .. autofunction:: pyTMD.time.count_leap_seconds

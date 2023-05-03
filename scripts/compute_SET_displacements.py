@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -88,6 +88,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: using pathlib to define and expand paths
     Written 04/2023
 """
@@ -226,55 +227,20 @@ def compute_SET_displacements(input_file, output_file,
         epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
         epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    # convert time to seconds
-    if (TIME_STANDARD.lower() != 'datetime'):
-        delta_time = to_secs*dinput['time'].flatten()
 
-    # calculate leap seconds if specified
-    if (TIME_STANDARD.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME_STANDARD.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME_STANDARD.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to days relative to 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_datetime(dinput['time'].flatten(),
-            epoch=pyTMD.time._tide_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            dinput['time'].flatten())
     else:
-        # convert time from units to days since 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=epoch1, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
-
-    # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+        # convert time to seconds
+        delta_time = to_secs*dinput['time'].flatten()
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=epoch1, standard=TIME_STANDARD)
+    # convert tide times to dynamical time
+    tide_time = timescale.tide + timescale.tt_ut1
     # number of time points
-    nt = len(tide_time)
+    nt = len(timescale)
 
     # earth and physical parameters for ellipsoid
     units = pyTMD.constants(ELLIPSOID)
@@ -284,11 +250,9 @@ def compute_SET_displacements(input_file, output_file,
     # convert input coordinates to cartesian
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
-    # convert time to Modified Julian Days (MJD) for ephemerides
-    MJD = tide_time + deltat + 48622.0
     # get low-resolution solar and lunar ephemerides
-    SX, SY, SZ = pyTMD.astro.solar_ecef(MJD)
-    LX, LY, LZ = pyTMD.astro.lunar_ecef(MJD)
+    SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.mjd)
+    LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.mjd)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -297,7 +261,7 @@ def compute_SET_displacements(input_file, output_file,
         XYZ = np.c_[X, Y, Z]
         for i in range(nt):
             # reshape time to match spatial
-            t = tide_time[i] + deltat[i] + np.ones((ny*nx))
+            t = tide_time[i] + np.ones((ny*nx))
             # convert coordinates to column arrays
             SXYZ = np.repeat(np.c_[SX[i], SY[i], SZ[i]], ny*nx, axis=0)
             LXYZ = np.repeat(np.c_[LX[i], LY[i], LZ[i]], ny*nx, axis=0)
@@ -306,7 +270,7 @@ def compute_SET_displacements(input_file, output_file,
                 XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
                 tide_system=TIDE_SYSTEM)
             # calculate radial component of solid earth tides
-            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+            dln, dlt, drad = pyTMD.spatial.to_geodetic(
                 X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
             # remove effects of original topography
@@ -318,11 +282,11 @@ def compute_SET_displacements(input_file, output_file,
         SXYZ = np.c_[SX, SY, SZ]
         LXYZ = np.c_[LX, LY, LZ]
         # predict solid earth tides (cartesian)
-        dxi = pyTMD.predict.solid_earth_tide(tide_time + deltat,
+        dxi = pyTMD.predict.solid_earth_tide(tide_time,
             XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
             tide_system=TIDE_SYSTEM)
         # calculate radial component of solid earth tides
-        dln,dlt,drad = pyTMD.spatial.to_geodetic(
+        dln, dlt, drad = pyTMD.spatial.to_geodetic(
             X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
             a_axis=units.a_axis, flat=units.flat)
         # remove effects of original topography
@@ -337,11 +301,11 @@ def compute_SET_displacements(input_file, output_file,
             # convert coordinates to column arrays
             XYZ = np.repeat(np.c_[X[s], Y[s], Z[s]], nt, axis=0)
             # predict solid earth tides (cartesian)
-            dxi = pyTMD.predict.solid_earth_tide(tide_time + deltat,
+            dxi = pyTMD.predict.solid_earth_tide(tide_time,
                 XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
                 tide_system=TIDE_SYSTEM)
             # calculate radial component of solid earth tides
-            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+            dln, dlt, drad = pyTMD.spatial.to_geodetic(
                 X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
             # remove effects of original topography
@@ -349,7 +313,7 @@ def compute_SET_displacements(input_file, output_file,
             tide_se[s,:] = drad - h
 
     # output to file
-    output = dict(time=tide_time, lon=lon, lat=lat, tide_se=tide_se)
+    output = dict(time=timescale.tide, lon=lon, lat=lat, tide_se=tide_se)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
