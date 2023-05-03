@@ -19,6 +19,9 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.get_data_path
 
+.. autoclass:: pyTMD.utilities.reify
+   :members:
+
 .. autofunction:: pyTMD.utilities.file_opener
 
 .. autofunction:: pyTMD.utilities.get_hash

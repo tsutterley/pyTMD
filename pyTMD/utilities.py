@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 05/2023: add reify decorator for evaluation of properties
     Updated 04/2023: using pathlib to define and expand paths
         added function to download ephemeride files from JPL SSD server
     Updated 03/2023: add basic variable typing to function inputs
@@ -81,6 +82,21 @@ def get_data_path(relpath: list | str | pathlib.Path):
         return filepath.joinpath(*relpath)
     elif isinstance(relpath, str):
         return filepath.joinpath(relpath)
+
+class reify(object):
+    """Class decorator that puts the result of the method it
+    decorates into the instance"""
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+        self.__name__ = wrapped.__name__
+        self.__doc__ = wrapped.__doc__
+
+    def __get__(self, inst, objtype=None):
+        if inst is None:
+            return self
+        val = self.wrapped(inst)
+        setattr(inst, self.wrapped.__name__, val)
+        return val
 
 # PURPOSE: platform independent file opener
 def file_opener(filename: str | pathlib.Path):

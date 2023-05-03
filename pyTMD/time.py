@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 05/2023: add timescale class for converting between time scales
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: added interpolation for delta time (TT - UT1)
@@ -554,11 +555,33 @@ def convert_julian(JD: np.ndarray, **kwargs):
 _delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
 
 class timescale:
+    """
+    Class for converting between time scales
+
+    Attributes
+    ----------
+    leaps: np.ndarray
+        Number of leap seconds
+    MJD: np.ndarray
+        Modified Julian Days
+    century: float
+        Days in a Julian century
+    day: float
+        Seconds in a day
+    turn: float
+        Fraction of a full turn
+    turndeg: float
+        Degrees in a full turn
+    deg2rad: float
+        Degrees to radians
+    deg2arc: float
+        Degrees to arcseconds
+    """
     def __init__(self, MJD=None):
         # leap seconds
         self.leaps = None
         # modified Julian Days
-        self.mjd = MJD
+        self.MJD = MJD
         # Julian century
         self.century = 36525.0
         # seconds per day
@@ -566,15 +589,12 @@ class timescale:
         # 360 degrees
         self.turn = 1.0
         self.turndeg = 360.0
-        self.turnarc = 1296000.0
         # degrees to radians
         self.deg2rad = np.pi/180.0
         # degrees to arcseconds
         self.deg2arc = 3600.0
-        # arcseconds to radians
-        self.arc2rad = np.pi/648000.0
-        # microarcseconds to radians
-        self.marc2rad = np.pi/648000000.0
+        # iterator
+        self.__index__ = 0
 
     def from_deltatime(self,
             delta_time: np.ndarray,
@@ -625,7 +645,7 @@ class timescale:
         else:
             leap_seconds = 0.0
         # convert time to days relative to Modified Julian days in UTC
-        self.mjd = convert_delta_time(delta_time - leap_seconds,
+        self.MJD = convert_delta_time(delta_time - leap_seconds,
             epoch1=epoch, epoch2=_mjd_epoch, scale=(1.0/self.day))
         return self
 
@@ -640,7 +660,7 @@ class timescale:
         """
         # convert delta time array from datetime object
         # to days relative to 1992-01-01T00:00:00
-        self.mjd = convert_datetime(datetime, epoch=_mjd_epoch)/self.day
+        self.MJD = convert_datetime(datetime, epoch=_mjd_epoch)/self.day
         return self
 
     # PURPOSE: calculate the sum of a polynomial function of time
@@ -659,17 +679,17 @@ class timescale:
         t = np.atleast_1d(t)
         return np.sum([c * (t ** i) for i, c in enumerate(coefficients)], axis=0)
 
-    @property
+    @pyTMD.utilities.reify
     def era(self):
         """Earth Rotation Angle (ERA) in degrees
         """
         # earth rotation angle using Universal Time
-        J = self.mjd - 51544.5
+        J = self.MJD - 51544.5
         fraction = np.mod(J, self.turn)
         theta = np.mod(0.7790572732640 + 0.00273781191135448*J, self.turn)
         return self.turndeg*np.mod(theta + fraction, self.turn)
 
-    @property
+    @pyTMD.utilities.reify
     def gha(self):
         """Greenwich Hour Angle (GHA) in degrees
         """
@@ -677,7 +697,7 @@ class timescale:
                       self.turndeg*self.T*self.century +
                       self.turndeg/2.0, self.turndeg)
 
-    @property
+    @pyTMD.utilities.reify
     def gmst(self):
         """Greenwich Mean Sidereal Time (GMST) in fractions of day
         """
@@ -685,16 +705,16 @@ class timescale:
         # convert from seconds to fractions of day
         return np.mod(self.polynomial_sum(GMST, self.T)/self.day, self.turn)
 
-    @property
+    @pyTMD.utilities.reify
     def J2000(self):
         """Seconds since 2000-01-01T12:00:00
         """
         return (self.tt - 2451545.0)*self.day
 
-    @property
+    @pyTMD.utilities.reify
     def st(self):
-        """Greenwich Mean Sidereal Time (GMST) from the Equinox Method
-        in fractions of a day
+        """Greenwich Mean Sidereal Time (GMST) in fractions of a day
+        from the Equinox Method
         """
         # sidereal time polynomial coefficients in arcseconds
         sidereal_time = np.array([0.014506, 4612.156534, 1.3915817, -4.4e-7,
@@ -703,19 +723,19 @@ class timescale:
         # get earth rotation angle and convert to arcseconds
         return np.mod(ST + self.era*self.deg2arc, self.turnarc)/self.turnarc
 
-    @property
+    @pyTMD.utilities.reify
     def tide(self):
         """Days since 1992-01-01T00:00:00
         """
-        return self.mjd - 48622.0
+        return self.MJD - 48622.0
 
-    @property
+    @pyTMD.utilities.reify
     def tt(self):
         """Dynamic Time (TT) as Julian Days
         """
-        return self.mjd + self.tt_ut1 + 2400000.5
+        return self.MJD + self.tt_ut1 + 2400000.5
 
-    @property
+    @pyTMD.utilities.reify
     def tt_ut1(self):
         """
         Difference between universal time (UT) and dynamical time (TT)
@@ -723,34 +743,69 @@ class timescale:
         # return the delta time for the input date converted to days
         return interpolate_delta_time(_delta_file, self.tide)
 
-    @property
+    @pyTMD.utilities.reify
     def T(self):
         """Centuries since 2000-01-01T12:00:00
         """
         return (self.tt - 2451545.0)/self.century
 
     @property
+    def turnarc(self):
+        """Arcseconds in a full turn
+        """
+        return self.turndeg*self.deg2arc
+
+    @property
+    def arc2rad(self):
+        """Arcseconds to radians
+        """
+        return self.deg2rad/self.deg2arc
+
+    @property
+    def marc2rad(self):
+        """Microarcseconds to radians
+        """
+        return self.arc2rad/1.0e6
+
+    @property
     def dtype(self):
         """Main data type of ``timescale`` object"""
-        return self.mjd.dtype
+        return self.MJD.dtype
 
     @property
     def shape(self):
         """Dimensions of ``timescale`` object
         """
-        return np.shape(self.mjd)
+        return np.shape(self.MJD)
 
     @property
     def ndim(self):
         """Number of dimensions in ``timescale`` object
         """
-        return np.ndim(self.mjd)
-
+        return np.ndim(self.MJD)
 
     def __len__(self):
         """Number of time values
         """
-        return len(np.atleast_1d(self.mjd))
+        return len(np.atleast_1d(self.MJD))
+
+    def __iter__(self):
+        """Iterate over time values
+        """
+        self.__index__ = 0
+        return self
+
+    def __next__(self):
+        """Get the next time step
+        """
+        temp = timescale()
+        try:
+            temp.MJD = np.atleast_1d(self.MJD)[self.__index__].copy()
+        except IndexError as exc:
+            raise StopIteration from exc
+        # add to index
+        self.__index__ += 1
+        return temp
 
 # PURPOSE: calculate the difference between universal time and dynamical time
 # by interpolating a delta time file to a given date

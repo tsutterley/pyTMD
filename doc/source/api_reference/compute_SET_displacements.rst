@@ -48,3 +48,9 @@ compute_SET_displacements.py
 
         * ``'tide_free'``: no permanent direct and indirect tidal potentials
         * ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+
+    --ephemerides -c : @replace
+        Method for calculating lunisolar ephemerides
+
+        * ``'approximate'``: low-resolution ephemerides
+        * ``'JPL'``: computed solar and lunar ephemerides from JPL kernels

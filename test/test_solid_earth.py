@@ -237,7 +237,9 @@ def test_solid_earth_tide():
     # assert matching
     assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],dxt).all()
 
-def test_solid_earth_radial():
+# parameterize ephemerides
+@pytest.mark.parametrize("EPHEMERIDES", ['approximate','JPL'])
+def test_solid_earth_radial(EPHEMERIDES):
     """Test radial solid tides with predictions from ICESat-2
     """
     times = np.array(['2018-10-14 00:21:48','2018-10-14 00:21:48',
@@ -260,10 +262,11 @@ def test_solid_earth_radial():
         -0.11400412,-0.11400434])
     # predict radial solid earth tides
     tide_free = compute_SET_corrections(longitudes, latitudes, times,
-        EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84')
+        EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
+        EPHEMERIDES=EPHEMERIDES)
     tide_mean = compute_SET_corrections(longitudes, latitudes, times,
         EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
-        TIDE_SYSTEM='mean_tide')
+        TIDE_SYSTEM='mean_tide', EPHEMERIDES=EPHEMERIDES)
     # as using estimated ephemerides, assert within 1/2 mm
     assert np.isclose(tide_earth, tide_free, atol=5e-4).all()
     # check permanent tide offsets (additive correction in ICESat-2)
@@ -302,9 +305,9 @@ def test_solar_ecef():
     x2, y2, z2 = pyTMD.astro.solar_ephemerides(MJD)
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
-    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=5e8).all()
+    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=1e9).all()
     # test absolute distance
-    assert np.isclose(r1, r2, atol=5e8).all()
+    assert np.isclose(r1, r2, atol=1e9).all()
 
 def test_lunar_ecef():
     """Test lunar ECEF coordinates with ephemeride predictions

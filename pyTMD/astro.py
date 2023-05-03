@@ -31,6 +31,7 @@ UPDATE HISTORY:
         add jplephem documentation to Spacecraft and Planet Kernel segments
         fix solar ephemeride function to include SSB to sun segment
         use a higher resolution estimate of the Greenwich hour angle
+        use ITRS reference frame for high-resolution ephemeride calculations
     Updated 03/2023: add basic variable typing to function inputs
     Updated 10/2022: fix MEEUS solar perigee rate
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -449,13 +450,11 @@ def solar_ecef(MJD: np.ndarray):
     atr = np.pi/648000.0
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
-    # convert from MJD to centuries relative to 2000-01-01T12:00:00
-    T = ts.T
     # mean longitude of solar perigee (radians)
-    PP = dtr*(282.94 + 1.7192 * T)
+    PP = dtr*(282.94 + 1.7192 * ts.T)
     # mean anomaly of the sun (radians)
     solar_anomaly = np.array([357.5256, 35999.049, -1.559e-4, -4.8e-7])
-    M = dtr*polynomial_sum(solar_anomaly, T)
+    M = dtr*polynomial_sum(solar_anomaly, ts.T)
     # series expansion for mean anomaly in solar radius (meters)
     r_sun = 1e9*(149.619 - 2.499*np.cos(M) - 0.021*np.cos(2.0*M))
     # series expansion for ecliptic longitude of the sun (radians)
@@ -506,12 +505,8 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
-    # degrees and arcseconds to radians
-    dtr = np.pi/180.0
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
-    # convert from MJD to Julian days (dynamical time)
-    JD = ts.tt
     # read JPL ephemerides kernel
     SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the sun
@@ -524,12 +519,11 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     # compute the position of the sun relative to the Earth in meters
     # Earth_to_Sun = Earth_to_EMB + EMB_to_SSB + SSB_to_Sun
     #              = -EMB_to_Earth - SSB_to_EMB + SSB_to_Sun
-    x, y, z = 1e3*(SSB_to_Sun.compute(JD) - SSB_to_EMB.compute(JD) -
-        EMB_to_Earth.compute(JD))
-    # Greenwich hour angle (radians)
-    rot_z = rotate(ts.gha*dtr, 'z')
+    x, y, z = 1e3*(SSB_to_Sun.compute(ts.tt) - SSB_to_EMB.compute(ts.tt) -
+        EMB_to_Earth.compute(ts.tt))
     # rotate to cartesian (ECEF) coordinates
-    # ignoring polar motion and length-of-day variations
+    # use UT1 time as input to itrs rotation function
+    rot_z = itrs((MJD - 51544.5)/36525.0)
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
     Y = rot_z[1,0,:]*x + rot_z[1,1,:]*y + rot_z[1,2,:]*z
     Z = rot_z[2,0,:]*x + rot_z[2,1,:]*y + rot_z[2,2,:]*z
@@ -563,24 +557,22 @@ def lunar_ecef(MJD: np.ndarray):
     atr = np.pi/648000.0
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
-    # convert from MJD to centuries relative to 2000-01-01T12:00:00
-    T = ts.T
     # mean longitude of moon (p. 338)
     lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
             1.855835e-6, -1.53388e-8])
-    s = dtr*polynomial_sum(lunar_longitude, T)
+    s = dtr*polynomial_sum(lunar_longitude, ts.T)
     # difference between the mean longitude of sun and moon (p. 338)
     lunar_elongation = np.array([297.8501921, 445267.1114034, -1.8819e-3,
             1.83195e-6, -8.8445e-9])
-    D = dtr*polynomial_sum(lunar_elongation, T)
+    D = dtr*polynomial_sum(lunar_elongation, ts.T)
     # mean longitude of ascending lunar node (p. 144)
     lunar_node = np.array([125.04452, -1934.136261, 2.0708e-3, 2.22222e-6])
-    N = dtr*polynomial_sum(lunar_node, T)
+    N = dtr*polynomial_sum(lunar_node, ts.T)
     F = s - N
     # mean anomaly of the sun (radians)
-    M = dtr*(357.5256 + 35999.049*T)
+    M = dtr*(357.5256 + 35999.049*ts.T)
     # mean anomaly of the moon (radians)
-    l = dtr*(134.96292 + 477198.86753*T)
+    l = dtr*(134.96292 + 477198.86753*ts.T)
     # series expansion for mean anomaly in moon radius (meters)
     r_moon = 1e3*(385000.0 - 20905.0*np.cos(l) - 3699.0*np.cos(2.0*D - l) -
         2956.0*np.cos(2.0*D) - 570.0*np.cos(2.0*l) +
@@ -654,12 +646,8 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
-    # degrees to radians
-    dtr = np.pi/180.0
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
-    # convert from MJD to Julian days (dynamical time)
-    JD = ts.tt
     # read JPL ephemerides kernel
     SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the moon
@@ -670,18 +658,320 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     # compute the position of the moon relative to the Earth in meters
     # Earth_to_Moon = Earth_to_EMB + EMB_to_Moon
     #               = -EMB_to_Earth + EMB_to_Moon
-    x, y, z = 1e3*(EMB_to_Moon.compute(JD) - EMB_to_Earth.compute(JD))
-    # Greenwich hour angle (radians)
-    rot_z = rotate(ts.gha*dtr, 'z')
+    x, y, z = 1e3*(EMB_to_Moon.compute(ts.tt) - EMB_to_Earth.compute(ts.tt))
     # rotate to cartesian (ECEF) coordinates
-    # ignoring polar motion and length-of-day variations
+    # use UT1 time as input to itrs rotation function
+    rot_z = itrs((MJD - 51544.5)/36525.0)
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
     Y = rot_z[1,0,:]*x + rot_z[1,1,:]*y + rot_z[1,2,:]*z
     Z = rot_z[2,0,:]*x + rot_z[2,1,:]*y + rot_z[2,2,:]*z
     # return the ECEF coordinates
     return (X, Y, Z)
 
+def gast(T):
+    """Greenwich Apparent Sidereal Time (GAST) [1]_ [2]_ [3]_
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+
+    References
+    ----------
+    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
+        "Expressions for IAU 2000 precession quantities",
+        *Astronomy & Astrophysics*, 412, 567--586, (2003).
+        `doi: 10.1051/0004-6361:20031539
+        <https://doi.org/10.1051/0004-6361:20031539>`_
+    .. [2] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
+        "Expressions for the Celestial Intermediate Pole and
+        Celestial Ephemeris Origin consistent with the IAU 2000A
+        precession-nutation model", *Astronomy & Astrophysics*,
+        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
+        <https://doi.org/10.1051/0004-6361:20030077>`_
+    .. [3] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+    """
+    # microarcseconds to radians
+    matr = np.pi/0.648e12
+    # create timescale from centuries relative to 2000-01-01T12:00:00
+    ts = timescale(MJD=T*36525.0 + 51544.5)
+    # convert dynamical time to modified Julian days
+    MJD = ts.tt - 2400000.5
+    # get the fundamental arguments in radians
+    l, lp, F, D, Om = delaunay_arguments(MJD)
+    # estimate the mean obliquity
+    epsilon = mean_obliquity(MJD)
+    # non-polynomial terms in the equation of the equinoxes
+    # parse IERS lunisolar longitude table
+    l0, l1 = _parse_table_5_3a()
+    n0 = np.c_[l0['l'], l0['lp'], l0['F'], l0['D'], l0['Om']]
+    n1 = np.c_[l1['l'], l1['lp'], l1['F'], l1['D'], l1['Om']]
+    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
+    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
+    dpsi = np.dot(l0['As'], np.sin(arg0)) + \
+        np.dot(l0['Ac'], np.cos(arg0)) + \
+        T*np.dot(l1['As'], np.sin(arg1)) + \
+        T*np.dot(l1['Ac'], np.cos(arg1))
+    # parse IERS lunisolar obliquity table
+    o0, o1 = _parse_table_5_3b()
+    n0 = np.c_[o0['l'], o0['lp'], o0['F'], o0['D'], o0['Om']]
+    n1 = np.c_[o1['l'], o1['lp'], o1['F'], o1['D'], o1['Om']]
+    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
+    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
+    deps = np.dot(o0['Bs'], np.sin(arg0)) + \
+        np.dot( o0['Bc'], np.cos(arg0)) + \
+        T*np.dot(o1['Bs'], np.sin(arg1)) + \
+        T*np.dot(o1['Bc'], np.cos(arg1))
+    # traditional equation of the equinoxes
+    eqeq = (matr*dpsi)*np.cos(epsilon + matr*deps) + _eqeq_complement(T)
+    return np.mod(ts.st + eqeq/24.0, 1.0)
+
+def itrs(T):
+    """
+    International Terrestrial Reference System (ITRS) [1]_ [2]_ [3]_:
+    An Earth-centered Earth-fixed (ECEF) coordinate system
+    combining the Earth's true equator and equinox of date,
+    the Earth's rotation with respect to the stars, and the
+    polar wobble of the crust with respect to the pole of rotation.
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+
+    References
+    ----------
+    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
+        "Expressions for IAU 2000 precession quantities",
+        *Astronomy & Astrophysics*, 412, 567--586, (2003).
+        `doi: 10.1051/0004-6361:20031539
+        <https://doi.org/10.1051/0004-6361:20031539>`_
+    .. [2] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
+        "Expressions for the Celestial Intermediate Pole and
+        Celestial Ephemeris Origin consistent with the IAU 2000A
+        precession-nutation model", *Astronomy & Astrophysics*,
+        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
+        <https://doi.org/10.1051/0004-6361:20030077>`_
+    .. [3] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+    """
+    # microarcseconds to radians
+    matr = np.pi/0.648e12
+    tau = 2.0*np.pi
+    # create timescale from centuries relative to 2000-01-01T12:00:00
+    ts = timescale(MJD=T*36525.0 + 51544.5)
+    # convert dynamical time to modified Julian days
+    MJD = ts.tt - 2400000.5
+    # get the fundamental arguments in radians
+    l, lp, F, D, Om = delaunay_arguments(MJD)
+    # estimate the mean obliquity
+    epsilon = mean_obliquity(MJD)
+    # non-polynomial terms in the equation of the equinoxes
+    # parse IERS lunisolar longitude table
+    l0, l1 = _parse_table_5_3a()
+    n0 = np.c_[l0['l'], l0['lp'], l0['F'], l0['D'], l0['Om']]
+    n1 = np.c_[l1['l'], l1['lp'], l1['F'], l1['D'], l1['Om']]
+    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
+    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
+    dpsi = np.dot(l0['As'], np.sin(arg0)) + \
+        np.dot(l0['Ac'], np.cos(arg0)) + \
+        T*np.dot(l1['As'], np.sin(arg1)) + \
+        T*np.dot(l1['Ac'], np.cos(arg1))
+    # parse IERS lunisolar obliquity table
+    o0, o1 = _parse_table_5_3b()
+    n0 = np.c_[o0['l'], o0['lp'], o0['F'], o0['D'], o0['Om']]
+    n1 = np.c_[o1['l'], o1['lp'], o1['F'], o1['D'], o1['Om']]
+    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
+    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
+    deps = np.dot(o0['Bs'], np.sin(arg0)) + \
+        np.dot(o0['Bc'], np.cos(arg0)) + \
+        T*np.dot(o1['Bs'], np.sin(arg1)) + \
+        T*np.dot(o1['Bc'], np.cos(arg1))
+    # estimate the rotation matrices
+    M1 = _precession_matrix(ts.T)
+    M2 = _nutation_matrix(epsilon, epsilon + matr*deps, dpsi*matr)
+    M3 = _frame_bias_matrix()
+    M4 = _polar_motion_matrix(ts.T)
+    # compute the rotation matrix
+    R = np.zeros((3, 3, len(ts)))
+    # compute the Greenwich Apparent Sidereal Time
+    # use UT1 time as input to gast function
+    for i, GAST in enumerate(gast(T)):
+        M = mxmxm(M1[:,:,i], M2[:,:,i], M3)
+        GAST = rotate(tau*GAST, 'z')
+        R[:,:,i] = mxmxm(M4[:,:,i], GAST, M).squeeze()
+    # return the rotation matrix
+    return R
+
+def _eqeq_complement(T):
+    """
+    Compute complementary terms of the equation of the
+    equinoxes [1]_ [2]_ [3]_
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+
+    References
+    ----------
+    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
+        "Expressions for IAU 2000 precession quantities",
+        *Astronomy & Astrophysics*, 412, 567--586, (2003).
+        `doi: 10.1051/0004-6361:20031539
+        <https://doi.org/10.1051/0004-6361:20031539>`_
+    .. [2] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
+        "Expressions for the Celestial Intermediate Pole and
+        Celestial Ephemeris Origin consistent with the IAU 2000A
+        precession-nutation model", *Astronomy & Astrophysics*,
+        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
+        <https://doi.org/10.1051/0004-6361:20030077>`_
+    .. [3] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+    """
+    # arcseconds to radians
+    atr = np.pi/648000.0
+    tau = 2.0*np.pi
+    # create timescale from centuries relative to 2000-01-01T12:00:00
+    ts = timescale(MJD=T*36525.0 + 51544.5)
+    # get the fundamental arguments in radians
+    fa = np.zeros((14, len(ts)))
+    # mean anomaly of the moon (arcseconds)
+    fa[0,:] = atr*polynomial_sum(np.array([485868.249036, 715923.2178,
+        31.8792, 0.051635, -2.447e-04]), ts.T) + tau*np.mod(1325.0*ts.T, 1.0)
+    # mean anomaly of the sun (arcseconds)
+    fa[1,:] = atr*polynomial_sum(np.array([1287104.79305,  1292581.0481,
+        -0.5532, 1.36e-4, -1.149e-05]), ts.T) + tau*np.mod(99.0*ts.T, 1.0)
+    # mean argument of the moon (arcseconds)
+    # (angular distance from the ascending node)
+    fa[2,:] = atr*polynomial_sum(np.array([335779.526232, 295262.8478,
+        -12.7512, -1.037e-3, 4.17e-6]), ts.T) + tau*np.mod(1342.0*ts.T, 1.0)
+    # mean elongation of the moon from the sun (arcseconds)
+    fa[3,:] = atr*polynomial_sum(np.array([1072260.70369, 1105601.2090,
+        -6.3706, 6.593e-3, -3.169e-05]), ts.T) + tau*np.mod(1236.0*ts.T, 1.0)
+    # mean longitude of the ascending node of the moon (arcseconds)
+    fa[4,:] = atr*polynomial_sum(np.array([450160.398036, -482890.5431,
+        7.4722, 7.702e-3, -5.939e-05]), ts.T) + tau*np.mod(-5.0*ts.T, 1.0)
+    # additional polynomial terms
+    fa[5,:] = polynomial_sum(np.array([4.402608842, 2608.7903141574]), ts.T)
+    fa[6,:] = polynomial_sum(np.array([3.176146697, 1021.3285546211]), ts.T)
+    fa[7,:] = polynomial_sum(np.array([1.753470314, 628.3075849991]), ts.T)
+    fa[8,:] = polynomial_sum(np.array([6.203480913, 334.0612426700]), ts.T)
+    fa[9,:] = polynomial_sum(np.array([0.599546497, 52.9690962641]), ts.T)
+    fa[10,:] = polynomial_sum(np.array([0.874016757, 21.3299104960]), ts.T)
+    fa[11,:] = polynomial_sum(np.array([5.481293872, 7.4781598567]), ts.T)
+    fa[12,:] = polynomial_sum(np.array([5.311886287, 3.8133035638]), ts.T)
+    fa[13,:] = polynomial_sum(np.array([0, 0.024381750, 0.00000538691]), ts.T)
+    # parse IERS Greenwich Sidereal Time (GST) table
+    j0, j1 = _parse_table_5_2e()
+    n0 = np.c_[j0['l'], j0['lp'], j0['F'], j0['D'], j0['Om'],
+        j0['L_Me'], j0['L_Ve'], j0['L_E'], j0['L_Ma'], j0['L_J'],
+        j0['L_Sa'], j0['L_U'], j0['L_Ne'], j0['p_A']]
+    n1 = np.c_[j1['l'], j1['lp'], j1['F'], j1['D'], j1['Om'],
+        j1['L_Me'], j1['L_Ve'], j1['L_E'], j1['L_Ma'], j1['L_J'],
+        j1['L_Sa'], j1['L_U'], j1['L_Ne'], j1['p_A']]
+    arg0 = np.dot(n0, np.mod(fa, tau))
+    arg1 = np.dot(n1, np.mod(fa, tau))
+    # evaluate the complementary terms and convert to radians
+    complement = (atr/1e6)*(np.dot(j0['Cs'], np.sin(arg0)) +
+        np.dot(j0['Cc'], np.cos(arg0)) +
+        T*np.dot(j1['Cs'], np.sin(arg1)) +
+        T*np.dot(j1['Cc'], np.cos(arg1)))
+    # return the complementary terms
+    return complement
+
+def _frame_bias_matrix():
+    """
+    Frame bias rotation matrix
+    """
+    # arcseconds to radians
+    atr = np.pi/648000.0
+    xi0  = -0.0166170*atr
+    eta0 = -0.0068192*atr
+    da0  = -0.01460*atr
+    # compute elements of the frame bias matrix
+    B = np.zeros((3,3))
+    B[0,1] = da0
+    B[0,2] = -xi0
+    B[1,0] = -da0
+    B[1,2] = -eta0
+    B[2,0] =  xi0
+    B[2,1] =  eta0
+    # second-order corrections to diagonal elements
+    B[0,0] = 1.0 - 0.5 * (da0**2 + xi0**2)
+    B[1,1] = 1.0 - 0.5 * (da0**2 + eta0**2)
+    B[2,2] = 1.0 - 0.5 * (eta0**2 + xi0**2)
+    # return the rotation matrix
+    return B
+
+def _nutation_matrix(
+        mean_obliquity: float | np.ndarray,
+        true_obliquity: float | np.ndarray,
+        psi: float | np.ndarray
+    ):
+    """
+    Nutation rotation matrix
+
+    Parameters
+    ----------
+    mean_obliquity: np.ndarray
+        Mean obliquity of the ecliptic
+    true_obliquity: np.ndarray
+        True obliquity of the ecliptic
+    psi: np.ndarray
+        Nutation in longitude
+    """
+    # compute elements of nutation rotation matrix
+    R = np.zeros((3,3,len(np.atleast_1d(psi))))
+    R[0,0,:] = np.cos(psi)
+    R[0,1,:] = -np.sin(psi)*np.cos(mean_obliquity)
+    R[0,2,:] = -np.sin(psi)*np.sin(mean_obliquity)
+    R[1,0,:] = np.sin(psi)*np.cos(true_obliquity)
+    R[1,1,:] = np.cos(psi)*np.cos(mean_obliquity)*np.cos(true_obliquity) + \
+        np.sin(mean_obliquity)*np.sin(true_obliquity)
+    R[1,2,:] = np.cos(psi)*np.sin(mean_obliquity)*np.cos(true_obliquity) - \
+        np.cos(mean_obliquity)*np.sin(true_obliquity)
+    R[2,0,:] = np.sin(psi)*np.sin(true_obliquity)
+    R[2,1,:] = np.cos(psi)*np.cos(mean_obliquity)*np.sin(true_obliquity) - \
+        np.sin(mean_obliquity)*np.cos(true_obliquity)
+    R[2,2,:] = np.cos(psi)*np.sin(mean_obliquity)*np.sin(true_obliquity) + \
+        np.cos(mean_obliquity)*np.cos(true_obliquity)
+    # return the rotation matrix
+    return R
+
+def _polar_motion_matrix(T):
+    """
+    Polar motion (Earth Orientation Parameters) rotation matrix
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+    """
+    # arcseconds to radians
+    atr = np.pi/648000.0
+    # convert to MJD from centuries relative to 2000-01-01T12:00:00
+    MJD = T*36525.0 + 51544.5
+    sprime = -4.7e-5*T
+    px, py = iers_polar_motion(MJD)
+    return mxmxm(rotate(py*atr,'x'), rotate(px*atr,'y'), rotate(-sprime*atr,'z'))
+
 def _precession_matrix(T: float | np.ndarray):
+    """
+    Precession rotation matrix
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+    """
     # arcseconds to radians
     atr = np.pi/648000.0
     # equatorial precession angles Lieske et al. (1977)
@@ -726,59 +1016,6 @@ def _precession_matrix(T: float | np.ndarray):
         np.cos(-OMEGA)*np.cos(EPS)
     # return the rotation matrix
     return P
-
-def _nutation_matrix(
-        mean_obliquity: float | np.ndarray,
-        true_obliquity: float | np.ndarray,
-        psi: float | np.ndarray
-    ):
-    # compute elements of nutation rotation matrix
-    R = np.zeros((3,3,len(np.atleast_1d(psi))))
-    R[0,0,:] = np.cos(psi)
-    R[0,1,:] = -np.sin(psi)*np.cos(mean_obliquity)
-    R[0,2,:] = -np.sin(psi)*np.sin(mean_obliquity)
-    R[1,0,:] = np.sin(psi)*np.cos(true_obliquity)
-    R[1,1,:] = np.cos(psi)*np.cos(mean_obliquity)*np.cos(true_obliquity) + \
-        np.sin(mean_obliquity)*np.sin(true_obliquity)
-    R[1,2,:] = np.cos(psi)*np.sin(mean_obliquity)*np.cos(true_obliquity) - \
-        np.cos(mean_obliquity)*np.sin(true_obliquity)
-    R[2,0,:] = np.sin(psi)*np.sin(true_obliquity)
-    R[2,1,:] = np.cos(psi)*np.cos(mean_obliquity)*np.sin(true_obliquity) - \
-        np.sin(mean_obliquity)*np.cos(true_obliquity)
-    R[2,2,:] = np.cos(psi)*np.sin(mean_obliquity)*np.sin(true_obliquity) + \
-        np.cos(mean_obliquity)*np.cos(true_obliquity)
-    # return the rotation matrix
-    return R
-
-def _frame_bias_matrix():
-    # arcseconds to radians
-    atr = np.pi/648000.0
-    xi0  = -0.0166170*atr
-    eta0 = -0.0068192*atr
-    da0  = -0.01460*atr
-    # compute elements of the frame bias matrix
-    B = np.zeros((3,3))
-    B[0,1] = da0
-    B[0,2] = -xi0
-    B[1,0] = -da0
-    B[1,2] = -eta0
-    B[2,0] =  xi0
-    B[2,1] =  eta0
-    # second-order corrections to diagonal elements
-    B[0,0] = 1.0 - 0.5 * (da0**2 + xi0**2)
-    B[1,1] = 1.0 - 0.5 * (da0**2 + eta0**2)
-    B[2,2] = 1.0 - 0.5 * (eta0**2 + xi0**2)
-    # return the rotation matrix
-    return B
-
-def _polar_motion_matrix(T):
-    # arcseconds to radians
-    atr = np.pi/648000.0
-    # convert to MJD from centuries relative to 2000-01-01T12:00:00
-    MJD = T*36525.0 + 51544.5
-    sprime = -4.7e-5*T
-    px, py = iers_polar_motion(MJD)
-    return mxmxm(rotate(py*atr,'x'), rotate(px*atr,'y'), rotate(-sprime*atr,'z'))
 
 def _parse_table_5_2e():
     """Parse table with expressions for Greenwich Sidereal Time

@@ -317,7 +317,7 @@ def compute_LPT_displacements(input_file, output_file,
     Srad.data[Srad.mask] = Srad.fill_value
 
     # output to file
-    output = dict(time=timescale.mjd, lon=lon, lat=lat, tide_pole=Srad)
+    output = dict(time=timescale.MJD, lon=lon, lat=lat, tide_pole=Srad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,

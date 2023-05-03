@@ -62,6 +62,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2023: use timescale class for time conversion operations
         use defaults from eop module for pole tide and EOP files
+        add option for using higher resolution ephemerides from JPL
     Updated 04/2023: added function for radial solid earth tides
         using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -300,7 +301,7 @@ def compute_tide_corrections(
     # output coordinate reference system
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(x.flatten(), y.flatten())
+    lon, lat = transformer.transform(x.flatten(), y.flatten())
 
     # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
@@ -362,7 +363,7 @@ def compute_tide_corrections(
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
     elif (TYPE.lower() == 'drift'):
-        npts = len(t)
+        npts = len(timescale)
         tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
@@ -371,14 +372,16 @@ def compute_tide_corrections(
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
-        npts = len(timescale)
-        tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
-        tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict.time_series(timescale.tide, hc, c,
-            deltat=deltat, corrections=model.format)
-        minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
-            deltat=deltat, corrections=model.format)
-        tide.data[:] += minor.data[:]
+        nstation = len(x); nt = len(timescale)
+        tide = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
+        tide.mask = np.zeros((nstation,nt),dtype=bool)
+        for s in range(nstation):
+            TIDE = pyTMD.predict.time_series(timescale.tide, hc[s,None,:], c,
+                deltat=deltat, corrections=model.format)
+            MINOR = pyTMD.predict.infer_minor(timescale.tide, hc[s,None,:], c,
+                deltat=deltat, corrections=model.format)
+            tide.data[s,:] = TIDE.data[:] + MINOR.data[:]
+            tide.mask[s,:] = (TIDE.mask | MINOR.mask)
     # replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
 
@@ -888,6 +891,7 @@ def compute_SET_corrections(
         TIME: str = 'UTC',
         ELLIPSOID: str = 'WGS84',
         TIDE_SYSTEM='tide_free',
+        EPHEMERIDES='approximate',
         **kwargs
     ):
     """
@@ -930,6 +934,11 @@ def compute_SET_corrections(
 
             - ``'tide_free'``: no permanent direct and indirect tidal potentials
             - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+    EPHEMERIDES: str, default 'approximate'
+        Ephemerides for calculating Earth parameters
+
+            - ``'approximate'``: approximate lunisolar parameters
+            - ``'JPL'``: computed from JPL ephmerides kernel
 
     Returns
     -------
@@ -940,6 +949,7 @@ def compute_SET_corrections(
     # validate input arguments
     assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
     assert TIDE_SYSTEM in ('mean_tide', 'tide_free')
+    assert EPHEMERIDES in ('approximate', 'JPL')
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -986,9 +996,15 @@ def compute_SET_corrections(
     # convert input coordinates to cartesian
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
-    # get low-resolution solar and lunar ephemerides
-    SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.mjd)
-    LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.mjd)
+    # compute ephemerides for lunisolar coordinates
+    if (EPHEMERIDES.lower() == 'approximate'):
+        # get low-resolution solar and lunar ephemerides
+        SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD)
+        LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD)
+    elif (EPHEMERIDES.upper() == 'JPL'):
+        # compute solar and lunar ephemerides from JPL kernel
+        SX, SY, SZ = pyTMD.astro.solar_ephemerides(timescale.MJD)
+        LX, LY, LZ = pyTMD.astro.lunar_ephemerides(timescale.MJD)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):

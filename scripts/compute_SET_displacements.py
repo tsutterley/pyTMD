@@ -43,6 +43,9 @@ COMMAND LINE OPTIONS:
     -p X, --tide-system X: Permanent tide system for output values
         tide_free: no permanent direct and indirect tidal potentials
         mean_tide: permanent tidal potentials (direct and indirect)
+    -c X, --ephemerides X: method for calculating lunisolar ephemerides
+        approximate: low-resolution ephemerides (default)
+        JPL: computed solar and lunar ephemerides from JPL kernels
     -V, --verbose: Verbose output of processing run
     -M X, --mode X: Permission mode of output file
 
@@ -89,6 +92,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 05/2023: use timescale class for time conversion operations
+        add option for using higher resolution ephemerides from JPL
     Updated 04/2023: using pathlib to define and expand paths
     Written 04/2023
 """
@@ -151,6 +155,7 @@ def compute_SET_displacements(input_file, output_file,
     PROJECTION='4326',
     ELLIPSOID='WGS84',
     TIDE_SYSTEM='tide_free',
+    EPHEMERIDES='approximate',
     VERBOSE=False,
     MODE=0o775):
 
@@ -250,9 +255,15 @@ def compute_SET_displacements(input_file, output_file,
     # convert input coordinates to cartesian
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
-    # get low-resolution solar and lunar ephemerides
-    SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.mjd)
-    LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.mjd)
+    # compute ephemerides for lunisolar coordinates
+    if (EPHEMERIDES.lower() == 'approximate'):
+        # get low-resolution solar and lunar ephemerides
+        SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD)
+        LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD)
+    elif (EPHEMERIDES.upper() == 'JPL'):
+        # compute solar and lunar ephemerides from JPL kernel
+        SX, SY, SZ = pyTMD.astro.solar_ephemerides(timescale.MJD)
+        LX, LY, LZ = pyTMD.astro.lunar_ephemerides(timescale.MJD)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -394,6 +405,10 @@ def arguments():
     parser.add_argument('--tide-system','-p',
         type=str, choices=('tide_free','mean_tide'), default='tide_free',
         help='Permanent tide system for output values')
+    # method for calculating lunisolar ephemerides
+    parser.add_argument('--ephemerides','-c',
+        type=str, choices=('approximate','JPL'), default='approximate',
+        help='Method for calculating lunisolar ephemerides')
     # verbose output of processing run
     # print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -430,6 +445,7 @@ def main():
         PROJECTION=args.projection,
         ELLIPSOID=args.ellipsoid,
         TIDE_SYSTEM=args.tide_system,
+        EPHEMERIDES=args.ephemerides,
         VERBOSE=args.verbose,
         MODE=args.mode)
 
