@@ -20,15 +20,7 @@ Calling Sequence
 
 .. autofunction:: pyTMD.astro.polynomial_sum
 
-.. autofunction:: pyTMD.astro.mxv
-
-.. autofunction:: pyTMD.astro.mxm
-
-.. autofunction:: pyTMD.astro.mxmxm
-
 .. autofunction:: pyTMD.astro.rotate
-
-.. autofunction:: pyTMD.astro.scale
 
 .. autofunction:: pyTMD.astro.mean_longitudes
 

@@ -79,20 +79,6 @@ def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
     t = np.atleast_1d(t)
     return np.sum([c * (t ** i) for i, c in enumerate(coefficients)], axis=0)
 
-def mxv(m, v):
-    """Multiply a matrix by a vector."""
-    return np.einsum('ij...,j...->i...', m, v)
-
-def mxm(m1, m2):
-    """Multiply 2 matrices together
-    """
-    return np.einsum('ij...,jk...->ik...', m1, m2)
-
-def mxmxm(m1, m2, m3):
-    """Multiply 3 matrices together
-    """
-    return np.einsum('ij...,jk...,kl...->il...', m1, m2, m3)
-
 def rotate(theta: float | np.ndarray, axis: str = 'x'):
     """
     Rotate a 3-dimensional matrix about a given axis
@@ -131,20 +117,6 @@ def rotate(theta: float | np.ndarray, axis: str = 'x'):
         raise ValueError(f'Invalid axis {axis}')
     # return the rotation matrix
     return R
-
-def scale(factor: float | np.ndarray):
-    """
-    Scale a 3-dimensional matrix by a given factor
-
-    Parameters
-    ----------
-    factor: float or np.ndarray
-        Scaling factor
-    """
-    # calculate output scaling matrix
-    S = np.diag(np.ones((3))*factor)
-    # return the scaling matrix
-    return S
 
 # PURPOSE: compute the basic astronomical mean longitudes
 def mean_longitudes(
@@ -788,15 +760,17 @@ def itrs(T):
     M2 = _nutation_matrix(epsilon, true_obliquity, dpsi*ts.masec2rad)
     M3 = _frame_bias_matrix()
     M4 = _polar_motion_matrix(ts.T)
-    # compute the rotation matrix
-    R = np.zeros((3, 3, len(ts)))
+    # calculate the combined rotation matrix for
+    # M1: precession
+    # M2: nutation
+    # M3: frame bias
+    # M4: polar motion
+    M = np.einsum('ijt...,jkt...,kl...,lmt...->imt...', M1, M2, M3, M4)
     # compute the Greenwich Apparent Sidereal Time
     # use UT1 time as input to gast function
-    for i, GAST in enumerate(gast(T)):
-        M = mxmxm(M1[:,:,i], M2[:,:,i], M3)
-        GAST = rotate(ts.tau*GAST, 'z')
-        R[:,:,i] = mxmxm(M4[:,:,i], GAST, M).squeeze()
-    # return the rotation matrix
+    GAST = rotate(ts.tau*gast(T), 'z')
+    R = np.einsum('ijt...,jkt->ikt...', GAST, M)
+    # return the combined rotation matrix
     return R
 
 def _eqeq_complement(T):
@@ -949,7 +923,12 @@ def _polar_motion_matrix(T):
     MJD = T*36525.0 + 51544.5
     sprime = -4.7e-5*T
     px, py = iers_polar_motion(MJD)
-    return mxmxm(rotate(py*atr,'x'), rotate(px*atr,'y'), rotate(-sprime*atr,'z'))
+    # calculate the rotation matrices
+    M1 = rotate(py*atr,'x')
+    M2 = rotate(px*atr,'y')
+    M3 = rotate(-sprime*atr,'z')
+    # calculate the combined rotation matrix
+    return np.einsum('ij...,jk...,kl...->il...', M1, M2, M3)
 
 def _precession_matrix(T: float | np.ndarray):
     """
