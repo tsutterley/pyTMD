@@ -312,6 +312,8 @@ def compute_tide_corrections(
     else:
         timescale = pyTMD.time.timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
+    # number of time points
+    nt = len(timescale)
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
@@ -320,14 +322,14 @@ def compute_tide_corrections(
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             grid=model.format, apply_flexure=APPLY_FLEXURE)
         # use delta time at 2000.0 to match TMD outputs
-        deltat = np.zeros_like(timescale, dtype=np.float64)
+        deltat = np.zeros((nt), dtype=np.float64)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
             model.model_file, type=model.type, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
         # use delta time at 2000.0 to match TMD outputs
-        deltat = np.zeros_like(timescale, dtype=np.float64)
+        deltat = np.zeros((nt), dtype=np.float64)
     elif (model.format == 'GOT'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
@@ -351,7 +353,7 @@ def compute_tide_corrections(
 
     # predict tidal elevations at time and infer minor corrections
     if (TYPE.lower() == 'grid'):
-        ny,nx = np.shape(x); nt = len(timescale)
+        ny,nx = np.shape(x)
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
@@ -363,8 +365,7 @@ def compute_tide_corrections(
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
     elif (TYPE.lower() == 'drift'):
-        npts = len(timescale)
-        tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
+        tide = np.ma.zeros((nt), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
             deltat=deltat, corrections=model.format)
@@ -372,7 +373,7 @@ def compute_tide_corrections(
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
-        nstation = len(x); nt = len(timescale)
+        nstation = len(x)
         tide = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         tide.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):

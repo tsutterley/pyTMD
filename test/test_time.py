@@ -127,6 +127,12 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
         epoch1=pyTMD.time._gps_epoch, epoch2=pyTMD.time._atlas_sdp_epoch,
         scale=1.0)
     assert (delta_time == output_time)
+    # calculate and compare with timescale values
+    GPS = pyTMD.time.timescale().from_deltatime(gps_seconds,
+        epoch=pyTMD.time._gps_epoch, standard='GPS')
+    output_time = GPS.to_deltatime(pyTMD.time._atlas_sdp_epoch,
+        scale=GPS.day)
+    assert np.isclose(delta_time, output_time)
 
 # PURPOSE: test timescale class conversions and constants
 def test_timescale():

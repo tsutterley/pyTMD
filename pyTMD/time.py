@@ -269,7 +269,7 @@ def convert_calendar_dates(
     Returns
     -------
     delta_time: np.ndarray
-        days since epoch
+        time since epoch
     """
     # calculate date in Modified Julian Days (MJD) from calendar date
     # MJD: days since November 17, 1858 (1858-11-17T00:00:00)
@@ -280,7 +280,7 @@ def convert_calendar_dates(
     epoch1 = datetime.datetime(*_mjd_epoch)
     epoch2 = datetime.datetime(*epoch)
     delta_time_epochs = (epoch2 - epoch1).total_seconds()
-    # return the date in days since epoch
+    # return the date in units (default days) since epoch
     return scale*np.array(MJD - delta_time_epochs/86400.0, dtype=np.float64)
 
 # PURPOSE: Converts from calendar dates into decimal years
@@ -665,6 +665,24 @@ class timescale:
         # to days relative to 1992-01-01T00:00:00
         self.MJD = convert_datetime(datetime, epoch=_mjd_epoch)/self.day
         return self
+
+    def to_deltatime(self, epoch: tuple | list | np.ndarray, scale: float = 1.0):
+        """
+        epoch: tuple, list, or np.ndarray
+            epoch for output delta_time
+        scale: float, default 1.0
+            scaling factor for converting time to output units
+
+        Returns
+        -------
+        delta_time: np.ndarray
+            time since epoch
+        """
+        epoch1 = datetime.datetime(*_mjd_epoch)
+        epoch2 = datetime.datetime(*epoch)
+        delta_time_epochs = (epoch2 - epoch1).total_seconds()
+        # return the date in time (default days) since epoch
+        return scale*np.array(self.MJD - delta_time_epochs/self.day, dtype=np.float64)
 
     # PURPOSE: calculate the sum of a polynomial function of time
     def polynomial_sum(self, coefficients: list | np.ndarray, t: np.ndarray):
