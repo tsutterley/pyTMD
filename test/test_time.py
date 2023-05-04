@@ -128,6 +128,34 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
         scale=1.0)
     assert (delta_time == output_time)
 
+# PURPOSE: test timescale class conversions and constants
+def test_timescale():
+    # ATLAS Standard Data Epoch
+    atlas_sdp_epoch = np.datetime64('2018-01-01 00:00:00')
+    # from datetime
+    ATLAS = pyTMD.time.timescale().from_datetime(atlas_sdp_epoch)
+    assert np.all(ATLAS.MJD == 58119)
+    assert np.all(ATLAS.tide == 9497)
+    # from deltatime
+    ATLAS = pyTMD.time.timescale().from_deltatime(0, epoch=(2018,1,1))
+    assert np.all(ATLAS.MJD == 58119)
+    assert np.all(ATLAS.tide == 9497)
+    # from MJD
+    ATLAS = pyTMD.time.timescale(MJD=58119)
+    assert np.all(ATLAS.ut1 == 2458119.5)
+    assert np.all(ATLAS.tide == 9497)
+    assert np.all((ATLAS.MJD - 51544.5) == (ATLAS.ut1 - 2451545.0))
+    # check constants
+    assert (ATLAS.century == 36525.0)
+    assert (ATLAS.day == 86400.0)
+    assert (ATLAS.turn == 1.0)
+    assert (ATLAS.turndeg == 360.0)
+    assert (ATLAS.turnasec == 1296000.0)
+    assert (ATLAS.deg2asec == 3600.0)
+    assert (ATLAS.deg2rad == np.pi/180.0)
+    assert (ATLAS.asec2rad == np.pi/648000.0)
+    assert (ATLAS.masec2rad == np.pi/0.648e12)
+
 # PURPOSE: update delta time files and values
 def test_update_delta_time(username, password):
     pyTMD.time.merge_delta_time(username=username,password=password)

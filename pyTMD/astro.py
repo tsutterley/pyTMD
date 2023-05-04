@@ -445,29 +445,26 @@ def solar_ecef(MJD: np.ndarray):
     .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
         146 pp., (1989).
     """
-    # degrees and arcseconds to radians
-    dtr = np.pi/180.0
-    atr = np.pi/648000.0
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
     # mean longitude of solar perigee (radians)
-    PP = dtr*(282.94 + 1.7192 * ts.T)
+    PP = ts.deg2rad*(282.94 + 1.7192 * ts.T)
     # mean anomaly of the sun (radians)
     solar_anomaly = np.array([357.5256, 35999.049, -1.559e-4, -4.8e-7])
-    M = dtr*polynomial_sum(solar_anomaly, ts.T)
+    M = ts.deg2rad*polynomial_sum(solar_anomaly, ts.T)
     # series expansion for mean anomaly in solar radius (meters)
     r_sun = 1e9*(149.619 - 2.499*np.cos(M) - 0.021*np.cos(2.0*M))
     # series expansion for ecliptic longitude of the sun (radians)
-    lambda_sun = PP + M + atr*(6892.0*np.sin(M) + 72.0*np.sin(2.0*M))
+    lambda_sun = PP + M + ts.asec2rad*(6892.0*np.sin(M) + 72.0*np.sin(2.0*M))
     # ecliptic latitude is equal to 0 within 1 arcminute
     # obliquity of the J2000 ecliptic (radians)
-    epsilon_j2000 = 23.43929111*dtr
+    epsilon_j2000 = 23.43929111*ts.deg2rad
     # convert to position vectors
     x = r_sun*np.cos(lambda_sun)
     y = r_sun*np.sin(lambda_sun)*np.cos(epsilon_j2000)
     z = r_sun*np.sin(lambda_sun)*np.sin(epsilon_j2000)
     # Greenwich hour angle (radians)
-    rot_z = rotate(ts.gha*dtr, 'z')
+    rot_z = rotate(ts.gha*ts.deg2rad, 'z')
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
@@ -523,7 +520,7 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
         EMB_to_Earth.compute(ts.tt))
     # rotate to cartesian (ECEF) coordinates
     # use UT1 time as input to itrs rotation function
-    rot_z = itrs((MJD - 51544.5)/36525.0)
+    rot_z = itrs((ts.ut1 - 2451545.0)/ts.century)
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
     Y = rot_z[1,0,:]*x + rot_z[1,1,:]*y + rot_z[1,2,:]*z
     Z = rot_z[2,0,:]*x + rot_z[2,1,:]*y + rot_z[2,2,:]*z
@@ -552,34 +549,31 @@ def lunar_ecef(MJD: np.ndarray):
     .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
         146 pp., (1989).
     """
-    # degrees and arcseconds to radians
-    dtr = np.pi/180.0
-    atr = np.pi/648000.0
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
     # mean longitude of moon (p. 338)
     lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
             1.855835e-6, -1.53388e-8])
-    s = dtr*polynomial_sum(lunar_longitude, ts.T)
+    s = ts.deg2rad*polynomial_sum(lunar_longitude, ts.T)
     # difference between the mean longitude of sun and moon (p. 338)
     lunar_elongation = np.array([297.8501921, 445267.1114034, -1.8819e-3,
             1.83195e-6, -8.8445e-9])
-    D = dtr*polynomial_sum(lunar_elongation, ts.T)
+    D = ts.deg2rad*polynomial_sum(lunar_elongation, ts.T)
     # mean longitude of ascending lunar node (p. 144)
     lunar_node = np.array([125.04452, -1934.136261, 2.0708e-3, 2.22222e-6])
-    N = dtr*polynomial_sum(lunar_node, ts.T)
+    N = ts.deg2rad*polynomial_sum(lunar_node, ts.T)
     F = s - N
     # mean anomaly of the sun (radians)
-    M = dtr*(357.5256 + 35999.049*ts.T)
+    M = ts.deg2rad*(357.5256 + 35999.049*ts.T)
     # mean anomaly of the moon (radians)
-    l = dtr*(134.96292 + 477198.86753*ts.T)
+    l = ts.deg2rad*(134.96292 + 477198.86753*ts.T)
     # series expansion for mean anomaly in moon radius (meters)
     r_moon = 1e3*(385000.0 - 20905.0*np.cos(l) - 3699.0*np.cos(2.0*D - l) -
         2956.0*np.cos(2.0*D) - 570.0*np.cos(2.0*l) +
         246.0*np.cos(2.0*l - 2.0*D) - 205.0*np.cos(M - 2.0*D) -
         171.0*np.cos(l + 2.0*D) - 152.0*np.cos(l + M - 2.0*D))
     # series expansion for ecliptic longitude of the moon (radians)
-    lambda_moon = s + atr*(
+    lambda_moon = s + ts.asec2rad*(
         22640.0*np.sin(l) + 769.0*np.sin(2.0*l) -
         4586.0*np.sin(l - 2.0*D) + 2370.0*np.sin(2.0*D) -
         668.0*np.sin(M) - 412.0*np.sin(2.0*F) -
@@ -589,8 +583,8 @@ def lunar_ecef(MJD: np.ndarray):
         110.0*np.sin(l + M) - 55.0*np.sin(2.0*F - 2.0*D)
     )
     # series expansion for ecliptic latitude of the moon (radians)
-    q = atr*(412.0*np.sin(2.0*F) + 541.0*np.sin(M))
-    beta_moon = atr*(18520.0*np.sin(F + lambda_moon - s + q) -
+    q = ts.asec2rad*(412.0*np.sin(2.0*F) + 541.0*np.sin(M))
+    beta_moon = ts.asec2rad*(18520.0*np.sin(F + lambda_moon - s + q) -
         526.0*np.sin(F - 2*D) + 44.0*np.sin(l + F - 2.0*D) -
         31.0*np.sin(-l + F - 2.0*D) - 25.0*np.sin(-2.0*l + F) -
         23.0*np.sin(M + F - 2.0*D) + 21.0*np.sin(-l + F) +
@@ -601,14 +595,14 @@ def lunar_ecef(MJD: np.ndarray):
     y = r_moon*np.sin(lambda_moon)*np.cos(beta_moon)
     z = r_moon*np.sin(beta_moon)
     # obliquity of the J2000 ecliptic (radians)
-    epsilon_j2000 = 23.43929111*dtr
+    epsilon_j2000 = 23.43929111*ts.deg2rad
     # rotate by ecliptic
     rot_x = rotate(-epsilon_j2000, 'x')
     u = rot_x[0,0,:]*x + rot_x[0,1,:]*y + rot_x[0,2,:]*z
     v = rot_x[1,0,:]*x + rot_x[1,1,:]*y + rot_x[1,2,:]*z
     w = rot_x[2,0,:]*x + rot_x[2,1,:]*y + rot_x[2,2,:]*z
     # Greenwich hour angle (radians)
-    rot_z = rotate(ts.gha*dtr, 'z')
+    rot_z = rotate(ts.gha*ts.deg2rad, 'z')
     # rotate to cartesian (ECEF) coordinates
     # ignoring polar motion and length-of-day variations
     X = rot_z[0,0,:]*u + rot_z[0,1,:]*v + rot_z[0,2,:]*w
@@ -661,7 +655,7 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     x, y, z = 1e3*(EMB_to_Moon.compute(ts.tt) - EMB_to_Earth.compute(ts.tt))
     # rotate to cartesian (ECEF) coordinates
     # use UT1 time as input to itrs rotation function
-    rot_z = itrs((MJD - 51544.5)/36525.0)
+    rot_z = itrs((ts.ut1 - 2451545.0)/ts.century)
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
     Y = rot_z[1,0,:]*x + rot_z[1,1,:]*y + rot_z[1,2,:]*z
     Z = rot_z[2,0,:]*x + rot_z[2,1,:]*y + rot_z[2,2,:]*z
@@ -694,8 +688,6 @@ def gast(T):
         `IERS Technical Note No. 36
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
-    # microarcseconds to radians
-    matr = np.pi/0.648e12
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
@@ -726,7 +718,8 @@ def gast(T):
         T*np.dot(o1['Bs'], np.sin(arg1)) + \
         T*np.dot(o1['Bc'], np.cos(arg1))
     # traditional equation of the equinoxes
-    eqeq = (matr*dpsi)*np.cos(epsilon + matr*deps) + _eqeq_complement(T)
+    c = _eqeq_complement(T)
+    eqeq = (ts.masec2rad*dpsi)*np.cos(epsilon + ts.masec2rad*deps) + c
     return np.mod(ts.st + eqeq/24.0, 1.0)
 
 def itrs(T):
@@ -760,9 +753,6 @@ def itrs(T):
         `IERS Technical Note No. 36
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
-    # microarcseconds to radians
-    matr = np.pi/0.648e12
-    tau = 2.0*np.pi
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
@@ -794,7 +784,8 @@ def itrs(T):
         T*np.dot(o1['Bc'], np.cos(arg1))
     # estimate the rotation matrices
     M1 = _precession_matrix(ts.T)
-    M2 = _nutation_matrix(epsilon, epsilon + matr*deps, dpsi*matr)
+    true_obliquity = epsilon + ts.masec2rad*deps
+    M2 = _nutation_matrix(epsilon, true_obliquity, dpsi*ts.masec2rad)
     M3 = _frame_bias_matrix()
     M4 = _polar_motion_matrix(ts.T)
     # compute the rotation matrix
@@ -803,7 +794,7 @@ def itrs(T):
     # use UT1 time as input to gast function
     for i, GAST in enumerate(gast(T)):
         M = mxmxm(M1[:,:,i], M2[:,:,i], M3)
-        GAST = rotate(tau*GAST, 'z')
+        GAST = rotate(ts.tau*GAST, 'z')
         R[:,:,i] = mxmxm(M4[:,:,i], GAST, M).squeeze()
     # return the rotation matrix
     return R
@@ -836,29 +827,26 @@ def _eqeq_complement(T):
         `IERS Technical Note No. 36
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
-    # arcseconds to radians
-    atr = np.pi/648000.0
-    tau = 2.0*np.pi
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale(MJD=T*36525.0 + 51544.5)
     # get the fundamental arguments in radians
     fa = np.zeros((14, len(ts)))
     # mean anomaly of the moon (arcseconds)
-    fa[0,:] = atr*polynomial_sum(np.array([485868.249036, 715923.2178,
-        31.8792, 0.051635, -2.447e-04]), ts.T) + tau*np.mod(1325.0*ts.T, 1.0)
+    fa[0,:] = ts.asec2rad*polynomial_sum(np.array([485868.249036, 715923.2178,
+        31.8792, 0.051635, -2.447e-04]), ts.T) + ts.tau*np.mod(1325.0*ts.T, 1.0)
     # mean anomaly of the sun (arcseconds)
-    fa[1,:] = atr*polynomial_sum(np.array([1287104.79305,  1292581.0481,
-        -0.5532, 1.36e-4, -1.149e-05]), ts.T) + tau*np.mod(99.0*ts.T, 1.0)
+    fa[1,:] = ts.asec2rad*polynomial_sum(np.array([1287104.79305,  1292581.0481,
+        -0.5532, 1.36e-4, -1.149e-05]), ts.T) + ts.tau*np.mod(99.0*ts.T, 1.0)
     # mean argument of the moon (arcseconds)
     # (angular distance from the ascending node)
-    fa[2,:] = atr*polynomial_sum(np.array([335779.526232, 295262.8478,
-        -12.7512, -1.037e-3, 4.17e-6]), ts.T) + tau*np.mod(1342.0*ts.T, 1.0)
+    fa[2,:] = ts.asec2rad*polynomial_sum(np.array([335779.526232, 295262.8478,
+        -12.7512, -1.037e-3, 4.17e-6]), ts.T) + ts.tau*np.mod(1342.0*ts.T, 1.0)
     # mean elongation of the moon from the sun (arcseconds)
-    fa[3,:] = atr*polynomial_sum(np.array([1072260.70369, 1105601.2090,
-        -6.3706, 6.593e-3, -3.169e-05]), ts.T) + tau*np.mod(1236.0*ts.T, 1.0)
+    fa[3,:] = ts.asec2rad*polynomial_sum(np.array([1072260.70369, 1105601.2090,
+        -6.3706, 6.593e-3, -3.169e-05]), ts.T) + ts.tau*np.mod(1236.0*ts.T, 1.0)
     # mean longitude of the ascending node of the moon (arcseconds)
-    fa[4,:] = atr*polynomial_sum(np.array([450160.398036, -482890.5431,
-        7.4722, 7.702e-3, -5.939e-05]), ts.T) + tau*np.mod(-5.0*ts.T, 1.0)
+    fa[4,:] = ts.asec2rad*polynomial_sum(np.array([450160.398036, -482890.5431,
+        7.4722, 7.702e-3, -5.939e-05]), ts.T) + ts.tau*np.mod(-5.0*ts.T, 1.0)
     # additional polynomial terms
     fa[5,:] = polynomial_sum(np.array([4.402608842, 2608.7903141574]), ts.T)
     fa[6,:] = polynomial_sum(np.array([3.176146697, 1021.3285546211]), ts.T)
@@ -877,10 +865,10 @@ def _eqeq_complement(T):
     n1 = np.c_[j1['l'], j1['lp'], j1['F'], j1['D'], j1['Om'],
         j1['L_Me'], j1['L_Ve'], j1['L_E'], j1['L_Ma'], j1['L_J'],
         j1['L_Sa'], j1['L_U'], j1['L_Ne'], j1['p_A']]
-    arg0 = np.dot(n0, np.mod(fa, tau))
-    arg1 = np.dot(n1, np.mod(fa, tau))
+    arg0 = np.dot(n0, np.mod(fa, ts.tau))
+    arg1 = np.dot(n1, np.mod(fa, ts.tau))
     # evaluate the complementary terms and convert to radians
-    complement = (atr/1e6)*(np.dot(j0['Cs'], np.sin(arg0)) +
+    complement = ts.masec2rad*(np.dot(j0['Cs'], np.sin(arg0)) +
         np.dot(j0['Cc'], np.cos(arg0)) +
         T*np.dot(j1['Cs'], np.sin(arg1)) +
         T*np.dot(j1['Cc'], np.cos(arg1)))

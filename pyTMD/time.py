@@ -572,9 +572,11 @@ class timescale:
         Fraction of a full turn
     turndeg: float
         Degrees in a full turn
+    tau: float
+        Radians in a full turn
     deg2rad: float
         Degrees to radians
-    deg2arc: float
+    deg2asec: float
         Degrees to arcseconds
     """
     def __init__(self, MJD=None):
@@ -589,10 +591,11 @@ class timescale:
         # 360 degrees
         self.turn = 1.0
         self.turndeg = 360.0
+        self.tau = 2.0*np.pi
         # degrees to radians
         self.deg2rad = np.pi/180.0
         # degrees to arcseconds
-        self.deg2arc = 3600.0
+        self.deg2asec = 3600.0
         # iterator
         self.__index__ = 0
 
@@ -643,9 +646,9 @@ class timescale:
             self.leaps = count_leap_seconds(GPS_Time) - \
                 count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
         else:
-            leap_seconds = 0.0
+            self.leaps = 0.0
         # convert time to days relative to Modified Julian days in UTC
-        self.MJD = convert_delta_time(delta_time - leap_seconds,
+        self.MJD = convert_delta_time(delta_time - self.leaps,
             epoch1=epoch, epoch2=_mjd_epoch, scale=(1.0/self.day))
         return self
 
@@ -721,7 +724,7 @@ class timescale:
             -2.9956e-05, -3.68e-08])
         ST = self.polynomial_sum(sidereal_time, self.T)
         # get earth rotation angle and convert to arcseconds
-        return np.mod(ST + self.era*self.deg2arc, self.turnarc)/self.turnarc
+        return np.mod(ST + self.era*self.deg2asec, self.turnasec)/self.turnasec
 
     @pyTMD.utilities.reify
     def tide(self):
@@ -749,23 +752,29 @@ class timescale:
         """
         return (self.tt - 2451545.0)/self.century
 
+    @pyTMD.utilities.reify
+    def ut1(self):
+        """Universal Time (UT) as Julian Days
+        """
+        return self.MJD + 2400000.5
+
     @property
-    def turnarc(self):
+    def turnasec(self):
         """Arcseconds in a full turn
         """
-        return self.turndeg*self.deg2arc
+        return self.turndeg*self.deg2asec
 
     @property
-    def arc2rad(self):
+    def asec2rad(self):
         """Arcseconds to radians
         """
-        return self.deg2rad/self.deg2arc
+        return self.deg2rad/self.deg2asec
 
     @property
-    def marc2rad(self):
+    def masec2rad(self):
         """Microarcseconds to radians
         """
-        return self.arc2rad/1.0e6
+        return self.asec2rad/1.0e6
 
     @property
     def dtype(self):
