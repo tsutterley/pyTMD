@@ -15,6 +15,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2023: using pathlib to define and expand paths
+        add wrapper function for interpolating daily EOP values
+        have mean pole and finals file as attributes of EOP module
     Updated 03/2023: add secular pole model from IERS 2018 conventions
     Updated 11/2022: added encoding for writing ascii files
         use f-strings for formatting verbose or ascii output
@@ -26,8 +28,15 @@ from __future__ import annotations
 
 import logging
 import pathlib
+import traceback
 import numpy as np
+import scipy.interpolate
 import pyTMD.utilities
+
+# IERS mean pole file for 2015 conventional mean pole
+_mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
+# daily polar motion file from IERS
+_finals_file = pyTMD.utilities.get_data_path(['data','finals.all'])
 
 # PURPOSE: connects to servers and downloads mean pole files
 def update_mean_pole(verbose: bool = False, mode: oct = 0o775):
@@ -48,33 +57,34 @@ def update_mean_pole(verbose: bool = False, mode: oct = 0o775):
     mode: oct, default 0o775
         permissions mode of output file
     """
-    # local version of file
-    FILE = 'mean-pole.tab'
-    LOCAL = pyTMD.utilities.get_data_path(['data', FILE])
-    HASH = pyTMD.utilities.get_hash(LOCAL)
+    # check hash of local version of file
+    LOCAL = _mean_pole_file
+    HASH = pyTMD.utilities.get_hash(_mean_pole_file)
 
     # try downloading from Paris Observatory IERS Centers ftp servers
-    HOST = ['hpiers.obspm.fr', 'iers', 'eop', 'eopc01', FILE]
+    HOST = ['hpiers.obspm.fr', 'iers', 'eop', 'eopc01', 'mean-pole.tab']
     try:
         pyTMD.utilities.from_ftp(HOST, timeout=20, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
     except Exception as exc:
+        logging.debug(traceback.format_exc(exc))
         pass
     else:
         return
 
     # try downloading from Paris Observatory IERS Centers https servers
-    HOST = ['http://hpiers.obspm.fr', 'eoppc', 'eop', 'eopc01', FILE]
+    HOST = ['http://hpiers.obspm.fr', 'eoppc', 'eop', 'eopc01', 'mean-pole.tab']
     try:
         pyTMD.utilities.from_http(HOST, timeout=20, local=LOCAL,
             hash=HASH, verbose=verbose, mode=mode)
     except Exception as exc:
+        logging.debug(traceback.format_exc(exc))
         pass
     else:
         return
 
     # raise exception
-    raise RuntimeError(f'Unable to download {FILE}')
+    raise RuntimeError(f'Unable to download {LOCAL}')
 
 # PURPOSE: read table of IERS pole coordinates and calculate Gaussian average
 def calculate_mean_pole(verbose: bool = False, mode: oct = 0o775):
@@ -118,7 +128,7 @@ def calculate_mean_pole(verbose: bool = False, mode: oct = 0o775):
     xm = np.zeros((nlines))
     ym = np.zeros((nlines))
     # output file with mean pole coordinates
-    LOCAL = pyTMD.utilities.get_data_path(['data', 'mean-pole.tab'])
+    LOCAL = _mean_pole_file
     fid = LOCAL.open(mode='w', encoding='utf8')
     logging.info(str(LOCAL))
     for i, T in enumerate(data['an']):
@@ -217,7 +227,7 @@ def update_finals_file(
         permissions mode of output file
     """
     # local version of file
-    LOCAL = pyTMD.utilities.get_data_path(['data', 'finals.all'])
+    LOCAL = _finals_file
     HASH = pyTMD.utilities.get_hash(LOCAL)
 
     # try downloading from US Naval Oceanography Portal
@@ -276,9 +286,8 @@ def update_finals_file(
 _conventions = ('2003', '2010', '2015', '2018')
 # read table of mean pole values, calculate angular coordinates at epoch
 def iers_mean_pole(
-        input_file: str | pathlib.Path,
         input_epoch: np.ndarray,
-        convention: str,
+        convention: str = '2018',
         **kwargs
     ):
     """
@@ -287,18 +296,18 @@ def iers_mean_pole(
 
     Parameters
     ----------
-    input_file: str or pathlib.Path
-        Full path to mean-pole.tab file provided by IERS
     input_epoch: np.ndarray
         Dates for the angular coordinates of the Conventional Mean Pole
         in decimal years
-    convention: str
+    convention: str, default '2018'
         IERS Mean or Secular Pole Convention
 
             - ``'2003'``
             - ``'2010'``
             - ``'2015'``
             - ``'2018'``
+    input_file: str or pathlib.Path
+        Full path to mean-pole.tab file provided by IERS
     fill_value: float, default np.nan
         Value for invalid flags
 
@@ -319,21 +328,26 @@ def iers_mean_pole(
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # set default keyword arguments
+    kwargs.setdefault('file', _mean_pole_file)
     kwargs.setdefault('fill_value', np.nan)
     # verify IERS model version
     assert convention in _conventions, "Incorrect IERS model convention"
-    # read mean pole file
-    input_file = pathlib.Path(input_file).expanduser().absolute()
-    table = np.loadtxt(input_file)
-    # reduce to 1971 to end date
-    ii, = np.nonzero(table[:, 0] >= 1971)
-    table = np.copy(table[ii,:])
-    # reduce to yearly values
-    jj, = np.nonzero((table[:, 0] % 1) == 0.0)
-    table = np.copy(table[jj,:])
-    end_time = table[-1, 0] + 0.2
-    # final shape of the table
-    nrows, *_ = np.shape(table)
+    # read the conventional mean pole file
+    if (convention == '2015'):
+        # read mean pole file
+        input_file = pathlib.Path(kwargs['file']).expanduser().absolute()
+        table = np.loadtxt(input_file)
+        # reduce to 1971 to end date
+        ii, = np.nonzero(table[:, 0] >= 1971)
+        table = np.copy(table[ii,:])
+        # reduce to yearly values
+        jj, = np.nonzero((table[:, 0] % 1) == 0.0)
+        table = np.copy(table[jj,:])
+        end_time = table[-1, 0] + 0.2
+        # final shape of the table
+        nrows, *_ = np.shape(table)
+    else:
+        end_time = np.inf
     # allocate for output arrays
     x = np.full_like(input_epoch, kwargs['fill_value'])
     y = np.full_like(input_epoch, kwargs['fill_value'])
@@ -385,19 +399,19 @@ def iers_mean_pole(
     return (x, y, flag)
 
 # PURPOSE: read daily earth orientation parameters (EOP) file from IERS
-def iers_daily_EOP(input_file: str):
+def iers_daily_EOP(input_file: str | pathlib.Path = _finals_file):
     """
     Read daily earth orientation parameters (EOP) file from IERS
 
     Parameters
     ----------
-    input_file: str
+    input_file: str or Pathlib.Path
         full path to IERS EOP "finals" file
 
     Returns
     -------
     MJD: np.ndarray
-        modified Julian date of EOP measurements
+        Modified Julian Date of EOP measurements
     x: np.ndarray
         Angular coordinate x [arcsec]
     y: np.ndarray
@@ -444,3 +458,48 @@ def iers_daily_EOP(input_file: str):
     dinput['y'] = dinput['y'][:counter]
     # return the date, flag and polar motion values
     return dinput
+
+def iers_polar_motion(
+        MJD: float | np.ndarray,
+        file: str | pathlib.Path = _finals_file,
+        **kwargs
+    ):
+    """
+    Interpolates daily earth orientation parameters (EOP) file from IERS
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        Modified Julian Date for interpolated measurements
+    file: str or Pathlib.Path
+        default path to IERS EOP "finals" file
+    k: int
+        Degree of the spline fit
+    s: int or float
+        Positive smoothing factor for the spline fit
+
+    Returns
+    -------
+    px: np.ndarray
+        Angular coordinate x [arcsec]
+    py: np.ndarray
+        Angular coordinate y [arcsec]
+
+    References
+    ----------
+    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+    """
+    # set default parameters
+    kwargs.setdefault('k', 3)
+    kwargs.setdefault('s', 0)
+    # read IERS daily polar motion values
+    EOP = pyTMD.eop.iers_daily_EOP(file)
+    # interpolate daily polar motion values to MJD using cubic splines
+    xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'], EOP['x'], **kwargs)
+    ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'], EOP['y'], **kwargs)
+    px = xSPL(MJD)
+    py = ySPL(MJD)
+    return (px, py)

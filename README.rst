@@ -8,8 +8,6 @@ pyTMD
 |Anaconda-Server|
 |Documentation Status|
 |codecov|
-|Binder|
-|Pangeo|
 |zenodo|
 
 .. |Language| image:: https://img.shields.io/pypi/pyversions/pyTMD?color=green
@@ -29,12 +27,6 @@ pyTMD
 
 .. |codecov| image:: https://codecov.io/gh/tsutterley/pyTMD/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/tsutterley/pyTMD
-
-.. |Binder| image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/tsutterley/pyTMD/main
-
-.. |Pangeo| image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=PangeoBinderAWS&message=us-west-2&color=orange
-   :target: https://aws-uswest2-binder.pangeo.io/v2/gh/tsutterley/pyTMD/main?urlpath=lab
 
 .. |zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5555395.svg
    :target: https://doi.org/10.5281/zenodo.5555395

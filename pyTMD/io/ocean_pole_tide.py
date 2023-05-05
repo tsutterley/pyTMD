@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ocean_pole_tide.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
@@ -31,6 +31,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 05/2023: add default for ocean pole tide file
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor ocean pole tide read programs under io
@@ -49,9 +50,13 @@ import re
 import gzip
 import pathlib
 import numpy as np
+from pyTMD.utilities import get_data_path
+
+# ocean pole tide file from Desai (2002) and IERS conventions
+_ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
 
 # PURPOSE: read real and imaginary ocean pole tide coefficients
-def ocean_pole_tide(input_file: str | pathlib.Path):
+def ocean_pole_tide(input_file: str | pathlib.Path = _ocean_pole_tide_file):
     """
     Read real and imaginary ocean pole tide coefficients
 

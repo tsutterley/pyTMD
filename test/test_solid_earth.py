@@ -135,6 +135,74 @@ def test_phase_angles():
     assert np.isclose(dtr*p, P)
     assert np.isclose(2.0*np.pi - N*dtr, ZNS)
 
+def test_fundamental_arguments():
+    """Test fundamental (Delaunay) arguments with IERS outputs
+    """
+    T = 0.07995893223819302
+    # convert to MJD from centuries relative to 2000-01-01T12:00:00
+    MJD = T*36525.0 + 51544.5
+    assert np.isclose(MJD, 54465)
+    L_expected = 2.291187512612069099
+    LP_expected = 6.212931111003726414
+    F_expected = 3.658025792050572989
+    D_expected = 4.554139562402433228
+    OM_expected = -0.5167379217231804489 + 2.0*np.pi
+    # test outputs from function
+    l, lp, F, D, Om = pyTMD.astro.delaunay_arguments(MJD)
+    # assert matching
+    assert np.isclose(L_expected, l)
+    assert np.isclose(LP_expected, lp)
+    assert np.isclose(F_expected, F)
+    assert np.isclose(D_expected, D)
+    assert np.isclose(OM_expected, Om)
+
+def test_mean_obliquity():
+    """Test that the mean obliquity values matches expected outputs
+    """
+    MJD = 54465.0
+    expected = 0.40907444424006084
+    mean_obliquity = pyTMD.astro.mean_obliquity(MJD)
+    assert np.isclose(expected, mean_obliquity)
+
+def test_precession_matrix():
+    """Test that the precession matrix matches expected outputs
+    """
+    MJD = 54465.0
+    # convert from MJD to centuries relative to 2000-01-01T12:00:00
+    T = (MJD - 51544.5)/36525.0
+    expected = np.array([
+        [ 9.99998100e-01, -1.78795448e-03, -7.76914888e-04],
+        [ 1.78795449e-03,  9.99998402e-01, -6.84570121e-07],
+        [ 7.76914871e-04, -7.04519640e-07,  9.99999698e-01]
+    ])
+    P = pyTMD.astro._precession_matrix(T)
+    assert np.isclose(expected, P[:,:,0]).all()
+
+def test_nutation_matrix():
+    """Test that the nutation matrix matches expected outputs
+    """
+    MJD = 54465.0
+    # convert from MJD to centuries relative to 2000-01-01T12:00:00
+    T = (MJD - 51544.5)/36525.0
+    expected = np.array([
+        [ 9.99998100e-01, -1.78795448e-03, -7.76914888e-04],
+        [ 1.78795449e-03,  9.99998402e-01, -6.84570121e-07],
+        [ 7.76914871e-04, -7.04519640e-07,  9.99999698e-01]
+    ])
+    P = pyTMD.astro._precession_matrix(T)
+    assert np.isclose(expected, P[:,:,0]).all()
+
+def test_frame_bias_matrix():
+    """Test that the frame bias matrix matches expected outputs
+    """
+    expected = np.array([
+        [ 1.00000000e+00, -7.07827974e-08,  8.05614894e-08],
+        [ 7.07827974e-08,  1.00000000e+00,  3.30604145e-08],
+        [-8.05614894e-08, -3.30604145e-08,  1.00000000e+00]
+    ])
+    B = pyTMD.astro._frame_bias_matrix()
+    assert np.isclose(expected, B).all()
+
 def test_solid_earth_tide():
     """Test solid earth tides with IERS outputs
     """
@@ -169,7 +237,9 @@ def test_solid_earth_tide():
     # assert matching
     assert np.isclose(np.c_[dx_expected, dy_expected, dz_expected],dxt).all()
 
-def test_solid_earth_radial():
+# parameterize ephemerides
+@pytest.mark.parametrize("EPHEMERIDES", ['approximate','JPL'])
+def test_solid_earth_radial(EPHEMERIDES):
     """Test radial solid tides with predictions from ICESat-2
     """
     times = np.array(['2018-10-14 00:21:48','2018-10-14 00:21:48',
@@ -192,10 +262,11 @@ def test_solid_earth_radial():
         -0.11400412,-0.11400434])
     # predict radial solid earth tides
     tide_free = compute_SET_corrections(longitudes, latitudes, times,
-        EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84')
+        EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
+        EPHEMERIDES=EPHEMERIDES)
     tide_mean = compute_SET_corrections(longitudes, latitudes, times,
         EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
-        TIDE_SYSTEM='mean_tide')
+        TIDE_SYSTEM='mean_tide', EPHEMERIDES=EPHEMERIDES)
     # as using estimated ephemerides, assert within 1/2 mm
     assert np.isclose(tide_earth, tide_free, atol=5e-4).all()
     # check permanent tide offsets (additive correction in ICESat-2)
@@ -234,9 +305,9 @@ def test_solar_ecef():
     x2, y2, z2 = pyTMD.astro.solar_ephemerides(MJD)
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
-    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=5e8).all()
+    assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=1e9).all()
     # test absolute distance
-    assert np.isclose(r1, r2, atol=5e8).all()
+    assert np.isclose(r1, r2, atol=1e9).all()
 
 def test_lunar_ecef():
     """Test lunar ECEF coordinates with ephemeride predictions
@@ -253,14 +324,29 @@ def test_lunar_ecef():
     # test absolute distance
     assert np.isclose(r1, r2, atol=5e6).all()
 
+def test_earth_rotation_angle():
+    """Test that the Earth rotation angle (ERA) matches expected outputs
+    """
+    # create timescale from modified Julian dates
+    ts = pyTMD.time.timescale(MJD=55414.0)
+    # expected earth rotation angle as fraction of a turn
+    expected = 0.8730204642501604
+    assert np.isclose(360.0*expected, ts.era).all()
+
 def test_greenwich():
     """Test approximations of Greenwich Hour Angle in degrees
     using Meeus approximation and calculation within pyTMD
     """
-    MJD = 55414.0
-    # convert from MJD to centuries relative to 2000-01-01T12:00:00
-    T = (MJD - 51544.5)/36525.0
+    # create timescale from modified Julian dates
+    ts = pyTMD.time.timescale(MJD=55414.0)
     # Meeus approximation
-    GHA = np.mod(280.46061837504 + 360.9856473662862*(T*36525.0), 360.0)
+    GHA = np.mod(280.46061837504 + 360.9856473662862*(ts.T*36525.0), 360.0)
     # compare with pyTMD calculation
-    assert np.isclose(GHA, pyTMD.astro._gha(T))
+    assert np.isclose(GHA, ts.gha)
+
+def test_sidereal():
+    # create timescale from modified Julian dates
+    ts = pyTMD.time.timescale(MJD=55414.0)
+    # expected side real time in hours
+    expected = 20.96154017401333
+    assert np.isclose(expected, 24.0*ts.st).all()

@@ -64,6 +64,7 @@ PROGRAM DEPENDENCIES:
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds
         using pathlib to define and expand paths
     Updated 02/2023: added functionality for time series type
@@ -215,72 +216,37 @@ def compute_LPET_elevations(input_file, output_file,
         epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
         epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-    # convert time to seconds
-    if (TIME_STANDARD.lower() != 'datetime'):
-        delta_time = to_secs*dinput['time'].flatten()
 
-    # calculate leap seconds if specified
-    if (TIME_STANDARD.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME_STANDARD.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME_STANDARD.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=epoch1,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to days relative to 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_datetime(dinput['time'].flatten(),
-            epoch=pyTMD.time._tide_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            dinput['time'].flatten())
     else:
-        # convert time from units to days since 1992-01-01T00:00:00 (UTC)
-        tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=epoch1, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
-
-    # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+        # convert time to seconds
+        delta_time = to_secs*dinput['time'].flatten()
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=epoch1, standard=TIME_STANDARD)
     # number of time points
-    nt = len(tide_time)
+    nt = len(timescale)
+    # convert tide times to dynamical time
+    tide_time = timescale.tide + timescale.tt_ut1
 
     # predict long-period equilibrium tides at time
     if (TYPE == 'grid'):
         tide_lpe = np.zeros((ny,nx,nt))
         for i in range(nt):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time[i] + deltat[i], phi)
+            lpet = pyTMD.predict.equilibrium_tide(tide_time[i], phi)
             tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
     elif (TYPE == 'drift'):
-        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time + deltat, phi)
+        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time, phi)
     elif (TYPE == 'time series'):
         tide_lpe = np.zeros((nstation,nt))
         for s in range(nstation):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time + deltat, phi[s])
+            lpet = pyTMD.predict.equilibrium_tide(tide_time, phi[s])
             tide_lpe[s,:] = np.copy(lpet)
 
     # output to file
-    output = dict(time=tide_time, lon=lon, lat=lat, tide_lpe=tide_lpe)
+    output = dict(time=timescale.tide, lon=lon, lat=lat, tide_lpe=tide_lpe)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,

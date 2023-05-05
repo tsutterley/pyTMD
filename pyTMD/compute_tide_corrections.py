@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Ocean and Load Tides
@@ -60,6 +60,9 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 05/2023: use timescale class for time conversion operations
+        use defaults from eop module for pole tide and EOP files
+        add option for using higher resolution ephemerides from JPL
     Updated 04/2023: added function for radial solid earth tides
         using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -298,52 +301,19 @@ def compute_tide_corrections(
     # output coordinate reference system
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon,lat = transformer.transform(x.flatten(), y.flatten())
+    lon, lat = transformer.transform(x.flatten(), y.flatten())
 
     # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
-    # calculate leap seconds if specified
-    if (TIME.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
-    # convert delta times or datetimes objects
+    # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to days relative to 1992-01-01T00:00:00
-        t = pyTMD.time.convert_datetime(delta_time,
-            epoch=pyTMD.time._tide_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            delta_time.flatten())
     else:
-        # convert time to days relative to Jan 1, 1992 (48622mjd)
-        t = pyTMD.time.convert_delta_time(delta_time - leap_seconds,
-            epoch1=EPOCH, epoch2=pyTMD.time._tide_epoch, scale=(1.0/86400.0))
-    # delta time (TT - UT1) file
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=EPOCH, standard=TIME)
+    # number of time points
+    nt = len(timescale)
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','ESR'):
@@ -352,20 +322,20 @@ def compute_tide_corrections(
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             grid=model.format, apply_flexure=APPLY_FLEXURE)
         # use delta time at 2000.0 to match TMD outputs
-        deltat = np.zeros_like(t)
+        deltat = np.zeros((nt), dtype=np.float64)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
             model.model_file, type=model.type, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
         # use delta time at 2000.0 to match TMD outputs
-        deltat = np.zeros_like(t)
+        deltat = np.zeros((nt), dtype=np.float64)
     elif (model.format == 'GOT'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
-        # interpolate delta times from calendar dates to tide time
-        deltat = pyTMD.time.interpolate_delta_time(delta_file, t)
+        # delta time (TT - UT1)
+        deltat = timescale.tt_ut1
     elif (model.format == 'FES'):
         amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
             type=model.type, version=model.version, method=METHOD,
@@ -373,8 +343,8 @@ def compute_tide_corrections(
             compressed=model.compressed)
         # available model constituents
         c = model.constituents
-        # interpolate delta times from calendar dates to tide time
-        deltat = pyTMD.time.interpolate_delta_time(delta_file, t)
+        # delta time (TT - UT1)
+        deltat = timescale.tt_ut1
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -383,35 +353,36 @@ def compute_tide_corrections(
 
     # predict tidal elevations at time and infer minor corrections
     if (TYPE.lower() == 'grid'):
-        ny,nx = np.shape(x); nt = len(t)
+        ny,nx = np.shape(x)
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            TIDE = pyTMD.predict.map(t[i], hc, c,
+            TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            MINOR = pyTMD.predict.infer_minor(t[i], hc, c,
+            MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
             # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
     elif (TYPE.lower() == 'drift'):
-        npts = len(t)
-        tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
+        tide = np.ma.zeros((nt), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict.drift(t, hc, c,
+        tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
             deltat=deltat, corrections=model.format)
-        minor = pyTMD.predict.infer_minor(t, hc, c,
+        minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
             deltat=deltat, corrections=model.format)
         tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
-        npts = len(t)
-        tide = np.ma.zeros((npts), fill_value=FILL_VALUE)
-        tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict.time_series(t, hc, c,
-            deltat=deltat, corrections=model.format)
-        minor = pyTMD.predict.infer_minor(t, hc, c,
-            deltat=deltat, corrections=model.format)
-        tide.data[:] += minor.data[:]
+        nstation = len(x)
+        tide = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
+        tide.mask = np.zeros((nstation,nt),dtype=bool)
+        for s in range(nstation):
+            TIDE = pyTMD.predict.time_series(timescale.tide, hc[s,None,:], c,
+                deltat=deltat, corrections=model.format)
+            MINOR = pyTMD.predict.infer_minor(timescale.tide, hc[s,None,:], c,
+                deltat=deltat, corrections=model.format)
+            tide.data[s,:] = TIDE.data[:] + MINOR.data[:]
+            tide.mask[s,:] = (TIDE.mask | MINOR.mask)
     # replace invalid values with fill value
     tide.data[tide.mask] = tide.fill_value
 
@@ -496,66 +467,32 @@ def compute_LPET_corrections(
 
     # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
-    # calculate leap seconds if specified
-    if (TIME.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to days relative to 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_datetime(delta_time,
-            epoch=pyTMD.time._tide_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            delta_time.flatten())
     else:
-        # convert time from units to days since 1992-01-01T00:00:00 (UTC)
-        tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=EPOCH, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
-
-    # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=EPOCH, standard=TIME)
     # number of time points
-    nt = len(tide_time)
+    nt = len(timescale)
+    # convert tide times to dynamic time
+    tide_time = timescale.tide + timescale.tt_ut1
 
     # predict long-period equilibrium tides at time
     if (TYPE == 'grid'):
         ny,nx = np.shape(x)
         tide_lpe = np.zeros((ny,nx,nt))
         for i in range(nt):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time[i] + deltat[i], lat)
+            lpet = pyTMD.predict.equilibrium_tide(tide_time[i], lat)
             tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
     elif (TYPE == 'drift'):
-        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time + deltat, lat)
+        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time, lat)
     elif (TYPE == 'time series'):
         nstation = len(x)
         tide_lpe = np.zeros((nstation,nt))
         for s in range(nstation):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time + deltat, lat[s])
+            lpet = pyTMD.predict.equilibrium_tide(tide_time, lat[s])
             tide_lpe[s,:] = np.copy(lpet)
 
     # return the long-period equilibrium tide corrections
@@ -658,47 +595,18 @@ def compute_LPT_corrections(
 
     # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
-    # calculate leap seconds if specified
-    if (TIME.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to Modified Julian days (days since 1858-11-17T00:00:00)
-        MJD = pyTMD.time.convert_datetime(delta_time,
-            epoch=pyTMD.time._mjd_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            delta_time.flatten())
     else:
-        # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
-        MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=EPOCH, epoch2=pyTMD.time._mjd_epoch, scale=1.0/86400.0)
-    # add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=EPOCH, standard=TIME)
+
+    # convert dynamic time to Modified Julian Days (MJD)
+    MJD = timescale.tt - 2400000.5
+    # convert Julian days to calendar dates
+    Y,M,D,h,m,s = pyTMD.time.convert_julian(timescale.tt, format='tuple')
     # calculate time in year-decimal format
     time_decimal = pyTMD.time.convert_calendar_decimal(Y, M, day=D,
         hour=h, minute=m, second=s)
@@ -731,19 +639,10 @@ def compute_LPT_corrections(
     gamma_h = units.gamma_h(theta, h)
     dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
 
-    # pole tide files (mean and daily)
-    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(mean_pole_file, time_decimal,
-        CONVENTION)
-    # read IERS daily polar motion values
-    EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
-    # interpolate daily polar motion values to MJD using cubic splines
-    xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
-    ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
-    px = xSPL(MJD)
-    py = ySPL(MJD)
+    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    # read and interpolate IERS daily polar motion values
+    px, py = pyTMD.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
@@ -751,7 +650,7 @@ def compute_LPT_corrections(
     # calculate radial displacement at time
     if (TYPE == 'grid'):
         ny,nx = np.shape(x)
-        Srad = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
+        Srad = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             SRAD = dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
@@ -759,12 +658,12 @@ def compute_LPT_corrections(
             Srad.data[:,:,i] = np.reshape(SRAD, (ny,nx))
             Srad.mask[:,:,i] = np.isnan(Srad.data[:,:,i])
     elif (TYPE == 'drift'):
-        Srad = np.ma.zeros((nt),fill_value=FILL_VALUE)
+        Srad = np.ma.zeros((nt), fill_value=FILL_VALUE)
         Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi)+my*np.sin(phi))
         Srad.mask = np.isnan(Srad.data)
     elif (TYPE == 'time series'):
         nstation = len(x)
-        Srad = np.ma.zeros((nstation,nt),fill_value=FILL_VALUE)
+        Srad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         Srad.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
             SRAD = dfactor[s]*np.sin(2.0*theta[s])*(mx*np.cos(phi[s])+my*np.sin(phi[s]))
@@ -881,47 +780,18 @@ def compute_OPT_corrections(
 
     # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
-    # calculate leap seconds if specified
-    if (TIME.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to Modified Julian days (days since 1858-11-17T00:00:00)
-        MJD = pyTMD.time.convert_datetime(delta_time,
-            epoch=pyTMD.time._mjd_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            delta_time.flatten())
     else:
-        # convert dates to Modified Julian days (days since 1858-11-17T00:00:00)
-        MJD = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=EPOCH, epoch2=pyTMD.time._mjd_epoch, scale=1.0/86400.0)
-    # add offset to convert to Julian days and then convert to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(2400000.5 + MJD, format='tuple')
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=EPOCH, standard=TIME)
+
+    # convert dynamic time to Modified Julian Days (MJD)
+    MJD = timescale.tt - 2400000.5
+    # convert Julian days to calendar dates
+    Y,M,D,h,m,s = pyTMD.time.convert_julian(timescale.tt, format='tuple')
     # calculate time in year-decimal format
     time_decimal = pyTMD.time.convert_calendar_decimal(Y, M, day=D,
         hour=h, minute=m, second=s)
@@ -955,27 +825,16 @@ def compute_OPT_corrections(
     K = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis/(3.0*ge)
     K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
 
-    # pole tide files (mean and daily)
-    mean_pole_file = pyTMD.utilities.get_data_path(['data','mean-pole.tab'])
-    pole_tide_file = pyTMD.utilities.get_data_path(['data','finals.all'])
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(mean_pole_file, time_decimal,
-        CONVENTION)
-    # read IERS daily polar motion values
-    EOP = pyTMD.eop.iers_daily_EOP(pole_tide_file)
-    # interpolate daily polar motion values to MJD using cubic splines
-    xSPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['x'],k=3,s=0)
-    ySPL = scipy.interpolate.UnivariateSpline(EOP['MJD'],EOP['y'],k=3,s=0)
-    px = xSPL(MJD)
-    py = ySPL(MJD)
+    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    # read and interpolate IERS daily polar motion values
+    px, py = pyTMD.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
 
     # read ocean pole tide map from Desai (2002)
-    ocean_pole_tide_file = pyTMD.utilities.get_data_path(['data',
-        'opoleloadcoefcmcor.txt.gz'])
-    iur,iun,iue,ilon,ilat = pyTMD.io.ocean_pole_tide(ocean_pole_tide_file)
+    iur, iun, iue, ilon, ilat = pyTMD.io.ocean_pole_tide()
     # interpolate ocean pole tide map from Desai (2002)
     if (METHOD == 'spline'):
         # use scipy bivariate splines to interpolate to output points
@@ -1033,6 +892,7 @@ def compute_SET_corrections(
         TIME: str = 'UTC',
         ELLIPSOID: str = 'WGS84',
         TIDE_SYSTEM='tide_free',
+        EPHEMERIDES='approximate',
         **kwargs
     ):
     """
@@ -1075,6 +935,11 @@ def compute_SET_corrections(
 
             - ``'tide_free'``: no permanent direct and indirect tidal potentials
             - ``'mean_tide'``: permanent tidal potentials (direct and indirect)
+    EPHEMERIDES: str, default 'approximate'
+        Ephemerides for calculating Earth parameters
+
+            - ``'approximate'``: approximate lunisolar parameters
+            - ``'JPL'``: computed from JPL ephmerides kernel
 
     Returns
     -------
@@ -1085,6 +950,7 @@ def compute_SET_corrections(
     # validate input arguments
     assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
     assert TIDE_SYSTEM in ('mean_tide', 'tide_free')
+    assert EPHEMERIDES in ('approximate', 'JPL')
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -1113,51 +979,17 @@ def compute_SET_corrections(
 
     # assert delta time is an array
     delta_time = np.atleast_1d(delta_time)
-    # calculate leap seconds if specified
-    if (TIME.upper() == 'GPS'):
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'LORAN'):
-        # LORAN time is ahead of GPS time by 9 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-9.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    elif (TIME.upper() == 'TAI'):
-        # TAI time is ahead of GPS time by 19 seconds
-        GPS_Epoch_Time = pyTMD.time.convert_delta_time(-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        GPS_Time = pyTMD.time.convert_delta_time(delta_time-19.0, epoch1=EPOCH,
-            epoch2=pyTMD.time._gps_epoch, scale=1.0)
-        # calculate difference in leap seconds from start of epoch
-        leap_seconds = pyTMD.time.count_leap_seconds(GPS_Time) - \
-            pyTMD.time.count_leap_seconds(np.atleast_1d(GPS_Epoch_Time))
-    else:
-        leap_seconds = 0.0
-
+    # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        # convert delta time array from datetime object
-        # to days relative to 1992-01-01T00:00:00
-        tide_time = pyTMD.time.convert_datetime(delta_time,
-            epoch=pyTMD.time._tide_epoch)/86400.0
+        timescale = pyTMD.time.timescale().from_datetime(
+            delta_time.flatten())
     else:
-        # convert time from units to days since 1992-01-01T00:00:00 (UTC)
-        tide_time = pyTMD.time.convert_delta_time(delta_time-leap_seconds,
-            epoch1=EPOCH, epoch2=pyTMD.time._tide_epoch, scale=1.0/86400.0)
-
-    # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=EPOCH, standard=TIME)
+    # convert tide times to dynamical time
+    tide_time = timescale.tide + timescale.tt_ut1
     # number of time points
-    nt = len(tide_time)
+    nt = len(timescale)
 
     # earth and physical parameters for ellipsoid
     units = pyTMD.constants(ELLIPSOID)
@@ -1165,11 +997,15 @@ def compute_SET_corrections(
     # convert input coordinates to cartesian
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
-    # convert time to Modified Julian Days (MJD) for ephemerides
-    MJD = tide_time + deltat + 48622.0
-    # get low-resolution solar and lunar ephemerides
-    SX, SY, SZ = pyTMD.astro.solar_ecef(MJD)
-    LX, LY, LZ = pyTMD.astro.lunar_ecef(MJD)
+    # compute ephemerides for lunisolar coordinates
+    if (EPHEMERIDES.lower() == 'approximate'):
+        # get low-resolution solar and lunar ephemerides
+        SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD)
+        LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD)
+    elif (EPHEMERIDES.upper() == 'JPL'):
+        # compute solar and lunar ephemerides from JPL kernel
+        SX, SY, SZ = pyTMD.astro.solar_ephemerides(timescale.MJD)
+        LX, LY, LZ = pyTMD.astro.lunar_ephemerides(timescale.MJD)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -1179,7 +1015,7 @@ def compute_SET_corrections(
         XYZ = np.c_[X, Y, Z]
         for i in range(nt):
             # reshape time to match spatial
-            t = tide_time[i] + deltat[i] + np.ones((ny*nx))
+            t = tide_time[i] + np.ones((ny*nx))
             # convert coordinates to column arrays
             SXYZ = np.repeat(np.c_[SX[i], SY[i], SZ[i]], ny*nx, axis=0)
             LXYZ = np.repeat(np.c_[LX[i], LY[i], LZ[i]], ny*nx, axis=0)
@@ -1200,7 +1036,7 @@ def compute_SET_corrections(
         SXYZ = np.c_[SX, SY, SZ]
         LXYZ = np.c_[LX, LY, LZ]
         # predict solid earth tides (cartesian)
-        dxi = pyTMD.predict.solid_earth_tide(tide_time + deltat,
+        dxi = pyTMD.predict.solid_earth_tide(tide_time,
             XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
             tide_system=TIDE_SYSTEM)
         # calculate radial component of solid earth tides
@@ -1220,7 +1056,7 @@ def compute_SET_corrections(
             # convert coordinates to column arrays
             XYZ = np.repeat(np.c_[X[s], Y[s], Z[s]], nt, axis=0)
             # predict solid earth tides (cartesian)
-            dxi = pyTMD.predict.solid_earth_tide(tide_time + deltat,
+            dxi = pyTMD.predict.solid_earth_tide(tide_time,
                 XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
                 tide_system=TIDE_SYSTEM)
             # calculate radial component of solid earth tides

@@ -27,3 +27,5 @@ General Methods
 .. autofunction:: pyTMD.eop.iers_mean_pole
 
 .. autofunction:: pyTMD.eop.iers_daily_EOP
+
+.. autofunction:: pyTMD.eop.iers_polar_motion
