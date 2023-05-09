@@ -56,18 +56,11 @@ Radial solid Earth and pole tide displacements following IERS conventions
 Dependencies
 ############
 
-- `cartopy: Python package designed for geospatial data processing <https://scitools.org.uk/cartopy/docs/latest/>`_
 - `dateutil: powerful extensions to datetime <https://dateutil.readthedocs.io/en/stable/>`_
-- `gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL) <https://pypi.python.org/pypi/GDAL>`_
-- `h5py: Python interface for Hierarchal Data Format 5 (HDF5) <https://www.h5py.org/>`_
-- `ipyleaflet: Jupyter / Leaflet bridge enabling interactive maps <https://github.com/jupyter-widgets/ipyleaflet>`_
-- `ipywidgets: interactive HTML widgets for Jupyter notebooks and IPython <https://ipywidgets.readthedocs.io/en/latest/>`_
 - `lxml: processing XML and HTML in Python <https://pypi.python.org/pypi/lxml>`_
-- `matplotlib: Python 2D plotting library <https://matplotlib.org/>`_
 - `netCDF4: Python interface to the netCDF C library <https://unidata.github.io/netcdf4-python/>`_
 - `numpy: Scientific Computing Tools For Python <https://www.numpy.org>`_
 - `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
-- `PyYAML: YAML parser and emitter for Python <https://github.com/yaml/pyyaml>`_
 - `scipy: Scientific Tools for Python <https://www.scipy.org/>`_
 - `setuptools_scm: manager for python package versions using scm metadata <https://pypi.org/project/setuptools-scm/1.9.0/>`_
 
@@ -76,11 +69,11 @@ References
 
     T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
     "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
-    13, 1801-1817, (2019). `doi:tc-13-1801-2019 <https://doi.org/10.5194/tc-13-1801-2019>`_
+    13, 1801-1817, (2019). `doi: 10.5194/tc-13-1801-2019 <https://doi.org/10.5194/tc-13-1801-2019>`_
 
     L. Padman, M. R. Siegfried, H. A. Fricker,
     "Ocean Tide Influences on the Antarctic and Greenland Ice Sheets", *Reviews of Geophysics*,
-    56, 142-184, (2018). `doi:10.1002/2016RG000546 <https://doi.org/10.1002/2016RG000546>`_
+    56, 142-184, (2018). `doi: 10.1002/2016RG000546 <https://doi.org/10.1002/2016RG000546>`_
 
 Download
 ########

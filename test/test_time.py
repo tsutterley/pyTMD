@@ -83,8 +83,14 @@ def test_decimal_dates(YEAR,MONTH):
 # PURPOSE: test UNIX time
 def test_unix_time():
     # ATLAS Standard Data Epoch
-    UNIX = pyTMD.utilities.get_unix_time('2018-01-01 00:00:00')
+    atlas_sdp_epoch = '2018-01-01 00:00:00'
+    UNIX = pyTMD.utilities.get_unix_time(atlas_sdp_epoch)
     assert (UNIX == 1514764800)
+    # check UNIX time conversion with delta times
+    output_time = pyTMD.time.convert_delta_time(UNIX,
+        epoch1=pyTMD.time._unix_epoch, epoch2=atlas_sdp_epoch,
+        scale=1.0)
+    assert (output_time == 0)
 
 # PURPOSE: test parsing time strings
 def test_parse_date_string():
@@ -127,6 +133,11 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
         epoch1=pyTMD.time._gps_epoch, epoch2=pyTMD.time._atlas_sdp_epoch,
         scale=1.0)
     assert (delta_time == output_time)
+    # compare with original values using string epochs
+    output_time = pyTMD.time.convert_delta_time(gps_seconds - time_leaps,
+        epoch1='1980-01-06T00:00:00', epoch2='2018-01-01T00:00:00',
+        scale=1.0)
+    assert (delta_time == output_time)
     # calculate and compare with timescale values
     GPS = pyTMD.time.timescale().from_deltatime(gps_seconds,
         epoch=pyTMD.time._gps_epoch, standard='GPS')
@@ -137,20 +148,31 @@ def test_delta_time(delta_time, gps_epoch=1198800018.0):
 # PURPOSE: test timescale class conversions and constants
 def test_timescale():
     # ATLAS Standard Data Epoch
-    atlas_sdp_epoch = np.datetime64('2018-01-01 00:00:00')
+    atlas_sdp_epoch = np.datetime64('2018-01-01T00:00:00')
     # from datetime
     ATLAS = pyTMD.time.timescale().from_datetime(atlas_sdp_epoch)
     assert np.all(ATLAS.MJD == 58119)
     assert np.all(ATLAS.tide == 9497)
+    delta_time_epochs = (ATLAS.to_datetime() - atlas_sdp_epoch)
+    assert np.all(delta_time_epochs/np.timedelta64(1, 'ns') == 0)
     # from deltatime
     ATLAS = pyTMD.time.timescale().from_deltatime(0, epoch=(2018,1,1))
     assert np.all(ATLAS.MJD == 58119)
     assert np.all(ATLAS.tide == 9497)
+    delta_time_epochs = (ATLAS.to_datetime() - atlas_sdp_epoch)
+    assert np.all(delta_time_epochs/np.timedelta64(1, 'ns') == 0)
     # from MJD
     ATLAS = pyTMD.time.timescale(MJD=58119)
     assert np.all(ATLAS.ut1 == 2458119.5)
     assert np.all(ATLAS.tide == 9497)
     assert np.all((ATLAS.MJD - 51544.5) == (ATLAS.ut1 - 2451545.0))
+    # from MJD hourly array
+    delta_time = np.arange(0, 365, 1.0/24.0)
+    ATLAS = pyTMD.time.timescale(MJD=58119 + delta_time)
+    delta_time_epochs = (ATLAS.to_datetime() - atlas_sdp_epoch)
+    assert np.allclose(delta_time_epochs/np.timedelta64(1, 'D'), delta_time)
+    assert np.allclose(ATLAS.to_deltatime(epoch=atlas_sdp_epoch), delta_time)
+    assert np.allclose(ATLAS.to_deltatime(epoch='2018-01-01'), delta_time)
     # check constants
     assert (ATLAS.century == 36525.0)
     assert (ATLAS.day == 86400.0)
