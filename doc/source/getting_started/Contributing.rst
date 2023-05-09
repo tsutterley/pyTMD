@@ -4,7 +4,7 @@ Contribution Guidelines
 
 We welcome and invite contributions from anyone at any career stage and with any amount of coding experience towards the development of ``pyTMD``.
 We appreciate any and all contributions made to the project.
-Please read our `code of conduct <https://github.com/tsutterley/pyTMD/blob/main/CODE_OF_CONDUCT.rst>`_ before contributing to ``pyTMD`` development.
+Please read our `code of conduct <./Code-of-Conduct.html>`_ before contributing to ``pyTMD`` development.
 You will be recognized for your work by being listed as one of the `project contributors <./Citations.html#contributors>`_.
 
 Ways to Contribute

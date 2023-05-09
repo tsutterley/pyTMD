@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 astro.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Astronomical and nutation routines
 
 mean_longitudes is a modification of the ASTROL fortran
@@ -25,6 +25,7 @@ REFERENCES:
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
+    Updated 05/2023: add wrapper function for nutation angles
     Updated 04/2023: added low resolution solar and lunar positions
         added function with more phase angles of the sun and moon
         functions to calculate solar and lunar positions with ephemerides
@@ -634,7 +635,7 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     # return the ECEF coordinates
     return (X, Y, Z)
 
-def gast(T):
+def gast(T: float | np.ndarray):
     """Greenwich Apparent Sidereal Time (GAST) [1]_ [2]_ [3]_
 
     Parameters
@@ -664,37 +665,16 @@ def gast(T):
     ts = timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
-    # get the fundamental arguments in radians
-    l, lp, F, D, Om = delaunay_arguments(MJD)
     # estimate the mean obliquity
     epsilon = mean_obliquity(MJD)
-    # non-polynomial terms in the equation of the equinoxes
-    # parse IERS lunisolar longitude table
-    l0, l1 = _parse_table_5_3a()
-    n0 = np.c_[l0['l'], l0['lp'], l0['F'], l0['D'], l0['Om']]
-    n1 = np.c_[l1['l'], l1['lp'], l1['F'], l1['D'], l1['Om']]
-    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
-    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
-    dpsi = np.dot(l0['As'], np.sin(arg0)) + \
-        np.dot(l0['Ac'], np.cos(arg0)) + \
-        T*np.dot(l1['As'], np.sin(arg1)) + \
-        T*np.dot(l1['Ac'], np.cos(arg1))
-    # parse IERS lunisolar obliquity table
-    o0, o1 = _parse_table_5_3b()
-    n0 = np.c_[o0['l'], o0['lp'], o0['F'], o0['D'], o0['Om']]
-    n1 = np.c_[o1['l'], o1['lp'], o1['F'], o1['D'], o1['Om']]
-    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
-    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
-    deps = np.dot(o0['Bs'], np.sin(arg0)) + \
-        np.dot( o0['Bc'], np.cos(arg0)) + \
-        T*np.dot(o1['Bs'], np.sin(arg1)) + \
-        T*np.dot(o1['Bc'], np.cos(arg1))
+    # estimate the nutation in longitude and obliquity
+    dpsi, deps = _nutation_angles(T)
     # traditional equation of the equinoxes
     c = _eqeq_complement(T)
-    eqeq = (ts.masec2rad*dpsi)*np.cos(epsilon + ts.masec2rad*deps) + c
+    eqeq = dpsi*np.cos(epsilon + deps) + c
     return np.mod(ts.st + eqeq/24.0, 1.0)
 
-def itrs(T):
+def itrs(T: float | np.ndarray):
     """
     International Terrestrial Reference System (ITRS) [1]_ [2]_ [3]_:
     An Earth-centered Earth-fixed (ECEF) coordinate system
@@ -729,35 +709,13 @@ def itrs(T):
     ts = timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
-    # get the fundamental arguments in radians
-    l, lp, F, D, Om = delaunay_arguments(MJD)
     # estimate the mean obliquity
     epsilon = mean_obliquity(MJD)
-    # non-polynomial terms in the equation of the equinoxes
-    # parse IERS lunisolar longitude table
-    l0, l1 = _parse_table_5_3a()
-    n0 = np.c_[l0['l'], l0['lp'], l0['F'], l0['D'], l0['Om']]
-    n1 = np.c_[l1['l'], l1['lp'], l1['F'], l1['D'], l1['Om']]
-    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
-    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
-    dpsi = np.dot(l0['As'], np.sin(arg0)) + \
-        np.dot(l0['Ac'], np.cos(arg0)) + \
-        T*np.dot(l1['As'], np.sin(arg1)) + \
-        T*np.dot(l1['Ac'], np.cos(arg1))
-    # parse IERS lunisolar obliquity table
-    o0, o1 = _parse_table_5_3b()
-    n0 = np.c_[o0['l'], o0['lp'], o0['F'], o0['D'], o0['Om']]
-    n1 = np.c_[o1['l'], o1['lp'], o1['F'], o1['D'], o1['Om']]
-    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
-    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
-    deps = np.dot(o0['Bs'], np.sin(arg0)) + \
-        np.dot(o0['Bc'], np.cos(arg0)) + \
-        T*np.dot(o1['Bs'], np.sin(arg1)) + \
-        T*np.dot(o1['Bc'], np.cos(arg1))
+    # estimate the nutation in longitude and obliquity
+    dpsi, deps = _nutation_angles(T)
     # estimate the rotation matrices
     M1 = _precession_matrix(ts.T)
-    true_obliquity = epsilon + ts.masec2rad*deps
-    M2 = _nutation_matrix(epsilon, true_obliquity, dpsi*ts.masec2rad)
+    M2 = _nutation_matrix(epsilon, epsilon + deps, dpsi)
     M3 = _frame_bias_matrix()
     M4 = _polar_motion_matrix(ts.T)
     # calculate the combined rotation matrix for
@@ -773,7 +731,7 @@ def itrs(T):
     # return the combined rotation matrix
     return R
 
-def _eqeq_complement(T):
+def _eqeq_complement(T: float | np.ndarray):
     """
     Compute complementary terms of the equation of the
     equinoxes [1]_ [2]_ [3]_
@@ -873,6 +831,60 @@ def _frame_bias_matrix():
     # return the rotation matrix
     return B
 
+def _nutation_angles(T: float | np.ndarray):
+    """
+    Calculate nutation rotation angles using tables
+    from IERS Conventions [1]_
+
+    Parameters
+    ----------
+    T: np.ndarray
+        Centuries since 2000-01-01T12:00:00
+
+    Returns
+    -------
+    dpsi: np.ndarray
+        Nutation in longitude
+    deps: np.ndarray
+        Obliquity of the ecliptic
+
+    References
+    ----------
+    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
+        International Earth Rotation and Reference Systems Service (IERS),
+        `IERS Technical Note No. 36
+        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
+    """
+    # create timescale from centuries relative to 2000-01-01T12:00:00
+    ts = timescale(MJD=T*36525.0 + 51544.5)
+    # convert dynamical time to modified Julian days
+    MJD = ts.tt - 2400000.5
+    # get the fundamental arguments in radians
+    l, lp, F, D, Om = delaunay_arguments(MJD)
+    # non-polynomial terms in the equation of the equinoxes
+    # parse IERS lunisolar longitude table
+    l0, l1 = _parse_table_5_3a()
+    n0 = np.c_[l0['l'], l0['lp'], l0['F'], l0['D'], l0['Om']]
+    n1 = np.c_[l1['l'], l1['lp'], l1['F'], l1['D'], l1['Om']]
+    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
+    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
+    dpsi = np.dot(l0['As'], np.sin(arg0)) + \
+        np.dot(l0['Ac'], np.cos(arg0)) + \
+        ts.T*np.dot(l1['As'], np.sin(arg1)) + \
+        ts.T*np.dot(l1['Ac'], np.cos(arg1))
+    # parse IERS lunisolar obliquity table
+    o0, o1 = _parse_table_5_3b()
+    n0 = np.c_[o0['l'], o0['lp'], o0['F'], o0['D'], o0['Om']]
+    n1 = np.c_[o1['l'], o1['lp'], o1['F'], o1['D'], o1['Om']]
+    arg0 = np.dot(n0, np.c_[l, lp, F, D, Om].T)
+    arg1 = np.dot(n1, np.c_[l, lp, F, D, Om].T)
+    deps = np.dot(o0['Bs'], np.sin(arg0)) + \
+        np.dot(o0['Bc'], np.cos(arg0)) + \
+        ts.T*np.dot(o1['Bs'], np.sin(arg1)) + \
+        ts.T*np.dot(o1['Bc'], np.cos(arg1))
+    # convert to radians
+    return (ts.masec2rad*dpsi, ts.masec2rad*deps)
+
 def _nutation_matrix(
         mean_obliquity: float | np.ndarray,
         true_obliquity: float | np.ndarray,
@@ -908,7 +920,7 @@ def _nutation_matrix(
     # return the rotation matrix
     return R
 
-def _polar_motion_matrix(T):
+def _polar_motion_matrix(T: float | np.ndarray):
     """
     Polar motion (Earth Orientation Parameters) rotation matrix
 
@@ -1047,7 +1059,7 @@ def _parse_table_5_3b():
     with table_5_3b.open(mode='r', encoding='utf8') as f:
         file_contents = f.readlines()
     # names and formats
-    names = ('i','Bc','Bs','l','lp','F','D','Om','L_Me','L_Ve',
+    names = ('i','Bs','Bc','l','lp','F','D','Om','L_Me','L_Ve',
         'L_E','L_Ma','L_J','L_Sa','L_U','L_Ne','p_A')
     formats = ('i','f','f','i','i','i','i','i','i',
         'i','i','i','i','i','i','i','i')

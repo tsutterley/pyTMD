@@ -46,6 +46,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.astro._frame_bias_matrix
 
+.. autofunction:: pyTMD.astro._nutation_angles
+
 .. autofunction:: pyTMD.astro._nutation_matrix
 
 .. autofunction:: pyTMD.astro._polar_motion_matrix
