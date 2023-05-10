@@ -8,10 +8,10 @@ airborne and satellite altimetry originally as part of a
 NASA Postdoctoral Program (NPP) Fellowship.
 ``pyTMD`` provides data access utilities for ascii, netCDF4, HDF5, and geotiff
 formats.
-``pyTMD`` also provides some very high-level plotting programs through the
+High-level plotting programs are also provided through the
 use of `Jupyter Notebooks <../user_guide/Examples.html>`_.
 
-The program provides the interface between spatial and temporal coordinates and
+This software provides an interface between spatial and temporal coordinates and
 the output ocean, load, solid Earth and pole tide variables as shown in the flowcharts below:
 
 .. graphviz::

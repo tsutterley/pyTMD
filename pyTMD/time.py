@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2023: add timescale class for converting between time scales
+        added timescale to_datetime function to create datetime arrays
+        allow epoch arguments to be numpy datetime64 variables or strings
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: added interpolation for delta time (TT - UT1)
@@ -95,7 +97,7 @@ def parse_date_string(date_string: str):
     Returns
     -------
     epoch: list
-        epoch of delta time
+        epoch of ``delta_time``
     conversion_factor: float
         multiplication factor to convert to seconds
     """
@@ -117,7 +119,7 @@ def parse_date_string(date_string: str):
 # PURPOSE: split a date string into units and epoch
 def split_date_string(date_string: str):
     """
-    split a date string into units and epoch
+    Split a date string into units and epoch
 
     Parameters
     ----------
@@ -139,6 +141,7 @@ def datetime_to_list(date):
     Parameters
     ----------
     date: datetime object
+        Input datetime object to convert
 
     Returns
     -------
@@ -185,31 +188,39 @@ def calendar_days(year: int | float | np.ndarray) -> np.ndarray:
     elif ((m4 != 0) | (m100 == 0) & (m400 != 0) | (m4000 == 0)):
         return np.array(_dpm_stnd, dtype=np.float64)
 
-# PURPOSE: convert a numpy datetime array to delta times from the UNIX epoch
-def convert_datetime(date, epoch=(1970, 1, 1, 0, 0, 0)):
+# PURPOSE: convert a numpy datetime array to delta times since an epoch
+def convert_datetime(
+        date: float | np.ndarray,
+        epoch: str | tuple | list | np.datetime64 = _unix_epoch
+    ):
     """
     Convert a numpy datetime array to seconds since ``epoch``
 
     Parameters
     ----------
-    date: obj
+    date: np.ndarray
         numpy datetime array
-    epoch: tuple, default (1970,1,1,0,0,0)
-        epoch for output delta_time
+    epoch: str, tuple, list, np.ndarray, default (1970,1,1,0,0,0)
+        epoch for output ``delta_time``
 
     Returns
     -------
     delta_time: float
         seconds since epoch
     """
-    epoch = datetime.datetime(*epoch)
-    return (date - np.datetime64(epoch)) / np.timedelta64(1, 's')
+    # convert epoch to datetime variables
+    if isinstance(epoch, (tuple, list)):
+        epoch = np.datetime64(datetime.datetime(*epoch))
+    elif isinstance(epoch, str):
+        epoch = np.datetime64(dateutil.parser.parse(epoch))
+    # convert to delta time
+    return (date - epoch) / np.timedelta64(1, 's')
 
 # PURPOSE: convert times from seconds since epoch1 to time since epoch2
 def convert_delta_time(
         delta_time: np.ndarray,
-        epoch1: tuple | list | None = None,
-        epoch2: tuple | list | None = None,
+        epoch1: str | tuple | list | np.datetime64 | None = None,
+        epoch2: str | tuple | list | np.datetime64 | None = None,
         scale: float = 1.0
     ):
     """
@@ -220,15 +231,23 @@ def convert_delta_time(
     delta_time: np.ndarray
         seconds since epoch1
     epoch1: tuple or NoneType, default None
-        epoch for input delta_time
+        epoch for input ``delta_time``
     epoch2: tuple or NoneType, default None
-        epoch for output delta_time
+        epoch for output ``delta_time``
     scale: float, default 1.0
         scaling factor for converting time to output units
     """
-    epoch1 = datetime.datetime(*epoch1)
-    epoch2 = datetime.datetime(*epoch2)
-    delta_time_epochs = (epoch2 - epoch1).total_seconds()
+    # convert epochs to datetime variables
+    if isinstance(epoch1, (tuple, list)):
+        epoch1 = np.datetime64(datetime.datetime(*epoch1))
+    elif isinstance(epoch1, str):
+        epoch1 = np.datetime64(dateutil.parser.parse(epoch1))
+    if isinstance(epoch2, (tuple, list)):
+        epoch2 = np.datetime64(datetime.datetime(*epoch2))
+    elif isinstance(epoch2, str):
+        epoch2 = np.datetime64(dateutil.parser.parse(epoch2))
+    # calculate the total difference in time in seconds
+    delta_time_epochs = (epoch2 - epoch1) / np.timedelta64(1, 's')
     # subtract difference in time and rescale to output units
     return scale*(delta_time - delta_time_epochs)
 
@@ -241,7 +260,7 @@ def convert_calendar_dates(
         hour: np.ndarray | float = 0.0,
         minute: np.ndarray | float = 0.0,
         second: np.ndarray | float = 0.0,
-        epoch: tuple | list = _tide_epoch,
+        epoch: tuple | list | np.datetime64 = _tide_epoch,
         scale: float = 1.0
     ) -> np.ndarray:
     """
@@ -262,7 +281,7 @@ def convert_calendar_dates(
     second: np.ndarray or float, default 0.0
         second of the minute
     epoch: tuple or list, default pyTMD.time._tide_epoch
-        epoch for output delta_time
+        epoch for output ``delta_time``
     scale: float, default 1.0
         scaling factor for converting time to output units
 
@@ -277,11 +296,16 @@ def convert_calendar_dates(
         np.floor(3.0*(np.floor((year + (month - 9.0)/7.0)/100.0) + 1.0)/4.0) + \
         np.floor(275.0*month/9.0) + day + hour/24.0 + minute/1440.0 + \
         second/86400.0 + 1721028.5 - 2400000.5
-    epoch1 = datetime.datetime(*_mjd_epoch)
-    epoch2 = datetime.datetime(*epoch)
-    delta_time_epochs = (epoch2 - epoch1).total_seconds()
+    # convert epochs to datetime variables
+    epoch1 = np.datetime64(datetime.datetime(*_mjd_epoch))
+    if isinstance(epoch, (tuple, list)):
+        epoch = np.datetime64(datetime.datetime(*epoch))
+    elif isinstance(epoch, str):
+        epoch = np.datetime64(dateutil.parser.parse(epoch))
+    # calculate the total difference in time in days
+    delta_time_epochs = (epoch - epoch1) / np.timedelta64(1, 'D')
     # return the date in units (default days) since epoch
-    return scale*np.array(MJD - delta_time_epochs/86400.0, dtype=np.float64)
+    return scale*np.array(MJD - delta_time_epochs, dtype=np.float64)
 
 # PURPOSE: Converts from calendar dates into decimal years
 def convert_calendar_decimal(
@@ -601,7 +625,7 @@ class timescale:
 
     def from_deltatime(self,
             delta_time: np.ndarray,
-            epoch: tuple | list | np.ndarray,
+            epoch: str | tuple | list | np.ndarray,
             standard: str = 'UTC'
         ):
         """
@@ -611,10 +635,10 @@ class timescale:
         ----------
         delta_time: np.ndarray
             seconds since ``epoch``
-        epoch:
-            epoch for input delta_time
+        epoch: str, uuple, list or np.ndarray
+            epoch for input ``delta_time``
         standard: str, default 'UTC'
-            time standard for input delta_time
+            time standard for input ``delta_time``
         """
         # assert delta time is an array
         delta_time = np.atleast_1d(delta_time)
@@ -652,24 +676,31 @@ class timescale:
             epoch1=epoch, epoch2=_mjd_epoch, scale=(1.0/self.day))
         return self
 
-    def from_datetime(self, datetime: np.ndarray):
+    def from_datetime(self, dtime: np.ndarray):
         """
-        Reads a datetime array and converts into a ``timescale`` object
+        Reads a ``datetime`` array and converts into a ``timescale`` object
 
         Parameters
         ----------
-        datetime: np.ndarray
+        dtime: np.ndarray
             ``numpy.datetime64`` array
         """
         # convert delta time array from datetime object
         # to days relative to 1992-01-01T00:00:00
-        self.MJD = convert_datetime(datetime, epoch=_mjd_epoch)/self.day
+        self.MJD = convert_datetime(dtime, epoch=_mjd_epoch)/self.day
         return self
 
-    def to_deltatime(self, epoch: tuple | list | np.ndarray, scale: float = 1.0):
+    def to_deltatime(self,
+            epoch: str | tuple | list | np.ndarray,
+            scale: float = 1.0
+        ):
         """
-        epoch: tuple, list, or np.ndarray
-            epoch for output delta_time
+        Convert a ``timescale`` object to a delta time array
+
+        Parameters
+        ----------
+        epoch: str, tuple, list, or np.ndarray
+            epoch for output ``delta_time``
         scale: float, default 1.0
             scaling factor for converting time to output units
 
@@ -678,11 +709,32 @@ class timescale:
         delta_time: np.ndarray
             time since epoch
         """
-        epoch1 = datetime.datetime(*_mjd_epoch)
-        epoch2 = datetime.datetime(*epoch)
-        delta_time_epochs = (epoch2 - epoch1).total_seconds()
+        # convert epochs to numpy datetime variables
+        epoch1 = np.datetime64(datetime.datetime(*_mjd_epoch))
+        if isinstance(epoch, (tuple, list)):
+            epoch = np.datetime64(datetime.datetime(*epoch))
+        elif isinstance(epoch, str):
+            epoch = np.datetime64(dateutil.parser.parse(epoch))
+        # calculate the difference in epochs in days
+        delta_time_epochs = (epoch - epoch1) / np.timedelta64(1, 'D')
         # return the date in time (default days) since epoch
-        return scale*np.array(self.MJD - delta_time_epochs/self.day, dtype=np.float64)
+        return scale*np.array(self.MJD - delta_time_epochs, dtype=np.float64)
+
+    def to_datetime(self):
+        """
+        Convert a ``timescale`` object to a ``datetime`` array
+
+        Returns
+        -------
+        dtime: np.ndarray
+            ``numpy.datetime64`` array
+        """
+        # convert Modified Julian Day epoch to datetime variable
+        epoch = np.datetime64(datetime.datetime(*_mjd_epoch))
+        # use nanoseconds to keep as much precision as possible
+        delta_time = np.atleast_1d(self.MJD*self.day*1e9).astype(np.int64)
+        # return the datetime array
+        return np.array([epoch + np.timedelta64(s, 'ns') for s in delta_time])
 
     # PURPOSE: calculate the sum of a polynomial function of time
     def polynomial_sum(self, coefficients: list | np.ndarray, t: np.ndarray):

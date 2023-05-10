@@ -13,6 +13,7 @@ ocean, load, solid Earth and pole tides
     getting_started/Getting-Started.rst
     getting_started/Background.rst
     getting_started/Contributing.rst
+    getting_started/Code-of-Conduct.rst
     getting_started/Resources.rst
     getting_started/Citations.rst
 
