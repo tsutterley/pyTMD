@@ -11,6 +11,9 @@ compute_SET_displacements.py
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_SET_displacements.py
 
+Calling Sequence
+################
+
 .. argparse::
     :filename: compute_SET_displacements.py
     :func: arguments

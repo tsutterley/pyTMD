@@ -336,7 +336,7 @@ def convert_calendar_decimal(
     second: np.ndarray, float or NoneType, default None
         second of the minute
     DofY: np.ndarray, float or NoneType, default None
-        day of the year (January 1 = 1)
+        day of the year
 
     Returns
     -------
@@ -501,7 +501,7 @@ def convert_julian(JD: np.ndarray, **kwargs):
     .. [1] W. H. Press, *Numerical Recipes in C*,
         Brian P. Flannery, Saul A. Teukolsky, and William T. Vetterling.
         Cambridge University Press, (1988).
-    .. [2] Hatcher, D. A., "Simple Formulae for Julian Day Numbers and
+    .. [2] D. A. Hatcher, "Simple Formulae for Julian Day Numbers and
         Calendar Dates", *Quarterly Journal of the Royal Astronomical
         Society*, 25(1), 1984.
     """

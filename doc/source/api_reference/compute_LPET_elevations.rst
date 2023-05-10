@@ -2,9 +2,9 @@
 compute_LPET_elevation.py
 =========================
 
-- Calculates long-period equilibrium tides for an input file (ascii, netCDF4, HDF5, geotiff)
-- For netCDF4 and HDF5 files, can extract the time units from attributes
-- Uses the summation of fifteen tidal spectral lines from `Cartwright and Edden, (1973) <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+- Calculates long-period equilibrium tides for an input file
+- Uses the summation of fifteen tidal spectral lines from [Cartwright1971]_ [Cartwright1973]_
+- Can read and write ascii, netCDF4, HDF5 and geotiff formats
 
 `Source code`__
 
@@ -44,3 +44,17 @@ Calling Sequence
 
     --projection : @after
         * ``4326``: latitude and longitude coordinates on WGS84 reference ellipsoid
+
+References
+##########
+
+.. [Cartwright1971] D. E. Cartwright and R. J. Tayler,
+    "New Computations of the Tide-generating Potential,"
+    *Geophysical Journal of the Royal Astronomical Society*,
+    23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
+    <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+.. [Cartwright1973] D. E. Cartwright and A. C. Edden,
+    "Corrected Tables of Tidal Harmonics,"
+    *Geophysical Journal of the Royal Astronomical Society*,
+    33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+    <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_

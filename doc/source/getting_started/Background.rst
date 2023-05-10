@@ -80,9 +80,9 @@ Within ``pyTMD``, solid Earth tides are calculated using ECEF coordinates, and p
 References
 ##########
 
-.. [Desai2002] S Desai, "Observing the pole tide with satellite altimetry", *Journal of Geophysical Research: Oceans*, 107(C11), (2002). `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
+.. [Desai2002] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of Geophysical Research: Oceans*, 107(C11), (2002). `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
 
-.. [Desai2015] S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015). `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
+.. [Desai2015] S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015). `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
 
 .. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of Barotropic Ocean Tides", *Journal of Atmospheric and Oceanic Technology*, 19(2), 183--204, (2002). `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
 

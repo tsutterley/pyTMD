@@ -1,0 +1,50 @@
+##################
+`Release v2.0.4`__
+##################
+
+* ``feat``: add basic file searching with glob strings in definition files for `#183 <https://github.com/tsutterley/pyTMD/issues/183>`_ (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``feat``: add parser for extracting constituents from filenames (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``feat``: updated model definition read function for currents (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``feat``: added iterative methods for converting from cartesian to geodetic (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``feat``: functions to calculate solar and lunar positions with ephemerides (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``feat``: add ``long_name`` and ``description`` attributes for current variables (`#188 <https://github.com/tsutterley/pyTMD/pull/188>`_)
+* ``feat``: allow netCDF4 and HDF5 outputs to be appended to existing files (`#192 <https://github.com/tsutterley/pyTMD/pull/192>`_)
+* ``feat``: add code of conduct (`#192 <https://github.com/tsutterley/pyTMD/pull/192>`_)
+* ``feat``: use a higher resolution estimate of the Greenwich hour angle (`#194 <https://github.com/tsutterley/pyTMD/pull/194>`_)
+* ``feat``: add new ``timescale`` class for time operations  (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``feat``: adding high resolution astronomical calculations (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``feat``: have default earth orientation parameters in ``eop`` module (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``feat``: add option for using higher resolution ephemerides from JPL (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``feat``: use ``einsum`` for combined matrix multiplications (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``feat``: allow epochs to be strings or ``np.deltatime64`` (`#200 <https://github.com/tsutterley/pyTMD/pull/200>`_)
+* ``refactor``: using ``pathlib`` to define and expand paths (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``refactor``: rename load_nodal_corrections to arguments (`#188 <https://github.com/tsutterley/pyTMD/pull/188>`_)
+* ``refactor``: make nominal love/shida numbers ``kwargs`` (`#191 <https://github.com/tsutterley/pyTMD/pull/191>`_)
+* ``refactor``: make mass ratios of sun/moon ``kwargs`` (`#191 <https://github.com/tsutterley/pyTMD/pull/191>`_)
+* ``refactor``: output solid earth corrections as XYZ (`#191 <https://github.com/tsutterley/pyTMD/pull/191>`_)
+* ``refactor``: change some variable names (``hour_angle``) (`#194 <https://github.com/tsutterley/pyTMD/pull/194>`_)
+* ``refactor``: make nutation angles a separate function (`#200 <https://github.com/tsutterley/pyTMD/pull/200>`_)
+* ``fix``: allow directory to be ``None`` for definition files case (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``fix``: include deprecated ``calc_astrol_longitudes`` in ``__init__.py`` (`#188 <https://github.com/tsutterley/pyTMD/pull/188>`_)
+* ``fix``: add descriptive exception when glob pattern doesn't find files for `#183 <https://github.com/tsutterley/pyTMD/issues/183>`_ (`#190 <https://github.com/tsutterley/pyTMD/pull/190>`_)
+* ``fix``: solar ephemeride function to include SSB-to-sun segment (`#192 <https://github.com/tsutterley/pyTMD/pull/192>`_)
+* ``fix``: remove binder links |cry| (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``docs``: add a line denoting new ``glob`` capability (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``docs``: add docstrings for solid earth sub-function inputs (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``docs``: add background section detailing methods (`#191 <https://github.com/tsutterley/pyTMD/pull/191>`_)
+* ``docs``: add code of conduct as separate page (`#200 <https://github.com/tsutterley/pyTMD/pull/200>`_)
+* ``docs``: expand on background reference systems (`#200 <https://github.com/tsutterley/pyTMD/pull/200>`_)
+* ``docs``: split optional and required dependencies (`#200 <https://github.com/tsutterley/pyTMD/pull/200>`_)
+* ``test``: added model definition file tests (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``test``: add geodetic conversion test (`#187 <https://github.com/tsutterley/pyTMD/pull/187>`_)
+* ``test``: add test for more derived attributes in model (`#188 <https://github.com/tsutterley/pyTMD/pull/188>`_)
+* ``test``: parse all multiple file types for constituent names (`#190 <https://github.com/tsutterley/pyTMD/pull/190>`_)
+* ``test``: test permanent tide conversion in solid earth (`#190 <https://github.com/tsutterley/pyTMD/pull/190>`_)
+* ``test``: get IODEM3 from AWS s3 (NSIDC is currently down) (`#192 <https://github.com/tsutterley/pyTMD/pull/192>`_)
+* ``test``: add ``timescale`` checks for conversions and constants (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+* ``test``: add test for leap seconds in ``timescale`` (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
+
+.. __: https://github.com/tsutterley/pyTMD/releases/tag/2.0.4
+
+
+.. |cry|    unicode:: U+1F622 .. CRYING FACE

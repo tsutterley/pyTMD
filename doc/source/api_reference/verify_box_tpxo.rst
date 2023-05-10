@@ -9,6 +9,9 @@ verify_box_tpxo.py
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/scripts/verify_box_tpxo.py
 
+Calling Sequence
+################
+
 .. argparse::
     :filename: verify_box_tpxo.py
     :func: arguments

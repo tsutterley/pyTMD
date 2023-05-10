@@ -24,9 +24,9 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 REFERENCES:
-    S Desai, "Observing the pole tide with satellite altimetry", Journal of
+    S. Desai, "Observing the pole tide with satellite altimetry", Journal of
         Geophysical Research: Oceans, 107(C11), 2002. doi: 10.1029/2001JC001224
-    S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from
+    S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from
         satellite altimetry", Journal of Geodesy, 89(12), p1233-1243, 2015.
         doi: 10.1007/s00190-015-0848-7
 
@@ -80,10 +80,10 @@ def ocean_pole_tide(input_file: str | pathlib.Path = _ocean_pole_tide_file):
 
     References
     ----------
-    .. [1] S Desai, "Observing the pole tide with satellite altimetry", *Journal of
+    .. [1] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of
         Geophysical Research: Oceans*, 107(C11), (2002).
         `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
-    .. [2] S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from
+    .. [2] S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from
         satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015).
         `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
     """

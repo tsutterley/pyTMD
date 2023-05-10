@@ -77,9 +77,9 @@ def map(t: float | np.ndarray,
 
     References
     ----------
-    .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
-        19(2), 183--204, (2002).
+    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
         `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
 
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
@@ -140,9 +140,9 @@ def drift(t: float | np.ndarray,
 
     References
     ----------
-    .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
-        19(2), 183--204, (2002).
+    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
         `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
 
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
@@ -202,9 +202,9 @@ def time_series(t: float | np.ndarray,
 
     References
     ----------
-    .. [1] Egbert and Erofeeva, "Efficient Inverse Modeling of Barotropic
-        Ocean Tides," *Journal of Atmospheric and Oceanic Technology*,
-        19(2), 183--204, (2002).
+    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
         `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
 
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
@@ -242,7 +242,7 @@ def infer_minor(
     ):
     """
     Calculate the tidal corrections for minor constituents inferred using
-    major constituents
+    major constituents [1]_ [2]_ [3]_ [4]_
 
     Parameters
     ----------
@@ -264,13 +264,20 @@ def infer_minor(
 
     References
     ----------
-    .. [1] A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
+    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
     .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
         *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
-    .. [3] Foreman and Henry, "The harmonic analysis of tidal model time
-        series," *Advances in Water Resources*, 12(3), 109--120, (1989).
-        `doi: 10.1016/0309-1708(89)90017-1
+    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
+        model time series," *Advances in Water Resources*, 12(3), 109--120,
+        (1989). `doi: 10.1016/0309-1708(89)90017-1
         <https://doi.org/10.1016/0309-1708(89)90017-1>`_
+    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)

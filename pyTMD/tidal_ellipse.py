@@ -35,7 +35,7 @@ import numpy as np
 def tidal_ellipse(u: np.ndarray, v: np.ndarray):
     """
     Expresses the amplitudes and phases for the u and v components in terms of
-    four ellipse parameters using Foreman's formula
+    four ellipse parameters using Foreman's formula [1]_
 
     Parameters
     ----------
@@ -58,9 +58,9 @@ def tidal_ellipse(u: np.ndarray, v: np.ndarray):
 
     References
     ----------
-    .. [1] Foreman and Henry, "The harmonic analysis of tidal model time
-        series", *Advances in Water Resources*, 12(3), 109-120, (1989).
-        `doi: 10.1016/0309-1708(89)90017-1
+    .. [1] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
+        model time series," *Advances in Water Resources*, 12(3), 109--120,
+        (1989). `doi: 10.1016/0309-1708(89)90017-1
         <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
     # change to polar coordinates

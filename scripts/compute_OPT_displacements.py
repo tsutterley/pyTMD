@@ -77,9 +77,9 @@ PROGRAM DEPENDENCIES:
     io/ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 REFERENCES:
-    S Desai, "Observing the pole tide with satellite altimetry", Journal of
+    S. Desai, "Observing the pole tide with satellite altimetry", Journal of
         Geophysical Research: Oceans, 107(C11), 2002. doi: 10.1029/2001JC001224
-    S Desai, J Wahr and B Beckley "Revisiting the pole tide for and from
+    S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from
         satellite altimetry", Journal of Geodesy, 89(12), p1233-1243, 2015.
         doi: 10.1007/s00190-015-0848-7
 

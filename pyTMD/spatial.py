@@ -1072,7 +1072,7 @@ def convert_ellipsoid(
 
     References
     ----------
-    .. [1] J Meeus, *Astronomical Algorithms*, pp. 77--82, (1991).
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     if (len(phi1) != len(h1)):
         raise ValueError('phi and h have incompatable dimensions')
@@ -1393,7 +1393,7 @@ def _moritz_iterative(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [HofmannWellenhof2006]_
+    using the iterative solution of [1]_
 
     Parameters
     ----------
@@ -1414,7 +1414,7 @@ def _moritz_iterative(
 
     References
     ----------
-    .. [HofmannWellenhof2006] B. Hofmann-Wellenhof and H. Moritz,
+    .. [1] B. Hofmann-Wellenhof and H. Moritz,
         *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
         `doi: 10.1007/978-3-211-33545-1
         <https://doi.org/10.1007/978-3-211-33545-1>`_
@@ -1460,7 +1460,7 @@ def _bowring_iterative(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [Bowring1976]_ [Bowring1985]_
+    using the iterative solution of [1]_ [2]_
 
     Parameters
     ----------
@@ -1481,11 +1481,11 @@ def _bowring_iterative(
 
     References
     ----------
-    .. [Bowring1976] B. R. Bowring, "Transformation from spatial
+    .. [1] B. R. Bowring, "Transformation from spatial
         to geodetic coordinates," *Survey Review*, 23(181),
         323--327, (1976). `doi: 10.1179/sre.1976.23.181.323
         <https://doi.org/10.1179/sre.1976.23.181.323>`_
-    .. [Bowring1985] B. R. Bowring, "The Accuracy Of Geodetic
+    .. [2] B. R. Bowring, "The Accuracy Of Geodetic
         Latitude and Height Equations," *Survey Review*, 28(218),
         202--206, (1985). `doi: 10.1179/sre.1985.28.218.202
         <https://doi.org/10.1179/sre.1985.28.218.202>`_
@@ -1537,7 +1537,7 @@ def _zhu_closed_form(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the closed-form solution of [Zhu1993]_
+    using the closed-form solution of [1]_
 
     Parameters
     ----------
@@ -1554,7 +1554,7 @@ def _zhu_closed_form(
 
     References
     ----------
-    .. [Zhu1993] J Zhu, "Exact conversion of Earth-centered,
+    .. [1] J. Zhu, "Exact conversion of Earth-centered,
         Earth-fixed coordinates to geodetic coordinates,"
         *Journal of Guidance, Control, and Dynamics*,
         16(2), 389--391, (1993). `doi: 10.2514/3.21016
@@ -1608,7 +1608,7 @@ def scale_areas(
     ):
     """
     Calculates area scaling factors for a polar stereographic projection
-    including special case of at the exact pole
+    including special case of at the exact pole [1]_ [2]_
 
     Parameters
     ----------
@@ -1626,7 +1626,7 @@ def scale_areas(
 
     References
     ----------
-    .. [1] J P Snyder, *Map Projections used by the U.S. Geological Survey*,
+    .. [1] J. P. Snyder, *Map Projections used by the U.S. Geological Survey*,
         Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
     .. [2] JPL Technical Memorandum 3349-85-101
     """
