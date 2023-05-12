@@ -63,6 +63,7 @@ Optional Dependencies
 - `h5py: Python interface for Hierarchal Data Format 5 (HDF5) <https://www.h5py.org/>`_
 - `ipyleaflet: Jupyter / Leaflet bridge enabling interactive maps <https://github.com/jupyter-widgets/ipyleaflet>`_
 - `ipywidgets: interactive HTML widgets for Jupyter notebooks and IPython <https://ipywidgets.readthedocs.io/en/latest/>`_
+- `jplephem: Python implementation of the math for predicting raw (x,y,z) planetary positions from JPL ephemerides <https://pypi.org/project/jplephem/>`_
 - `matplotlib: Python 2D plotting library <https://matplotlib.org/>`_
 - `PyYAML: YAML parser and emitter for Python <https://github.com/yaml/pyyaml>`_
 
