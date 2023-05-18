@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 05/2023: don't set a default directory for tide models
     Updated 04/2023: using pathlib to define and expand paths
     Updated 01/2023: use debug level logging instead of import warnings
     Updated 11/2022: place more imports within try/except statements
@@ -30,7 +31,6 @@ import io
 import copy
 import base64
 import logging
-import pathlib
 import datetime
 import numpy as np
 import matplotlib
@@ -70,7 +70,7 @@ class widgets:
 
         # set the directory with tide models
         self.directory = ipywidgets.Text(
-            value=pathlib.Path.cwd(),
+            value='',
             description='Directory:',
             disabled=False
         )
@@ -99,7 +99,7 @@ class widgets:
 
         # checkbox for setting if tide files are compressed
         self.compress = ipywidgets.Checkbox(
-            value=True,
+            value=False,
             description='Compressed?',
             disabled=False,
             style=self.style,

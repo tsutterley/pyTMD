@@ -19,6 +19,7 @@ UPDATE HISTORY:
     Updated 05/2023: add timescale class for converting between time scales
         added timescale to_datetime function to create datetime arrays
         allow epoch arguments to be numpy datetime64 variables or strings
+        function to convert a string with time zone information to datetime
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: added interpolation for delta time (TT - UT1)
@@ -81,10 +82,34 @@ _tide_epoch = (1992, 1, 1, 0, 0, 0)
 _j2000_epoch = (2000, 1, 1, 12, 0, 0)
 _atlas_sdp_epoch = (2018, 1, 1, 0, 0, 0)
 
+# PURPOSE: parse a date string and convert to a datetime object in UTC
+def parse(date_string: str):
+    """
+    Parse a date string and convert to a naive ``datetime`` object in UTC
+
+    Parameters
+    ----------
+    date_string: str
+        formatted time string
+
+    Returns
+    -------
+    date: obj
+        output ``datetime`` object
+    """
+    # parse the date string
+    date = dateutil.parser.parse(date_string)
+    # convert to UTC if containing time-zone information
+    # then drop the timezone information to prevent unsupported errors
+    if date.tzinfo:
+        date = date.astimezone(dateutil.tz.UTC).replace(tzinfo=None)
+    # return the datetime object
+    return date
+
 # PURPOSE: parse a date string into epoch and units scale
 def parse_date_string(date_string: str):
     """
-    parse a date string of the form
+    Parse a date string of the form
 
     - time-units since ``yyyy-mm-dd hh:mm:ss``
     - ``yyyy-mm-dd hh:mm:ss`` for exact calendar dates
@@ -103,12 +128,12 @@ def parse_date_string(date_string: str):
     """
     # try parsing the original date string as a date
     try:
-        epoch = dateutil.parser.parse(date_string)
+        epoch = parse(date_string)
     except ValueError:
         pass
     else:
         # return the epoch (as list)
-        return (datetime_to_list(epoch),0.0)
+        return (datetime_to_list(epoch), 0.0)
     # split the date string into units and epoch
     units,epoch = split_date_string(date_string)
     if units not in _to_sec.keys():
@@ -131,17 +156,17 @@ def split_date_string(date_string: str):
     except ValueError:
         raise ValueError(f'Invalid format: {date_string}')
     else:
-        return (units.lower(), dateutil.parser.parse(epoch))
+        return (units.lower(), parse(epoch))
 
 # PURPOSE: convert a datetime object into a list
 def datetime_to_list(date):
     """
-    convert a datetime object into a list
+    Convert a ``datetime`` object into a list
 
     Parameters
     ----------
-    date: datetime object
-        Input datetime object to convert
+    date: obj
+        Input ``datetime`` object to convert
 
     Returns
     -------
@@ -194,12 +219,12 @@ def convert_datetime(
         epoch: str | tuple | list | np.datetime64 = _unix_epoch
     ):
     """
-    Convert a numpy datetime array to seconds since ``epoch``
+    Convert a ``numpy`` ``datetime`` array to seconds since ``epoch``
 
     Parameters
     ----------
     date: np.ndarray
-        numpy datetime array
+        ``numpy`` ``datetime`` array
     epoch: str, tuple, list, np.ndarray, default (1970,1,1,0,0,0)
         epoch for output ``delta_time``
 
@@ -212,7 +237,7 @@ def convert_datetime(
     if isinstance(epoch, (tuple, list)):
         epoch = np.datetime64(datetime.datetime(*epoch))
     elif isinstance(epoch, str):
-        epoch = np.datetime64(dateutil.parser.parse(epoch))
+        epoch = np.datetime64(parse(epoch))
     # convert to delta time
     return (date - epoch) / np.timedelta64(1, 's')
 
@@ -241,11 +266,11 @@ def convert_delta_time(
     if isinstance(epoch1, (tuple, list)):
         epoch1 = np.datetime64(datetime.datetime(*epoch1))
     elif isinstance(epoch1, str):
-        epoch1 = np.datetime64(dateutil.parser.parse(epoch1))
+        epoch1 = np.datetime64(parse(epoch1))
     if isinstance(epoch2, (tuple, list)):
         epoch2 = np.datetime64(datetime.datetime(*epoch2))
     elif isinstance(epoch2, str):
-        epoch2 = np.datetime64(dateutil.parser.parse(epoch2))
+        epoch2 = np.datetime64(parse(epoch2))
     # calculate the total difference in time in seconds
     delta_time_epochs = (epoch2 - epoch1) / np.timedelta64(1, 's')
     # subtract difference in time and rescale to output units
@@ -301,7 +326,7 @@ def convert_calendar_dates(
     if isinstance(epoch, (tuple, list)):
         epoch = np.datetime64(datetime.datetime(*epoch))
     elif isinstance(epoch, str):
-        epoch = np.datetime64(dateutil.parser.parse(epoch))
+        epoch = np.datetime64(parse(epoch))
     # calculate the total difference in time in days
     delta_time_epochs = (epoch - epoch1) / np.timedelta64(1, 'D')
     # return the date in units (default days) since epoch
@@ -714,7 +739,7 @@ class timescale:
         if isinstance(epoch, (tuple, list)):
             epoch = np.datetime64(datetime.datetime(*epoch))
         elif isinstance(epoch, str):
-            epoch = np.datetime64(dateutil.parser.parse(epoch))
+            epoch = np.datetime64(parse(epoch))
         # calculate the difference in epochs in days
         delta_time_epochs = (epoch - epoch1) / np.timedelta64(1, 'D')
         # return the date in time (default days) since epoch
@@ -978,7 +1003,7 @@ def get_leap_seconds(truncate: bool = True):
             if re.match(r'^(?=#@)',i)]
     # check that leap seconds file is still valid
     expiry = datetime.datetime(*_ntp_epoch) + datetime.timedelta(seconds=int(secs))
-    today = datetime.datetime.now()
+    today = datetime.datetime.utcnow()
     update_leap_seconds() if (expiry < today) else None
     # get leap seconds
     leap_UTC,TAI_UTC = np.loadtxt(leap_secs).T

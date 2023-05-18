@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
     constants.py: calculate reference parameters for common ellipsoids
 
 UPDATE HISTORY:
+    Updated 05/2023: use datetime parser within pyTMD.time module
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
         allow netCDF4 and HDF5 outputs to be appended to existing files
@@ -74,7 +75,7 @@ import pathlib
 import datetime
 import warnings
 import numpy as np
-import dateutil.parser
+import pyTMD.time
 from pyTMD.constants import constants
 import pyTMD.version
 # attempt imports
@@ -110,7 +111,7 @@ def case_insensitive_filename(filename: str | pathlib.Path):
     if not filename.exists():
         # search for filename without case dependence
         f = [f.name for f in filename.parent.iterdir() if
-             re.match(filename.name, f.name, re.I)]
+            re.match(filename.name, f.name, re.I)]
         # raise error if no file found
         if not f:
             raise FileNotFoundError(str(filename))
@@ -281,7 +282,7 @@ def from_ascii(filename: str, **kwargs):
         # copy variables from column dict to output dictionary
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c][i] = dateutil.parser.parse(column[c])
+                dinput[c][i] = pyTMD.time.parse(column[c])
             else:
                 dinput[c][i] = np.float64(column[c])
     # convert to masked array if fill values

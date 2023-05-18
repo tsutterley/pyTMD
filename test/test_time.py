@@ -112,6 +112,12 @@ def test_parse_date_string():
     # check the epoch and the time unit conversion factors
     assert np.all(epoch == [2000,1,1,12,0,0])
     assert (to_secs == 0.0)
+    # time string for unitless case with a time zone
+    time_string = '2000-01-01T12:00:00.000-06:00'
+    epoch,to_secs = pyTMD.time.parse_date_string(time_string)
+    # check the epoch and the time unit conversion factors
+    assert np.all(epoch == [2000,1,1,18,0,0])
+    assert (to_secs == 0.0)
 
 # PURPOSE: test isoformat
 def test_isoformat():
