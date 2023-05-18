@@ -286,7 +286,7 @@ def read_constants(
 
     Parameters
     ----------
-    model_files: str, list, pathlib.path or NoneType, default None
+    model_files: str, list, pathlib.Path or NoneType, default None
         list of model files for each constituent
     grid: str, default 'ascii'
         Tide model file type to read

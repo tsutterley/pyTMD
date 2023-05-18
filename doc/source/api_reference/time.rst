@@ -45,6 +45,7 @@ Convert a calendar date into Modified Julian Days
 General Methods
 ===============
 
+.. autofunction:: pyTMD.time.parse
 
 .. autofunction:: pyTMD.time.parse_date_string
 

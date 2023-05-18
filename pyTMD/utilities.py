@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 05/2023: add reify decorator for evaluation of properties
+        make urs a keyword argument in CCDIS list and download functions
     Updated 04/2023: using pathlib to define and expand paths
         added function to download ephemeride files from JPL SSD server
     Updated 03/2023: add basic variable typing to function inputs
@@ -37,6 +38,7 @@ UPDATE HISTORY:
 from __future__ import print_function, division, annotations
 
 import sys
+import os
 import re
 import io
 import ssl
@@ -71,7 +73,7 @@ def get_data_path(relpath: list | str | pathlib.Path):
 
     Parameters
     ----------
-    relpath: list or str
+    relpath: list, str or pathlib.Path
         relative path
     """
     # current file path
@@ -80,7 +82,7 @@ def get_data_path(relpath: list | str | pathlib.Path):
     if isinstance(relpath, list):
         # use *splat operator to extract from list
         return filepath.joinpath(*relpath)
-    elif isinstance(relpath, str):
+    elif isinstance(relpath, (str, pathlib.Path)):
         return filepath.joinpath(relpath)
 
 class reify(object):
@@ -105,12 +107,12 @@ def file_opener(filename: str | pathlib.Path):
 
     Parameters
     ----------
-    filename: str
+    filename: str or pathlib.Path
         path to file
     """
     filename = pathlib.Path(filename).expanduser()
     if (sys.platform == "win32"):
-        pathlib.os.startfile(filename, "explore")
+        os.startfile(filename, "explore")
     elif (sys.platform == "darwin"):
         subprocess.call(["open", filename])
     else:
@@ -118,7 +120,7 @@ def file_opener(filename: str | pathlib.Path):
 
 # PURPOSE: get the hash value of a file
 def get_hash(
-        local: str | io.IOBase,
+        local: str | io.IOBase | pathlib.Path,
         algorithm: str = 'MD5'
     ):
     """
@@ -126,7 +128,7 @@ def get_hash(
 
     Parameters
     ----------
-    local: obj or str
+    local: obj, str or pathlib.Path
         BytesIO object or path to file
     algorithm: str, default 'MD5'
         hashing algorithm for checksum validation
@@ -363,8 +365,8 @@ def ceil(value: float):
 
 # PURPOSE: make a copy of a file with all system information
 def copy(
-        source: str,
-        destination: str,
+        source: str | pathlib.Path,
+        destination: str | pathlib.Path,
         move: bool = False,
         **kwargs
     ):
@@ -422,7 +424,7 @@ def check_ftp_connection(
 
 # PURPOSE: list a directory on a ftp host
 def ftp_list(
-        HOST: str,
+        HOST: str | list,
         username: str | None = None,
         password: str | None = None,
         timeout: int | None = None,
@@ -504,7 +506,7 @@ def ftp_list(
 
 # PURPOSE: download a file from a ftp host
 def from_ftp(
-        HOST: str,
+        HOST: str | list,
         username: str | None = None,
         password: str | None = None,
         timeout: int | None = None,
@@ -590,7 +592,7 @@ def from_ftp(
             # change the permissions mode
             local.chmod(mode)
             # keep remote modification time of file and local access time
-            pathlib.os.utime(local, (local.stat().st_atime, remote_mtime))
+            os.utime(local, (local.stat().st_atime, remote_mtime))
         # close the ftp connection
         ftp.close()
         # return the bytesIO object
@@ -622,7 +624,7 @@ def check_connection(HOST: str, context=_default_ssl_context):
 
 # PURPOSE: list a directory on an Apache http Server
 def http_list(
-        HOST: str,
+        HOST: str | list,
         timeout: int | None = None,
         context = _default_ssl_context,
         parser = lxml.etree.HTMLParser(),
@@ -691,10 +693,10 @@ def http_list(
 
 # PURPOSE: download a file from a http host
 def from_http(
-        HOST: str,
+        HOST: str | list,
         timeout: int | None = None,
         context = _default_ssl_context,
-        local: str | pathlib.path | None = None,
+        local: str | pathlib.Path | None = None,
         hash: str = '',
         chunk: int = 16384,
         verbose: bool = False,
@@ -803,6 +805,11 @@ def build_opener(
         Add base64 encoded authorization header to opener
     urs: str, default 'https://urs.earthdata.nasa.gov'
         Earthdata login URS 3 host
+
+    Returns
+    -------
+    opener: obj
+        ``OpenerDirector`` instance
     """
     # https://docs.python.org/3/howto/urllib2.html#id5
     handler = []
@@ -856,11 +863,12 @@ def check_credentials():
 
 # PURPOSE: list a directory on GSFC CDDIS https server
 def cddis_list(
-        HOST: str,
+        HOST: str | list,
         username: str | None = None,
         password: str | None = None,
         build: bool = True,
         timeout: int | None = None,
+        urs: str = 'urs.earthdata.nasa.gov',
         parser=lxml.etree.HTMLParser(),
         pattern: str = '',
         sort: bool = False
@@ -880,6 +888,8 @@ def cddis_list(
         Build opener and check Earthdata credentials
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
+    urs: str, default 'urs.earthdata.nasa.gov'
+        NASA Earthdata URS 3 host
     parser: obj, default lxml.etree.HTMLParser()
         HTML parser for ``lxml``
     pattern: str, default ''
@@ -896,7 +906,6 @@ def cddis_list(
     """
     # use netrc credentials
     if build and not (username or password):
-        urs = 'urs.earthdata.nasa.gov'
         username,_,password = netrc.netrc().authenticators(urs)
     # build urllib2 opener and check credentials
     if build:
@@ -945,11 +954,12 @@ def cddis_list(
 
 # PURPOSE: download a file from a GSFC CDDIS https server
 def from_cddis(
-        HOST: str,
+        HOST: str | list,
         username: str | None = None,
         password: str | None = None,
         build: bool = True,
         timeout: int | None = None,
+        urs: str = 'urs.earthdata.nasa.gov',
         local: str | pathlib.Path | None = None,
         hash: str = '',
         chunk: int = 16384,
@@ -972,6 +982,8 @@ def from_cddis(
         Build opener and check Earthdata credentials
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
+    urs: str, default 'urs.earthdata.nasa.gov'
+        NASA Earthdata URS 3 host
     local: str, pathlib.Path or NoneType, default None
         path to local file
     hash: str, default ''
@@ -995,7 +1007,6 @@ def from_cddis(
     logging.basicConfig(stream=fid, level=loglevel)
     # use netrc credentials
     if build and not (username or password):
-        urs = 'urs.earthdata.nasa.gov'
         username,_,password = netrc.netrc().authenticators(urs)
     # build urllib2 opener and check credentials
     if build:
@@ -1047,7 +1058,7 @@ def from_cddis(
 
 # PURPOSE: list a directory on IERS https Server
 def iers_list(
-        HOST: str,
+        HOST: str | list,
         timeout: int | None = None,
         context = _default_ssl_context,
         parser = lxml.etree.HTMLParser()
