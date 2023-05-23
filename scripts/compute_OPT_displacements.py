@@ -369,7 +369,7 @@ def compute_OPT_displacements(input_file, output_file,
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_oc_pole')
     # change the permissions level to MODE
-    output_file.chmod(MODE)
+    output_file.chmod(mode=MODE)
 
 # PURPOSE: create argument parser
 def arguments():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arcticdata_tides.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (05/2023)
 Download Arctic Ocean Tide Models from the NSF ArcticData archive
 
 AODTM-5: https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N
@@ -22,6 +22,7 @@ COMMAND LINE OPTIONS:
         AOTIM-5-2018
         Arc2kmTM
         Gr1kmTM
+    -t X, --timeout X: timeout in seconds for blocking operations
     -M X, --mode X: Local permissions mode of the files downloaded
 
 PYTHON DEPENDENCIES:
@@ -32,6 +33,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 05/2023: added option to change connection timeout
     Updated 04/2023: using pathlib to define and expand paths
     Updated 11/2022: use f-strings for formatting verbose or ascii output
     Updated 06/2022: added Greenland 1km model (Gr1kmTM) to list of models
@@ -54,6 +56,7 @@ import pyTMD.utilities
 # PURPOSE: Download Arctic Ocean Tide Models from the NSF ArcticData archive
 def arcticdata_tides(MODEL: str,
     DIRECTORY: str | pathlib.Path | None = None,
+    TIMEOUT: int | None = None,
     MODE: oct = 0o775):
 
     # create logger for verbosity level
@@ -86,7 +89,7 @@ def arcticdata_tides(MODEL: str,
         pyTMD.utilities.quote_plus(resource_map_doi)]
     # download zipfile from host
     logger.info(f'{posixpath.join(*HOST)} -->\n')
-    zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST))
+    zfile = zipfile.ZipFile(pyTMD.utilities.from_http(HOST, timeout=TIMEOUT))
     # find model files within zip file
     rx = re.compile(r'(grid|h[0]?|UV[0]?|Model|xy)_(.*?)',re.VERBOSE)
     members = [m for m in zfile.filelist if rx.search(m.filename)]
@@ -99,7 +102,7 @@ def arcticdata_tides(MODEL: str,
         # extract file
         zfile.extract(m, path=local_dir)
         # change permissions mode
-        local_file.chmod(MODE)
+        local_file.chmod(mode=MODE)
     # close the zipfile object
     zfile.close()
 
@@ -122,6 +125,10 @@ def arguments():
         metavar='TIDE', type=str, nargs='+', default=['Gr1kmTM'],
         choices=('AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM'),
         help='Arctic Ocean tide model to download')
+    # connection timeout
+    parser.add_argument('--timeout','-t',
+        type=int, default=360,
+        help='Timeout in seconds for blocking operations')
     # permissions mode of the local directories and files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
@@ -140,6 +147,7 @@ def main():
         for m in args.tide:
             arcticdata_tides(m,
                 DIRECTORY=args.directory,
+                TIMEOUT=args.timeout,
                 MODE=args.mode)
 
 # run main program

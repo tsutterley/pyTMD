@@ -148,7 +148,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         # keep remote modification time of file and local access time
         pathlib.os.utime(local, (local.stat().st_atime, remote_mtime))
         # change the permissions mode of the local file
-        local.chmod(MODE)
+        local.chmod(mode=MODE)
 
 # PURPOSE: create argument parser
 def arguments():

@@ -259,7 +259,7 @@ def compute_LPET_elevations(input_file, output_file,
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_lpe')
     # change the permissions level to MODE
-    output_file.chmod(MODE)
+    output_file.chmod(mode=MODE)
 
 # PURPOSE: create argument parser
 def arguments():

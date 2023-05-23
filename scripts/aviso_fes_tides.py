@@ -25,6 +25,8 @@ COMMAND LINE OPTIONS:
         FES2014
     --load: download load tide model outputs (fes2014)
     --currents: download tide model current outputs (fes2012 and fes2014)
+    -G, --gzip: compress output ascii and netCDF4 tide files
+    -t X, --timeout X: timeout in seconds for blocking operations
     --log: output log of files downloaded
     -M X, --mode X: Local permissions mode of the files downloaded
 
@@ -36,6 +38,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 05/2023: added option to change connection timeout
     Updated 04/2023: using pathlib to define and expand paths
         added option to include AVISO FTP password as argument
     Updated 11/2022: added encoding for writing ascii files
@@ -51,7 +54,7 @@ UPDATE HISTORY:
     Updated 05/2019: new authenticated ftp host (changed 2018-05-31)
     Written 09/2017
 """
-from __future__ import print_function
+from __future__ import print_function, annotations
 
 import sys
 import os
@@ -71,11 +74,19 @@ import ftplib
 import pyTMD.utilities
 
 # PURPOSE: download local AVISO FES files with ftp server
-def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
-    CURRENTS=False, GZIP=False, LOG=False, MODE=None):
+def aviso_fes_tides(MODEL: str,
+    DIRECTORY: str | pathlib.Path | None = None,
+    USER: str = '',
+    PASSWORD: str = '',
+    LOAD: bool = False,
+    CURRENTS: bool = False,
+    GZIP: bool = False,
+    TIMEOUT: int | None = None,
+    LOG: bool = False,
+    MODE: oct = 0o775):
 
     # connect and login to AVISO ftp server
-    f = ftplib.FTP('ftp-access.aviso.altimetry.fr',timeout=1000)
+    f = ftplib.FTP('ftp-access.aviso.altimetry.fr', timeout=TIMEOUT)
     f.login(USER, PASSWORD)
     # check if local directory exists and recursively create if not
     localpath = pathlib.Path(DIRECTORY).joinpath(MODEL.lower()).expanduser()
@@ -162,7 +173,7 @@ def aviso_fes_tides(MODEL, DIRECTORY=None, USER='', PASSWORD='', LOAD=False,
     f.quit()
     # close log file and set permissions level to MODE
     if LOG:
-        LOGFILE.chmod(MODE)
+        LOGFILE.chmod(mode=MODE)
 
 # PURPOSE: pull file from a remote ftp server and decompress if tar file
 def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE):
@@ -204,7 +215,7 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
             # get last modified date of remote file within tar file
             # keep remote modification time of file and local access time
             pathlib.os.utime(local_file, (local_file.stat().st_atime, m.mtime))
-            local_file.chmod(MODE)
+            local_file.chmod(mode=MODE)
     else:
         # copy readme and uncompressed files directly
         local_file = local_dir.joinpath(local_dir,remote_path[-1])
@@ -217,7 +228,7 @@ def ftp_download_file(logger,ftp,remote_path,local_dir,tarmode,flatten,GZIP,MODE
         remote_mtime = calendar.timegm(time.strptime(mdtm[4:],"%Y%m%d%H%M%S"))
         # keep remote modification time of file and local access time
         pathlib.os.utime(local_file, (local_file.stat().st_atime, remote_mtime))
-        local_file.chmod(MODE)
+        local_file.chmod(mode=MODE)
 
 # PURPOSE: create argument parser
 def arguments():
@@ -261,6 +272,10 @@ def arguments():
     parser.add_argument('--gzip','-G',
         default=False, action='store_true',
         help='Compress output ascii and netCDF4 tide files')
+    # connection timeout
+    parser.add_argument('--timeout','-t',
+        type=int, default=360,
+        help='Timeout in seconds for blocking operations')
     # Output log file in form
     # AVISO_FES_tides_2002-04-01.log
     parser.add_argument('--log','-l',
@@ -303,6 +318,7 @@ def main():
                 LOAD=args.load,
                 CURRENTS=args.currents,
                 GZIP=args.gzip,
+                TIMEOUT=args.timeout,
                 LOG=args.log,
                 MODE=args.mode)
 

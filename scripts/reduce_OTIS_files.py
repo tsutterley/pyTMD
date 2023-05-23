@@ -139,7 +139,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     new_grid_file = create_unique_filename(model.grid_file)
     pyTMD.io.OTIS.output_otis_grid(new_grid_file,xlim,ylim,hz1,mz1,iob,dt)
     # change the permissions level to MODE
-    new_grid_file.chmod(MODE)
+    new_grid_file.chmod(mode=MODE)
 
     # combine ATLAS sub-grids into single output grid
     # reduce elevation files to bounds
@@ -168,7 +168,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         pyTMD.io.OTIS.output_otis_elevation(new_model_file['z'], z1,
             xlim, ylim, constituents)
         # change the permissions level to MODE
-        new_model_file['z'].chmod(MODE)
+        new_model_file['z'].chmod(mode=MODE)
 
     # combine ATLAS sub-grids into single output grid
     # reduce transport files to bounds
@@ -201,7 +201,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         pyTMD.io.OTIS.output_otis_transport(new_model_file['u'], u1, v1,
             xlim, ylim, constituents)
         # change the permissions level to MODE
-        new_model_file['u'].chmod(MODE)
+        new_model_file['u'].chmod(mode=MODE)
 
 # PURPOSE: create a unique filename adding a numerical instance if existing
 def create_unique_filename(filename):

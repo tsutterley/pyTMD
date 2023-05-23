@@ -89,7 +89,7 @@ def usap_cats_tides(MODEL,DIRECTORY=None,MODE=0o775):
         # extract file
         zfile.extract(m, path=local_dir)
         # change permissions mode
-        local_file.chmod(MODE)
+        local_file.chmod(mode=MODE)
     # close the zipfile object
     zfile.close()
 
