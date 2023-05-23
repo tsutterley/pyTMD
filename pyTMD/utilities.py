@@ -11,6 +11,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2023: add reify decorator for evaluation of properties
         make urs a keyword argument in CCDIS list and download functions
+        add case for JPL kernel file download where local path is defined
     Updated 04/2023: using pathlib to define and expand paths
         added function to download ephemeride files from JPL SSD server
     Updated 03/2023: add basic variable typing to function inputs
@@ -1109,6 +1110,7 @@ def from_jpl_ssd(
         kernel='de440s.bsp',
         timeout: int | None = None,
         context = _default_ssl_context,
+        local: str | pathlib.Path | None = None,
         hash: str = '',
         chunk: int = 16384,
         verbose: bool = False,
@@ -1137,10 +1139,17 @@ def from_jpl_ssd(
     mode: oct, default 0o775
         permissions mode of output local file
     """
-    # local path to kernel file
-    local = get_data_path(['data',kernel])
+    # determine which kernel file to download
+    if (local is None):
+        # local path to kernel file
+        local = get_data_path(['data',kernel])
+    elif (kernel is None) and (local is not None):
+        # verify inputs for remote http host
+        local = pathlib.Path(local).expanduser().absolute()
+        kernel = local.name
     # remote host path to kernel file
     HOST = ['https://ssd.jpl.nasa.gov','ftp','eph','planets','bsp',kernel]
     # get kernel file from remote host
+    logging.info('Downloading JPL Planetary Ephemeride Kernel File')
     from_http(HOST, timeout=timeout, context=context, local=local,
         hash=hash, chunk=chunk, verbose=verbose, mode=mode)

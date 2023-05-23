@@ -21,12 +21,16 @@ or 3) an unconstrained hydrodynamic model [Stammer2014]_.
 Solid Earth Tides
 #################
 
-Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun [Meeus1998]_ [Montenbruck1989]_.
-Basic ephemerides for the sun and moon can be calculated within ``pyTMD``, and high-resolution ephemerides for the sun and moon can be downloaded from the Jet Propulsion Laboratory.
+Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun [Agnew2015]_ [Meeus1998]_ [Montenbruck1989]_.
+However, while ocean tides are apparent to observers on the coast, solid Earth tides are typically more difficult to observe due to the reference frame of the observer moving.
+The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object [Agnew2015]_ [Wahr1981]_.
+Analytical approximate positions for the sun and moon can be calculated within ``pyTMD``, and high-resolution numerical ephemerides for the sun and moon can be downloaded from the `Jet Propulsion Laboratory <https://ssd.jpl.nasa.gov/planets/orbits.html>`_.
 
-Within ``pyTMD``, the tidal deformation of the Earth is modeled using a Load Love/Shida number formalism taking into account the effects of mantle anelasticity [Mathews1997]_ [Wahr1981]_.
-The formalism for estimating the solid Earth tides is based upon `IERS Conventions <https://iers-conventions.obspm.fr/>`_.
+Within ``pyTMD``, the tidal deformation of the Earth is modeled using the Load Love/Shida numbers formalism described in the `IERS Conventions <https://iers-conventions.obspm.fr/>`_, which are based on [Mathews1997]_.
 Love and Shida numbers describe the elastic response of the Earth in terms of vertical displacement (*h*), gravitational potential (*k*) and horizontal displacement (*l*).
+For a spherical, non-rotating Earth, the Love and Shida numbers are largely independent of tidal frequency [Wahr1981]_.
+However, for a rotating, ellipsoidal Earth, the Love and Shida numbers are dependent on tidal frequency, with resonances in the diurnal and semi-diurnal bands [Wahr1981]_.
+``pyTMD`` computes these frequency-dependent corrections along with the dissipative mantle anelasticity corrections following [Mathews1997]_.
 
 In addition to the ups and downs of tides, there is a considerable portion of tidal potential and displacement that does not vary in time, a *permanent tide* that is due to the Earth being in the presence of the Sun and Moon (and other planetary bodies).
 The `Earth is lower in polar areas and higher in equatorial areas <https://www.ngs.noaa.gov/PUBS_LIB/EGM96_GEOID_PAPER/egm96_geoid_paper.html>`_ than it would without those gravitational effects.
@@ -43,7 +47,7 @@ The radial difference in terms of latitude between the mean-tide and tide-free s
 Pole Tides
 ##########
 
-Load and ocean pole tides are driven by variations in the Earth's figure axis (e.g. Chandler wobble and annual variations) [Wahr1985]_ [Desai2002]_.
+Load and ocean pole tides are driven by variations in the Earth's figure axis (e.g. Chandler wobble and annual variations) [Wahr1985]_ [Desai2002]_ [Agnew2015]_.
 These pole tides are due to Earth's ellipsoidal shape shifting as the rotation axis of the Earth
 moves with respect to the mean pole location, and for the case of ocean pole tides the centripetal effects of polar motion on the ocean [Desai2002]_ [Desai2015]_.
 The formalism for estimating the pole tides is also based upon `IERS Conventions <https://iers-conventions.obspm.fr/>`_.
@@ -79,6 +83,8 @@ Within ``pyTMD``, solid Earth tides are calculated using ECEF coordinates, and p
 
 References
 ##########
+
+.. [Agnew2015] D. C. Agnew, "Earth Tides", *Treatise on Geophysics (Second Edition)*, 3.06, 151--178, (2015). `doi: 10.1016/B978-0-444-53802-4.00058-0 <https://doi.org/10.1016/B978-0-444-53802-4.00058-0>`_
 
 .. [Desai2002] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of Geophysical Research: Oceans*, 107(C11), (2002). `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
 

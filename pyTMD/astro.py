@@ -26,6 +26,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 05/2023: add wrapper function for nutation angles
+        download JPL kernel file if not currently existing
     Updated 04/2023: added low resolution solar and lunar positions
         added function with more phase angles of the sun and moon
         functions to calculate solar and lunar positions with ephemerides
@@ -50,10 +51,11 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import logging
+import pathlib
 import numpy as np
 from pyTMD.time import timescale
 from pyTMD.eop import iers_polar_motion
-from pyTMD.utilities import get_data_path
+from pyTMD.utilities import get_data_path, from_jpl_ssd
 
 # attempt imports
 try:
@@ -477,6 +479,9 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     kwargs.setdefault('kernel', _default_kernel)
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
+    # download kernel file if not currently existing
+    if not pathlib.Path(kwargs['kernel']).exists():
+        from_jpl_ssd(kernel=None, local=kwargs['kernel'])
     # read JPL ephemerides kernel
     SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the sun
@@ -613,6 +618,9 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
+    # download kernel file if not currently existing
+    if not pathlib.Path(kwargs['kernel']).exists():
+        from_jpl_ssd(kernel=None, local=kwargs['kernel'])
     # create timescale from Modified Julian Day (MJD)
     ts = timescale(MJD=MJD)
     # read JPL ephemerides kernel
@@ -802,8 +810,8 @@ def _eqeq_complement(T: float | np.ndarray):
     # evaluate the complementary terms and convert to radians
     complement = ts.masec2rad*(np.dot(j0['Cs'], np.sin(arg0)) +
         np.dot(j0['Cc'], np.cos(arg0)) +
-        T*np.dot(j1['Cs'], np.sin(arg1)) +
-        T*np.dot(j1['Cc'], np.cos(arg1)))
+        ts.T*np.dot(j1['Cs'], np.sin(arg1)) +
+        ts.T*np.dot(j1['Cc'], np.cos(arg1)))
     # return the complementary terms
     return complement
 
