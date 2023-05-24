@@ -340,7 +340,7 @@ def main():
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,'lpe_tide',args.infile.suffix)
-        args.outfile = '{0}_{1}{2}'.format(*vars)
+        args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
 
     # run long period equilibrium tide program for input file
     compute_LPET_elevations(args.infile, args.outfile,

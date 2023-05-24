@@ -498,7 +498,7 @@ def main():
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,args.tide,'_currents',args.infile.suffix)
-        args.outfile = '{0}_{1}{2}{3}'.format(*vars)
+        args.outfile = args.infile.with_name('{0}_{1}{2}{3}'.format(*vars))
 
     # run tidal current program for input file
     compute_tidal_currents(args.directory, args.infile, args.outfile,

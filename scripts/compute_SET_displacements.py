@@ -430,7 +430,7 @@ def main():
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,'solid_earth_tide',args.infile.suffix)
-        args.outfile = '{0}_{1}{2}'.format(*vars)
+        args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
 
     # run solid earth tide program for input file
     compute_SET_displacements(args.infile, args.outfile,

@@ -463,7 +463,7 @@ def main():
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,'ocean_pole_tide',args.infile.suffix)
-        args.outfile = '{0}_{1}{2}'.format(*vars)
+        args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
 
     # run ocean pole tide program for input file
     compute_OPT_displacements(args.infile, args.outfile,

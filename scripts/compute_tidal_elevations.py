@@ -500,7 +500,7 @@ def main():
     if not args.outfile:
         flexure_flag = '_FLEXURE' if args.apply_flexure else ''
         vars = (args.infile.stem,args.tide,flexure_flag,args.infile.suffix)
-        args.outfile = '{0}_{1}{2}{3}'.format(*vars)
+        args.outfile = args.infile.with_name('{0}_{1}{2}{3}'.format(*vars))
 
     # run tidal elevation program for input file
     compute_tidal_elevations(args.directory, args.infile, args.outfile,
