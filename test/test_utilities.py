@@ -40,3 +40,23 @@ def test_ceil():
     for s,i in zip([-2.5, 0.0, 2.5], [-2, 0, 3]):
         TEST = pyTMD.utilities.ceil(s)
         assert (TEST == i)
+
+def test_token(username, password):
+    # attempt to login to NASA Earthdata
+    urs = 'urs.earthdata.nasa.gov'
+    opener = pyTMD.utilities.attempt_login(urs,
+        username=username,
+        password=password,
+        password_manager=False,
+        get_ca_certs=False,
+        redirect=False,
+        authorization_header=True)
+    # get data access token
+    token = pyTMD.utilities.get_token(build=False)
+    # get list of tokens
+    token_list = pyTMD.utilities.list_tokens(build=False)
+    # assert that token is in list of tokens
+    access_tokens = [t['access_token'] for t in token_list]
+    assert (token['access_token'] in access_tokens)
+    # revoke the access token
+    pyTMD.utilities.revoke_token(token['access_token'], build=False)

@@ -54,7 +54,15 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.from_http
 
+.. autofunction:: pyTMD.utilities.attempt_login
+
 .. autofunction:: pyTMD.utilities.build_opener
+
+.. autofunction:: pyTMD.utilities.get_token
+
+.. autofunction:: pyTMD.utilities.list_tokens
+
+.. autofunction:: pyTMD.utilities.revoke_token
 
 .. autofunction:: pyTMD.utilities.check_credentials
 
