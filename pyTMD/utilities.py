@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (06/2023)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 06/2023: add functions to retrieve and revoke Earthdata tokens
     Updated 05/2023: add reify decorator for evaluation of properties
         make urs a keyword argument in CCDIS list and download functions
         add case for JPL kernel file download where local path is defined
@@ -43,15 +44,18 @@ import os
 import re
 import io
 import ssl
+import json
 import netrc
 import ftplib
 import shutil
 import base64
 import socket
+import getpass
 import inspect
 import hashlib
 import logging
 import pathlib
+import builtins
 import warnings
 import posixpath
 import subprocess
@@ -618,7 +622,11 @@ def check_connection(HOST: str, context=_default_ssl_context):
     # attempt to connect to http host
     try:
         urllib2.urlopen(HOST, timeout=20, context=context)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
     except urllib2.URLError as exc:
+        logging.debug(exc.reason)
         raise RuntimeError('Check internet connection') from exc
     else:
         return True
@@ -668,8 +676,13 @@ def http_list(
         # Create and submit request.
         request = urllib2.Request(posixpath.join(*HOST))
         response = urllib2.urlopen(request, timeout=timeout, context=context)
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise Exception('List error from {0}'.format(posixpath.join(*HOST)))
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        msg = 'List error from {0}'.format(posixpath.join(*HOST))
+        raise Exception(msg) from exc
     else:
         # read and parse request for files (column names and modified times)
         tree = lxml.etree.parse(response, parser)
@@ -774,6 +787,90 @@ def from_http(
         remote_buffer.seek(0)
         return remote_buffer
 
+# PURPOSE: attempt to build an opener with netrc
+def attempt_login(
+        urs: str,
+        context=_default_ssl_context,
+        password_manager: bool = True,
+        get_ca_certs: bool = True,
+        redirect: bool = True,
+        authorization_header: bool = False,
+        **kwargs
+    ):
+    """
+    attempt to build a urllib opener for NASA Earthdata
+
+    Parameters
+    ----------
+    urs: str
+        Earthdata login URS 3 host
+    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+        SSL context for ``urllib`` opener object
+    password_manager: bool, default True
+        Create password manager context using default realm
+    get_ca_certs: bool, default True
+        Get list of loaded “certification authority” certificates
+    redirect: bool, default True
+        Create redirect handler object
+    authorization_header: bool, default False
+        Add base64 encoded authorization header to opener
+    username: str, default from environmental variable
+        NASA Earthdata username
+    password: str, default from environmental variable
+        NASA Earthdata password
+    retries: int, default 5
+        number of retry attempts
+    netrc: str, default ~/.netrc
+        path to .netrc file for authentication
+
+    Returns
+    -------
+    opener: obj
+        OpenerDirector instance
+    """
+    # set default keyword arguments
+    kwargs.setdefault('username', os.environ.get('EARTHDATA_USERNAME'))
+    kwargs.setdefault('password', os.environ.get('EARTHDATA_PASSWORD'))
+    kwargs.setdefault('retries', 5)
+    kwargs.setdefault('netrc', os.path.expanduser('~/.netrc'))
+    try:
+        # only necessary on jupyterhub
+        os.chmod(kwargs['netrc'], 0o600)
+        # try retrieving credentials from netrc
+        username, _, password = netrc.netrc(kwargs['netrc']).authenticators(urs)
+    except Exception as exc:
+        # try retrieving credentials from environmental variables
+        username, password = (kwargs['username'], kwargs['password'])
+        pass
+    # if username or password are not available
+    if not username:
+        username = builtins.input(f'Username for {urs}: ')
+    if not password:
+        prompt = f'Password for {username}@{urs}: '
+        password = getpass.getpass(prompt=prompt)
+    # for each retry
+    for retry in range(kwargs['retries']):
+        # build an opener for urs with credentials
+        opener = build_opener(username, password,
+            context=context,
+            password_manager=password_manager,
+            get_ca_certs=get_ca_certs,
+            redirect=redirect,
+            authorization_header=authorization_header,
+            urs=urs)
+        # try logging in by check credentials
+        try:
+            check_credentials()
+        except Exception as exc:
+            pass
+        else:
+            return opener
+        # reattempt login
+        username = builtins.input(f'Username for {urs}: ')
+        password = getpass.getpass(prompt=prompt)
+    # reached end of available retries
+    raise RuntimeError('End of Retries: Check NASA Earthdata credentials')
+
 # PURPOSE: "login" to NASA Earthdata with supplied credentials
 def build_opener(
         username: str,
@@ -846,6 +943,165 @@ def build_opener(
     # HTTPPasswordMgrWithDefaultRealm will be confused.
     return opener
 
+# PURPOSE: generate a NASA Earthdata user token
+def get_token(
+        HOST: str = 'https://urs.earthdata.nasa.gov/api/users/token',
+        username: str | None = None,
+        password: str | None = None,
+        build: bool = True,
+        urs: str = 'urs.earthdata.nasa.gov',
+    ):
+    """
+    Generate a NASA Earthdata User Token
+
+    Parameters
+    ----------
+    HOST: str or list
+        NASA Earthdata token API host
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    build: bool, default True
+        Build opener and check WebDAV credentials
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    urs: str, default 'urs.earthdata.nasa.gov'
+        NASA Earthdata URS 3 host
+
+    Returns
+    -------
+    token: dict
+        JSON response with NASA Earthdata User Token
+    """
+    # attempt to build urllib2 opener and check credentials
+    if build:
+        attempt_login(urs,
+            username=username,
+            password=password,
+            password_manager=False,
+            get_ca_certs=False,
+            redirect=False,
+            authorization_header=True)
+    # create post response with Earthdata token API
+    try:
+        request = urllib2.Request(HOST, method='POST')
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        raise RuntimeError('Check internet connection') from exc
+    # read and return JSON response
+    return json.loads(response.read())
+
+# PURPOSE: generate a NASA Earthdata user token
+def list_tokens(
+        HOST: str = 'https://urs.earthdata.nasa.gov/api/users/tokens',
+        username: str | None = None,
+        password: str | None = None,
+        build: bool = True,
+        urs: str = 'urs.earthdata.nasa.gov',
+    ):
+    """
+    List the current associated NASA Earthdata User Tokens
+
+    Parameters
+    ----------
+    HOST: str
+        NASA Earthdata list token API host
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    build: bool, default True
+        Build opener and check WebDAV credentials
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    urs: str, default 'urs.earthdata.nasa.gov'
+        NASA Earthdata URS 3 host
+
+    Returns
+    -------
+    tokens: list
+        JSON response with NASA Earthdata User Tokens
+    """
+    # attempt to build urllib2 opener and check credentials
+    if build:
+        attempt_login(urs,
+            username=username,
+            password=password,
+            password_manager=False,
+            get_ca_certs=False,
+            redirect=False,
+            authorization_header=True)
+    # create get response with Earthdata list tokens API
+    try:
+        request = urllib2.Request(HOST)
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        raise RuntimeError('Check internet connection') from exc
+    # read and return JSON response
+    return json.loads(response.read())
+
+# PURPOSE: revoke a NASA Earthdata user token
+def revoke_token(
+        token: str,
+        HOST: str = f'https://urs.earthdata.nasa.gov/api/users/revoke_token',
+        username: str | None = None,
+        password: str | None = None,
+        build: bool = True,
+        urs: str = 'urs.earthdata.nasa.gov',
+    ):
+    """
+    Generate a NASA Earthdata User Token
+
+    Parameters
+    ----------
+    token: str
+        NASA Earthdata token to be revoked
+    HOST: str
+        NASA Earthdata revoke token API host
+    username: str or NoneType, default None
+        NASA Earthdata username
+    password: str or NoneType, default None
+        NASA Earthdata password
+    build: bool, default True
+        Build opener and check WebDAV credentials
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    urs: str, default 'urs.earthdata.nasa.gov'
+        NASA Earthdata URS 3 host
+    """
+    # attempt to build urllib2 opener and check credentials
+    if build:
+        attempt_login(urs,
+            username=username,
+            password=password,
+            password_manager=False,
+            get_ca_certs=False,
+            redirect=False,
+            authorization_header=True)
+    # full path for NASA Earthdata revoke token API
+    url = f'{HOST}?token={token}'
+    # create post response with Earthdata revoke tokens API
+    try:
+        request = urllib2.Request(url, method='POST')
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        raise RuntimeError('Check internet connection') from exc
+    # verbose response
+    logging.debug(f'Token Revoked: {token}')
+
 # PURPOSE: check that entered NASA Earthdata credentials are valid
 def check_credentials():
     """
@@ -855,10 +1111,12 @@ def check_credentials():
         remote_path = posixpath.join('https://cddis.nasa.gov','archive')
         request = urllib2.Request(url=remote_path)
         response = urllib2.urlopen(request, timeout=20)
-    except urllib2.HTTPError:
-        raise RuntimeError('Check your NASA Earthdata credentials')
-    except urllib2.URLError:
-        raise RuntimeError('Check internet connection')
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        raise RuntimeError('Check internet connection') from exc
     else:
         return True
 
@@ -1093,8 +1351,13 @@ def iers_list(
         # Create and submit request.
         request = urllib2.Request(posixpath.join(*HOST))
         response = urllib2.urlopen(request, timeout=timeout, context=context)
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise Exception('List error from {0}'.format(posixpath.join(*HOST)))
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        msg = 'List error from {0}'.format(posixpath.join(*HOST))
+        raise Exception(msg) from exc
     else:
         # read and parse request for files (column names and modified times)
         tree = lxml.etree.parse(response, parser)
