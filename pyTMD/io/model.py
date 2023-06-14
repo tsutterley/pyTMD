@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (06/2023)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 06/2023: remap FES2012 e2 constituent to eps2
     Updated 04/2023: added global HAMTIDE11 model
         made ICESat, ICESat-2 and output file attributes properties
         updated model definition read function for currents
@@ -1433,14 +1434,14 @@ class model:
             '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)o1','tau1',
             'm1','chi1','pi1','p1','s1','k1','psi1','phi1','theta1','j1',
             'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
-            'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2',
+            'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
             'r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4','m4',
             'ms4','mk4',r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2',
             'msqm','mtm',r'(?<!m)n4','eps2','z0']
         # compile regular expression
         rx = re.compile(r'(' + '|'.join(cindex) + r')', re.IGNORECASE)
         # known remapped cases
-        mapping = [('2n','2n2'), ('la2','lambda2')]
+        mapping = [('2n','2n2'), ('la2','lambda2'), ('e2','eps2')]
         # convert to pathlib.Path
         model_file = pathlib.Path(model_file)
         # check if there is a possible constituent name in the file name

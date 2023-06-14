@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (06/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -56,6 +56,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 06/2023: extract ocean tide model variables for FES2012
     Updated 04/2023: added global HAMTIDE11 model
         using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -710,10 +711,10 @@ def read_netcdf_file(
     # variable dimensions for each model
     # amplitude and phase components for each type
     if kwargs['version'] in ('FES2012',):
-        lon = fileID.variables['longitude'][:]
-        lat = fileID.variables['latitude'][:]
-        amp_key = dict(z='amplitude', u='Ua', v='Va')[kwargs['type']]
-        phase_key = dict(z='phase', u='Ug', v='Vg')[kwargs['type']]
+        lon = fileID.variables['lon'][:]
+        lat = fileID.variables['lat'][:]
+        amp_key = dict(z='Ha', u='Ua', v='Va')[kwargs['type']]
+        phase_key = dict(z='Hg', u='Ug', v='Vg')[kwargs['type']]
     elif kwargs['version'] in ('FES2014','EOT20'):
         lon = fileID.variables['lon'][:]
         lat = fileID.variables['lat'][:]
