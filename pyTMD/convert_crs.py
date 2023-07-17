@@ -47,17 +47,14 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
-import warnings
+import logging
 import numpy as np
 
 # attempt imports
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("pyproj not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.critical("pyproj not available")
 
 def convert_crs(
         i1: np.ndarray,

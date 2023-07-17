@@ -54,7 +54,7 @@ UPDATE HISTORY:
     Updated 07/2021: added function for determining input variable type
     Updated 03/2021: added polar stereographic area scale calculation
         add routines for converting to and from cartesian coordinates
-        eplaced numpy bool/int to prevent deprecation warnings
+        replaced numpy bool/int to prevent deprecation warnings
     Updated 01/2021: add streaming from bytes for ascii, netCDF4, HDF5, geotiff
         set default time for geotiff files to 0
     Updated 12/2020: added module for converting ellipsoids
@@ -73,7 +73,6 @@ import yaml
 import logging
 import pathlib
 import datetime
-import warnings
 import numpy as np
 import pyTMD.time
 from pyTMD.constants import constants
@@ -82,20 +81,15 @@ import pyTMD.version
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("GDAL not available", ImportWarning)
+    logging.debug("GDAL not available")
 try:
     import h5py
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("h5py not available", ImportWarning)
+    logging.debug("h5py not available")
 try:
     import netCDF4
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("netCDF4 not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.debug("netCDF4 not available")
 
 def case_insensitive_filename(filename: str | pathlib.Path):
     """
@@ -1604,8 +1598,8 @@ def _zhu_closed_form(
 
 def scale_areas(
         lat: np.ndarray,
-        flat: float=_wgs84.flat,
-        ref: float=70.0
+        flat: float = _wgs84.flat,
+        ref: float = 70.0
     ):
     """
     Calculates area scaling factors for a polar stereographic projection

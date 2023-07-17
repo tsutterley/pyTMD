@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (06/2023)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 06/2023: improve conversion of timescale to datetime arrays
     Updated 05/2023: add timescale class for converting between time scales
         added timescale to_datetime function to create datetime arrays
         allow epoch arguments to be numpy datetime64 variables or strings
@@ -135,7 +136,7 @@ def parse_date_string(date_string: str):
         # return the epoch (as list)
         return (datetime_to_list(epoch), 0.0)
     # split the date string into units and epoch
-    units,epoch = split_date_string(date_string)
+    units, epoch = split_date_string(date_string)
     if units not in _to_sec.keys():
         raise ValueError(f'Invalid units: {units}')
     # return the epoch (as list) and the time unit conversion factors
@@ -193,7 +194,7 @@ def calendar_days(year: int | float | np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    dpm: list
+    dpm: np.ndarray
         number of days for each month
     """
     # Rules in the Gregorian calendar for a year to be a leap year:
@@ -255,9 +256,9 @@ def convert_delta_time(
     ----------
     delta_time: np.ndarray
         seconds since epoch1
-    epoch1: tuple or NoneType, default None
+    epoch1: str, tuple, list or NoneType, default None
         epoch for input ``delta_time``
-    epoch2: tuple or NoneType, default None
+    epoch2: str, tuple, list or NoneType, default None
         epoch for output ``delta_time``
     scale: float, default 1.0
         scaling factor for converting time to output units
@@ -289,7 +290,7 @@ def convert_calendar_dates(
         scale: float = 1.0
     ) -> np.ndarray:
     """
-    Calculate the time in time units since ``epoch`` from calendar dates
+    Calculate the time in units since ``epoch`` from calendar dates
 
     Parameters
     ----------
@@ -759,7 +760,7 @@ class timescale:
         # use nanoseconds to keep as much precision as possible
         delta_time = np.atleast_1d(self.MJD*self.day*1e9).astype(np.int64)
         # return the datetime array
-        return np.array([epoch + np.timedelta64(s, 'ns') for s in delta_time])
+        return np.array(epoch + delta_time.astype('timedelta64[ns]'))
 
     # PURPOSE: calculate the sum of a polynomial function of time
     def polynomial_sum(self, coefficients: list | np.ndarray, t: np.ndarray):

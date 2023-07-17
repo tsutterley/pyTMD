@@ -19,19 +19,54 @@ the output ocean, load, solid Earth and pole tide variables as shown in the flow
     :align: center
 
     digraph {
-        S [label="Spatial Coordinates" shape=box style="filled" color="#7570b3"]
-        E [label="Temporal Values" shape=box style="filled" color="#7570b3"]
-        M [label="Tide Model" shape=box style="filled" color="#7570b3"]
-        T [label="pyTMD" shape=box style="filled" color="gray"]
-        P [label="Tide Predictions" shape=box style="filled" color="#1b9e77"]
-        H [label="Tide Heights" shape=box style="filled" color="#1b9e77"]
-        C [label="Average Tidal Currents" shape=box style="filled" color="#1b9e77"]
-        S -> T
-        E -> T
-        M -> T
-        T -> P
-        T -> H
-        T -> C
+        S [label="Spatial Coordinates"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#7570b3"]
+        E [label="Temporal Values"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#7570b3"]
+        M [label="Tide Model"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#7570b3"]
+        T [label="pyTMD"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="gray"]
+        P [label="Tide Predictions"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#1b9e77"]
+        H [label="Tide Heights"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#1b9e77"]
+        C [label="Average Tidal Currents"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#1b9e77"]
+        S -> T [arrowsize=0.8]
+        E -> T [arrowsize=0.8]
+        M -> T [arrowsize=0.8]
+        T -> P [arrowsize=0.8]
+        T -> H [arrowsize=0.8]
+        T -> C [arrowsize=0.8]
     }
 
 .. graphviz::
@@ -39,13 +74,38 @@ the output ocean, load, solid Earth and pole tide variables as shown in the flow
     :align: center
 
     digraph {
-        S [label="Spatial Coordinates" shape=box style="filled" color="#7570b3"]
-        E [label="Temporal Values" shape=box style="filled" color="#7570b3"]
-        T [label="pyTMD" shape=box style="filled" color="gray"]
-        D [label="Solid Earth Displacements" shape=box style="filled" color="#1b9e77"]
-        P [label="Pole Tide Displacements" shape=box style="filled" color="#1b9e77"]
-        S -> T
-        E -> T
-        T -> D
-        T -> P
+        S [label="Spatial Coordinates"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#7570b3"]
+        E [label="Temporal Values"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#7570b3"]
+        T [label="pyTMD"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="gray"]
+        D [label="Solid Earth Displacements"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#1b9e77"]
+        P [label="Pole Tide Displacements"
+            fontname="Lato"
+            fontsize=11
+            shape=box
+            style="filled"
+            color="#1b9e77"]
+        S -> T [arrowsize=0.8]
+        E -> T [arrowsize=0.8]
+        T -> D [arrowsize=0.8]
+        T -> P [arrowsize=0.8]
     }
