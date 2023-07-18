@@ -112,6 +112,7 @@ from __future__ import division, annotations
 
 import copy
 import struct
+import logging
 import pathlib
 import warnings
 import numpy as np
