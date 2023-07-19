@@ -98,10 +98,7 @@ import pyTMD.io.constituents
 try:
     import netCDF4
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("netCDF4 not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.debug("netCDF4 not available")
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(

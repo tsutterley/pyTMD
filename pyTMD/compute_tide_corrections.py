@@ -101,8 +101,8 @@ UPDATE HISTORY:
 """
 from __future__ import print_function, annotations
 
+import logging
 import pathlib
-import warnings
 import numpy as np
 import scipy.interpolate
 import pyTMD.constants
@@ -118,10 +118,7 @@ import pyTMD.utilities
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("pyproj not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.critical("pyproj not available")
 
 # PURPOSE: wrapper function for computing corrections
 def compute_corrections(

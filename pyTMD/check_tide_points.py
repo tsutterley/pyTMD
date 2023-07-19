@@ -68,8 +68,8 @@ UPDATE HISTORY:
 """
 from __future__ import print_function, annotations
 
+import logging
 import pathlib
-import warnings
 import numpy as np
 import scipy.interpolate
 
@@ -82,10 +82,7 @@ import pyTMD.interpolate
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("pyproj not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.debug("pyproj not available")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
 def check_tide_points(x: np.ndarray, y: np.ndarray,

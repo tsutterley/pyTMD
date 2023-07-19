@@ -101,7 +101,6 @@ from __future__ import print_function
 import sys
 import logging
 import pathlib
-import warnings
 import argparse
 import numpy as np
 import pyTMD
@@ -110,10 +109,7 @@ import pyTMD
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as exc:
-    warnings.filterwarnings("module")
-    warnings.warn("pyproj not available", ImportWarning)
-# ignore warnings
-warnings.filterwarnings("ignore")
+    logging.critical("pyproj not available")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
