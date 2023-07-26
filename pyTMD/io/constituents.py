@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (07/2023)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,11 +10,13 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 07/2023: output constituent from get and pop as copy
     Updated 03/2023: add basic variable typing to function inputs
     Written 12/2022
 """
 from __future__ import division, annotations
 
+import copy
 import numpy as np
 
 class constituents:
@@ -64,7 +66,8 @@ class constituents:
         constituent: np.ndarray
             Tide model constituent (complex form)
         """
-        return getattr(self, field)
+        constituent = getattr(self, field)
+        return copy.copy(constituent)
 
     def pop(self, field: str):
         """
@@ -83,7 +86,7 @@ class constituents:
         self.fields.remove(field)
         constituent = getattr(self, field)
         delattr(self, field)
-        return constituent
+        return copy.copy(constituent)
 
     def update(self, field: str, constituent: np.ndarray):
         """
