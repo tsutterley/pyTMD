@@ -8,8 +8,6 @@ dependencies:
   - graphviz
   - jplephem
   - lxml
-  - matplotlib
-  - notebook
   - numpy
   - numpydoc
   - pip
