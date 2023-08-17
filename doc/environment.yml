@@ -6,7 +6,6 @@ dependencies:
   - fontconfig
   - freetype
   - graphviz
-  - jplephem
   - lxml
   - numpy
   - numpydoc
