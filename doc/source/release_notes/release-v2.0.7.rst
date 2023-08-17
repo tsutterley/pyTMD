@@ -6,5 +6,6 @@
 * ``refactor``: changed ESR netCDF4 format to TMD3 format (`#229 <https://github.com/tsutterley/pyTMD/pull/229>`_)
 * ``fix``: remove possible `crs` variables from output netCDF4 fields list (`#229 <https://github.com/tsutterley/pyTMD/pull/229>`_)
 * ``ci``: bump actions to python 3.11 (`#229 <https://github.com/tsutterley/pyTMD/pull/229>`_)
+* ``docs``: docs: `switch to RTD <https://blog.readthedocs.com/use-build-os-config/>`_ ``build.os`` (`#230 <https://github.com/tsutterley/pyTMD/pull/230>`_)
 
 .. __: https://github.com/tsutterley/pyTMD/releases/tag/2.0.7
