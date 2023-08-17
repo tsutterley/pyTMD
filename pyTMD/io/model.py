@@ -7,7 +7,7 @@ Retrieves tide model parameters for named tide models and
 
 UPDATE HISTORY:
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
-        updated filenames for CATS2023 (CATS2002-v2023) to final version
+        updated filenames for CATS2008-v2023 to final version
     Updated 06/2023: remap FES2012 e2 constituent to eps2
     Updated 04/2023: added global HAMTIDE11 model
         made ICESat, ICESat-2 and output file attributes properties
@@ -164,7 +164,7 @@ class model:
             self.model_directory = self.directory.joinpath(
                 'CATS2008a_SPOTL_Load')
             self.grid_file = self.pathfinder('grid_CATS2008a_opt')
-        elif (m == 'CATS2023'):
+        elif (m == 'CATS2008-v2023'):
             self.format = 'TMD3'
             self.model_directory = self.directory.joinpath('CATS2008_v2023')
             self.grid_file = self.pathfinder('CATS2008_v2023.nc')
@@ -285,7 +285,7 @@ class model:
             # model description and references
             self.reference = 'https://doi.org/10.15784/601235'
             self.variable = 'tide_load'
-        elif (m == 'CATS2023'):
+        elif (m == 'CATS2008-v2023'):
             self.format = 'TMD3'
             self.model_directory = self.directory.joinpath('CATS2008_v2023')
             self.grid_file = self.pathfinder('CATS2008_v2023.nc')
@@ -708,7 +708,7 @@ class model:
             self.grid_file = self.pathfinder('grid_CATS2008')
             self.model_file = dict(u=self.pathfinder('uv.CATS2008.out'))
             self.projection = 'CATS2008'
-        elif (m == 'CATS2023'):
+        elif (m == 'CATS2008-v2023'):
             self.format = 'TMD3'
             self.model_directory = self.directory.joinpath('CATS2008_v2023')
             self.grid_file = self.pathfinder('CATS2008_v2023.nc')
@@ -1091,7 +1091,7 @@ class model:
         """
         Returns list of Antarctic ocean tide elevation models
         """
-        return ['CATS0201','CATS2008','CATS2023']
+        return ['CATS0201','CATS2008','CATS2008-v2023']
 
     @staticmethod
     def antarctic_load() -> list:
@@ -1105,7 +1105,7 @@ class model:
         """
         Returns list of Antarctic tidal current models
         """
-        return ['CATS0201','CATS2008','CATS2023']
+        return ['CATS0201','CATS2008','CATS2008-v2023']
 
     @staticmethod
     def arctic_ocean() -> list:
@@ -1135,7 +1135,7 @@ class model:
         """
         Returns list of ocean tide elevation models
         """
-        return ['CATS0201','CATS2008','CATS2023','TPXO9-atlas',
+        return ['CATS0201','CATS2008','CATS2008-v2023','TPXO9-atlas',
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
@@ -1155,7 +1155,7 @@ class model:
         """
         Returns list of tidal current models
         """
-        return ['CATS0201','CATS2008','CATS2023','TPXO9-atlas',
+        return ['CATS0201','CATS2008','CATS2008-v2023','TPXO9-atlas',
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
@@ -1182,7 +1182,7 @@ class model:
         """
         Returns list of TMD3 format models
         """
-        return ['CATS2023']
+        return ['CATS2008-v2023']
 
     @staticmethod
     def ATLAS() -> list:
