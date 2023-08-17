@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (08/2023)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -38,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
         function renamed from original load_nodal_corrections
     Updated 03/2023: add basic variable typing to function inputs
@@ -152,7 +153,7 @@ def arguments(
     arg[:,14] = t1 - s + 3.0*h - p + 90.0 # chi1
     arg[:,15] = t1 - 2.0*h + pp - 90.0 # pi1
     arg[:,16] = t1 - h - 90.0 # p1
-    if kwargs['corrections'] in ('OTIS','ATLAS','ESR','netcdf'):
+    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
         arg[:,17] = t1 + 90.0 # s1
     elif kwargs['corrections'] in ('GOT','FES'):
         arg[:,17] = t1 + 180.0 # s1 (Doodson's phase)
@@ -212,7 +213,7 @@ def arguments(
     f = np.zeros((nt, 60))
     u = np.zeros((nt, 60))
     # determine nodal corrections f and u for each model type
-    if kwargs['corrections'] in ('OTIS','ATLAS','ESR','netcdf'):
+    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
         f[:,0] = 1.0 # Sa
         f[:,1] = 1.0 # Ssa
         f[:,2] = 1.0 - 0.130*cosn # Mm

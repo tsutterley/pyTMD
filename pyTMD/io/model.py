@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (06/2023)
+Written by Tyler Sutterley (08/2023)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
+        updated filenames for CATS2008-v2023 to final version
     Updated 06/2023: remap FES2012 e2 constituent to eps2
     Updated 04/2023: added global HAMTIDE11 model
         made ICESat, ICESat-2 and output file attributes properties
@@ -73,14 +75,14 @@ class model:
 
             - ``OTIS``
             - ``ATLAS``
-            - ``ESR``
+            - ``TMD3``
             - ``netcdf``
             - ``GOT``
             - ``FES``
     gla12: str
         HDF5 dataset string for output GLA12 tide heights
     grid_file: pathlib.Path
-        Model grid file for ``OTIS``, ``ATLAS`` and ``ESR`` models
+        Model grid file for ``OTIS``, ``ATLAS`` and ``TMD3`` models
     gzip: bool
         Suffix if model is compressed
     long_name: str
@@ -92,7 +94,7 @@ class model:
     name: str
         Model name
     projection: str
-        Model projection for ``OTIS``, ``ATLAS`` and ``ESR`` models
+        Model projection for ``OTIS``, ``ATLAS`` and ``TMD3`` models
     scale: float
         Model scaling factor for converting to output units
     suffix: str
@@ -162,10 +164,10 @@ class model:
             self.model_directory = self.directory.joinpath(
                 'CATS2008a_SPOTL_Load')
             self.grid_file = self.pathfinder('grid_CATS2008a_opt')
-        elif (m == 'CATS2022'):
-            self.format = 'ESR'
-            self.model_directory = self.directory.joinpath('CATS2022')
-            self.grid_file = self.pathfinder('CATS2022_test.nc')
+        elif (m == 'CATS2008-v2023'):
+            self.format = 'TMD3'
+            self.model_directory = self.directory.joinpath('CATS2008_v2023')
+            self.grid_file = self.pathfinder('CATS2008_v2023.nc')
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
@@ -283,11 +285,11 @@ class model:
             # model description and references
             self.reference = 'https://doi.org/10.15784/601235'
             self.variable = 'tide_load'
-        elif (m == 'CATS2022'):
-            self.format = 'ESR'
-            self.model_directory = self.directory.joinpath('CATS2022')
-            self.grid_file = self.pathfinder('CATS2022_test.nc')
-            self.model_file = self.pathfinder('CATS2022_test.nc')
+        elif (m == 'CATS2008-v2023'):
+            self.format = 'TMD3'
+            self.model_directory = self.directory.joinpath('CATS2008_v2023')
+            self.grid_file = self.pathfinder('CATS2008_v2023.nc')
+            self.model_file = self.pathfinder('CATS2008_v2023.nc')
             self.projection = 'CATS2008'
             # internal flexure field is available
             self.flexure = True
@@ -706,11 +708,11 @@ class model:
             self.grid_file = self.pathfinder('grid_CATS2008')
             self.model_file = dict(u=self.pathfinder('uv.CATS2008.out'))
             self.projection = 'CATS2008'
-        elif (m == 'CATS2022'):
-            self.format = 'ESR'
-            self.model_directory = self.directory.joinpath('CATS2022')
-            self.grid_file = self.pathfinder('CATS2022_test.nc')
-            self.model_file = dict(u=self.pathfinder('CATS2022_test.nc'))
+        elif (m == 'CATS2008-v2023'):
+            self.format = 'TMD3'
+            self.model_directory = self.directory.joinpath('CATS2008_v2023')
+            self.grid_file = self.pathfinder('CATS2008_v2023.nc')
+            self.model_file = dict(u=self.pathfinder('CATS2008_v2023.nc'))
             self.projection = 'CATS2008'
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
@@ -1089,7 +1091,7 @@ class model:
         """
         Returns list of Antarctic ocean tide elevation models
         """
-        return ['CATS0201','CATS2008','CATS2022']
+        return ['CATS0201','CATS2008','CATS2008-v2023']
 
     @staticmethod
     def antarctic_load() -> list:
@@ -1103,7 +1105,7 @@ class model:
         """
         Returns list of Antarctic tidal current models
         """
-        return ['CATS0201','CATS2008','CATS2022']
+        return ['CATS0201','CATS2008','CATS2008-v2023']
 
     @staticmethod
     def arctic_ocean() -> list:
@@ -1133,7 +1135,7 @@ class model:
         """
         Returns list of ocean tide elevation models
         """
-        return ['CATS0201','CATS2008','CATS2022','TPXO9-atlas',
+        return ['CATS0201','CATS2008','CATS2008-v2023','TPXO9-atlas',
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
@@ -1153,7 +1155,7 @@ class model:
         """
         Returns list of tidal current models
         """
-        return ['CATS0201','CATS2008','CATS2022','TPXO9-atlas',
+        return ['CATS0201','CATS2008','CATS2008-v2023','TPXO9-atlas',
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
@@ -1176,11 +1178,11 @@ class model:
         return ['TPXO8-atlas']
 
     @staticmethod
-    def ESR() -> list:
+    def TMD3() -> list:
         """
-        Returns list of ESR format models
+        Returns list of TMD3 format models
         """
-        return ['CATS2022']
+        return ['CATS2008-v2023']
 
     @staticmethod
     def ATLAS() -> list:
@@ -1261,7 +1263,7 @@ class model:
         temp = self.from_dict(parameters)
         # verify model name, format and type
         assert temp.name
-        assert temp.format in ('OTIS','ATLAS','ESR','netcdf','GOT','FES')
+        assert temp.format in ('OTIS','ATLAS','TMD3','netcdf','GOT','FES')
         assert temp.type
         assert temp.model_file
         # split type into list if currents (u,v)
@@ -1275,7 +1277,7 @@ class model:
         # model files can be comma, tab or space delimited
         # extract full path to tide model files
         # extract full path to tide grid file
-        if temp.format in ('OTIS','ATLAS','ESR','netcdf'):
+        if temp.format in ('OTIS','ATLAS','TMD3','netcdf'):
             assert temp.grid_file
             # check if grid file is relative
             if (temp.directory is not None):
@@ -1369,7 +1371,7 @@ class model:
                     re.split(r'[\s\,]+', temp.model_file)]
                 temp.model_directory = temp.model_file[0].parent
         # verify that projection attribute exists for projected models
-        if temp.format in ('OTIS','ATLAS','ESR'):
+        if temp.format in ('OTIS','ATLAS','TMD3'):
             assert temp.projection
         # convert scale from string to float
         if temp.format in ('netcdf','GOT','FES'):

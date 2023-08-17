@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (08/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -35,7 +35,7 @@ OPTIONS:
         set to np.inf to extrapolate for all points
     grid: binary file type to read
         ATLAS: reading a global solution with localized solutions
-        ESR: combined global or local netCDF4 solution
+        TMD3: combined global or local netCDF4 solution
         OTIS: combined global or local solution
     apply_flexure: apply ice flexure scaling factor to constituents
 
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
         new function name for converting coordinate reference systems
@@ -179,7 +180,7 @@ def extract_constants(
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'ESR'``: combined global or local netCDF4 solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
     apply_flexure: bool, default False
         Apply ice flexure scaling factor to height constituents
@@ -223,8 +224,8 @@ def extract_constants(
         x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,variable='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,variable='depth')
-    elif (kwargs['grid'] == 'ESR'):
-        # if reading a single ESR netCDF4 solution
+    elif (kwargs['grid'] == 'TMD3'):
+        # if reading a single TMD3 netCDF4 solution
         xi,yi,hz,mz,sf = read_netcdf_grid(grid_file)
     else:
         # if reading a single OTIS solution
@@ -354,7 +355,7 @@ def extract_constants(
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
                 xi,yi,hc = combine_atlas_model(x0, y0, z0, pmask, zlocal,
                     variable='z')
-            elif (kwargs['grid'] == 'ESR'):
+            elif (kwargs['grid'] == 'TMD3'):
                 hc = read_netcdf_file(model_file, i, variable='z')
                 # apply flexure scaling
                 if kwargs['apply_flexure']:
@@ -369,7 +370,7 @@ def extract_constants(
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,hc = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
                     variable='u')
-            elif (kwargs['grid'] == 'ESR'):
+            elif (kwargs['grid'] == 'TMD3'):
                 hc = read_netcdf_file(model_file, i, variable='u')
             elif isinstance(model_file,list):
                 hc,v = read_otis_transport(model_file[i], 0)
@@ -381,7 +382,7 @@ def extract_constants(
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
-            elif (kwargs['grid'] == 'ESR'):
+            elif (kwargs['grid'] == 'TMD3'):
                 hc = read_netcdf_file(model_file, i, type='v')
             elif isinstance(model_file,list):
                 u,hc = read_otis_transport(model_file[i], 0)
@@ -484,7 +485,7 @@ def read_constants(
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'ESR'``: combined global or local netCDF4 solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
     apply_flexure: bool, default False
         Apply ice flexure scaling factor to height constituents
@@ -510,8 +511,8 @@ def read_constants(
         x0,y0,hz0,mz0,iob,dt,pmask,local = read_atlas_grid(grid_file)
         xi,yi,hz = combine_atlas_model(x0,y0,hz0,pmask,local,variable='depth')
         mz = create_atlas_mask(x0,y0,mz0,local,variable='depth')
-    elif (kwargs['grid'] == 'ESR'):
-        # if reading a single ESR netCDF4 solution
+    elif (kwargs['grid'] == 'TMD3'):
+        # if reading a single TMD3 netCDF4 solution
         xi,yi,hz,mz,sf = read_netcdf_grid(grid_file)
     else:
         # if reading a single OTIS solution
@@ -588,7 +589,7 @@ def read_constants(
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
                 xi,yi,z = combine_atlas_model(x0, y0, z0, pmask, zlocal,
                     variable='z')
-            elif (kwargs['grid'] == 'ESR'):
+            elif (kwargs['grid'] == 'TMD3'):
                 z = read_netcdf_file(model_file, i, variable='z')
                 # apply flexure scaling
                 if kwargs['apply_flexure']:
@@ -611,7 +612,7 @@ def read_constants(
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,u = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
                     variable='u')
-            elif (kwargs['grid'] == 'ESR'):
+            elif (kwargs['grid'] == 'TMD3'):
                 u = read_netcdf_file(model_file, i, variable='u')
             elif isinstance(model_file,list):
                 u,v = read_otis_transport(model_file[i], 0)
@@ -631,7 +632,7 @@ def read_constants(
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
                 xi,yi,v = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
-            elif (kwargs['grid'] == 'ESR'):
+            elif (kwargs['grid'] == 'TMD3'):
                 v = read_netcdf_file(model_file, i, type='v')
             elif isinstance(model_file,list):
                 u,v = read_otis_transport(model_file[i], 0)
@@ -1100,7 +1101,7 @@ def read_constituents(
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'ESR'``: combined global or local netCDF4 solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
 
     Returns
@@ -1116,7 +1117,7 @@ def read_constituents(
     if not input_file.exists():
         raise FileNotFoundError(str(input_file))
     # get the constituents from the input file
-    if (grid == 'ESR'):
+    if (grid == 'TMD3'):
         # open the netCDF4 file
         fid = netCDF4.Dataset(input_file, 'r')
         constituents = fid.variables['constituents'].constituent_order.split()

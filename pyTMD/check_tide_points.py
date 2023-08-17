@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactored tide read programs under io
@@ -162,7 +163,7 @@ def check_tide_points(x: np.ndarray, y: np.ndarray,
     )
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS','ESR'):
+    if model.format in ('OTIS','ATLAS','TMD3'):
         # if reading a single OTIS solution
         xi, yi, hz, mz, iob, dt = pyTMD.io.OTIS.read_otis_grid(
             pathlib.Path(model.grid_file).expanduser())

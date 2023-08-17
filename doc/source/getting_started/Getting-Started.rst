@@ -31,6 +31,7 @@ Presently, the following models and their directories parameterized within ``pyT
     * CATS0201: ``<path_to_tide_models>/cats0201_tmd/``
     * `CATS2008 <https://www.usap-dc.org/view/dataset/601235>`_: ``<path_to_tide_models>/CATS2008/``
     * CATS2008_load: ``<path_to_tide_models>/CATS2008a_SPOTL_Load/``
+    * `CATS2008-v2023 <https://www.chadagreene.com/tide_data/CATS2008_v2023.nc.zip>`_: ``<path_to_tide_models>/CATS2008_v2023/``
 
 - Arctic Ocean and Greenland Coast Tidal Simulations [Padman2004]_
 
@@ -127,9 +128,9 @@ Each model format also requires specific sets of parameters.
 For FES-type models of currents, the two lists of model files (``u`` and ``v``) should be separated in the list with a semi-colon.
 For tide models with multiple constituent files, the files can be also found from a directory using a ``glob`` string.
 
-- ``OTIS``, ``ATLAS`` and ``ESR``
+- ``OTIS``, ``ATLAS`` and ``TMD3``
 
-    * ``format``: ``'OTIS'``, ``'ATLAS'`` or ``ESR``
+    * ``format``: ``'OTIS'``, ``'ATLAS'`` or ``TMD3``
     * ``grid_file``: full path to model grid file
     * ``model_file``: full path to model constituent file(s)
     * ``name``: tide model name

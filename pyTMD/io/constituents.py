@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (07/2023)
+Written by Tyler Sutterley (08/2023)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 08/2023: added default for printing constituent class
     Updated 07/2023: output constituent from get and pop as copy
     Updated 03/2023: add basic variable typing to function inputs
     Written 12/2022
@@ -173,3 +174,8 @@ class constituents:
         constituent = getattr(self, field)
         self.__index__ += 1
         return (field, constituent)
+
+    def __str__(self):
+        """Print the list of constituents
+        """
+        return ', '.join(self.fields)

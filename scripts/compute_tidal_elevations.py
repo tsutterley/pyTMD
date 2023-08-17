@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (08/2023)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -94,6 +94,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds
         using pathlib to define and expand paths
@@ -295,7 +296,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     nt = len(timescale)
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS','ESR'):
+    if model.format in ('OTIS','ATLAS','TMD3'):
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon.flatten(), lat.flatten(),
             model.grid_file, model.model_file, model.projection,
             type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
