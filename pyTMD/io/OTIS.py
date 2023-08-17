@@ -180,8 +180,8 @@ def extract_constants(
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'TMD3'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
     apply_flexure: bool, default False
         Apply ice flexure scaling factor to height constituents
 
@@ -485,8 +485,8 @@ def read_constants(
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'TMD3'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
     apply_flexure: bool, default False
         Apply ice flexure scaling factor to height constituents
 
@@ -1101,8 +1101,8 @@ def read_constituents(
         Tide model file type to read
 
             - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'TMD3'``: combined global or local netCDF4 solution
             - ``'OTIS'``: combined global or local solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
 
     Returns
     -------

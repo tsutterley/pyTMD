@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (08/2023)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 08/2023: place matplotlib within try/except statements
     Updated 05/2023: don't set a default directory for tide models
     Updated 04/2023: using pathlib to define and expand paths
     Updated 01/2023: use debug level logging instead of import warnings
@@ -33,14 +34,6 @@ import base64
 import logging
 import datetime
 import numpy as np
-import matplotlib
-matplotlib.rcParams['axes.linewidth'] = 2.0
-matplotlib.rcParams["animation.html"] = "jshtml"
-import matplotlib.cm as cm
-import matplotlib.colorbar
-import matplotlib.animation
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 import pyTMD.io.model
 
 # attempt imports
@@ -56,6 +49,17 @@ try:
     import ipywidgets
 except (ImportError, ModuleNotFoundError) as exc:
     logging.debug("ipywidgets not available")
+try:
+    import matplotlib
+    matplotlib.rcParams['axes.linewidth'] = 2.0
+    matplotlib.rcParams["animation.html"] = "jshtml"
+    import matplotlib.cm as cm
+    import matplotlib.colorbar
+    import matplotlib.animation
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as colors
+except (ImportError, ModuleNotFoundError) as exc:
+    logging.debug("matplotlib not available")
 try:
     import pyproj
 except (ImportError, ModuleNotFoundError) as exc:

@@ -23,6 +23,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2023: remove possible crs variables from output fields list
+        place PyYAML behind try/except statement to reduce build size
     Updated 05/2023: use datetime parser within pyTMD.time module
     Updated 04/2023: copy inputs in cartesian to not modify original arrays
         added iterative methods for converting from cartesian to geodetic
@@ -70,7 +71,6 @@ import io
 import copy
 import gzip
 import uuid
-import yaml
 import logging
 import pathlib
 import datetime
@@ -91,6 +91,10 @@ try:
     import netCDF4
 except (ImportError, ModuleNotFoundError) as exc:
     logging.debug("netCDF4 not available")
+try:
+    import yaml
+except (ImportError, ModuleNotFoundError) as exc:
+    logging.debug("PyYAML not available")
 
 def case_insensitive_filename(filename: str | pathlib.Path):
     """
