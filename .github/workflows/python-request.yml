@@ -36,7 +36,7 @@ jobs:
         cache-environment: true
         post-cleanup: 'all'
         create-args: >-
-          openblas-devel
+          blas
           python=${{ matrix.python-version }}
           flake8
           pytest
