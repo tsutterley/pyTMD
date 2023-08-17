@@ -36,9 +36,10 @@ jobs:
         post-cleanup: 'all'
         create-args: >-
           python=${{ matrix.python-version }}
-    - name: Create mamba Test Environment
-      run: |
-        mamba install flake8 pytest pytest-cov cython
+          flake8
+          pytest
+          pytest-cov
+          cython
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
