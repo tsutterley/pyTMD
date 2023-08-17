@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
         use defaults from eop module for pole tide and EOP files
         add option for using higher resolution ephemerides from JPL
@@ -313,7 +314,7 @@ def compute_tide_corrections(
     nt = len(timescale)
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS','ESR'):
+    if model.format in ('OTIS','ATLAS','TMD3'):
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
             model.model_file, model.projection, type=model.type,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,

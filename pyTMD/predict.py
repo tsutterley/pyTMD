@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (08/2023)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
         using renamed arguments function for nodal corrections
         adding prediction routine for solid earth tides
@@ -95,7 +96,7 @@ def map(t: float | np.ndarray,
     ht.mask = np.zeros((npts),dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','ESR','netcdf'):
+        if corrections in ('OTIS','ATLAS','TMD3','netcdf'):
             # load parameters for each constituent
             amp, ph, omega, alpha, species = load_constituent(c)
             # add component for constituent to output tidal elevation
@@ -157,7 +158,7 @@ def drift(t: float | np.ndarray,
     ht.mask = np.zeros((nt),dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','ESR','netcdf'):
+        if corrections in ('OTIS','ATLAS','TMD3','netcdf'):
             # load parameters for each constituent
             amp, ph, omega, alpha, species = load_constituent(c)
             # add component for constituent to output tidal elevation
@@ -219,7 +220,7 @@ def time_series(t: float | np.ndarray,
     ht.mask = np.zeros((nt),dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','ESR','netcdf'):
+        if corrections in ('OTIS','ATLAS','TMD3','netcdf'):
             # load parameters for each constituent
             amp, ph, omega, alpha, species = load_constituent(c)
             # add component for constituent to output tidal time series
