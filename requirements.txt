@@ -1,5 +1,3 @@
-gdal
-h5py
 lxml
 netCDF4
 numpy
