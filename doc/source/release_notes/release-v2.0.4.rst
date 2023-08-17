@@ -40,7 +40,7 @@
 * ``test``: add test for more derived attributes in model (`#188 <https://github.com/tsutterley/pyTMD/pull/188>`_)
 * ``test``: parse all multiple file types for constituent names (`#190 <https://github.com/tsutterley/pyTMD/pull/190>`_)
 * ``test``: test permanent tide conversion in solid earth (`#190 <https://github.com/tsutterley/pyTMD/pull/190>`_)
-* ``test``: get IODEM3 from AWS s3 (NSIDC is currently down) (`#192 <https://github.com/tsutterley/pyTMD/pull/192>`_)
+* ``test``: get `IODEM3` from AWS s3 (NSIDC is currently down) (`#192 <https://github.com/tsutterley/pyTMD/pull/192>`_)
 * ``test``: add ``timescale`` checks for conversions and constants (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
 * ``test``: add test for leap seconds in ``timescale`` (`#198 <https://github.com/tsutterley/pyTMD/pull/198>`_)
 

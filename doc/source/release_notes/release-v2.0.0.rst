@@ -2,7 +2,7 @@
 `Release v2.0.0`__
 ##################
 
-- ``refactor``: single implicit import of pyTMD tools (`#130 <https://github.com/tsutterley/pyTMD/pull/130>`_)
+- ``refactor``: single implicit import of ``pyTMD`` tools (`#130 <https://github.com/tsutterley/pyTMD/pull/130>`_)
 - ``refactor``: reorganization of tide model readers under ``io`` (`#132 <https://github.com/tsutterley/pyTMD/pull/132>`_)
 - ``refactor``: placed interpolation routines into new module (`#141 <https://github.com/tsutterley/pyTMD/pull/141>`_)
 - ``refactor``: move ``model`` class to ``io``
@@ -15,7 +15,7 @@
 - ``docs``: update documentation for new structure
 - ``docs``: standardized citation format throughout docstrings
 - ``docs``: add release notes for all prior public releases
-- ``docs``: add new pyTMD logo
+- ``docs``: add new ``pyTMD`` logo
 - ``test``: read header from OPT test file and compare more variables
 - ``test``: add tests for ``io`` methods
 
