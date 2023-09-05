@@ -61,7 +61,7 @@ from pyTMD.convert_crs import convert_crs
 # attempt imports
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
 
 # PURPOSE: try to get the projection information for the input file

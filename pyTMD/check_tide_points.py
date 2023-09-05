@@ -82,7 +82,7 @@ import pyTMD.interpolate
 # attempt imports
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("pyproj not available")
 
 # PURPOSE: compute tides at points and times using tide model algorithms

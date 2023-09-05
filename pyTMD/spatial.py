@@ -81,19 +81,19 @@ import pyTMD.version
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("GDAL not available")
 try:
     import h5py
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("h5py not available")
 try:
     import netCDF4
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("netCDF4 not available")
 try:
     import yaml
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("PyYAML not available")
 
 def case_insensitive_filename(filename: str | pathlib.Path):

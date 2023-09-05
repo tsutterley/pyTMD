@@ -53,7 +53,7 @@ import numpy as np
 # attempt imports
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
 
 def convert_crs(

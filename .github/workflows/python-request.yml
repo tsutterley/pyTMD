@@ -25,11 +25,11 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up mamba ${{ matrix.python-version }}
       uses: mamba-org/setup-micromamba@v1
       with:
-        micromamba-version: '1.3.1-0'
+        micromamba-version: 'latest'
         environment-file: environment.yml
         init-shell: bash
         environment-name: pyTMD
@@ -52,7 +52,7 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Checkout Matlab TMD Toolbox
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: tsutterley/TMD_Matlab_Toolbox_v2.5
         path: TMD_Matlab_Toolbox
@@ -68,16 +68,17 @@ jobs:
             --aws-secret=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
             --aws-region=${{ secrets.AWS_REGION_NAME }}
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.xml
+        files: ./coverage.xml
         flags: unittests
         env_vars: OS,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: true
+        verbose: true
     - name: Archive code coverage results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: code-coverage-report
         path: ./coverage.xml
