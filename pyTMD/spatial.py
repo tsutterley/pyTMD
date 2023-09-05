@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (09/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
     constants.py: calculate reference parameters for common ellipsoids
 
 UPDATE HISTORY:
+    Updated 09/2023: add function to invert field mapping keys and values
     Updated 08/2023: remove possible crs variables from output fields list
         place PyYAML behind try/except statement to reduce build size
     Updated 05/2023: use datetime parser within pyTMD.time module
@@ -1031,6 +1032,17 @@ def default_field_mapping(variables: list | np.ndarray):
             pass
     # return the field mapping
     return field_mapping
+
+def inverse_mapping(field_mapping):
+    """
+    Reverses the field mappings of a dictionary
+
+    Parameters
+    ----------
+    field_mapping: dict
+        Field mappings for netCDF4/HDF5 read functions
+    """
+    return field_mapping.__class__(map(reversed, field_mapping.items()))
 
 def convert_ellipsoid(
         phi1: np.ndarray,

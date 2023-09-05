@@ -64,6 +64,8 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.default_field_mapping
 
+.. autofunction:: pyTMD.spatial.inverse_mapping
+
 .. autofunction:: pyTMD.spatial.convert_ellipsoid
 
 .. autofunction:: pyTMD.spatial.compute_delta_h
