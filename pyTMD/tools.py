@@ -39,15 +39,15 @@ import pyTMD.io.model
 # attempt imports
 try:
     import IPython
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("IPython not available")
 try:
     import ipyleaflet
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("ipyleaflet not available")
 try:
     import ipywidgets
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("ipywidgets not available")
 try:
     import matplotlib
@@ -58,11 +58,11 @@ try:
     import matplotlib.animation
     import matplotlib.pyplot as plt
     import matplotlib.colors as colors
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("matplotlib not available")
 try:
     import pyproj
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("pyproj not available")
 
 class widgets:

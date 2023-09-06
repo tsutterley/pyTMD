@@ -60,7 +60,7 @@ from pyTMD.utilities import get_data_path, from_jpl_ssd
 # attempt imports
 try:
     import jplephem.spk
-except (ImportError, ModuleNotFoundError) as exc:
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("jplephem not available")
 
 # default JPL Spacecraft and Planet ephemerides kernel
