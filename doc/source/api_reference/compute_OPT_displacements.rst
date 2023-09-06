@@ -6,7 +6,7 @@ compute_OPT_displacements.py
 
   * `https://iers-conventions.obspm.fr/chapter7.php <https://iers-conventions.obspm.fr/chapter7.php>`_
   * `ftp://tai.bipm.org/iers/conv2010/chapter7/opoleloadcoefcmcor.txt.gz <ftp://tai.bipm.org/iers/conv2010/chapter7/opoleloadcoefcmcor.txt.gz>`_
-- Can read and write ascii, netCDF4, HDF5 and geotiff formats
+- Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats
 
 `Source code`__
 

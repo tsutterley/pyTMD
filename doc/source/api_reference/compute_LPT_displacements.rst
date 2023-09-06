@@ -5,7 +5,7 @@ compute_LPT_displacements.py
 - Calculates radial pole load tide displacements for an input file following IERS Convention (2010) guidelines
 
   * `https://iers-conventions.obspm.fr/chapter7.php <https://iers-conventions.obspm.fr/chapter7.php>`_
-- Can read and write ascii, netCDF4, HDF5 and geotiff formats
+- Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats
 
 `Source code`__
 
