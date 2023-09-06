@@ -24,7 +24,7 @@ Calling Sequence
 
     --variables : @after
         * for csv files: the order of the columns within the file
-        * for HDF5 and netCDF4 files: time, y, x and data variable names
+        * for HDF5, netCDF4 and parquet files: time, y, x and data variable names
 
     --type -t : @after
         * ``'drift'``: drift buoys or satellite/airborne altimetry (time per data point)

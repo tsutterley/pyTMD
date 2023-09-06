@@ -8,6 +8,7 @@ INPUTS:
     csv file with columns for spatial and temporal coordinates
     HDF5 file with variables for spatial and temporal coordinates
     netCDF4 file with variables for spatial and temporal coordinates
+    parquet file with variables for spatial and temporal coordinates
     geotiff file with bands in spatial coordinates
 
 COMMAND LINE OPTIONS:
@@ -15,10 +16,11 @@ COMMAND LINE OPTIONS:
         csv (default)
         netCDF4
         HDF5
+        parquet
         geotiff
     -v X, --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
-        for HDF5 and netCDF4 files: time, y, x and data variable names
+        for HDF5, netCDF4 and parquet files: time, y, x and data variable names
     -H X, --header X: number of header lines for csv files
     --delimiter X: Delimiter for csv or ascii files
     -t X, --type X: input data type
@@ -37,6 +39,7 @@ COMMAND LINE OPTIONS:
         datetime: formatted datetime string in UTC
     -P X, --projection X: spatial projection as EPSG code or PROJ4 string
         4326: latitude and longitude coordinates on WGS84 reference ellipsoid
+    -f X, --fill-value X: Invalid value for spatial fields
     -V, --verbose: Verbose output of processing run
     -M X, --mode X: Permission mode of output file
 
@@ -94,6 +97,10 @@ import pyTMD
 
 # attempt imports
 try:
+    import pandas as pd
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.critical("pandas not available")
+try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
@@ -136,12 +143,94 @@ def compute_LPET_elevations(input_file, output_file,
     TIME_STANDARD='UTC',
     TIME=None,
     PROJECTION='4326',
+    FILL_VALUE=-9999.0,
     VERBOSE=False,
     MODE=0o775):
 
     # create logger for verbosity level
     loglevel = logging.INFO if VERBOSE else logging.CRITICAL
     logging.basicConfig(level=loglevel)
+
+    # read input file to extract time, spatial coordinates and data
+    if (FORMAT == 'csv'):
+        parse_dates = (TIME_STANDARD.lower() == 'datetime')
+        dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
+            delimiter=DELIMITER, header=HEADER, parse_dates=parse_dates)
+        attributes = dinput['attributes']
+    elif (FORMAT == 'netCDF4'):
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        dinput = pyTMD.spatial.from_netCDF4(input_file,
+            field_mapping=field_mapping)
+        attributes = dinput['attributes']
+    elif (FORMAT == 'HDF5'):
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        dinput = pyTMD.spatial.from_HDF5(input_file,
+            field_mapping=field_mapping)
+        attributes = dinput['attributes']
+    elif (FORMAT == 'geotiff'):
+        dinput = pyTMD.spatial.from_geotiff(input_file)
+        attributes = dinput['attributes']
+    elif (FORMAT == 'parquet'):
+        logging.info(str(input_file))
+        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
+        remap = pyTMD.spatial.inverse_mapping(field_mapping)
+        dinput = pd.read_parquet(input_file, columns=VARIABLES)
+        dinput.rename(columns=remap, inplace=True)
+        attributes = {}
+    # update time variable if entered as argument
+    if TIME is not None:
+        dinput['time'] = np.copy(TIME)
+
+    # converting x,y from projection to latitude/longitude
+    crs1 = get_projection(attributes, PROJECTION)
+    crs2 = pyproj.CRS.from_epsg(4326)
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    if (TYPE == 'grid'):
+        ny, nx = (len(dinput['y']), len(dinput['x']))
+        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
+        lon, lat = transformer.transform(gridx, gridy)
+    elif (TYPE == 'drift'):
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    elif (TYPE == 'time series'):
+        nstation = len(np.ravel(dinput['y']))
+        lon, lat = transformer.transform(dinput['x'], dinput['y'])
+    # flatten latitudes
+    phi = np.ravel(lat)
+
+    # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
+    try:
+        time_string = attributes['time']['units']
+        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
+    except (TypeError, KeyError, ValueError):
+        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+
+    # convert delta times or datetimes objects to timescale
+    if (TIME_STANDARD.lower() == 'datetime'):
+        timescale = pyTMD.time.timescale().from_datetime(
+            np.ravel(dinput['time']))
+    else:
+        # convert time to seconds
+        delta_time = to_secs*np.ravel(dinput['time'])
+        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+            epoch=epoch1, standard=TIME_STANDARD)
+    # number of time points
+    nt = len(timescale)
+    # convert tide times to dynamical time
+    tide_time = timescale.tide + timescale.tt_ut1
+
+    # predict long-period equilibrium tides at time
+    if (TYPE == 'grid'):
+        tide_lpe = np.zeros((ny,nx,nt))
+        for i in range(nt):
+            lpet = pyTMD.predict.equilibrium_tide(tide_time[i], phi)
+            tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
+    elif (TYPE == 'drift'):
+        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time, phi)
+    elif (TYPE == 'time series'):
+        tide_lpe = np.zeros((nstation,nt))
+        for s in range(nstation):
+            lpet = pyTMD.predict.equilibrium_tide(tide_time, phi[s])
+            tide_lpe[s,:] = np.copy(lpet)
 
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files
@@ -168,79 +257,6 @@ def compute_LPET_elevations(input_file, output_file,
     attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
 
-    # read input file to extract time, spatial coordinates and data
-    if (FORMAT == 'csv'):
-        parse_dates = (TIME_STANDARD.lower() == 'datetime')
-        dinput = pyTMD.spatial.from_ascii(input_file, columns=VARIABLES,
-            delimiter=DELIMITER, header=HEADER, parse_dates=parse_dates)
-    elif (FORMAT == 'netCDF4'):
-        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
-        dinput = pyTMD.spatial.from_netCDF4(input_file,
-            field_mapping=field_mapping)
-    elif (FORMAT == 'HDF5'):
-        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
-        dinput = pyTMD.spatial.from_HDF5(input_file,
-            field_mapping=field_mapping)
-    elif (FORMAT == 'geotiff'):
-        dinput = pyTMD.spatial.from_geotiff(input_file)
-        # copy global geotiff attributes for projection and grid parameters
-        for att_name in ['projection','wkt','spacing','extent']:
-            attrib[att_name] = dinput['attributes'][att_name]
-    # update time variable if entered as argument
-    if TIME is not None:
-        dinput['time'] = np.copy(TIME)
-
-    # converting x,y from projection to latitude/longitude
-    crs1 = get_projection(dinput['attributes'], PROJECTION)
-    crs2 = pyproj.CRS.from_epsg(4326)
-    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    if (TYPE == 'grid'):
-        ny, nx = (len(dinput['y']), len(dinput['x']))
-        gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
-        lon, lat = transformer.transform(gridx, gridy)
-    elif (TYPE == 'drift'):
-        lon, lat = transformer.transform(dinput['x'], dinput['y'])
-    elif (TYPE == 'time series'):
-        nstation = len(dinput['y'].flatten())
-        lon, lat = transformer.transform(dinput['x'], dinput['y'])
-    # flatten latitudes
-    phi = lat.flatten()
-
-    # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
-    try:
-        time_string = dinput['attributes']['time']['units']
-        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
-    except (TypeError, KeyError, ValueError):
-        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
-
-    # convert delta times or datetimes objects to timescale
-    if (TIME_STANDARD.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
-            dinput['time'].flatten())
-    else:
-        # convert time to seconds
-        delta_time = to_secs*dinput['time'].flatten()
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
-            epoch=epoch1, standard=TIME_STANDARD)
-    # number of time points
-    nt = len(timescale)
-    # convert tide times to dynamical time
-    tide_time = timescale.tide + timescale.tt_ut1
-
-    # predict long-period equilibrium tides at time
-    if (TYPE == 'grid'):
-        tide_lpe = np.zeros((ny,nx,nt))
-        for i in range(nt):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time[i], phi)
-            tide_lpe[:,:,i] = np.reshape(lpet,(ny,nx))
-    elif (TYPE == 'drift'):
-        tide_lpe = pyTMD.predict.equilibrium_tide(tide_time, phi)
-    elif (TYPE == 'time series'):
-        tide_lpe = np.zeros((nstation,nt))
-        for s in range(nstation):
-            lpet = pyTMD.predict.equilibrium_tide(tide_time, phi[s])
-            tide_lpe[s,:] = np.copy(lpet)
-
     # output to file
     output = dict(time=timescale.tide, lon=lon, lat=lat, tide_lpe=tide_lpe)
     if (FORMAT == 'csv'):
@@ -252,8 +268,15 @@ def compute_LPET_elevations(input_file, output_file,
     elif (FORMAT == 'HDF5'):
         pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
+        # copy global geotiff attributes for projection and grid parameters
+        for att_name in ['projection','wkt','spacing','extent']:
+            attrib[att_name] = attributes[att_name]
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='tide_lpe')
+    elif (FORMAT == 'parquet'):
+        # write to parquet file
+        logging.info(str(output_file))
+        pd.DataFrame(output).to_parquet(output_file)
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
 
@@ -276,7 +299,8 @@ def arguments():
         help='Computed output file')
     # input and output data format
     parser.add_argument('--format','-F',
-        type=str, default='csv', choices=('csv','netCDF4','HDF5','geotiff'),
+        type=str, default='csv',
+        choices=('csv','netCDF4','HDF5','geotiff','parquet'),
         help='Input and output data format')
     # variable names (for csv names of columns)
     parser.add_argument('--variables','-v',
@@ -315,6 +339,10 @@ def arguments():
     parser.add_argument('--projection','-P',
         type=str, default='4326',
         help='Spatial projection as EPSG code or PROJ4 string')
+    # fill value for output spatial fields
+    parser.add_argument('--fill-value','-f',
+        type=float, default=-9999.0,
+        help='Invalid value for spatial fields')
     # verbose output of processing run
     # print information about each input and output file
     parser.add_argument('--verbose','-V',
@@ -349,6 +377,7 @@ def main():
         TIME=args.deltatime,
         TIME_STANDARD=args.standard,
         PROJECTION=args.projection,
+        FILL_VALUE=args.fill_value,
         VERBOSE=args.verbose,
         MODE=args.mode)
 

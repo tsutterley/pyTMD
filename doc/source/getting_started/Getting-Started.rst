@@ -97,7 +97,7 @@ computes the corresponding tidal elevation.
 For users wanting to calculate tidal elevations or currents for a series of files, the
 `compute_tidal_elevations.py <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_elevations.py>`_ and
 `compute_tidal_currents.py <https://github.com/tsutterley/pyTMD/blob/main/scripts/compute_tidal_currents.py>`_ programs
-cover most use cases.  They take an input file (in csv, netCDF4, HDF5 or geotiff formats) and compute the tidal
+cover most use cases.  They take an input file (in csv, netCDF4, HDF5, parquet or geotiff formats) and compute the tidal
 elevations or currents (zonal and meridional) for each point.
 
 .. code-block:: bash
