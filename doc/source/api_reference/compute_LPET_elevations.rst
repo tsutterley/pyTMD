@@ -4,7 +4,7 @@ compute_LPET_elevation.py
 
 - Calculates long-period equilibrium tides for an input file
 - Uses the summation of fifteen tidal spectral lines from [Cartwright1971]_ [Cartwright1973]_
-- Can read and write ascii, netCDF4, HDF5 and geotiff formats
+- Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats
 
 `Source code`__
 
@@ -22,7 +22,7 @@ Calling Sequence
 
     --variables : @after
         * for csv files: the order of the columns within the file
-        * for HDF5 and netCDF4 files: time, y, x and data variable names
+        * for HDF5, netCDF4 and parquet files: time, y, x and data variable names
 
     --type -t : @after
         * ``'drift'``: drift buoys or satellite/airborne altimetry (time per data point)

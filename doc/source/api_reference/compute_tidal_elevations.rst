@@ -6,7 +6,7 @@ compute_tidal_elevations.py
 - Can use OTIS format tidal solutions provided by Ohio State University and ESR
 - Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
 - Can use Finite Element Solution (FES) models provided by AVISO
-- Can read and write ascii, netCDF4, HDF5 and geotiff formats
+- Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats
 
 `Source code`__
 
@@ -24,7 +24,7 @@ Calling Sequence
 
     --variables : @after
         * for csv files: the order of the columns within the file
-        * for HDF5 and netCDF4 files: time, y, x and data variable names
+        * for HDF5, netCDF4 and parquet files: time, y, x and data variable names
 
     --type -t : @after
         * ``'drift'``: drift buoys or satellite/airborne altimetry (time per data point)

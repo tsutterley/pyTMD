@@ -6,7 +6,7 @@ compute_OPT_displacements.py
 
   * `https://iers-conventions.obspm.fr/chapter7.php <https://iers-conventions.obspm.fr/chapter7.php>`_
   * `ftp://tai.bipm.org/iers/conv2010/chapter7/opoleloadcoefcmcor.txt.gz <ftp://tai.bipm.org/iers/conv2010/chapter7/opoleloadcoefcmcor.txt.gz>`_
-- Can read and write ascii, netCDF4, HDF5 and geotiff formats
+- Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats
 
 `Source code`__
 
@@ -24,7 +24,7 @@ Calling Sequence
 
     --variables : @after
         * for csv files: the order of the columns within the file
-        * for HDF5 and netCDF4 files: time, y, x and data variable names
+        * for HDF5, netCDF4 and parquet files: time, y, x and data variable names
 
     --type -t : @after
         * ``'drift'``: drift buoys or satellite/airborne altimetry (time per data point)
