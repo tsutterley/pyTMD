@@ -25,7 +25,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up mamba ${{ matrix.python-version }}
       uses: mamba-org/setup-micromamba@v1
       with:
@@ -52,7 +52,7 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Checkout Matlab TMD Toolbox
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: tsutterley/TMD_Matlab_Toolbox_v2.5
         path: TMD_Matlab_Toolbox
