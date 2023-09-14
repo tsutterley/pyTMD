@@ -24,7 +24,7 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up mamba ${{ matrix.python-version }}
       uses: mamba-org/setup-micromamba@v1
       with:
@@ -64,7 +64,7 @@ jobs:
         fi
     - name: Create pull request
       if: steps.changes.outputs.DETECTED == 'true'
-      uses: peter-evans/create-pull-request@v3
+      uses: peter-evans/create-pull-request@v5
       with:
         assignees: ${{ github.actor }}
         title: "data: automatic time updates"

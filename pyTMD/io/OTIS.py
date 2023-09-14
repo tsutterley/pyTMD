@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (09/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 09/2023: prevent overwriting ATLAS compact x and y coordinates
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -353,7 +354,7 @@ def extract_constants(
             # read z constituent from elevation file
             if (kwargs['grid'] == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
-                xi,yi,hc = combine_atlas_model(x0, y0, z0, pmask, zlocal,
+                _,_,hc = combine_atlas_model(x0, y0, z0, pmask, zlocal,
                     variable='z')
             elif (kwargs['grid'] == 'TMD3'):
                 hc = read_netcdf_file(model_file, i, variable='z')
@@ -368,7 +369,7 @@ def extract_constants(
             # read u constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
-                xi,yi,hc = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
+                _,_,hc = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
                     variable='u')
             elif (kwargs['grid'] == 'TMD3'):
                 hc = read_netcdf_file(model_file, i, variable='u')
@@ -380,7 +381,7 @@ def extract_constants(
             # read v constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
-                xi,yi,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
+                _,_,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
             elif (kwargs['grid'] == 'TMD3'):
                 hc = read_netcdf_file(model_file, i, type='v')
@@ -392,7 +393,7 @@ def extract_constants(
         # replace original values with extend matrices
         if global_grid:
             hc = extend_matrix(hc)
-        # copy mask to elevation
+        # copy mask to constituent
         hc.mask |= bathymetry.mask
 
         # interpolate amplitude and phase of the constituent
@@ -587,64 +588,49 @@ def read_constants(
             # read constituent from elevation file
             if (kwargs['grid'] == 'ATLAS'):
                 z0,zlocal = read_atlas_elevation(model_file, i, c)
-                xi,yi,z = combine_atlas_model(x0, y0, z0, pmask, zlocal,
+                _,_,hc = combine_atlas_model(x0, y0, z0, pmask, zlocal,
                     variable='z')
             elif (kwargs['grid'] == 'TMD3'):
-                z = read_netcdf_file(model_file, i, variable='z')
+                hc = read_netcdf_file(model_file, i, variable='z')
                 # apply flexure scaling
                 if kwargs['apply_flexure']:
-                    z *= sf
+                    hc *= sf
             elif isinstance(model_file,list):
-                z = read_otis_elevation(model_file[i], 0)
+                hc = read_otis_elevation(model_file[i], 0)
             else:
-                z = read_otis_elevation(model_file, i)
-            # replace original values with extend matrices
-            if global_grid:
-                z = extend_matrix(z)
-            # copy mask to elevation
-            z.mask |= mz.astype(bool)
-            # append extended constituent
-            constituents.append(c, z)
-
+                hc = read_otis_elevation(model_file, i)
         elif kwargs['type'] in ('U','u'):
             # read constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
-                xi,yi,u = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
+                _,_,hc = combine_atlas_model(x0, y0, u0, pmask, uvlocal,
                     variable='u')
             elif (kwargs['grid'] == 'TMD3'):
-                u = read_netcdf_file(model_file, i, variable='u')
+                hc = read_netcdf_file(model_file, i, variable='u')
             elif isinstance(model_file,list):
-                u,v = read_otis_transport(model_file[i], 0)
+                hc,v = read_otis_transport(model_file[i], 0)
             else:
-                u,v = read_otis_transport(model_file, i)
-            # replace original values with extend matrices
-            if global_grid:
-                u = extend_matrix(u)
-            # copy mask to u transports
-            u.mask |= mu.astype(bool)
-            # append extended constituent
-            constituents.append(c, u)
-
+                hc,v = read_otis_transport(model_file, i)
         elif kwargs['type'] in ('V','v'):
             # read constituent from transport file
             if (kwargs['grid'] == 'ATLAS'):
                 u0,v0,uvlocal = read_atlas_transport(model_file, i, c)
-                xi,yi,v = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
+                _,_,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
             elif (kwargs['grid'] == 'TMD3'):
-                v = read_netcdf_file(model_file, i, type='v')
+                hc = read_netcdf_file(model_file, i, type='v')
             elif isinstance(model_file,list):
-                u,v = read_otis_transport(model_file[i], 0)
+                u,hc = read_otis_transport(model_file[i], 0)
             else:
-                u,v = read_otis_transport(model_file, i)
-            # replace original values with extend matrices
-            if global_grid:
-                v = extend_matrix(v)
-            # copy mask to v transports
-            v.mask |= mv.astype(bool)
-            # append extended constituent
-            constituents.append(c, v)
+                u,hc = read_otis_transport(model_file, i)
+
+        # replace original values with extend matrices
+        if global_grid:
+            hc = extend_matrix(hc)
+        # copy mask to constituent
+        hc.mask |= bathymetry.mask
+        # append extended constituent
+        constituents.append(c, hc)
 
     # return the complex form of the model constituents
     return constituents

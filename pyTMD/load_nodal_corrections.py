@@ -105,7 +105,6 @@ def load_nodal_corrections(*args, **kwargs):
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # raise warning for deprecated function call
-    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.arguments instead",
         DeprecationWarning)
     # raise warnings for deprecated keyword arguments
@@ -116,6 +115,5 @@ def load_nodal_corrections(*args, **kwargs):
                 Changed to '{new}'""", DeprecationWarning)
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
-    warnings.filterwarnings("ignore")
     # call updated function to not break current workflows
     return pyTMD.arguments(*args, **kwargs)

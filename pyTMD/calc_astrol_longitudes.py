@@ -88,9 +88,7 @@ def calc_astrol_longitudes(*args, **kwargs):
     ----------
     .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
-    warnings.filterwarnings("module")
     warnings.warn("Deprecated. Please use pyTMD.astro instead",
         DeprecationWarning)
-    warnings.filterwarnings("ignore")
     # call updated function to not break current workflows
     return pyTMD.astro.mean_longitudes(*args, **kwargs)
