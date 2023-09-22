@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (09/2023)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 09/2023: fix scale values for TPXO9-atlas currents
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
         updated filenames for CATS2008-v2023 to final version
     Updated 06/2023: remap FES2012 e2 constituent to eps2
@@ -726,7 +727,7 @@ class model:
             self.model_file = dict(u=self.pathfinder(model_files),
                                    v=self.pathfinder(model_files))
             self.projection = '4326'
-            self.scale = 1.0/100.0
+            self.scale = 1e-4
             self.version = 'v1'
             # model description and references
             self.reference = ('http://volkov.oce.orst.edu/tides/'
@@ -743,7 +744,7 @@ class model:
             self.model_file = dict(u=self.pathfinder(model_files),
                                    v=self.pathfinder(model_files))
             self.projection = '4326'
-            self.scale = 1.0/100.0
+            self.scale = 1e-4
             self.version = 'v2'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
@@ -760,7 +761,7 @@ class model:
             self.model_file = dict(u=self.pathfinder(model_files),
                                    v=self.pathfinder(model_files))
             self.projection = '4326'
-            self.scale = 1.0/100.0
+            self.scale = 1e-4
             self.version = 'v3'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
@@ -777,7 +778,7 @@ class model:
             self.model_file = dict(u=self.pathfinder(model_files),
                                    v=self.pathfinder(model_files))
             self.projection = '4326'
-            self.scale = 1.0/100.0
+            self.scale = 1e-4
             self.version = 'v4'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
@@ -795,7 +796,7 @@ class model:
             self.model_file = dict(u=self.pathfinder(model_files),
                                    v=self.pathfinder(model_files))
             self.projection = '4326'
-            self.scale = 1.0/100.0
+            self.scale = 1e-4
             self.version = 'v5'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'

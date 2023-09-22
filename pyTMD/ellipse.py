@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 u"""
-tidal_ellipse.py (03/2023)
+ellipse.py (03/2023)
 Expresses the amplitudes and phases for the u and v components in terms of
     four ellipse parameters using Foreman's formula
 
 CALLING SEQUENCE:
-    umajor,uminor,uincl,uphase = tidal_ellipse(u,v)
+    umajor,uminor,uincl,uphase = ellipse(u,v)
 
 INPUTS:
     u: zonal current (EW)
@@ -24,6 +24,7 @@ REFERENCE:
         https://doi.org/10.1016/0309-1708(89)90017-1
 
 UPDATE HISTORY:
+    Updated 09/2023: renamed to ellipse.py (from tidal_ellipse.py)
     Updated 03/2023: add basic variable typing to function inputs
     Updated 04/2022: updated docstrings to numpy documentation format
     Written 07/2020
@@ -32,7 +33,7 @@ from __future__ import annotations
 
 import numpy as np
 
-def tidal_ellipse(u: np.ndarray, v: np.ndarray):
+def ellipse(u: np.ndarray, v: np.ndarray):
     """
     Expresses the amplitudes and phases for the u and v components in terms of
     four ellipse parameters using Foreman's formula [1]_

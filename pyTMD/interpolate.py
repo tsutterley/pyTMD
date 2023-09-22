@@ -107,7 +107,6 @@ def bilinear(
     # return interpolated values
     return data
 
-
 def spline(
         ilon: np.ndarray,
         ilat: np.ndarray,

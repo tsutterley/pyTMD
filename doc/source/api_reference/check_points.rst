@@ -1,6 +1,6 @@
-=================
-check_tide_points
-=================
+============
+check_points
+============
 
 - Check if points are within a tide model domain
 - Can check OTIS format tidal solutions provided by Ohio State University and ESR
@@ -12,12 +12,11 @@ Calling Sequence
 
 .. code-block:: python
 
-    from pyTMD.check_tide_points import check_tide_points
-    valid = check_tide_points(x, y, DIRECTORY=DIRECTORY,
-        MODEL=MODEL, EPSG=3031)
+    import pyTMD
+    valid = pyTMD.check_points(x, y, DIRECTORY=DIRECTORY, MODEL=MODEL, EPSG=3031)
 
 `Source code`__
 
-.. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/check_tide_points.py
+.. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/check_points.py
 
-.. autofunction:: pyTMD.check_tide_points
+.. autofunction:: pyTMD.check_points

@@ -36,6 +36,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.predict.solid_earth_tide
 
+.. autofunction:: pyTMD.predict._constituent_parameters
+
 .. autofunction:: pyTMD.predict._out_of_phase_diurnal
 
 .. autofunction:: pyTMD.predict._out_of_phase_semidiurnal

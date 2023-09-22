@@ -22,7 +22,7 @@ import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
 from pyTMD.arguments import arguments
-from pyTMD.check_tide_points import check_tide_points
+from pyTMD.check_points import check_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,
     compute_tide_corrections,
@@ -36,8 +36,7 @@ from pyTMD.constants import (
     _ellipsoids
 )
 from pyTMD.convert_crs import convert_crs
-from pyTMD.load_constituent import load_constituent
-from pyTMD.tidal_ellipse import tidal_ellipse
+from pyTMD.ellipse import ellipse
 
 # Deprecated functions
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes

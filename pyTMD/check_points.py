@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-check_tide_points.py
+check_points.py
 Written by Tyler Sutterley (04/2023)
 Check if points are within a tide model domain
 
@@ -86,7 +86,7 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("pyproj not available")
 
 # PURPOSE: compute tides at points and times using tide model algorithms
-def check_tide_points(x: np.ndarray, y: np.ndarray,
+def check_points(x: np.ndarray, y: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
         ATLAS_FORMAT: str = 'netcdf',

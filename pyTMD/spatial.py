@@ -23,6 +23,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2023: add function to invert field mapping keys and values
+        use datetime64[ns] for parsing dates from ascii files
     Updated 08/2023: remove possible crs variables from output fields list
         place PyYAML behind try/except statement to reduce build size
     Updated 05/2023: use datetime parser within pyTMD.time module
@@ -252,7 +253,7 @@ def from_ascii(filename: str, **kwargs):
         # allocate for each variable and copy variable attributes
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-count), dtype='datetime64[ns]')
             else:
                 dinput[c] = np.zeros((file_lines-count))
             dinput['attributes'][c] = YAML_HEADER['header']['variables'][c]
@@ -264,7 +265,7 @@ def from_ascii(filename: str, **kwargs):
         header = int(kwargs['header'])
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ms]')
+                dinput[c] = np.zeros((file_lines-header), dtype='datetime64[ns]')
             else:
                 dinput[c] = np.zeros((file_lines-header))
         dinput['attributes'] = {c:dict() for c in columns}
