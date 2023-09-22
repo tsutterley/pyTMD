@@ -911,11 +911,11 @@ def output_netcdf_grid(
     nc['lat_u'] = fileID.createVariable('lat_u', lat_u.dtype, ('ny',))
     nc['lon_v'] = fileID.createVariable('lon_v', lon_v.dtype, ('nx',))
     nc['lat_v'] = fileID.createVariable('lat_v', lat_v.dtype, ('ny',))
-    nc['hz'] = fileID.createVariable('hz', hz.dtype, ('ny','nx',),
+    nc['hz'] = fileID.createVariable('hz', hz.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
-    nc['hu'] = fileID.createVariable('hu', hu.dtype, ('ny','nx',),
+    nc['hu'] = fileID.createVariable('hu', hu.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
-    nc['hv'] = fileID.createVariable('hv', hv.dtype, ('ny','nx',),
+    nc['hv'] = fileID.createVariable('hv', hv.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
     # filling the NetCDF variables
     nc['lon_z'][:] = lon_z[:]
@@ -924,9 +924,9 @@ def output_netcdf_grid(
     nc['lat_u'][:] = lat_u[:]
     nc['lon_v'][:] = lon_v[:]
     nc['lat_v'][:] = lat_v[:]
-    nc['hz'][:] = hz[:]
-    nc['hu'][:] = hu[:]
-    nc['hv'][:] = hv[:]
+    nc['hz'][:] = hz[:].T
+    nc['hu'][:] = hu[:].T
+    nc['hv'][:] = hv[:].T
     # define variable attributes
     for TYPE in ('z','u','v'):
         # set variable attributes for coordinates
@@ -992,15 +992,15 @@ def output_netcdf_elevation(
     nc = {}
     nc['lon_z'] = fileID.createVariable('lon_z', lon_z.dtype, ('nx',))
     nc['lat_z'] = fileID.createVariable('lat_z', lat_z.dtype, ('ny',))
-    nc['hRe'] = fileID.createVariable('hRe', h.real.dtype, ('ny','nx',),
+    nc['hRe'] = fileID.createVariable('hRe', h.real.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
-    nc['hIm'] = fileID.createVariable('hIm', h.imag.dtype, ('ny','nx',),
+    nc['hIm'] = fileID.createVariable('hIm', h.imag.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
     # filling the NetCDF variables
     nc['lon_z'][:] = lon_z[:]
     nc['lat_z'][:] = lat_z[:]
-    nc['hRe'][:] = h.real[:]
-    nc['hIm'][:] = h.imag[:]
+    nc['hRe'][:] = h.real[:].T
+    nc['hIm'][:] = h.imag[:].T
     # define variable attributes
     complexpart = dict(Re='Real part', Im='Imag part')
     # set variable attributes for coordinates
@@ -1087,23 +1087,23 @@ def output_netcdf_transport(
     nc['lat_u'] = fileID.createVariable('lat_u', lat_u.dtype, ('ny',))
     nc['lon_v'] = fileID.createVariable('lon_v', lon_v.dtype, ('nx',))
     nc['lat_v'] = fileID.createVariable('lat_v', lat_v.dtype, ('ny',))
-    nc['uRe'] = fileID.createVariable('uRe', u.real.dtype, ('ny','nx',),
+    nc['uRe'] = fileID.createVariable('uRe', u.real.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
-    nc['uIm'] = fileID.createVariable('uIm', u.imag.dtype, ('ny','nx',),
+    nc['uIm'] = fileID.createVariable('uIm', u.imag.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
-    nc['vRe'] = fileID.createVariable('vRe', v.real.dtype, ('ny','nx',),
+    nc['vRe'] = fileID.createVariable('vRe', v.real.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
-    nc['vIm'] = fileID.createVariable('vIm', v.imag.dtype, ('ny','nx',),
+    nc['vIm'] = fileID.createVariable('vIm', v.imag.dtype, ('nx','ny',),
         fill_value=0, zlib=True)
     # filling the NetCDF variables
     nc['lon_u'][:] = lon_u[:]
     nc['lat_u'][:] = lat_u[:]
     nc['lon_v'][:] = lon_v[:]
     nc['lat_v'][:] = lat_v[:]
-    nc['uRe'][:] = u.real[:]
-    nc['uIm'][:] = u.imag[:]
-    nc['vRe'][:] = v.real[:]
-    nc['vIm'][:] = v.imag[:]
+    nc['uRe'][:] = u.real[:].T
+    nc['uIm'][:] = u.imag[:].T
+    nc['vRe'][:] = v.real[:].T
+    nc['vIm'][:] = v.imag[:].T
     # define variable attributes
     direction = dict(u='WE', v='SN')
     complexpart = dict(Re='Real part', Im='Imag part')
