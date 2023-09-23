@@ -19,9 +19,10 @@ Calling Sequence
 
 .. code-block:: python
 
-    from pyTMD.compute_tide_corrections import compute_tide_corrections
-    tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=DIRECTORY,
-        MODEL=MODEL, EPOCH=(2000,1,1,0,0,0), EPSG=3031, TYPE='drift')
+    import pyTMD
+    tide = pyTMD.compute_tide_corrections(x, y, delta_time,
+        DIRECTORY=DIRECTORY, MODEL=MODEL, EPOCH=(2000,1,1,0,0,0),
+        EPSG=3031, TYPE='drift')
 
 `Source code`__
 

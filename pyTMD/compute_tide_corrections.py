@@ -50,7 +50,6 @@ PROGRAM DEPENDENCIES:
     arguments.py: load the nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
     convert_crs.py: convert points to and from Coordinates Reference Systems
-    load_constituent.py: loads parameters for a given tidal constituent
     predict.py: predict tide values using harmonic constants
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models

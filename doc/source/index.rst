@@ -31,10 +31,11 @@ ocean, load, solid Earth and pole tides
 
     api_reference/arguments.rst
     api_reference/astro.rst
-    api_reference/check_tide_points.rst
+    api_reference/check_points.rst
     api_reference/compute_tide_corrections.rst
     api_reference/constants.rst
     api_reference/convert_crs.rst
+    api_reference/ellipse.rst
     api_reference/eop.rst
     api_reference/interpolate.rst
     api_reference/io/ATLAS.rst
@@ -44,10 +45,8 @@ ocean, load, solid Earth and pole tides
     api_reference/io/constituents.rst
     api_reference/io/model.rst
     api_reference/io/ocean_pole_tide.rst
-    api_reference/load_constituent.rst
     api_reference/predict.rst
     api_reference/spatial.rst
-    api_reference/tidal_ellipse.rst
     api_reference/time.rst
     api_reference/utilities.rst
 

@@ -54,8 +54,8 @@ import pyTMD.io.model
 import pyTMD.predict
 import pyTMD.time
 import pyTMD.utilities
-import pyTMD.check_tide_points
-import pyTMD.tidal_ellipse
+import pyTMD.check_points
+import pyTMD.ellipse
 from oct2py import octave
 
 # current file path
@@ -227,7 +227,7 @@ class Test_CATS2008:
     def test_check_CATS2008(self):
         lons = np.zeros((10)) + 178.0
         lats = -45.0 - np.arange(10)*5.0
-        obs = pyTMD.check_tide_points(lons, lats, DIRECTORY=filepath,
+        obs = pyTMD.check_points(lons, lats, DIRECTORY=filepath,
             MODEL='CATS2008', EPSG=4326)
         exp = np.array([False, False, False, False, True,
             True, True, True, False, False])
@@ -531,7 +531,7 @@ class Test_CATS2008:
         # compute tidal ellipse parameters for python program
         test = {}
         test['umajor'],test['uminor'],test['uincl'],test['uphase'] = \
-            pyTMD.tidal_ellipse(hc1['U'],hc1['V'])
+            pyTMD.ellipse(hc1['U'],hc1['V'])
         # compute tidal ellipse parameters for TMD matlab program
         valid = {}
         valid['umajor'],valid['uminor'],valid['uincl'],valid['uphase'] = \
