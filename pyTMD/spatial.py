@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (09/2023)
+Written by Tyler Sutterley (10/2023)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
     constants.py: calculate reference parameters for common ellipsoids
 
 UPDATE HISTORY:
+    Updated 10/2023: can read from netCDF4 or HDF5 variable groups
     Updated 09/2023: add function to invert field mapping keys and values
         use datetime64[ns] for parsing dates from ascii files
     Updated 08/2023: remove possible crs variables from output fields list
@@ -304,6 +305,8 @@ def from_netCDF4(filename: str, **kwargs):
         full path of input netCDF4 file
     compression: str or NoneType, default None
         file compression type
+    group: str or NoneType, default None
+        netCDF4 variable group
     timename: str, default 'time'
         name for time-dimension variable
     xname: str, default 'lon'
@@ -317,6 +320,7 @@ def from_netCDF4(filename: str, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('compression', None)
+    kwargs.setdefault('group', None)
     kwargs.setdefault('timename', 'time')
     kwargs.setdefault('xname', 'lon')
     kwargs.setdefault('yname', 'lat')
@@ -359,19 +363,21 @@ def from_netCDF4(filename: str, **kwargs):
             kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
+    # check if reading from root group or sub-group
+    group = fileID.groups[kwargs['group']] if kwargs['group'] else fileID
     # for each variable
     for key, nc in kwargs['field_mapping'].items():
         # Getting the data from each NetCDF variable
-        dinput[key] = fileID.variables[nc][:]
+        dinput[key] = group.variables[nc][:]
         # get attributes for the included variables
         dinput['attributes'][key] = {}
         for attr in attributes_list:
             # try getting the attribute
             try:
-                ncattr, = [s for s in fileID.variables[nc].ncattrs()
+                ncattr, = [s for s in group.variables[nc].ncattrs()
                     if re.match(attr, s, re.I)]
                 dinput['attributes'][key][attr] = \
-                    fileID.variables[nc].getncattr(ncattr)
+                    group.variables[nc].getncattr(ncattr)
             except (ValueError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
@@ -380,9 +386,9 @@ def from_netCDF4(filename: str, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name in fileID[grid_mapping].ncattrs():
+        for att_name in group[grid_mapping].ncattrs():
             dinput['attributes']['crs'][att_name] = \
-                fileID.variables[grid_mapping].getncattr(att_name)
+                group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
         srs = osgeo.osr.SpatialReference()
@@ -408,6 +414,8 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         full path of input HDF5 file
     compression: str or NoneType, default None
         file compression type
+    group: str or NoneType, default None
+        netCDF4 variable group
     timename: str, default 'time'
         name for time-dimension variable
     xname: str, default 'lon'
@@ -421,6 +429,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('compression', None)
+    kwargs.setdefault('group', None)
     kwargs.setdefault('timename', 'time')
     kwargs.setdefault('xname', 'lon')
     kwargs.setdefault('yname', 'lat')
@@ -468,16 +477,18 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             kwargs['field_mapping']['data'] = copy.copy(kwargs['varname'])
         if kwargs['timename'] is not None:
             kwargs['field_mapping']['time'] = copy.copy(kwargs['timename'])
+    # check if reading from root group or sub-group
+    group = fileID[kwargs['group']] if kwargs['group'] else fileID
     # for each variable
     for key, h5 in kwargs['field_mapping'].items():
         # Getting the data from each HDF5 variable
-        dinput[key] = np.copy(fileID[h5][:])
+        dinput[key] = np.copy(group[h5][:])
         # get attributes for the included variables
         dinput['attributes'][key] = {}
         for attr in attributes_list:
             # try getting the attribute
             try:
-                dinput['attributes'][key][attr] = fileID[h5].attrs[attr]
+                dinput['attributes'][key][attr] = group[h5].attrs[attr]
             except (KeyError, AttributeError):
                 pass
     # get projection information if there is a grid_mapping attribute
@@ -486,7 +497,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
         grid_mapping = dinput['attributes']['data']['grid_mapping']
         # get coordinate reference system attributes
         dinput['attributes']['crs'] = {}
-        for att_name, att_val in fileID[grid_mapping].attrs.items():
+        for att_name, att_val in group[grid_mapping].attrs.items():
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
@@ -1090,7 +1101,7 @@ def convert_ellipsoid(
     .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     if (len(phi1) != len(h1)):
-        raise ValueError('phi and h have incompatable dimensions')
+        raise ValueError('phi and h have incompatible dimensions')
     # semiminor axis of input and output ellipsoid
     b1 = (1.0 - f1)*a1
     b2 = (1.0 - f2)*a2

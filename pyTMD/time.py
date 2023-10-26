@@ -1014,7 +1014,7 @@ def get_leap_seconds(truncate: bool = True):
     # convert from time of 2nd leap second to time of 1st leap second
     leap_GPS = convert_delta_time(leap_UTC + TAI_UTC - TAI_GPS - 1,
         epoch1=_ntp_epoch, epoch2=_gps_epoch)
-    # return the GPS times of leap second occurance
+    # return the GPS times of leap second occurrence
     if truncate:
         return leap_GPS[leap_GPS >= 0].astype(np.float64)
     else:

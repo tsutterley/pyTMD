@@ -1133,7 +1133,7 @@ def read_otis_elevation(
     input_file: str or pathlib.Path
         input elevation file
     ic: int
-        index of consituent
+        index of constituent
 
     Returns
     -------
@@ -1183,7 +1183,7 @@ def read_atlas_elevation(
     input_file: str or pathlib.Path
         input ATLAS elevation file
     ic: int
-        index of consituent
+        index of constituent
     constituent: str
         tidal constituent ID
 
@@ -1282,7 +1282,7 @@ def read_otis_transport(
     input_file: str or pathlib.Path
         input transport file
     ic: int
-        index of consituent
+        index of constituent
 
     Returns
     -------
@@ -1340,7 +1340,7 @@ def read_atlas_transport(
     input_file: str or pathlib.Path
         input ATLAS transport file
     ic: int
-        index of consituent
+        index of constituent
     constituent: str
         tidal constituent ID
 
@@ -1652,7 +1652,7 @@ def read_netcdf_file(
     input_file: str or pathlib.Path
         input transport file
     ic: int
-        index of consituent
+        index of constituent
     variable: str or NoneType, default None
         Tidal variable to read
 
