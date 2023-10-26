@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (10/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 10/2023: add generic wrapper function for reading constituents
     Updated 04/2023: using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
     Updated 12/2022: refactor tide read programs under io
@@ -275,14 +276,9 @@ def extract_constants(
         model_file = pathlib.Path(model_file).expanduser()
         if not model_file.exists():
             raise FileNotFoundError(str(model_file))
-        if (kwargs['type'] == 'z'):
-            # read constituent from elevation file
-            hc, cons = read_netcdf_elevation(model_file,
-                compressed=kwargs['compressed'])
-        elif kwargs['type'] in ('U','u','V','v'):
-            # read constituent from transport file
-            hc, cons = read_netcdf_transport(model_file, kwargs['type'],
-                compressed=kwargs['compressed'])
+        # read constituent from netCDF4 file
+        hc, cons = read_netcdf_file(model_file, kwargs['type'],
+            compressed=kwargs['compressed'])
         # append constituent to list
         constituents.append(cons)
         # replace original values with extend matrices
@@ -414,14 +410,9 @@ def read_constants(
         model_file = pathlib.Path(model_file).expanduser()
         if not model_file.exists():
             raise FileNotFoundError(str(model_file))
-        if (kwargs['type'] == 'z'):
-            # read constituent from elevation file
-            hc, cons = read_netcdf_elevation(model_file,
-                compressed=kwargs['compressed'])
-        elif kwargs['type'] in ('U','u','V','v'):
-            # read constituent from transport file
-            hc, cons = read_netcdf_transport(model_file, kwargs['type'],
-                compressed=kwargs['compressed'])
+        # read constituent from netCDF4 file
+        hc, cons = read_netcdf_file(model_file, kwargs['type'],
+            compressed=kwargs['compressed'])
         # replace original values with extend matrices
         hc = extend_matrix(hc)
         hc.mask[:] |= bathymetry.mask[:]
@@ -743,6 +734,46 @@ def read_netcdf_grid(
     f.close() if kwargs['compressed'] else None
     return (lon, lat, bathymetry)
 
+# PURPOSE: wrapper function for reading netCDF4 constituent files
+def read_netcdf_file(
+        input_file: str | pathlib.Path,
+        variable: str,
+        **kwargs
+    ):
+    """
+    Wrapper function for reading netCDF4 files to extract
+    real and imaginary components for constituent
+
+    Parameters
+    ----------
+    input_file: str or pathlib.Path
+        input transport file
+    variable: str
+        Tidal variable to read
+
+            - ``'z'``: heights
+            - ``'u'``: horizontal transport velocities
+            - ``'U'``: horizontal depth-averaged transport
+            - ``'v'``: vertical transport velocities
+            - ``'V'``: vertical depth-averaged transport
+
+    compressed: bool, default False
+        Input file is gzip compressed
+
+    Returns
+    -------
+    hc: np.ndarray
+        tidal constituent
+    con: str
+        tidal constituent ID
+    """
+    if (variable == 'z'):
+        # read constituent from elevation file
+        return read_netcdf_elevation(input_file, **kwargs)
+    elif variable in ('U','u','V','v'):
+        # read constituent from transport file
+        return read_netcdf_transport(input_file, variable, **kwargs)
+
 # PURPOSE: read elevation file to extract real and imaginary components for
 # constituent
 def read_netcdf_elevation(
@@ -761,7 +792,7 @@ def read_netcdf_elevation(
 
     Returns
     -------
-    h: np.ndarray
+    hc: np.ndarray
         tidal elevation
     con: str
         tidal constituent ID
@@ -783,15 +814,15 @@ def read_netcdf_elevation(
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
     # real and imaginary components of elevation
-    h = np.ma.zeros((ny,nx), dtype=np.complex64)
-    h.mask = np.zeros((ny,nx), dtype=bool)
-    h.data.real[:,:] = fileID.variables['hRe'][:,:].T
-    h.data.imag[:,:] = fileID.variables['hIm'][:,:].T
+    hc = np.ma.zeros((ny,nx), dtype=np.complex64)
+    hc.mask = np.zeros((ny,nx), dtype=bool)
+    hc.data.real[:,:] = fileID.variables['hRe'][:,:].T
+    hc.data.imag[:,:] = fileID.variables['hIm'][:,:].T
     # close the file
     fileID.close()
     f.close() if kwargs['compressed'] else None
     # return the elevation and constituent
-    return (h, con.strip())
+    return (hc, con.strip())
 
 # PURPOSE: read transport file to extract real and imaginary components for
 # constituent
@@ -820,7 +851,7 @@ def read_netcdf_transport(
 
     Returns
     -------
-    tr: np.ndarray
+    hc: np.ndarray
         tidal transport
     con: str
         tidal constituent ID
@@ -842,19 +873,19 @@ def read_netcdf_transport(
     nx = fileID.dimensions['nx'].size
     ny = fileID.dimensions['ny'].size
     # real and imaginary components of transport
-    tr = np.ma.zeros((ny,nx), dtype=np.complex64)
-    tr.mask = np.zeros((ny,nx), dtype=bool)
+    hc = np.ma.zeros((ny,nx), dtype=np.complex64)
+    hc.mask = np.zeros((ny,nx), dtype=bool)
     if variable in ('U','u'):
-        tr.data.real[:,:] = fileID.variables['uRe'][:,:].T
-        tr.data.imag[:,:] = fileID.variables['uIm'][:,:].T
+        hc.data.real[:,:] = fileID.variables['uRe'][:,:].T
+        hc.data.imag[:,:] = fileID.variables['uIm'][:,:].T
     elif variable in ('V','v'):
-        tr.data.real[:,:] = fileID.variables['vRe'][:,:].T
-        tr.data.imag[:,:] = fileID.variables['vIm'][:,:].T
+        hc.data.real[:,:] = fileID.variables['vRe'][:,:].T
+        hc.data.imag[:,:] = fileID.variables['vIm'][:,:].T
     # close the file
     fileID.close()
     f.close() if kwargs['compressed'] else None
     # return the transport components and constituent
-    return (tr, con.strip())
+    return (hc, con.strip())
 
 # PURPOSE: output grid file in ATLAS netCDF format
 def output_netcdf_grid(
@@ -870,7 +901,7 @@ def output_netcdf_grid(
         lat_v: np.ndarray
     ):
     """
-    Writes grid files in ATLAS netCDF format
+    Writes grid parameters to netCDF4 files in ATLAS format
 
     Parameters
     ----------
@@ -964,7 +995,7 @@ def output_netcdf_elevation(
         constituent: str
     ):
     """
-    Writes elevation files in ATLAS netCDF format
+    Writes elevation constituents to netCDF4 files in ATLAS format
 
     Parameters
     ----------
@@ -1051,7 +1082,7 @@ def output_netcdf_transport(
         constituent: str
     ):
     """
-    Writes transport files in ATLAS netCDF format
+    Writes transport constituents to netCDF4 files in ATLAS format
 
     Parameters
     ----------

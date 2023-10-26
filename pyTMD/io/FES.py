@@ -747,7 +747,7 @@ def output_netcdf_file(
         **kwargs
     ):
     """
-    Writes tidal constituent files in FES2014 netCDF format
+    Writes tidal constituents to netCDF4 files in FES2014 format
 
     Parameters
     ----------

@@ -26,6 +26,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.ATLAS.read_netcdf_grid
 
+.. autofunction:: pyTMD.io.ATLAS.read_netcdf_file
+
 .. autofunction:: pyTMD.io.ATLAS.read_netcdf_elevation
 
 .. autofunction:: pyTMD.io.ATLAS.read_netcdf_transport

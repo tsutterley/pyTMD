@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (09/2023)
+Written by Tyler Sutterley (10/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 10/2023: fix transport variable entry for TMD3 models
     Updated 09/2023: prevent overwriting ATLAS compact x and y coordinates
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using pathlib to define and expand tide model paths
@@ -384,7 +385,7 @@ def extract_constants(
                 _,_,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
             elif (kwargs['grid'] == 'TMD3'):
-                hc = read_netcdf_file(model_file, i, type='v')
+                hc = read_netcdf_file(model_file, i, variable='v')
             elif isinstance(model_file,list):
                 u,hc = read_otis_transport(model_file[i], 0)
             else:
@@ -618,7 +619,7 @@ def read_constants(
                 _,_,hc = combine_atlas_model(x0, y0, v0, pmask, uvlocal,
                     variable='v')
             elif (kwargs['grid'] == 'TMD3'):
-                hc = read_netcdf_file(model_file, i, type='v')
+                hc = read_netcdf_file(model_file, i, variable='v')
             elif isinstance(model_file,list):
                 u,hc = read_otis_transport(model_file[i], 0)
             else:
