@@ -678,7 +678,7 @@ def output_netcdf_file(
         constituent: str
     ):
     """
-    Writes tidal constituent files in GOT netCDF format
+    Writes tidal constituents to netCDF4 files in GOT format
 
     Parameters
     ----------
