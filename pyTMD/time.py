@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (06/2023)
+Written by Tyler Sutterley (10/2023)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 10/2023: add function to output timescale to string arrays
     Updated 06/2023: improve conversion of timescale to datetime arrays
     Updated 05/2023: add timescale class for converting between time scales
         added timescale to_datetime function to create datetime arrays
@@ -761,6 +762,19 @@ class timescale:
         delta_time = np.atleast_1d(self.MJD*self.day*1e9).astype(np.int64)
         # return the datetime array
         return np.array(epoch + delta_time.astype('timedelta64[ns]'))
+
+    def to_string(self, unit: str = 's', **kwargs):
+        """
+        Convert a ``timescale`` object to a formatted string array
+
+        Parameters
+        ----------
+        unit: str, default 's'
+            datetime unit for output string array
+        **kwargs: dict
+            keyword arguments for datetime formatting
+        """
+        return np.datetime_as_string(self.to_datetime(), unit=unit, **kwargs)
 
     # PURPOSE: calculate the sum of a polynomial function of time
     def polynomial_sum(self, coefficients: list | np.ndarray, t: np.ndarray):

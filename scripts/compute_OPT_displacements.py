@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (10/2023)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -89,6 +89,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
         use defaults from eop module for pole tide and EOP files
     Updated 04/2023: check if datetime before converting to seconds
@@ -360,15 +361,20 @@ def compute_OPT_displacements(input_file, output_file,
         'chapter7/opoleloadcoefcmcor.txt.gz')
     attrib['tide_oc_pole']['units'] = 'meters'
     attrib['tide_oc_pole']['_FillValue'] = FILL_VALUE
-    # Modified Julian Days
+    # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1858-11-17T00:00:00'
-    attrib['time']['description'] = 'Modified Julian Days'
     attrib['time']['calendar'] = 'standard'
 
+    # output data dictionary
+    output = {'lon':lon, 'lat':lat, 'tide_oc_pole':Urad}
+    if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
+        output['time'] = timescale.to_string()
+    else:
+        attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+        output['time'] = timescale.tide
+
     # output to file
-    output = dict(time=timescale.MJD, lon=lon, lat=lat, tide_oc_pole=Urad)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,

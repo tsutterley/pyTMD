@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (10/2023)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -67,6 +67,7 @@ PROGRAM DEPENDENCIES:
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds
         using pathlib to define and expand paths
@@ -254,11 +255,17 @@ def compute_LPET_elevations(input_file, output_file,
     # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
 
+    # output data dictionary
+    output = {'lon':lon, 'lat':lat, 'tide_lpe':tide_lpe}
+    if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
+        output['time'] = timescale.to_string()
+    else:
+        attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+        output['time'] = timescale.tide
+
     # output to file
-    output = dict(time=timescale.tide, lon=lon, lat=lat, tide_lpe=tide_lpe)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
