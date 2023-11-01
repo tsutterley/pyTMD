@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (10/2023)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -96,6 +96,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
         add option for using higher resolution ephemerides from JPL
     Updated 04/2023: using pathlib to define and expand paths
@@ -332,15 +333,21 @@ def compute_SET_displacements(input_file, output_file,
     # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
 
+    # output data dictionary
+    output = {'lon':lon, 'lat':lat, 'tide_earth':tide_se}
+    if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
+        output['time'] = timescale.to_string()
+    else:
+        attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+        output['time'] = timescale.tide
+
     # output to file
-    output = dict(time=timescale.tide, lon=lon, lat=lat, tide_se=tide_se)
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
-            columns=['time','lat','lon','tide_se'])
+            columns=['time','lat','lon','tide_earth'])
     elif (FORMAT == 'netCDF4'):
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, data_type=TYPE)
     elif (FORMAT == 'HDF5'):
@@ -350,7 +357,7 @@ def compute_SET_displacements(input_file, output_file,
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = attributes[att_name]
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
-            varname='tide_se')
+            varname='tide_earth')
     elif (FORMAT == 'parquet'):
         # write to parquet file
         logging.info(str(output_file))

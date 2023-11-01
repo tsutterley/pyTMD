@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (10/2023)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -97,6 +97,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 10/2023: can write datetime as time column for csv files
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds
@@ -374,11 +375,17 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
 
+    # output data dictionary
+    output = {'lon':lon, 'lat':lat, output_variable:tide}
+    if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
+        output['time'] = timescale.to_string()
+    else:
+        attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+        output['time'] = timescale.tide
+
     # output to file
-    output = {'time':timescale.tide, 'lon':lon, 'lat':lat, output_variable:tide}
     if (FORMAT == 'csv'):
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,

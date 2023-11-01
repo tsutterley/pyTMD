@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (03/2023)
+Written by Tyler Sutterley (10/2023)
 
 Gravitational and ellipsoidal parameters
 
@@ -37,6 +37,7 @@ REFERENCE:
         https://iers-conventions.obspm.fr/content/tn36.pdf
 
 UPDATE HISTORY:
+    Updated 10/2023: add value for WMO standard gravity
     Updated 03/2023: add basic variable typing
         set ellipsoid name and output units as constants attributes
     Updated 01/2023: include main ellipsoid attributes in docstring
@@ -184,11 +185,16 @@ class constants(object):
         # universal gravitational constant [N*m^2/kg^2]
         self.G = 6.67430e-11
 
+        # standard gravitational acceleration [m/s^2]
+        # (World Meteorological Organization)
+        self.gamma = 9.80665
+
         # convert units to CGS
         if (self.units == 'CGS'):
             self.a_axis *= 100.0
             self.GM *= 1e6
             self.G *= 1000.0 # [dyn*cm^2/g^2]
+            self.gamma *= 100.0
 
     # mean radius of the Earth having the same volume
     # (4pi/3)R^3 = (4pi/3)(a^2)b = (4pi/3)(a^3)(1 - f)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (10/2023)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -94,6 +94,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 10/2023: can write datetime as time column for csv files
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: using pathlib to define and expand paths
@@ -278,8 +279,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     # number of time points
     nt = len(timescale)
 
-    # python dictionary with output data
-    output = {'time':timescale.tide, 'lon':lon, 'lat':lat}
+    # python dictionary with tide model data
+    tide = {}
     # iterate over u and v currents
     for t in model.type:
         # read tidal constants and interpolate to grid points
@@ -312,38 +313,38 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
 
         # predict tidal currents at time and infer minor corrections
         if (TYPE == 'grid'):
-            output[t] = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
-            output[t].mask = np.zeros((ny,nx,nt),dtype=bool)
+            tide[t] = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
+            tide[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
                 TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
                     deltat=deltat[i], corrections=model.format)
                 MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
                     deltat=deltat[i], corrections=model.format)
                 # add major and minor components and reform grid
-                output[t][:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
-                output[t].mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask),
+                tide[t][:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
+                tide[t].mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask),
                     (ny,nx))
         elif (TYPE == 'drift'):
-            output[t] = np.ma.zeros((nt), fill_value=FILL_VALUE)
-            output[t].mask = np.any(hc.mask,axis=1)
-            output[t].data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
+            tide[t] = np.ma.zeros((nt), fill_value=FILL_VALUE)
+            tide[t].mask = np.any(hc.mask,axis=1)
+            tide[t].data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
                 deltat=deltat, corrections=model.format)
             minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
                 deltat=deltat, corrections=model.format)
-            output[t].data[:] += minor.data[:]
+            tide[t].data[:] += minor.data[:]
         elif (TYPE == 'time series'):
-            output[t] = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
-            output[t].mask = np.zeros((nstation,nt),dtype=bool)
+            tide[t] = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
+            tide[t].mask = np.zeros((nstation,nt),dtype=bool)
             for s in range(nstation):
                 # calculate constituent oscillation for station
                 TIDE = pyTMD.predict.time_series(timescale.tide, hc[s,None,:], c,
                     deltat=deltat, corrections=model.format)
                 MINOR = pyTMD.predict.infer_minor(timescale.tide, hc[s,None,:], c,
                     deltat=deltat, corrections=model.format)
-                output[t].data[s,:] = TIDE.data[:] + MINOR.data[:]
-                output[t].mask[s,:] = (TIDE.mask | MINOR.mask)
+                tide[t].data[s,:] = TIDE.data[:] + MINOR.data[:]
+                tide[t].mask[s,:] = (TIDE.mask | MINOR.mask)
         # replace invalid values with fill value
-        output[t].data[output[t].mask] = output[t].fill_value
+        tide[t].data[tide[t].mask] = tide[t].fill_value
 
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files
@@ -375,8 +376,15 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     # time
     attrib['time'] = {}
     attrib['time']['long_name'] = 'Time'
-    attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
     attrib['time']['calendar'] = 'standard'
+
+    # output data dictionary
+    output = {'lon':lon, 'lat':lat, **tide}
+    if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
+        output['time'] = timescale.to_string()
+    else:
+        attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
+        output['time'] = timescale.tide
 
     # output to file
     if (FORMAT == 'csv'):

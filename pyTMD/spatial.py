@@ -23,6 +23,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2023: can read from netCDF4 or HDF5 variable groups
+        apply no formatting to columns in ascii file output
     Updated 09/2023: add function to invert field mapping keys and values
         use datetime64[ns] for parsing dates from ascii files
     Updated 08/2023: remove possible crs variables from output fields list
@@ -676,7 +677,7 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         fid.write('\n\n# End of YAML header\n')
     # write to file for each data point
     for line in range(nrow):
-        line_contents = [f'{d:0.8f}' for d in data_stack[:, line]]
+        line_contents = [f'{d}' for d in data_stack[:, line]]
         print(kwargs['delimiter'].join(line_contents), file=fid)
     # close the output file
     fid.close()
