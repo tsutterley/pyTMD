@@ -647,7 +647,7 @@ def check_connection(
     ----------
     HOST: str
         remote http host
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     """
     # attempt to connect to http host
@@ -681,7 +681,7 @@ def http_list(
         remote http host path
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     parser: obj, default lxml.etree.HTMLParser()
         HTML parser for ``lxml``
@@ -757,7 +757,7 @@ def from_http(
         remote http host path split as list
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     local: str, pathlib.Path or NoneType, default None
         path to local file
@@ -835,7 +835,7 @@ def attempt_login(
     ----------
     urs: str
         Earthdata login URS 3 host
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     password_manager: bool, default True
         Create password manager context using default realm
@@ -922,7 +922,7 @@ def build_opener(
         NASA Earthdata username
     password: str or NoneType, default None
         NASA Earthdata password
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     password_manager: bool, default True
         Create password manager context using default realm
@@ -1362,7 +1362,7 @@ def iers_list(
         remote http host path
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     parser: obj, default lxml.etree.HTMLParser()
         HTML parser for ``lxml``
@@ -1422,7 +1422,7 @@ def from_jpl_ssd(
         JPL kernel file to download
     timeout: int or NoneType, default None
         timeout in seconds for blocking operations
-    context: obj, default ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context: obj, default pyTMD.utilities._default_ssl_context
         SSL context for ``urllib`` opener object
     hash: str, default ''
         MD5 hash of local file

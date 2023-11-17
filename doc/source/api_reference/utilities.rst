@@ -50,6 +50,14 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.from_ftp
 
+.. autofunction:: pyTMD.utilities._create_default_ssl_context
+
+.. autofunction:: pyTMD.utilities._create_ssl_context_no_verify
+
+.. autofunction:: pyTMD.utilities._set_ssl_context_options
+
+.. autofunction:: pyTMD.utilities.check_connection
+
 .. autofunction:: pyTMD.utilities.http_list
 
 .. autofunction:: pyTMD.utilities.from_http
