@@ -283,7 +283,7 @@ class constants(object):
     # p. 67, Eqn.(2-113)
     @property
     def q0(self) -> float:
-        """q\ :sub:`0` Parameter
+        r"""q\ :sub:`0` Parameter
         """
         return 3*(1.0 + 1.0/(self.ecc2**2)) * \
             (1.0 -1.0/self.ecc2*np.arctan(self.ecc2)) - 1.0
@@ -299,7 +299,7 @@ class constants(object):
     # p. 60, Eqn.(2-80)
     @property
     def C20(self) -> float:
-        """Normalized C\ :sub:`20` harmonic
+        r"""Normalized C\ :sub:`20` harmonic
         """
         return -self.J2/np.sqrt(5.0)
 

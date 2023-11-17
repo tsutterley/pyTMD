@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (09/2023)
+Written by Tyler Sutterley (11/2023)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 11/2023: revert TPXO9-atlas currents changes to separate dicts
     Updated 09/2023: fix scale values for TPXO9-atlas currents
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
         updated filenames for CATS2008-v2023 to final version
@@ -718,14 +719,22 @@ class model:
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
-            model_files = ['u_q1_tpxo9_atlas_30','u_o1_tpxo9_atlas_30',
+            model_files = {}
+            model_files['u'] = ['u_q1_tpxo9_atlas_30','u_o1_tpxo9_atlas_30',
                 'u_p1_tpxo9_atlas_30','u_k1_tpxo9_atlas_30',
                 'u_n2_tpxo9_atlas_30','u_m2_tpxo9_atlas_30',
                 'u_s2_tpxo9_atlas_30','u_k2_tpxo9_atlas_30',
                 'u_m4_tpxo9_atlas_30','u_ms4_tpxo9_atlas_30',
                 'u_mn4_tpxo9_atlas_30','u_2n2_tpxo9_atlas_30']
-            self.model_file = dict(u=self.pathfinder(model_files),
-                                   v=self.pathfinder(model_files))
+            model_files['v'] = ['v_q1_tpxo9_atlas_30','v_o1_tpxo9_atlas_30',
+                'v_p1_tpxo9_atlas_30','v_k1_tpxo9_atlas_30',
+                'v_n2_tpxo9_atlas_30','v_m2_tpxo9_atlas_30',
+                'v_s2_tpxo9_atlas_30','v_k2_tpxo9_atlas_30',
+                'v_m4_tpxo9_atlas_30','v_ms4_tpxo9_atlas_30',
+                'v_mn4_tpxo9_atlas_30','v_2n2_tpxo9_atlas_30']
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1e-4
             self.version = 'v1'
@@ -735,14 +744,22 @@ class model:
         elif (m == 'TPXO9-atlas-v2'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v2')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v2')
-            model_files = ['u_q1_tpxo9_atlas_30_v2','u_o1_tpxo9_atlas_30_v2',
+            model_files = {}
+            model_files['u'] = ['u_q1_tpxo9_atlas_30_v2','u_o1_tpxo9_atlas_30_v2',
                 'u_p1_tpxo9_atlas_30_v2','u_k1_tpxo9_atlas_30_v2',
                 'u_n2_tpxo9_atlas_30_v2','u_m2_tpxo9_atlas_30_v2',
                 'u_s2_tpxo9_atlas_30_v2','u_k2_tpxo9_atlas_30_v2',
                 'u_m4_tpxo9_atlas_30_v2','u_ms4_tpxo9_atlas_30_v2',
                 'u_mn4_tpxo9_atlas_30_v2','u_2n2_tpxo9_atlas_30_v2']
-            self.model_file = dict(u=self.pathfinder(model_files),
-                                   v=self.pathfinder(model_files))
+            model_files['v'] = ['v_q1_tpxo9_atlas_30_v2','v_o1_tpxo9_atlas_30_v2',
+                'v_p1_tpxo9_atlas_30_v2','v_k1_tpxo9_atlas_30_v2',
+                'v_n2_tpxo9_atlas_30_v2','v_m2_tpxo9_atlas_30_v2',
+                'v_s2_tpxo9_atlas_30_v2','v_k2_tpxo9_atlas_30_v2',
+                'v_m4_tpxo9_atlas_30_v2','v_ms4_tpxo9_atlas_30_v2',
+                'v_mn4_tpxo9_atlas_30_v2','v_2n2_tpxo9_atlas_30_v2']
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1e-4
             self.version = 'v2'
@@ -751,15 +768,24 @@ class model:
         elif (m == 'TPXO9-atlas-v3'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v3')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v3')
-            model_files = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
+            model_files = {}
+            model_files['u'] = ['u_q1_tpxo9_atlas_30_v3','u_o1_tpxo9_atlas_30_v3',
                 'u_p1_tpxo9_atlas_30_v3','u_k1_tpxo9_atlas_30_v3',
                 'u_n2_tpxo9_atlas_30_v3','u_m2_tpxo9_atlas_30_v3',
                 'u_s2_tpxo9_atlas_30_v3','u_k2_tpxo9_atlas_30_v3',
                 'u_m4_tpxo9_atlas_30_v3','u_ms4_tpxo9_atlas_30_v3',
                 'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
                 'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
-            self.model_file = dict(u=self.pathfinder(model_files),
-                                   v=self.pathfinder(model_files))
+            model_files['v'] = ['v_q1_tpxo9_atlas_30_v3','v_o1_tpxo9_atlas_30_v3',
+                'v_p1_tpxo9_atlas_30_v3','v_k1_tpxo9_atlas_30_v3',
+                'v_n2_tpxo9_atlas_30_v3','v_m2_tpxo9_atlas_30_v3',
+                'v_s2_tpxo9_atlas_30_v3','v_k2_tpxo9_atlas_30_v3',
+                'v_m4_tpxo9_atlas_30_v3','v_ms4_tpxo9_atlas_30_v3',
+                'v_mn4_tpxo9_atlas_30_v3','v_2n2_tpxo9_atlas_30_v3',
+                'v_mf_tpxo9_atlas_30_v3','v_mm_tpxo9_atlas_30_v3']
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1e-4
             self.version = 'v3'
@@ -768,15 +794,24 @@ class model:
         elif (m == 'TPXO9-atlas-v4'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v4')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v4')
-            model_files = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
+            model_files = {}
+            model_files['u'] = ['u_q1_tpxo9_atlas_30_v4','u_o1_tpxo9_atlas_30_v4',
                 'u_p1_tpxo9_atlas_30_v4','u_k1_tpxo9_atlas_30_v4',
                 'u_n2_tpxo9_atlas_30_v4','u_m2_tpxo9_atlas_30_v4',
                 'u_s2_tpxo9_atlas_30_v4','u_k2_tpxo9_atlas_30_v4',
                 'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
                 'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
                 'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
-            self.model_file = dict(u=self.pathfinder(model_files),
-                                   v=self.pathfinder(model_files))
+            model_files['v'] = ['v_q1_tpxo9_atlas_30_v4','v_o1_tpxo9_atlas_30_v4',
+                'v_p1_tpxo9_atlas_30_v4','v_k1_tpxo9_atlas_30_v4',
+                'v_n2_tpxo9_atlas_30_v4','v_m2_tpxo9_atlas_30_v4',
+                'v_s2_tpxo9_atlas_30_v4','v_k2_tpxo9_atlas_30_v4',
+                'v_m4_tpxo9_atlas_30_v4','v_ms4_tpxo9_atlas_30_v4',
+                'v_mn4_tpxo9_atlas_30_v4','v_2n2_tpxo9_atlas_30_v4',
+                'v_mf_tpxo9_atlas_30_v4','v_mm_tpxo9_atlas_30_v4']
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1e-4
             self.version = 'v4'
@@ -785,7 +820,8 @@ class model:
         elif (m == 'TPXO9-atlas-v5'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v5')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v5')
-            model_files = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
+            model_files = {}
+            model_files['u'] = ['u_q1_tpxo9_atlas_30_v5','u_o1_tpxo9_atlas_30_v5',
                 'u_p1_tpxo9_atlas_30_v5','u_k1_tpxo9_atlas_30_v5',
                 'u_n2_tpxo9_atlas_30_v5','u_m2_tpxo9_atlas_30_v5',
                 'u_s1_tpxo9_atlas_30_v5','u_s2_tpxo9_atlas_30_v5',
@@ -793,8 +829,17 @@ class model:
                 'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
                 'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
                 'u_mm_tpxo9_atlas_30_v5']
-            self.model_file = dict(u=self.pathfinder(model_files),
-                                   v=self.pathfinder(model_files))
+            model_files['v'] = ['v_q1_tpxo9_atlas_30_v5','v_o1_tpxo9_atlas_30_v5',
+                'v_p1_tpxo9_atlas_30_v5','v_k1_tpxo9_atlas_30_v5',
+                'v_n2_tpxo9_atlas_30_v5','v_m2_tpxo9_atlas_30_v5',
+                'v_s1_tpxo9_atlas_30_v5','v_s2_tpxo9_atlas_30_v5',
+                'v_k2_tpxo9_atlas_30_v5','v_m4_tpxo9_atlas_30_v5',
+                'v_ms4_tpxo9_atlas_30_v5','v_mn4_tpxo9_atlas_30_v5',
+                'v_2n2_tpxo9_atlas_30_v5','v_mf_tpxo9_atlas_30_v5',
+                'v_mm_tpxo9_atlas_30_v5']
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
             self.scale = 1e-4
             self.version = 'v5'
@@ -1278,7 +1323,7 @@ class model:
         # model files can be comma, tab or space delimited
         # extract full path to tide model files
         # extract full path to tide grid file
-        if temp.format in ('OTIS','ATLAS','TMD3','netcdf'):
+        if temp.format in ('OTIS','ATLAS','TMD3'):
             assert temp.grid_file
             # check if grid file is relative
             if (temp.directory is not None):
@@ -1324,6 +1369,53 @@ class model:
                 # fully defined single file case
                 temp.model_file = pathlib.Path(temp.model_file).expanduser()
                 temp.model_directory = temp.model_file.parent
+        elif temp.format in ('netcdf',):
+            assert temp.grid_file
+            # check if grid file is relative
+            if (temp.directory is not None):
+                temp.grid_file = temp.directory.joinpath(temp.grid_file).resolve()
+            else:
+                temp.grid_file = pathlib.Path(temp.grid_file).expanduser()
+            # extract model files
+            if (temp.type == ['u','v']) and (temp.directory is not None):
+                # split model file string at semicolon
+                model_file = temp.model_file.split(';')
+                glob_string = dict(u=model_file[0], v=model_file[1])
+                # use glob strings to find files in directory
+                temp.model_file = {}
+                temp.model_file['u'] = list(temp.directory.glob(glob_string['u']))
+                temp.model_file['v'] = list(temp.directory.glob(glob_string['v']))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file['u'][0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
+            elif (temp.type == 'z') and (temp.directory is not None):
+                # use glob strings to find files in directory
+                glob_string = copy.copy(temp.model_file)
+                temp.model_file = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file[0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
+            elif (temp.type == ['u','v']):
+                # split model file string at semicolon
+                model_file = temp.model_file.split(';')
+                # split model into list of files for each direction
+                temp.model_file = {}
+                temp.model_file['u'] = [pathlib.Path(f).expanduser() for f in
+                    re.split(r'[\s\,]+', model_file[0])]
+                temp.model_file['v'] = [pathlib.Path(f).expanduser() for f in
+                    re.split(r'[\s\,]+', model_file[1])]
+                # copy to directory dictionaries
+                temp.model_directory = temp.model_file['u'][0].parent
+            elif (temp.type == 'z'):
+                temp.model_file = [pathlib.Path(f).expanduser() for f in
+                    re.split(r'[\s\,]+', temp.model_file)]
+                temp.model_directory = temp.model_file[0].parent
         elif temp.format in ('FES','GOT'):
             # extract model files
             if (temp.type == ['u','v']) and (temp.directory is not None):
