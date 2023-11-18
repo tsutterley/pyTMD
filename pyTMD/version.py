@@ -10,6 +10,6 @@ metadata = importlib.metadata.metadata("pyTMD")
 # get version
 version = metadata["version"]
 # append "v" before the version
-full_version = "v{0}".format(version)
+full_version = f"v{version}"
 # get project name
 project_name = metadata["Name"]

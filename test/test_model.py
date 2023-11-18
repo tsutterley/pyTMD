@@ -153,7 +153,8 @@ def test_definition_FES_currents():
     # test read variables
     assert m.format == 'FES'
     assert m.name == 'FES2014'
-    model_files_u = ['fes2014/eastward_velocity/2n2.nc.gz',
+    model_files = {}
+    model_files['u'] = ['fes2014/eastward_velocity/2n2.nc.gz',
         'fes2014/eastward_velocity/eps2.nc.gz', 'fes2014/eastward_velocity/j1.nc.gz',
         'fes2014/eastward_velocity/k1.nc.gz', 'fes2014/eastward_velocity/k2.nc.gz',
         'fes2014/eastward_velocity/l2.nc.gz', 'fes2014/eastward_velocity/la2.nc.gz',
@@ -171,7 +172,7 @@ def test_definition_FES_currents():
         'fes2014/eastward_velocity/s2.nc.gz', 'fes2014/eastward_velocity/s4.nc.gz',
         'fes2014/eastward_velocity/sa.nc.gz', 'fes2014/eastward_velocity/ssa.nc.gz',
         'fes2014/eastward_velocity/t2.nc.gz']
-    model_files_v = ['fes2014/northward_velocity/2n2.nc.gz',
+    model_files['v'] = ['fes2014/northward_velocity/2n2.nc.gz',
         'fes2014/northward_velocity/eps2.nc.gz', 'fes2014/northward_velocity/j1.nc.gz',
         'fes2014/northward_velocity/k1.nc.gz', 'fes2014/northward_velocity/k2.nc.gz',
         'fes2014/northward_velocity/l2.nc.gz', 'fes2014/northward_velocity/la2.nc.gz',
@@ -190,10 +191,9 @@ def test_definition_FES_currents():
         'fes2014/northward_velocity/sa.nc.gz', 'fes2014/northward_velocity/ssa.nc.gz',
         'fes2014/northward_velocity/t2.nc.gz']
     # assert that all model files are in the model definition
-    for f in model_files_u:
-        assert pathlib.Path(f) in m.model_file['u']
-    for f in model_files_v:
-        assert pathlib.Path(f) in m.model_file['v']
+    for t in ['u','v']:
+        for f in model_files[t]:
+            assert pathlib.Path(f) in m.model_file[t]
     # assert that all constituents are in the model definition
     constituents = ['2n2','eps2','j1','k1','k2','l2',
                 'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
@@ -204,7 +204,7 @@ def test_definition_FES_currents():
     assert m.scale == 1.0
     assert m.compressed is True
     # check validity of parsed constituents
-    parsed_constituents = [pyTMD.io.model.parse_file(f) for f in model_files_u]
+    parsed_constituents = [pyTMD.io.model.parse_file(f) for f in model_files['u']]
     assert parsed_constituents == constituents
     # test derived properties
     assert m.long_name['u'] == 'zonal_tidal_current'
@@ -217,7 +217,8 @@ def test_definition_FES_currents_glob():
     """
     # get model parameters
     m = pyTMD.io.model().from_file(filepath.joinpath('model_FES2014_currents.def'))
-    model_files_u = ['fes2014/eastward_velocity/2n2.nc.gz',
+    model_files = {}
+    model_files['u'] = ['fes2014/eastward_velocity/2n2.nc.gz',
         'fes2014/eastward_velocity/eps2.nc.gz', 'fes2014/eastward_velocity/j1.nc.gz',
         'fes2014/eastward_velocity/k1.nc.gz', 'fes2014/eastward_velocity/k2.nc.gz',
         'fes2014/eastward_velocity/l2.nc.gz', 'fes2014/eastward_velocity/la2.nc.gz',
@@ -235,7 +236,7 @@ def test_definition_FES_currents_glob():
         'fes2014/eastward_velocity/s2.nc.gz', 'fes2014/eastward_velocity/s4.nc.gz',
         'fes2014/eastward_velocity/sa.nc.gz', 'fes2014/eastward_velocity/ssa.nc.gz',
         'fes2014/eastward_velocity/t2.nc.gz']
-    model_files_v = ['fes2014/northward_velocity/2n2.nc.gz',
+    model_files['v'] = ['fes2014/northward_velocity/2n2.nc.gz',
         'fes2014/northward_velocity/eps2.nc.gz', 'fes2014/northward_velocity/j1.nc.gz',
         'fes2014/northward_velocity/k1.nc.gz', 'fes2014/northward_velocity/k2.nc.gz',
         'fes2014/northward_velocity/l2.nc.gz', 'fes2014/northward_velocity/la2.nc.gz',
@@ -254,14 +255,11 @@ def test_definition_FES_currents_glob():
         'fes2014/northward_velocity/sa.nc.gz', 'fes2014/northward_velocity/ssa.nc.gz',
         'fes2014/northward_velocity/t2.nc.gz']
     # create temporary files for testing glob functionality
-    for model_file in model_files_u:
-        local = filepath.joinpath(model_file)
-        local.parent.mkdir(parents=True, exist_ok=True)
-        local.touch(exist_ok=True)
-    for model_file in model_files_v:
-        local = filepath.joinpath(model_file)
-        local.parent.mkdir(parents=True, exist_ok=True)
-        local.touch(exist_ok=True)
+    for t in ['u','v']:
+        for model_file in model_files[t]:
+            local = filepath.joinpath(model_file)
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.touch(exist_ok=True)
     # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','compressed','type','scale','version']
@@ -281,12 +279,10 @@ def test_definition_FES_currents_glob():
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files and constituents match
-    assert (len(model.model_file['u']) == len(model_files_u))
-    assert (len(model.model_file['v']) == len(model_files_v))
-    for f in model_files_u:
-        assert pathlib.Path(filepath).joinpath(f) in model.model_file['u']
-    for f in model_files_v:
-        assert pathlib.Path(filepath).joinpath(f) in model.model_file['v']
+    for t in ['u','v']:
+        assert (len(model.model_file[t]) == len(model_files[t]))
+        for f in model_files[t]:
+            assert pathlib.Path(filepath).joinpath(f) in model.model_file[t]
     for c in m.constituents:
         assert c in model.constituents
     # close the glob definition file
@@ -482,7 +478,8 @@ def test_definition_TPXO9_currents():
     # test read variables
     assert m.format == 'netcdf'
     assert m.name == 'TPXO9-atlas-v5'
-    model_files = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
+    model_files = {}
+    model_files['u'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc',
@@ -497,8 +494,24 @@ def test_definition_TPXO9_currents():
         'TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
+    model_files['v'] = ['TPXO9_atlas_v5/v_2n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_k1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_k2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_m2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_m4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_mf_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_mm_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_mn4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_ms4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_o1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_p1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_q1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_s1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_s2_tpxo9_atlas_30_v5.nc']
     assert m.grid_file == pathlib.Path('TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc')
-    assert sorted(m.model_file['u']) == [pathlib.Path(f) for f in model_files]
+    for t in ['u','v']:
+        assert sorted(m.model_file[t]) == [pathlib.Path(f) for f in model_files[t]]
     assert m.type == ['u', 'v']
     assert m.scale == 1.0/100.0
     assert m.compressed is False
@@ -507,12 +520,13 @@ def test_definition_TPXO9_currents():
     assert m.long_name['v'] == 'meridional_tidal_current'
 
 # PURPOSE: test glob file functionality
-def test_definition_TPXO9_glob():
+def test_definition_TPXO9_currents_glob():
     """Tests the reading of the TPXO9-atlas-v5 model definition file for currents
     with glob file searching
     """
     m = pyTMD.io.model().from_file(filepath.joinpath('model_TPXO9-atlas-v5_currents.def'))
-    model_files = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
+    model_files = {}
+    model_files['u'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc',
@@ -527,11 +541,27 @@ def test_definition_TPXO9_glob():
         'TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
+    model_files['v'] = ['TPXO9_atlas_v5/v_2n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_k1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_k2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_m2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_m4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_mf_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_mm_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_mn4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_ms4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_o1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_p1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_q1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_s1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/v_s2_tpxo9_atlas_30_v5.nc']
     # create temporary files for testing glob functionality
-    for model_file in model_files:
-        local = filepath.joinpath(model_file)
-        local.parent.mkdir(parents=True, exist_ok=True)
-        local.touch(exist_ok=True)
+    for t in ['u','v']:
+        for model_file in model_files[t]:
+            local = filepath.joinpath(model_file)
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.touch(exist_ok=True)
     # create temporary grid file
     local = filepath.joinpath(m.grid_file)
     local.touch(exist_ok=True)
@@ -545,8 +575,9 @@ def test_definition_TPXO9_glob():
         else:
             fid.write('{0}\t{1}\n'.format(attr,val))
     # append glob strings for model file
-    glob_string = r'TPXO9_atlas_v5/u*.nc'
-    fid.write('{0}\t{1}\n'.format('model_file',glob_string))
+    glob_string_u = r'TPXO9_atlas_v5/u*.nc'
+    glob_string_v = r'TPXO9_atlas_v5/v*.nc'
+    fid.write('{0}\t{1};{2}\n'.format('model_file',glob_string_u,glob_string_v))
     fid.write('{0}\t{1}\n'.format('grid_file',m.grid_file))
     fid.seek(0)
     # use model definition file as input
@@ -555,8 +586,8 @@ def test_definition_TPXO9_glob():
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files match
     for key,val in model.model_file.items():
-        assert (len(val) == len(model_files))
-        for f in model_files:
+        assert (len(val) == len(model_files[key]))
+        for f in model_files[key]:
             assert pathlib.Path(filepath).joinpath(f) in model.model_file[key]
     # close the glob definition file
     fid.close()

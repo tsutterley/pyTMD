@@ -898,7 +898,7 @@ def _latitude_dependence(
         F2_solar: np.ndarray,
         F2_lunar: np.ndarray
     ):
-    """
+    r"""
     Computes the corrections induced by the latitude of the
     dependence given by L\ :sup:`1`
 
