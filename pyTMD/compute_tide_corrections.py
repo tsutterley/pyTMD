@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tide_corrections.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (12/2023)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Ocean and Load Tides
@@ -49,7 +49,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
     arguments.py: load the nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
-    convert_crs.py: convert points to and from Coordinates Reference Systems
+    crs.py: Coordinate Reference System (CRS) routines
     predict.py: predict tide values using harmonic constants
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class for coordinate reprojection 
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
         use defaults from eop module for pole tide and EOP files
@@ -106,6 +107,7 @@ import pathlib
 import numpy as np
 import scipy.interpolate
 import pyTMD.constants
+import pyTMD.crs
 import pyTMD.eop
 import pyTMD.io
 import pyTMD.time
@@ -289,13 +291,7 @@ def compute_tide_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    try:
-        # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_epsg(int(EPSG))
-    except (ValueError,pyproj.exceptions.CRSError):
-        # Projection SRS string
-        crs1 = pyproj.CRS.from_string(EPSG)
-    # output coordinate reference system
+    crs1 = pyTMD.crs.from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
@@ -451,13 +447,7 @@ def compute_LPET_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    try:
-        # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_epsg(int(EPSG))
-    except (ValueError,pyproj.exceptions.CRSError):
-        # Projection SRS string
-        crs1 = pyproj.CRS.from_string(EPSG)
-    # output coordinate reference system
+    crs1 = pyTMD.crs.from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
@@ -579,13 +569,7 @@ def compute_LPT_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    try:
-        # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_epsg(int(EPSG))
-    except (ValueError,pyproj.exceptions.CRSError):
-        # Projection SRS string
-        crs1 = pyproj.CRS.from_string(EPSG)
-    # output coordinate reference system
+    crs1 = pyTMD.crs.from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
@@ -764,13 +748,7 @@ def compute_OPT_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    try:
-        # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_epsg(int(EPSG))
-    except (ValueError,pyproj.exceptions.CRSError):
-        # Projection SRS string
-        crs1 = pyproj.CRS.from_string(EPSG)
-    # output coordinate reference system
+    crs1 = pyTMD.crs.from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
@@ -963,13 +941,7 @@ def compute_SET_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    try:
-        # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_epsg(int(EPSG))
-    except (ValueError,pyproj.exceptions.CRSError):
-        # Projection SRS string
-        crs1 = pyproj.CRS.from_string(EPSG)
-    # output coordinate reference system
+    crs1 = pyTMD.crs.from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())

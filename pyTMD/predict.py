@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (09/2023)
+Written by Tyler Sutterley (12/2023)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 09/2023: moved constituent parameters function within this module
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
@@ -1014,8 +1015,8 @@ def _frequency_dependence_diurnal(
         [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     ])
-    # get phase angles
-    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    # get phase angles (Doodson arguments)
+    TAU, S, H, P, ZNS, PS = pyTMD.astro.doodson_arguments(MJD)
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))
     sinphi = XYZ[:,2]/radius
@@ -1070,8 +1071,8 @@ def _frequency_dependence_long_period(
         [2.0, 0.0, 0.0, 0.0, 0.0, -0.13, -0.11, -0.15, -0.07],
         [2.0, 0.0, 0.0, 1.0, 0.0, -0.05, -0.05, -0.06, -0.03]
     ])
-    # get phase angles
-    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    # get phase angles (Doodson arguments)
+    TAU, S, H, P, ZNS, PS = pyTMD.astro.doodson_arguments(MJD)
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))
     sinphi = XYZ[:,2]/radius

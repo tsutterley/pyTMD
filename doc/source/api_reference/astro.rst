@@ -24,7 +24,7 @@ Calling Sequence
 
 .. autofunction:: pyTMD.astro.mean_longitudes
 
-.. autofunction:: pyTMD.astro.phase_angles
+.. autofunction:: pyTMD.astro.doodson_arguments
 
 .. autofunction:: pyTMD.astro.delaunay_arguments
 

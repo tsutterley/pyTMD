@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (12/2023)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -25,9 +25,10 @@ PROGRAM DEPENDENCIES:
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     utilities.py: download and management utilities for syncing files
-    convert_crs.py: converts lat/lon points to and from projected coordinates
+    crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class for coordinate reprojection 
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: new function name for coordinate reference systems
     Updated 12/2022: refactored OTIS model input and output
@@ -54,34 +55,15 @@ import logging
 import pathlib
 import argparse
 import numpy as np
+import pyTMD.crs
 import pyTMD.io
 import pyTMD.utilities
-from pyTMD.convert_crs import convert_crs
 
 # attempt imports
 try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
-
-# PURPOSE: try to get the projection information for the input file
-def get_projection(PROJECTION):
-    # EPSG projection code
-    try:
-        crs = pyproj.CRS.from_epsg(int(PROJECTION))
-    except (ValueError,pyproj.exceptions.CRSError):
-        pass
-    else:
-        return crs
-    # coordinate reference system string
-    try:
-        crs = pyproj.CRS.from_string(PROJECTION)
-    except (ValueError,pyproj.exceptions.CRSError):
-        pass
-    else:
-        return crs
-    # no projection can be made
-    raise pyproj.exceptions.CRSError
 
 # PURPOSE: reads OTIS-format tidal files and reduces to a regional subset
 def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
@@ -106,7 +88,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(model.grid_file)
 
     # converting bounds x,y from projection to latitude/longitude
-    crs1 = get_projection(PROJECTION)
+    crs1 = pyTMD.crs.from_input(PROJECTION)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     xbox = np.array([BOUNDS[0],BOUNDS[1],BOUNDS[1],BOUNDS[0],BOUNDS[0]])
@@ -114,7 +96,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     lon,lat = transformer.transform(xbox,ybox)
 
     # convert bounds from latitude/longitude to model coordinates
-    x,y = convert_crs(lon,lat,model.projection,'F')
+    x,y = pyTMD.crs.convert(lon,lat,model.projection,'F')
 
     # find indices to reduce to xmin,xmax,ymin,ymax
     gridx,gridy = np.meshgrid(xi,yi)

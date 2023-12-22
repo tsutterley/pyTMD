@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (12/2023)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,10 +55,11 @@ PYTHON DEPENDENCIES:
          https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
-    convert_crs.py: converts lat/lon points to and from projected coordinates
+    crs.py: Coordinate Reference System (CRS) routines
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class for coordinate reprojection 
     Updated 10/2023: fix transport variable entry for TMD3 models
     Updated 09/2023: prevent overwriting ATLAS compact x and y coordinates
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -120,9 +121,9 @@ import pathlib
 import warnings
 import numpy as np
 import scipy.interpolate
+import pyTMD.crs
 import pyTMD.interpolate
 import pyTMD.io.constituents
-from pyTMD.convert_crs import convert_crs
 
 # attempt imports
 try:
@@ -239,7 +240,7 @@ def extract_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_crs(ilon, ilat, EPSG, 'F')
+    x,y = pyTMD.crs.convert(ilon, ilat, EPSG, 'F')
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -704,7 +705,7 @@ def interpolate_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = convert_crs(ilon, ilat, EPSG, 'F')
+    x,y = pyTMD.crs.convert(ilon, ilat, EPSG, 'F')
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(x) < np.min(xi)) & (EPSG == '4326'):

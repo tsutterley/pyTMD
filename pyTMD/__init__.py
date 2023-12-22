@@ -36,6 +36,7 @@ from pyTMD.constants import (
     _ellipsoids
 )
 from pyTMD.convert_crs import convert_crs
+from pyTMD.crs import crs
 from pyTMD.ellipse import ellipse
 
 # Deprecated functions

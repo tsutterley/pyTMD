@@ -43,7 +43,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    convert_crs.py: convert points to and from Coordinates Reference Systems
+    crs.py: Coordinate Reference System (CRS) routines
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     io/ATLAS.py: extract tidal harmonic constants from ATLAS netcdf models
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class for coordinate reprojection 
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -74,9 +75,9 @@ import pathlib
 import numpy as np
 import scipy.interpolate
 
+import pyTMD.crs
 import pyTMD.io
 import pyTMD.io.model
-import pyTMD.convert_crs
 import pyTMD.interpolate
 
 # attempt imports
@@ -149,13 +150,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
     # input shape of data
     idim = np.shape(x)
     # converting x,y from input coordinate reference system
-    try:
-        # EPSG projection code string or int
-        crs1 = pyproj.CRS.from_epsg(int(EPSG))
-    except (ValueError,pyproj.exceptions.CRSError):
-        # Projection SRS string
-        crs1 = pyproj.CRS.from_string(EPSG)
-    # convert to latitude and longitude
+    crs1 = pyTMD.crs.from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(
@@ -171,7 +166,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
         mz = np.logical_not(mz)
         # adjust dimensions of input coordinates to be iterable
         # run wrapper function to convert coordinate systems of input lat/lon
-        X, Y = pyTMD.convert_crs(lon, lat, model.projection, 'F')
+        X, Y = pyTMD.crs.convert(lon, lat, model.projection, 'F')
     elif (model.format == 'netcdf'):
         # if reading a netCDF OTIS atlas solution
         xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(
