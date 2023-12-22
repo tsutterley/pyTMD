@@ -75,7 +75,7 @@ def convert_ll_xy(*args, **kwargs):
     o2: float
         Projected y-coordinates (``'F'``) or latitude (``'B``')
     """
-    warnings.warn("Deprecated. Please use pyTMD.crs.convert instead",
+    warnings.warn("Deprecated. Please use pyTMD.crs().convert instead",
         DeprecationWarning)
     # call updated function to not break current workflows
-    return pyTMD.crs.convert(*args, **kwargs)
+    return pyTMD.crs().convert(*args, **kwargs)

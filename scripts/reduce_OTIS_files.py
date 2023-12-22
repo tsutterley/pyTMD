@@ -88,7 +88,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
         xi,yi,hz,mz,iob,dt = pyTMD.io.OTIS.read_otis_grid(model.grid_file)
 
     # converting bounds x,y from projection to latitude/longitude
-    crs1 = pyTMD.crs.from_input(PROJECTION)
+    crs1 = pyTMD.crs().from_input(PROJECTION)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     xbox = np.array([BOUNDS[0],BOUNDS[1],BOUNDS[1],BOUNDS[0],BOUNDS[0]])
@@ -96,7 +96,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
     lon,lat = transformer.transform(xbox,ybox)
 
     # convert bounds from latitude/longitude to model coordinates
-    x,y = pyTMD.crs.convert(lon,lat,model.projection,'F')
+    x,y = pyTMD.crs().convert(lon,lat,model.projection,'F')
 
     # find indices to reduce to xmin,xmax,ymin,ymax
     gridx,gridy = np.meshgrid(xi,yi)

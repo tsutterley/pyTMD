@@ -291,7 +291,7 @@ def compute_tide_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    crs1 = pyTMD.crs.from_input(EPSG)
+    crs1 = pyTMD.crs().from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
@@ -447,7 +447,7 @@ def compute_LPET_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    crs1 = pyTMD.crs.from_input(EPSG)
+    crs1 = pyTMD.crs().from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
@@ -569,7 +569,7 @@ def compute_LPT_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    crs1 = pyTMD.crs.from_input(EPSG)
+    crs1 = pyTMD.crs().from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
@@ -748,7 +748,7 @@ def compute_OPT_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    crs1 = pyTMD.crs.from_input(EPSG)
+    crs1 = pyTMD.crs().from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
@@ -941,7 +941,7 @@ def compute_SET_corrections(
         y = np.atleast_1d(y)
 
     # converting x,y from EPSG to latitude/longitude
-    crs1 = pyTMD.crs.from_input(EPSG)
+    crs1 = pyTMD.crs().from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())

@@ -237,7 +237,7 @@ def doodson_arguments(
     ):
     """
     Computes astronomical phase angles for the six Doodson 
-    Arguments: `|tau|`, `s`, `h`, `p`, and `N'`, and `ps`
+    Arguments: `tau`, `S`, `H`, `P`, and `N'`, and `Ps`
     [1]_ [2]_ 
 
     Parameters
@@ -251,17 +251,17 @@ def doodson_arguments(
 
     Returns
     -------
-    tau: np.ndarray
+    TAU: np.ndarray
         mean lunar time (radians)
-    s: np.ndarray
+    S: np.ndarray
         mean longitude of the moon (radians)
-    h: np.ndarray
+    H: np.ndarray
         mean longitude of the sun (radians)
-    p: np.ndarray
+    P: np.ndarray
         mean longitude of lunar perigee (radians)
     Np: np.ndarray
         negative mean longitude of the ascending node (radians)
-    ps: np.ndarray
+    Ps: np.ndarray
         mean longitude of solar perigee (radians)
 
     References
@@ -283,7 +283,7 @@ def doodson_arguments(
     hour = np.mod(MJD, 1)*24.0
     # calculate Doodson phase angles
     # mean longitude of moon (degrees)
-    s = polynomial_sum(np.array([218.3164477, 481267.88123421,
+    S = polynomial_sum(np.array([218.3164477, 481267.88123421,
         -1.5786e-3, 1.855835e-6, -1.53388e-8]), T)
     # mean lunar time (degrees)
     if equinox:
@@ -291,37 +291,37 @@ def doodson_arguments(
         ts = timescale(MJD=MJD)
         # use Greenwich Mean Sidereal Time (GMST) from the 
         # Equinox method converted to degrees
-        tau = 360.0*ts.st + 180.0 - s
+        TAU = 360.0*ts.st + 180.0 - S
     else:
-        tau = ((hour*15.0) - s + polynomial_sum(np.array([280.4606184,
+        TAU = ((hour*15.0) - S + polynomial_sum(np.array([280.4606184,
             36000.7700536, 3.8793e-4, -2.58e-8]), T))
     # calculate correction for mean lunar longitude (degrees)
     if apply_correction:
-        pr = polynomial_sum(np.array([0.0, 1.396971278,
+        PR = polynomial_sum(np.array([0.0, 1.396971278,
             3.08889e-4, 2.1e-8, 7.0e-9]), T)
-        s += pr
+        S += PR
     # mean longitude of sun (degrees)
-    h = polynomial_sum(np.array([280.46645, 36000.7697489,
+    H = polynomial_sum(np.array([280.46645, 36000.7697489,
         3.0322222e-4, 2.0e-8, -6.54e-9]), T)
     # mean longitude of lunar perigee (degrees)
-    p = polynomial_sum(np.array([83.3532465, 4069.0137287,
+    P = polynomial_sum(np.array([83.3532465, 4069.0137287,
         -1.032172222e-2, -1.24991e-5, 5.263e-8]), T)
     # negative of the mean longitude of the ascending node
     # of the moon (degrees)
     Np = polynomial_sum(np.array([234.95544499, 1934.13626197,
         -2.07561111e-3, -2.13944e-6, 1.65e-8]), T)
     # mean longitude of solar perigee (degrees)
-    ps = polynomial_sum(np.array([282.93734098, 1.71945766667,
+    Ps = polynomial_sum(np.array([282.93734098, 1.71945766667,
         4.5688889e-4, -1.778e-8, -3.34e-9]), T)
     # take the modulus of each and convert to radians
-    s = dtr*np.mod(s, circle)
-    h = dtr*np.mod(h, circle)
-    p = dtr*np.mod(p, circle)
-    tau = dtr*np.mod(tau, circle)
+    S = dtr*np.mod(S, circle)
+    H = dtr*np.mod(H, circle)
+    P = dtr*np.mod(P, circle)
+    TAU = dtr*np.mod(TAU, circle)
     Np = dtr*np.mod(Np, circle)
-    ps = dtr*np.mod(ps, circle)
+    Ps = dtr*np.mod(Ps, circle)
     # return as tuple
-    return (tau, s, h, p, Np, ps)
+    return (TAU, S, H, P, Np, Ps)
 
 def delaunay_arguments(MJD: np.ndarray):
     """

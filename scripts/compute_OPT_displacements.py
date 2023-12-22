@@ -149,14 +149,14 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file
     try:
-        crs = pyTMD.crs.from_input(attributes['projection'])
+        crs = pyTMD.crs().from_input(attributes['projection'])
     except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
     # coordinate reference system from input argument
     try:
-        crs = pyTMD.crs.from_input(PROJECTION)
+        crs = pyTMD.crs().from_input(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:

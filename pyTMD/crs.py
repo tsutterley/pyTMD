@@ -5,8 +5,8 @@ Written by Tyler Sutterley (12/2023)
 Coordinates Reference System (CRS) routines
 
 CALLING SEQUENCE:
-    x, y = pyTMD.crs.convert(lon, lat, PROJ, 'F')
-    lon, lat = pyTMD.crs.convert(x, y, PROJ, 'B')
+    x, y = pyTMD.crs().convert(lon, lat, PROJ, 'F')
+    lon, lat = pyTMD.crs().convert(x, y, PROJ, 'B')
 
 INPUTS:
     i1: longitude ('F') or projection easting x ('B')
@@ -64,15 +64,15 @@ class crs:
     Attributes
     ----------
     transformer: obj
-        pyproj transformer for changing coordinate reference system
+        ``pyproj`` transformer for changing coordinate reference system
     direction: obj
-        pyproj transform direction
+        ``pyproj`` transform direction
     name: str
         Projection name
     """
     def __init__(self):
         self.transformer = None
-        self.direction = pyproj.enums.TransformDirection.FORWARD
+        self.direction = None
         self.name = None
     
     def convert(self,
@@ -87,13 +87,13 @@ class crs:
         Parameters
         ----------
         i1: np.ndarray
-            Longitude (``'F'``) or projected x-coordinates (``'B'``)
+            Input x-coordinates
         i2: np.ndarray
-            Latitude (``'F'``) or projected y-coordinates (``'B'``)
+            Input y-coordinates
         PROJ: str
             Spatial reference system code for coordinate transformations
         BF: str
-            Direction of translation
+            Direction of transformation
 
                 - ``'B'``: backwards
                 - ``'F'``: forwards
@@ -103,9 +103,9 @@ class crs:
         Returns
         -------
         o1: np.ndarray
-            Projected x-coordinates (``'F'``) or longitude (``'B'``)
+            Output transformed x-coordinates
         o2: np.ndarray
-            Projected y-coordinates (``'F'``) or latitude (``'B``')
+            Output transformed y-coordinates
         """
         self.name = PROJ
         # python dictionary with named conversion functions
@@ -116,12 +116,8 @@ class crs:
         transforms['3976'] = self._EPSG3976
         transforms['PSNorth'] = self._PSNorth
         transforms['4326'] = self._EPSG4326
-        # convert lat/lon to Polar-Stereographic x/y
-        if (BF.upper() == 'F'):
-            self.direction = pyproj.enums.TransformDirection.FORWARD
-        # convert Polar-Stereographic x/y to lat/lon
-        elif (BF.upper() == 'B'):
-            self.direction = pyproj.enums.TransformDirection.INVERSE
+        # set the direction of the transform
+        self.set_direction(BF.upper())
         # check that PROJ for conversion was entered correctly
         # run named conversion program and return values
         try:
@@ -187,7 +183,8 @@ class crs:
     # PURPOSE: try to get the projection information
     def from_input(self, PROJECTION: int | str):
         """
-        Attempt to get the Coordinate Reference System
+        Attempt to retrieve the Coordinate Reference System
+        for an input code
 
         Parameters
         ----------
@@ -210,6 +207,26 @@ class crs:
             return CRS
         # no projection can be made
         raise pyproj.exceptions.CRSError
+    
+    def set_direction(self, BF: str = 'F'):
+        """
+        Sets the direction of the coordinate transform
+
+        Parameters
+        ----------
+        BF: str, default 'F'
+            Direction of transformation
+
+                - ``'B'``: backwards
+                - ``'F'``: forwards
+        """
+        # convert from input coordinates to model coordinates
+        if (BF.upper() == 'F'):
+            self.direction = pyproj.enums.TransformDirection.FORWARD
+        # convert from model coordinates to coordinates
+        elif (BF.upper() == 'B'):
+            self.direction = pyproj.enums.TransformDirection.INVERSE
+        return self
     
     def _EPSG3031(self, EPSG: int | str = 4326):
         """
@@ -337,6 +354,3 @@ class crs:
         self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
             always_xy=True)
         return self
-
-# simplify calling crs class
-crs = crs()

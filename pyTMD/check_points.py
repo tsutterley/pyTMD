@@ -150,7 +150,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
     # input shape of data
     idim = np.shape(x)
     # converting x,y from input coordinate reference system
-    crs1 = pyTMD.crs.from_input(EPSG)
+    crs1 = pyTMD.crs().from_input(EPSG)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(
@@ -166,7 +166,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
         mz = np.logical_not(mz)
         # adjust dimensions of input coordinates to be iterable
         # run wrapper function to convert coordinate systems of input lat/lon
-        X, Y = pyTMD.crs.convert(lon, lat, model.projection, 'F')
+        X, Y = pyTMD.crs().convert(lon, lat, model.projection, 'F')
     elif (model.format == 'netcdf'):
         # if reading a netCDF OTIS atlas solution
         xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(

@@ -13,3 +13,4 @@ General Attributes and Methods
 
 .. autoclass:: pyTMD.crs
    :members:
+   :private-members:

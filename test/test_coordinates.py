@@ -20,8 +20,8 @@ def test_coordinates(PROJ):
     i1 = np.arange(-180,180+1,1)
     i2 = np.linspace(startlat[PROJ],endlat[PROJ],len(i1))
     # convert latitude and longitude to and from projection
-    o1, o2 = pyTMD.crs.convert(i1,i2,PROJ,'F')
-    lon, lat = pyTMD.crs.convert(o1,o2,PROJ,'B')
+    o1, o2 = pyTMD.crs().convert(i1,i2,PROJ,'F')
+    lon, lat = pyTMD.crs().convert(o1,o2,PROJ,'B')
     # calculate great circle distance between inputs and outputs
     cdist = np.arccos(np.sin(i2*np.pi/180.0)*np.sin(lat*np.pi/180.0) +
         np.cos(i2*np.pi/180.0)*np.cos(lat*np.pi/180.0)*

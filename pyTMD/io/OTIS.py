@@ -240,7 +240,7 @@ def extract_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = pyTMD.crs.convert(ilon, ilat, EPSG, 'F')
+    x,y = pyTMD.crs().convert(ilon, ilat, EPSG, 'F')
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -705,7 +705,7 @@ def interpolate_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = pyTMD.crs.convert(ilon, ilat, EPSG, 'F')
+    x,y = pyTMD.crs().convert(ilon, ilat, EPSG, 'F')
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(x) < np.min(xi)) & (EPSG == '4326'):

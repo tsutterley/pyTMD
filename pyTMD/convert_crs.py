@@ -85,10 +85,10 @@ def convert_crs(
     o2: np.ndarray
         Projected y-coordinates (``'F'``) or latitude (``'B``')
     """
-    warnings.warn("Deprecated. Please use pyTMD.crs.convert instead",
+    warnings.warn("Deprecated. Please use pyTMD.crs().convert instead",
         DeprecationWarning)
     # call updated function to not break current workflows
-    return pyTMD.crs.convert(i1, i2, PROJ, BF, EPSG=EPSG)
+    return pyTMD.crs().convert(i1, i2, PROJ, BF, EPSG=EPSG)
 
 # PURPOSE: try to get the projection information
 def crs_from_input(PROJECTION: int | str):
@@ -100,7 +100,7 @@ def crs_from_input(PROJECTION: int | str):
     PROJECTION: int or str
         Coordinate Reference System code
     """
-    warnings.warn("Deprecated. Please use pyTMD.crs.from_input instead",
+    warnings.warn("Deprecated. Please use pyTMD.crs().from_input instead",
         DeprecationWarning)
     # call updated function to not break current workflows
-    return pyTMD.crs.from_input(PROJECTION)
+    return pyTMD.crs().from_input(PROJECTION)
