@@ -903,6 +903,12 @@ class timescale:
         """
         return np.ndim(self.MJD)
 
+    def __str__(self):
+        """String representation of the ``timescale`` object
+        """
+        properties = ['pyTMD.time.timescale']
+        return '\n'.join(properties)
+
     def __len__(self):
         """Number of time values
         """

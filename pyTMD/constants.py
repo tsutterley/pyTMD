@@ -388,3 +388,11 @@ class constants(object):
         """Average density
         """
         return self.GM/(self.G*self.volume)
+
+    def __str__(self):
+        """String representation of the ``constants`` object
+        """
+        properties = ['pyTMD.constants']
+        properties.append(f"    name: {self.name}")
+        properties.append(f"    units: {self.units}")
+        return '\n'.join(properties)

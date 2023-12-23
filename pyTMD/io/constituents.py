@@ -152,6 +152,14 @@ class constituents:
         ph.data[ph.mask] = ph.fill_value
         return ph
 
+    def __str__(self):
+        """String representation of the ``constituents`` object
+        """
+        properties = ['pyTMD.constituents']
+        fields = ', '.join(self.fields)
+        properties.append(f"    constituents: {fields}")
+        return '\n'.join(properties)
+
     def __len__(self):
         """Number of constituents
         """
@@ -174,8 +182,3 @@ class constituents:
         constituent = getattr(self, field)
         self.__index__ += 1
         return (field, constituent)
-
-    def __str__(self):
-        """Print the list of constituents
-        """
-        return ', '.join(self.fields)

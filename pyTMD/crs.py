@@ -63,24 +63,23 @@ class crs:
 
     Attributes
     ----------
-    transformer: obj
-        ``pyproj`` transformer for changing coordinate reference system
-    direction: obj
-        ``pyproj`` transform direction
     name: str
         Projection name
+    transformer: obj
+        ``pyproj`` transformer for changing coordinate reference system
     """
     def __init__(self):
-        self.transformer = None
-        self.direction = None
         self.name = None
+        self.transformer = None
+        self._direction = None
     
     def convert(self,
-                i1: np.ndarray,
-                i2: np.ndarray,
-                PROJ: str,
-                BF: str,
-                EPSG: int | str = 4326):
+            i1: np.ndarray,
+            i2: np.ndarray,
+            PROJ: str,
+            BF: str,
+            EPSG: int | str = 4326
+        ):
         """
         Converts points to and from Coordinates Reference Systems (CRS)
 
@@ -117,7 +116,7 @@ class crs:
         transforms['PSNorth'] = self._PSNorth
         transforms['4326'] = self._EPSG4326
         # set the direction of the transform
-        self.set_direction(BF.upper())
+        self._direction = BF.upper()
         # check that PROJ for conversion was entered correctly
         # run named conversion program and return values
         try:
@@ -138,7 +137,7 @@ class crs:
         # projection not found or available
         raise Exception(f'PROJ: {PROJ} conversion function not found')
     
-    def transform(self, i1, i2):
+    def transform(self, i1: np.ndarray, i2: np.ndarray):
         """
         Performs Coordinates Reference System (CRS) transformations
 
@@ -207,26 +206,6 @@ class crs:
             return CRS
         # no projection can be made
         raise pyproj.exceptions.CRSError
-    
-    def set_direction(self, BF: str = 'F'):
-        """
-        Sets the direction of the coordinate transform
-
-        Parameters
-        ----------
-        BF: str, default 'F'
-            Direction of transformation
-
-                - ``'B'``: backwards
-                - ``'F'``: forwards
-        """
-        # convert from input coordinates to model coordinates
-        if (BF.upper() == 'F'):
-            self.direction = pyproj.enums.TransformDirection.FORWARD
-        # convert from model coordinates to coordinates
-        elif (BF.upper() == 'B'):
-            self.direction = pyproj.enums.TransformDirection.INVERSE
-        return self
     
     def _EPSG3031(self, EPSG: int | str = 4326):
         """
@@ -354,3 +333,23 @@ class crs:
         self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
             always_xy=True)
         return self
+
+    @property
+    def direction(self):
+        """
+        ``pyproj`` direction of the coordinate transform
+        """
+        # convert from input coordinates to model coordinates
+        if (self._direction.upper() == 'F'):
+            return pyproj.enums.TransformDirection.FORWARD
+        # convert from model coordinates to coordinates
+        elif (self._direction.upper() == 'B'):
+            return pyproj.enums.TransformDirection.INVERSE
+
+    def __str__(self):
+        """String representation of the ``crs`` object
+        """
+        properties = ['pyTMD.crs']
+        properties.append(f"    name: {self.name}")
+        properties.append(f"    direction: {self.direction.name}")
+        return '\n'.join(properties)

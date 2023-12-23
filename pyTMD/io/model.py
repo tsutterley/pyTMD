@@ -1582,3 +1582,10 @@ class model:
             return False
         else:
             raise ValueError(f'Invalid boolean string {val}')
+
+    def __str__(self):
+        """String representation of the ``io.model`` object
+        """
+        properties = ['pyTMD.io.model']
+        properties.append(f"    name: {self.name}")
+        return '\n'.join(properties)
