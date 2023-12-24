@@ -119,15 +119,15 @@ def arguments(
     kwargs.setdefault('M1', 'Ray')
 
     # constituents array (not all are included in tidal program)
-    cindex = ['sa','ssa','mm','msf','mf','mt','alpha1','2q1','sigma1','q1',
-        'rho1','o1','tau1','m1','chi1','pi1','p1','s1','k1','psi1','phi1',
-        'theta1','j1','oo1','2n2','mu2','n2','nu2','m2a','m2','m2b','lambda2',
-        'l2','t2','s2','r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4',
-        'm4','ms4','mk4','s4','s5','m6','s6','s7','s8','m8','mks2','msqm','mtm',
-        'n4','eps2','z0']
+    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
+        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
+        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
+        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
+        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
+        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
 
     # set function for astronomical longitudes
-    ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
+    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, omega, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
@@ -160,9 +160,9 @@ def arguments(
     arg[:,14] = t1 - s + 3.0*h - p + 90.0 # chi1
     arg[:,15] = t1 - 2.0*h + pp - 90.0 # pi1
     arg[:,16] = t1 - h - 90.0 # p1
-    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
+    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
         arg[:,17] = t1 + 90.0 # s1
-    elif kwargs['corrections'] in ('GOT','FES'):
+    elif kwargs['corrections'] in ('GOT', 'FES'):
         arg[:,17] = t1 + 180.0 # s1 (Doodson's phase)
     arg[:,18] = t1 + h + 90.0 # k1
     arg[:,19] = t1 + 2.0*h - pp + 90.0 # psi1
@@ -220,7 +220,7 @@ def arguments(
     f = np.zeros((nt, 60))
     u = np.zeros((nt, 60))
     # determine nodal corrections f and u for each model type
-    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
+    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
         f[:,0] = 1.0 # Sa
         f[:,1] = 1.0 # Ssa
         f[:,2] = 1.0 - 0.130*cosn # Mm

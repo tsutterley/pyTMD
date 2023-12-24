@@ -309,7 +309,7 @@ def compute_tide_corrections(
     nt = len(timescale)
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS','TMD3'):
+    if model.format in ('OTIS', 'ATLAS', 'TMD3'):
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
             model.model_file, model.projection, type=model.type,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,

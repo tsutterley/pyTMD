@@ -15,6 +15,7 @@ import pyTMD.astro
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
+import pyTMD.solve
 import pyTMD.spatial
 import pyTMD.time
 import pyTMD.tools
