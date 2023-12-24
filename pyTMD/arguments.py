@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (12/2023)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -38,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 12/2023: made keyword argument for selecting M1 coefficients
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
         function renamed from original load_nodal_corrections
@@ -80,6 +81,11 @@ def arguments(
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
+    M1: str, default 'Ray'
+        coefficients to use for M1 tides
+
+                - ``'Doodson'``
+                - ``'Ray'``
 
     Returns
     -------
@@ -110,6 +116,7 @@ def arguments(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('M1', 'Ray')
 
     # constituents array (not all are included in tidal program)
     cindex = ['sa','ssa','mm','msf','mf','mt','alpha1','2q1','sigma1','q1',
@@ -231,12 +238,14 @@ def arguments(
         temp2 = (0.189*sinn - 0.0058*sin2n)**2
         f[:,11] = np.sqrt(temp1 + temp2) # O1
         f[:,12] = 1.0 # tau1
-        # Doodson's
-        # Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-omega)*dtr)
-        # Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-omega)*dtr)
-        # Ray's
-        Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
-        Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
+        if (kwargs['M1'] == 'Doodson'):
+            # A. T. Doodson's coefficients for M1 tides
+            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-omega)*dtr)
+            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-omega)*dtr)
+        elif (kwargs['M1'] == 'Ray'):
+            # R. Ray's coefficients for M1 tides
+            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
+            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
         f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
         f[:,14] = np.sqrt((1.0+0.221*cosn)**2+(0.221*sinn)**2) # chi1
         f[:,15] = 1.0 # pi1
@@ -262,8 +271,10 @@ def arguments(
         f[:,29] = f[:,24] # M2
         f[:,30] = 1.0 # M2b
         f[:,31] = 1.0 # lambda2
-        Ltmp1 = 1.0 - 0.25*np.cos(2*p*dtr) - 0.11*np.cos((2.0*p-omega)*dtr) - 0.04*cosn
-        Ltmp2 = 0.25*np.sin(2*p*dtr) + 0.11*np.sin((2.0*p-omega)*dtr) + 0.04*sinn
+        Ltmp1 = 1.0 - 0.25*np.cos(2*p*dtr) - \
+            0.11*np.cos((2.0*p - omega)*dtr) - 0.04*cosn
+        Ltmp2 = 0.25*np.sin(2*p*dtr) + \
+            0.11*np.sin((2.0*p - omega)*dtr) + 0.04*sinn
         f[:,32] = np.sqrt(Ltmp1**2 + Ltmp2**2) # L2
         f[:,33] = 1.0 # T2
         f[:,34] = 1.0 # S2
@@ -393,9 +404,14 @@ def arguments(
         f[:,9] = f[:,7] # q1
         f[:,10] = f[:,7] # rho1
         f[:,11] = f[:,7] # O1
-        # Ray's
-        Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
-        Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
+        if (kwargs['M1'] == 'Doodson'):
+            # A. T. Doodson's coefficients for M1 tides
+            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-omega)*dtr)
+            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-omega)*dtr)
+        elif (kwargs['M1'] == 'Ray'):
+            # R. Ray's coefficients for M1 tides
+            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
+            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
         f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
         f[:,14] = np.sin(2.0*II) / 0.7214 # chi1
         f[:,15] = 1.0 # pi1
