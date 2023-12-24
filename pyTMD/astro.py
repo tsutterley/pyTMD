@@ -232,8 +232,8 @@ def phase_angles(MJD: np.ndarray):
 # PURPOSE: computes the phase angles of astronomical means
 def doodson_arguments(
         MJD: np.ndarray,
-        equinox=False,
-        apply_correction=True,
+        equinox: bool = False,
+        apply_correction: bool = True,
     ):
     """
     Computes astronomical phase angles for the six Doodson 
