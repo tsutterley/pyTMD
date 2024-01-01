@@ -10,7 +10,7 @@ Calling Sequence
 .. code-block:: python
 
     import pyTMD.solve
-    hc = pyTMD.solve.constants(time, h, con)
+    amp, phase = pyTMD.solve.constants(time, h, con)
 
 `Source code`__
 

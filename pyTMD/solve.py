@@ -92,9 +92,9 @@ def constants(t: float | np.ndarray,
         deltat=deltat, corrections=corrections)
 
     # create design matrix
-    DMAT = []
-    # add constant term for mean elevation
-    DMAT.append(np.ones_like(t))
+    M = []
+    # add constant term for mean
+    M.append(np.ones_like(t))
     # add constituent terms
     for k,c in enumerate(constituents):
         if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
@@ -103,17 +103,17 @@ def constants(t: float | np.ndarray,
             th = omega*t*86400.0 + ph + pu[:,k]
         elif corrections in ('GOT', 'FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
-        # add to design matrix
-        DMAT.append(pf[:,k]*np.cos(th))
-        DMAT.append(-pf[:,k]*np.sin(th))
+        # add constituent to design matrix
+        M.append(pf[:,k]*np.cos(th))
+        M.append(-pf[:,k]*np.sin(th))
     # take the transpose of the design matrix
-    DMAT = np.transpose(DMAT)
+    M = np.transpose(M)
 
     # use a least-squares fit to solve for parameters
     if (solver == 'lstsq'):
-        betahat, res, rnk, s = np.linalg.lstsq(DMAT, ht, rcond=-1)
+        p, res, rnk, s = np.linalg.lstsq(M, ht, rcond=-1)
     elif solver in ('gelsd', 'gelsy', 'gelss'):
-        betahat, res, rnk, s = scipy.linalg.lstsq(DMAT, ht,
+        p, res, rnk, s = scipy.linalg.lstsq(M, ht,
             lapack_driver=solver)
 
     # calculate amplitude and phase for each constituent
@@ -121,8 +121,8 @@ def constants(t: float | np.ndarray,
     ph = np.zeros((nc))
     # skip over the first indice in the fit (constant term)
     for k,c in enumerate(constituents):
-        amp[k] = np.abs(1j*betahat[2*k+2] + betahat[2*k+1])
-        ph[k] = np.arctan2(-betahat[2*k+2], betahat[2*k+1])
+        amp[k] = np.abs(1j*p[2*k+2] + p[2*k+1])
+        ph[k] = np.arctan2(-p[2*k+2], p[2*k+1])
     # convert phase to degrees
     phase = ph*180.0/np.pi
     phase[phase < 0] += 360.0
