@@ -509,7 +509,7 @@ def arguments(
 
 def _arguments_table(**kwargs):
     """
-    Arguments table for tidal constituents [1]_
+    Arguments table for tidal constituents [1]_ [2]_
 
     Parameters
     ----------
@@ -523,7 +523,12 @@ def _arguments_table(**kwargs):
 
     References
     ----------
-    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
         HMSO, London, (1941).
     """
     # set default keyword arguments

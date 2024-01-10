@@ -37,7 +37,7 @@ def test_arguments(MJD, corrections):
     # variable for multiples of 90 degrees (Ray technical note 2017)
     k = 90.0 + np.zeros((nt))
 
-    # Determine equilibrium arguments
+    # determine equilibrium arguments
     arg = np.zeros((nt, 60))
     arg[:,0] = h - pp # Sa
     arg[:,1] = 2.0*h # Ssa
@@ -105,9 +105,9 @@ def test_arguments(MJD, corrections):
     # mean sea level
     arg[:,59] = 0.0 # Z0
 
-    # determine equilibrium arguments
+    # determine equilibrium arguments using table
     fargs = np.c_[t1, s, h, p, omega, pp, k]
     test = np.dot(fargs, _arguments_table(corrections=corrections))
 
-    # validate arguments
+    # validate arguments between methods
     assert np.all(arg == test)

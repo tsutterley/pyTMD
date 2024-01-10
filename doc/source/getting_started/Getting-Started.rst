@@ -3,7 +3,7 @@ Getting Started
 ===============
 
 This documentation is intended to explain how to compute ocean, solid Earth, load and pole tide variations using the set of ``pyTMD`` programs.
-See the `background material <./Background.html>`_ for more information on the theory and methods used in ``pyTMD``.
+See the `background material <./Background.html>`_ and `glossary <./Glossary.html>`_ for more information on the theory and methods used in ``pyTMD``.
 
 Tide Model Formats
 ##################
