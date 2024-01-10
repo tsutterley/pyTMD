@@ -123,7 +123,7 @@ def mean_longitudes(
     ):
     """
     Computes the basic astronomical mean longitudes:
-    `S`, `H`, `P`, `N` and `PP` [1]_
+    `S`, `H`, `P`, `N` and `PP` [1]_ [2]_
 
     Note `N` is not `N'`, i.e. `N` is decreasing with time.
 
@@ -152,6 +152,12 @@ def mean_longitudes(
     References
     ----------
     .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    .. [2] J. L. Simon, P. Bretagnon, J. Chapront, M. Chapront-Touz\ |eacute|\, 
+        G. Francou, and J. Laskar "Numerical expressions for precession
+        formulae and mean elements for the Moon and the planets", 
+        *Astronomy and Astrophysics*, 282(2), 663--683, (1994).
+    
+    .. |eacute|    unicode:: U+00E9 .. LATIN SMALL LETTER E WITH ACUTE
     """
     circle = 360.0
     if MEEUS:

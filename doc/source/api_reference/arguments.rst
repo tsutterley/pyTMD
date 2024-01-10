@@ -3,7 +3,7 @@ arguments
 =========
 
 - Calculates the nodal corrections for tidal constituents
-- Based on Richard Ray's ``ARGUMENTS`` fortran subroutine
+- Originally based on Richard Ray's ``ARGUMENTS`` fortran subroutine
 
 Calling Sequence
 ----------------
