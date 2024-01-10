@@ -81,6 +81,30 @@ As opposed to simple vertical offsets, changing the terrestial reference system 
 This involves converting from a geographic coordinate system into a Cartesian coordinate system.
 Within ``pyTMD``, solid Earth tides are calculated using ECEF coordinates, and pole tides are calculated using geocentric coordinates.
 
+Nutation is the periodic oscillation of the Earth's rotation axis around its mean position.
+Nutation is often split into two components, the nutation in longitude and the nutation in obliquity.
+The angle between the equator and the orbital plane of Earth around the Sun (the ecliptic) defines the inclination of the Earth's rotation axis (obliquity of the ecliptic).
+
+Time
+####
+
+The Julian Day (JD) is the continuous count of days starting at noon on January 1, 4713 B.C (-4712-01-01T12:00:00).
+The Modified Julian Day (MJD) differs from the Julian Day by reducing the number of digits for modern periods, and by beginning at midnight.
+The MJD is calculated from the Julian Day by
+
+.. math::
+    :label: 4
+
+    MJD = JD - 2400000.5
+
+The start of the Modified Julian Day calendar is 1858-11-17T00:00:00.
+Time in Julian centuries (36525 days) are calculated relative to noon on January 1, 2000 (2000-01-01T12:00:00).
+
+.. math::
+    :label: 5
+
+    T = \frac{JD - 2451545.0}{36525}
+
 References
 ##########
 

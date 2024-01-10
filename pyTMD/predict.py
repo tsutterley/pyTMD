@@ -86,14 +86,14 @@ def map(t: float | np.ndarray,
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # number of points and number of constituents
-    npts,nc = np.shape(hc)
+    npts, nc = np.shape(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = arguments(t + 48622.0, constituents,
+    pu, pf, G = arguments(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
     # allocate for output tidal elevation
     ht = np.ma.zeros((npts))
-    ht.mask = np.zeros((npts),dtype=bool)
+    ht.mask = np.zeros((npts), dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
         if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
@@ -151,11 +151,11 @@ def drift(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = arguments(t + 48622.0, constituents,
+    pu, pf, G = arguments(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
     # allocate for output time series
     ht = np.ma.zeros((nt))
-    ht.mask = np.zeros((nt),dtype=bool)
+    ht.mask = np.zeros((nt), dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
         if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
@@ -213,11 +213,11 @@ def time_series(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = arguments(t + 48622.0, constituents,
+    pu, pf, G = arguments(t + 48622.0, constituents,
         deltat=deltat, corrections=corrections)
     # allocate for output time series
     ht = np.ma.zeros((nt))
-    ht.mask = np.zeros((nt),dtype=bool)
+    ht.mask = np.zeros((nt), dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
         if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
@@ -391,6 +391,7 @@ def infer_minor(
     sin2n = np.sin(2.0*omega*dtr)
     cos2n = np.cos(2.0*omega*dtr)
 
+    # scale factor corrections for minor constituents
     f = np.ones((n,20))
     f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
         (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
@@ -408,6 +409,7 @@ def infer_minor(
     f[:,15] = f[:,11]# L2
     f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
 
+    # phase corrections for minor constituents
     u = np.zeros((n,20))
     u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
         1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1

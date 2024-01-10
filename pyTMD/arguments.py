@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (01/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
 CALLING SEQUENCE:
-    pu,pf,G = arguments(MJD, constituents)
+    pu, pf, G = arguments(MJD, constituents)
 
 INPUTS:
     MJD: Modified Julian Day of input date
     constituents: tidal constituent IDs
 
 OUTPUTS:
-    pu,pf: nodal corrections for the constituents
+    pu, pf: nodal corrections for the constituents
     G: phase correction in degrees
 
 OPTIONS:
@@ -38,6 +38,8 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 01/2024: add function to create arguments coefficients table
+        include multiples of 90 degrees as variable following Ray 2017
     Updated 12/2023: made keyword argument for selecting M1 coefficients
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
@@ -129,95 +131,35 @@ def arguments(
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
-    s, h, p, omega, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
+
     # number of temporal values
     nt = len(np.atleast_1d(MJD))
     # initial time conversions
     hour = 24.0*np.mod(MJD, 1)
-    t1 = 15.0*hour
-    t2 = 30.0*hour
-
+    # convert from hours into degrees
+    tau = 15.0*hour
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((nt))
     # degrees to radians
     dtr = np.pi/180.0
 
-    # Determine equilibrium arguments
-    arg = np.zeros((nt, 60))
-    arg[:,0] = h - pp # Sa
-    arg[:,1] = 2.0*h # Ssa
-    arg[:,2] = s - p # Mm
-    arg[:,3] = 2.0*s - 2.0*h # MSf
-    arg[:,4] = 2.0*s # Mf
-    arg[:,5] = 3.0*s - p # Mt
-    arg[:,6] = t1 - 5.0*s + 3.0*h + p - 90.0 # alpha1
-    arg[:,7] = t1 - 4.0*s + h + 2.0*p - 90.0 # 2Q1
-    arg[:,8] = t1 - 4.0*s + 3.0*h - 90.0 # sigma1
-    arg[:,9] = t1 - 3.0*s + h + p - 90.0 # q1
-    arg[:,10] = t1 - 3.0*s + 3.0*h - p - 90.0 # rho1
-    arg[:,11] = t1 - 2.0*s + h - 90.0 # o1
-    arg[:,12] = t1 - 2.0*s + 3.0*h + 90.0 # tau1
-    arg[:,13] = t1 - s + h + 90.0 # M1
-    arg[:,14] = t1 - s + 3.0*h - p + 90.0 # chi1
-    arg[:,15] = t1 - 2.0*h + pp - 90.0 # pi1
-    arg[:,16] = t1 - h - 90.0 # p1
-    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
-        arg[:,17] = t1 + 90.0 # s1
-    elif kwargs['corrections'] in ('GOT', 'FES'):
-        arg[:,17] = t1 + 180.0 # s1 (Doodson's phase)
-    arg[:,18] = t1 + h + 90.0 # k1
-    arg[:,19] = t1 + 2.0*h - pp + 90.0 # psi1
-    arg[:,20] = t1 + 3.0*h + 90.0 # phi1
-    arg[:,21] = t1 + s - h + p + 90.0 # theta1
-    arg[:,22] = t1 + s + h - p + 90.0 # J1
-    arg[:,23] = t1 + 2.0*s + h + 90.0 # OO1
-    arg[:,24] = t2 - 4.0*s + 2.0*h + 2.0*p # 2N2
-    arg[:,25] = t2 - 4.0*s + 4.0*h # mu2
-    arg[:,26] = t2 - 3.0*s + 2.0*h + p # n2
-    arg[:,27] = t2 - 3.0*s + 4.0*h - p # nu2
-    arg[:,28] = t2 - 2.0*s + h + pp # M2a
-    arg[:,29] = t2 - 2.0*s + 2.0*h # M2
-    arg[:,30] = t2 - 2.0*s + 3.0*h - pp # M2b
-    arg[:,31] = t2 - s + p + 180.0 # lambda2
-    arg[:,32] = t2 - s + 2.0*h - p + 180.0 # L2
-    arg[:,33] = t2 - h + pp # T2
-    arg[:,34] = t2 # S2
-    arg[:,35] = t2 + h - pp + 180.0 # R2
-    arg[:,36] = t2 + 2.0*h # K2
-    arg[:,37] = t2 + s + 2.0*h - pp # eta2
-    arg[:,38] = t2 - 5.0*s + 4.0*h + p # MNS2
-    arg[:,39] = t2 + 2.0*s - 2.0*h # 2SM2
-    arg[:,40] = 1.5*arg[:,29] # M3
-    arg[:,41] = arg[:,18] + arg[:,29] # MK3
-    arg[:,42] = 3.0*t1 # S3
-    arg[:,43] = arg[:,26] + arg[:,29] # MN4
-    arg[:,44] = 2.0*arg[:,29] # M4
-    arg[:,45] = arg[:,29] + arg[:,34] # MS4
-    arg[:,46] = arg[:,29] + arg[:,36] # MK4
-    arg[:,47] = 4.0*t1 # S4
-    arg[:,48] = 5.0*t1 # S5
-    arg[:,49] = 3.0*arg[:,29] # M6
-    arg[:,50] = 3.0*t2 # S6
-    arg[:,51] = 7.0*t1 # S7
-    arg[:,52] = 4.0*t2 # S8
-    # shallow water constituents
-    arg[:,53] = 4.0*arg[:,29] # m8
-    arg[:,54] = arg[:,29] + arg[:,36] - arg[:,34] # mks2
-    arg[:,55] = 4.0*s - 2.0*h # msqm
-    arg[:,56] = 3.0*s - p # mtm
-    arg[:,57] = 2.0*arg[:,26] # n4
-    arg[:,58] = t2 - 5.0*s + 4.0*h + p # eps2
-    # mean sea level
-    arg[:,59] = 0.0 # Z0
+    # determine equilibrium arguments
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    arg = np.dot(fargs, _arguments_table(**kwargs))
 
     # determine nodal corrections f and u
-    sinn = np.sin(omega*dtr)
-    cosn = np.cos(omega*dtr)
-    sin2n = np.sin(2.0*omega*dtr)
-    cos2n = np.cos(2.0*omega*dtr)
-    sin3n = np.sin(3.0*omega*dtr)
+    sinn = np.sin(n*dtr)
+    cosn = np.cos(n*dtr)
+    sin2n = np.sin(2.0*n*dtr)
+    cos2n = np.cos(2.0*n*dtr)
+    sin3n = np.sin(3.0*n*dtr)
 
     # set nodal corrections
+    # scale factor correction
     f = np.zeros((nt, 60))
+    # phase correction
     u = np.zeros((nt, 60))
     # determine nodal corrections f and u for each model type
     if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
@@ -240,12 +182,12 @@ def arguments(
         f[:,12] = 1.0 # tau1
         if (kwargs['M1'] == 'Doodson'):
             # A. T. Doodson's coefficients for M1 tides
-            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-omega)*dtr)
-            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-omega)*dtr)
+            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-n)*dtr)
+            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-n)*dtr)
         elif (kwargs['M1'] == 'Ray'):
             # R. Ray's coefficients for M1 tides
-            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
-            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
+            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-n)*dtr)
+            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-n)*dtr)
         f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
         f[:,14] = np.sqrt((1.0+0.221*cosn)**2+(0.221*sinn)**2) # chi1
         f[:,15] = 1.0 # pi1
@@ -272,9 +214,9 @@ def arguments(
         f[:,30] = 1.0 # M2b
         f[:,31] = 1.0 # lambda2
         Ltmp1 = 1.0 - 0.25*np.cos(2*p*dtr) - \
-            0.11*np.cos((2.0*p - omega)*dtr) - 0.04*cosn
+            0.11*np.cos((2.0*p - n)*dtr) - 0.04*cosn
         Ltmp2 = 0.25*np.sin(2*p*dtr) + \
-            0.11*np.sin((2.0*p - omega)*dtr) + 0.04*sinn
+            0.11*np.sin((2.0*p - n)*dtr) + 0.04*sinn
         f[:,32] = np.sqrt(Ltmp1**2 + Ltmp2**2) # L2
         f[:,33] = 1.0 # T2
         f[:,34] = 1.0 # S2
@@ -376,10 +318,10 @@ def arguments(
 
     elif kwargs['corrections'] in ('FES',):
         # additional astronomical terms for FES models
-        II = np.arccos(0.913694997 - 0.035692561*np.cos(omega*dtr))
-        at1 = np.arctan(1.01883*np.tan(omega*dtr/2.0))
-        at2 = np.arctan(0.64412*np.tan(omega*dtr/2.0))
-        xi = -at1 - at2 + omega*dtr
+        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
+        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
+        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
+        xi = -at1 - at2 + n*dtr
         xi[xi > np.pi] -= 2.0*np.pi
         nu = at1 - at2
         I2 = np.tan(II/2.0)
@@ -406,12 +348,12 @@ def arguments(
         f[:,11] = f[:,7] # O1
         if (kwargs['M1'] == 'Doodson'):
             # A. T. Doodson's coefficients for M1 tides
-            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-omega)*dtr)
-            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-omega)*dtr)
+            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-n)*dtr)
+            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-n)*dtr)
         elif (kwargs['M1'] == 'Ray'):
             # R. Ray's coefficients for M1 tides
-            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
-            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
+            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-n)*dtr)
+            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-n)*dtr)
         f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
         f[:,14] = np.sin(2.0*II) / 0.7214 # chi1
         f[:,15] = 1.0 # pi1
@@ -549,8 +491,11 @@ def arguments(
 
     # take pu,pf,G for the set of given constituents
     nc = len(constituents)
+    # scale factor correction
     pu = np.zeros((nt,nc))
+    # phase correction
     pf = np.zeros((nt,nc))
+    # equilibrium arguments
     G = np.zeros((nt,nc))
     for i,c in enumerate(constituents):
         # map between given constituents and supported in tidal program
@@ -561,3 +506,96 @@ def arguments(
 
     # return values as tuple
     return (pu, pf, G)
+
+def _arguments_table(**kwargs):
+    """
+    Arguments table for tidal constituents [1]_
+
+    Parameters
+    ----------
+    corrections: str, default 'OTIS'
+        use arguments from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    coef: np.ndarray
+        Spectral lines for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+
+    # modified Doodson coefficients for constituents
+    # using 7 index variables: tau, s, h, p, n, pp, k
+    coef = np.zeros((7, 60))
+    coef[:,0] = [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0] # Sa
+    coef[:,1] = [0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0] # Ssa
+    coef[:,2] = [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0] # Mm
+    coef[:,3] = [0.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0] # MSf
+    coef[:,4] = [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Mf
+    coef[:,5] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0] # Mt
+    coef[:,6] = [1.0, -5.0, 3.0, 1.0, 0.0, 0.0, -1.0] # alpha1
+    coef[:,7] = [1.0, -4.0, 1.0, 2.0, 0.0, 0.0, -1.0] # 2q1
+    coef[:,8] = [1.0, -4.0, 3.0, 0.0, 0.0, 0.0, -1.0] # sigma1
+    coef[:,9] = [1.0, -3.0, 1.0, 1.0, 0.0, 0.0, -1.0]# q1
+    coef[:,10] = [1.0, -3.0, 3.0, -1.0, 0.0, 0.0, -1.0] # rho1
+    coef[:,11] = [1.0, -2.0, 1.0, 0.0, 0.0, 0.0, -1.0] # o1
+    coef[:,12] = [1.0, -2.0, 3.0, 0.0, 0.0, 0.0, 1.0] # tau1
+    coef[:,13] = [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 1.0] # m1
+    coef[:,14] = [1.0, -1.0, 3.0, -1.0, 0.0, 0.0, 1.0] # chi1
+    coef[:,15] = [1.0, 0.0, -2.0, 0.0, 0.0, 1.0, -1.0] # pi1
+    coef[:,16] = [1.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0] # p1
+    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
+        coef[:,17] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0] # s1
+    elif kwargs['corrections'] in ('GOT', 'FES'):
+        coef[:,17] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0] # s1 (Doodson's phase)
+    coef[:,18] = [1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0] # k1
+    coef[:,19] = [1.0, 0.0, 2.0, 0.0, 0.0, -1.0, 1.0] # psi1
+    coef[:,20] = [1.0, 0.0, 3.0, 0.0, 0.0, 0.0, 1.0] # phi1
+    coef[:,21] = [1.0, 1.0, -1.0, 1.0, 0.0, 0.0, 1.0] # theta1
+    coef[:,22] = [1.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0] # j1
+    coef[:,23] = [1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 1.0] # oo1
+    coef[:,24] = [2.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0] # 2n2
+    coef[:,25] = [2.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] # mu2
+    coef[:,26] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # n2
+    coef[:,27] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0] # nu2
+    coef[:,28] = [2.0, -2.0, 1.0, 0.0, 0.0, 1.0, 0.0] # m2a
+    coef[:,29] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0] # m2
+    coef[:,30] = [2.0, -2.0, 3.0, 0.0, 0.0, -1.0, 0.0] # m2b
+    coef[:,31] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0] # lambda2
+    coef[:,32] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0] # l2
+    coef[:,33] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0] # t2
+    coef[:,34] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s2
+    coef[:,35] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 2.0] # r2
+    coef[:,36] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0] # k2
+    coef[:,37] = [2.0, 1.0, 2.0, 0.0, 0.0, -1.0, 0.0] # eta2
+    coef[:,38] = [2.0, -5.0, 4.0, 1.0, 0.0, 0.0, 0.0] # mns2
+    coef[:,39] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0] # 2sm2
+    coef[:,40] = [3.0, -3.0, 3.0, 0.0, 0.0, 0.0, 0.0] # m3
+    coef[:,41] = coef[:,18] + coef[:,29] # mk3
+    coef[:,42] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s3
+    coef[:,43] = coef[:,26] + coef[:,29] # mn4
+    coef[:,44] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] # m4
+    coef[:,45] = coef[:,29] + coef[:,34] # ms4
+    coef[:,46] = coef[:,29] + coef[:,36] # mk4
+    coef[:,47] = [4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s4
+    coef[:,48] = [5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s5
+    coef[:,49] = [6.0, -6.0, 6.0, 0.0, 0.0, 0.0, 0.0] # m6
+    coef[:,50] = [6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s6
+    coef[:,51] = [7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s7
+    coef[:,52] = [8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # s8
+    # shallow water constituents
+    coef[:,53] = [8.0, -8.0, 8.0, 0.0, 0.0, 0.0, 0.0] # m8
+    coef[:,54] = coef[:,29] + coef[:,36] - coef[:,34] # mks2
+    coef[:,55] = [0.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0] # msqm
+    coef[:,56] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0] # mtm
+    coef[:,57] = [4.0, -6.0, 4.0, 2.0, 0.0, 0.0, 0.0] # n4
+    coef[:,58] = [2.0, -5.0, 4.0, 1.0, 0.0, 0.0, 0.0] # eps2
+    # mean sea level
+    coef[:,59] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # z0
+    # return the coefficient table
+    return coef

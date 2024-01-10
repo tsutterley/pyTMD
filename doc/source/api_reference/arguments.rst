@@ -19,3 +19,5 @@ Calling Sequence
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/arguments.py
 
 .. autofunction:: pyTMD.arguments
+
+.. autofunction:: pyTMD.arguments._arguments_table
