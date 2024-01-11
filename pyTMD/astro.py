@@ -121,7 +121,7 @@ def mean_longitudes(
         MEEUS: bool = False,
         ASTRO5: bool = False
     ):
-    """
+    r"""
     Computes the basic astronomical mean longitudes:
     `S`, `H`, `P`, `N` and `PP` [1]_ [2]_
 
@@ -217,7 +217,7 @@ def mean_longitudes(
         # mean longitude of ascending lunar node
         N = 125.0445 - 0.05295377 * T
         # solar perigee at epoch 2000
-        PP = 282.8
+        PP = np.full_like(T, 282.8)
     # take the modulus of each
     S = np.mod(S, circle)
     H = np.mod(H, circle)

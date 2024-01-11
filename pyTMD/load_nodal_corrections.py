@@ -70,7 +70,7 @@ def load_nodal_corrections(*args, **kwargs):
     Parameters
     ----------
     MJD: np.ndarray
-        modified julian day of input date
+        modified Julian day of input date
     constituents: list
         tidal constituent IDs
     deltat: float or np.ndarray, default 0.0

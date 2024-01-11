@@ -20,4 +20,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.arguments
 
+.. autofunction:: pyTMD.doodson_number
+
 .. autofunction:: pyTMD.arguments._arguments_table
+
+.. autofunction:: pyTMD.arguments._minor_table

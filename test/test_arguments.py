@@ -6,22 +6,20 @@ Verify arguments table matches prior arguments array
 import pytest
 import numpy as np
 import pyTMD.astro
-from pyTMD.arguments import _arguments_table
+from pyTMD.arguments import doodson_number, _arguments_table, _minor_table
 
-@pytest.mark.parametrize("MJD", np.random.randint(58000,61000,size=4))
 @pytest.mark.parametrize("corrections", ['OTIS', 'GOT'])
-def test_arguments(MJD, corrections):
+def test_arguments(corrections):
     """
     Tests the calculation of nodal corrections for tidal constituents
 
     Parameters
     ----------
-    MJD: np.ndarray
-        modified julian day of input date
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
     """
-
+    # use a random set of modified Julian days
+    MJD = np.random.randint(58000, 61000, size=10)
     # set function for astronomical longitudes
     ASTRO5 = True if corrections in ('GOT', 'FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
@@ -111,3 +109,92 @@ def test_arguments(MJD, corrections):
 
     # validate arguments between methods
     assert np.all(arg == test)
+
+def test_minor():
+    """
+    Tests the calculation of nodal corrections for minor tidal constituents
+    """
+    # use a random set of modified Julian days
+    MJD = np.random.randint(58000, 61000, size=10)
+    # convert from Modified Julian Dates into Ephemeris Time
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD)
+    # number of temporal values
+    nt = len(np.atleast_1d(MJD))
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours into degrees
+    t1 = 15.0*hour
+    t2 = 30.0*hour
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((nt))
+
+    # determine equilibrium tidal arguments
+    arg = np.zeros((nt, 20))
+    arg[:,0] = t1 - 4.0*s + h + 2.0*p - 90.0# 2Q1
+    arg[:,1] = t1 - 4.0*s + 3.0*h - 90.0# sigma1
+    arg[:,2] = t1 - 3.0*s + 3.0*h - p - 90.0# rho1
+    arg[:,3] = t1 - s + h - p + 90.0# M12
+    arg[:,4] = t1 - s + h + p + 90.0# M11
+    arg[:,5] = t1 - s + 3.0*h - p + 90.0# chi1
+    arg[:,6] = t1 - 2.0*h + pp - 90.0# pi1
+    arg[:,7] = t1 + 3.0*h + 90.0# phi1
+    arg[:,8] = t1 + s - h + p + 90.0# theta1
+    arg[:,9] = t1 + s + h - p + 90.0# J1
+    arg[:,10] = t1 + 2.0*s + h + 90.0# OO1
+    arg[:,11] = t2 - 4.0*s + 2.0*h + 2.0*p# 2N2
+    arg[:,12] = t2 - 4.0*s + 4.0*h# mu2
+    arg[:,13] = t2 - 3.0*s + 4.0*h - p# nu2
+    arg[:,14] = t2 - s + p + 180.0# lambda2
+    arg[:,15] = t2 - s + 2.0*h - p + 180.0# L2
+    arg[:,16] = t2 - s + 2.0*h + p# L2
+    arg[:,17] = t2 - h + pp# t2
+    arg[:,18] = t2 - 5.0*s + 4.0*h + p # eps2
+    arg[:,19] = t2 + s + 2.0*h - pp # eta2
+
+    # determine equilibrium arguments
+    fargs = np.c_[t1, s, h, p, n, pp, k]
+    test = np.dot(fargs, _minor_table())
+
+    # validate arguments between methods
+    assert np.all(arg == test)
+
+def test_doodson():
+    """
+    Tests the calculation of Doodson numbers
+    """
+    # expected values
+    exp = {}
+    # semi-diurnal species
+    exp['m2'] = 255.555
+    exp['s2'] = 273.555
+    exp['n2'] = 245.655
+    exp['nu2'] = 247.455
+    exp['mu2'] = 237.555
+    exp['2n2'] = 235.755
+    exp['lambda2'] = 263.655
+    exp['l2'] = 265.455
+    exp['k2'] = 275.555
+    # diurnal species
+    exp['m1'] = 155.555
+    exp['s1'] = 164.555
+    exp['o1'] = 145.555
+    exp['oo1'] = 185.555
+    exp['k1'] = 165.555
+    exp['q1'] = 135.655
+    exp['2q1'] = 125.755
+    exp['p1'] = 163.555
+    # long-period species
+    exp['mm'] = 65.455
+    exp['ssa'] = 57.555
+    exp['msf'] = 73.555
+    exp['mf'] = 75.555
+    # short-period species
+    exp['m3'] = 355.555
+    exp['m4'] = 455.555
+    exp['m6'] = 655.555
+    exp['m8'] = 855.555
+    # get observed values for constituents
+    obs = doodson_number(exp.keys())
+    # check values
+    for key,val in exp.items():
+        assert val == obs[key]

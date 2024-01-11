@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (01/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,8 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 01/2024: create arguments coefficients table for minor constituents
+        include multiples of 90 degrees as variable following Ray 2017
     Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 09/2023: moved constituent parameters function within this module
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -45,7 +47,7 @@ from __future__ import annotations
 
 import numpy as np
 import pyTMD.astro
-from pyTMD.arguments import arguments
+from pyTMD.arguments import arguments, _minor_table
 from pyTMD.constants import constants
 
 # PURPOSE: Predict tides at single times
@@ -311,14 +313,14 @@ def infer_minor(
         raise Exception('Not enough constituents for inference')
 
     # list of minor constituents
-    minor = ['2q1', 'sigma1', 'rho1', 'm12', 'm11', 'chi1', 'pi1',
+    minor = ['2q1', 'sigma1', 'rho1', 'm1', 'm1', 'chi1', 'pi1',
         'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
         'l2', 'l2', 't2', 'eps2', 'eta2']
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
 
     # relationship between major and minor constituent amplitude and phase
-    zmin = np.zeros((n,20),dtype=np.complex64)
+    zmin = np.zeros((n, 20), dtype=np.complex64)
     zmin[:,0] = 0.263*z[:,0] - 0.0252*z[:,1]# 2Q1
     zmin[:,1] = 0.297*z[:,0] - 0.0264*z[:,1]# sigma1
     zmin[:,2] = 0.164*z[:,0] + 0.0048*z[:,1]# rho1
@@ -353,43 +355,29 @@ def infer_minor(
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 
-    hour = (t % 1)*24.0
-    t1 = 15.0*hour
-    t2 = 30.0*hour
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours solar time into degrees
+    # note: Doodson uses mean lunar time as the independent variable
+    # this conversion occurs with the coefficients in the table (tau - s + h)
+    tau = 15.0*hour
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((n))
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
-    S, H, P, omega, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
 
-    # determine equilibrium tidal arguments
-    arg = np.zeros((n,20))
-    arg[:,0] = t1 - 4.0*S + H + 2.0*P - 90.0# 2Q1
-    arg[:,1] = t1 - 4.0*S + 3.0*H - 90.0# sigma1
-    arg[:,2] = t1 - 3.0*S + 3.0*H - P - 90.0# rho1
-    arg[:,3] = t1 - S + H - P + 90.0# M12
-    arg[:,4] = t1 - S + H + P + 90.0# M11
-    arg[:,5] = t1 - S + 3.0*H - P + 90.0# chi1
-    arg[:,6] = t1 - 2.0*H + pp - 90.0# pi1
-    arg[:,7] = t1 + 3.0*H + 90.0# phi1
-    arg[:,8] = t1 + S - H + P + 90.0# theta1
-    arg[:,9] = t1 + S + H - P + 90.0# J1
-    arg[:,10] = t1 + 2.0*S + H + 90.0# OO1
-    arg[:,11] = t2 - 4.0*S + 2.0*H + 2.0*P# 2N2
-    arg[:,12] = t2 - 4.0*S + 4.0*H# mu2
-    arg[:,13] = t2 - 3.0*S + 4.0*H - P# nu2
-    arg[:,14] = t2 - S + P + 180.0# lambda2
-    arg[:,15] = t2 - S + 2.0*H - P + 180.0# L2
-    arg[:,16] = t2 - S + 2.0*H + P# L2
-    arg[:,17] = t2 - H + pp# t2
-    arg[:,18] = t2 - 5.0*S + 4.0*H + P # eps2
-    arg[:,19] = t2 + S + 2.0*H - pp # eta2
+    # determine equilibrium arguments
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    arg = np.dot(fargs, _minor_table())
 
     # determine nodal corrections f and u
-    sinn = np.sin(omega*dtr)
-    cosn = np.cos(omega*dtr)
-    sin2n = np.sin(2.0*omega*dtr)
-    cos2n = np.cos(2.0*omega*dtr)
+    sinn = np.sin(n*dtr)
+    cosn = np.cos(n*dtr)
+    sin2n = np.sin(2.0*n*dtr)
+    cos2n = np.cos(2.0*n*dtr)
 
     # scale factor corrections for minor constituents
     f = np.ones((n,20))
@@ -429,10 +417,10 @@ def infer_minor(
 
     if kwargs['corrections'] in ('FES',):
         # additional astronomical terms for FES models
-        II = np.arccos(0.913694997 - 0.035692561*np.cos(omega*dtr))
-        at1 = np.arctan(1.01883*np.tan(omega*dtr/2.0))
-        at2 = np.arctan(0.64412*np.tan(omega*dtr/2.0))
-        xi = -at1 - at2 + omega*dtr
+        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
+        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
+        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
+        xi = -at1 - at2 + n*dtr
         xi[xi > np.pi] -= 2.0*np.pi
         nu = at1 - at2
         I2 = np.tan(II/2.0)

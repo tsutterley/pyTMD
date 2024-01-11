@@ -76,7 +76,7 @@ def arguments(
     Parameters
     ----------
     MJD: np.ndarray
-        modified julian day of input date
+        modified Julian day of input date
     constituents: list
         tidal constituent IDs
     deltat: float or np.ndarray, default 0.0
@@ -138,7 +138,9 @@ def arguments(
     nt = len(np.atleast_1d(MJD))
     # initial time conversions
     hour = 24.0*np.mod(MJD, 1)
-    # convert from hours into degrees
+    # convert from hours solar time into degrees
+    # note: Doodson uses mean lunar time as the independent variable
+    # this conversion occurs with the coefficients in the table (tau - s + h)
     tau = 15.0*hour
     # variable for multiples of 90 degrees (Ray technical note 2017)
     k = 90.0 + np.zeros((nt))
@@ -507,6 +509,64 @@ def arguments(
     # return values as tuple
     return (pu, pf, G)
 
+def doodson_number(
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the Doodson number for tidal constituents [1]_
+
+    Parameters
+    ----------
+    constituents: list
+        tidal constituent IDs
+    corrections: str, default 'OTIS'
+        use arguments from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    DO: dict
+        Doodson number for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+
+    # constituents array (not all are included in tidal program)
+    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
+        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
+        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
+        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
+        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
+        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
+    # get the table of coefficients
+    coefficients = _arguments_table(**kwargs)
+    # output dictionary with doodson numbers
+    DO = {}
+    # for each input constituent
+    for i,c in enumerate(constituents):
+        # map between given constituents and supported in tidal program
+        j, = [j for j,val in enumerate(cindex) if (val == c)]
+        # remove phase dependence "k"
+        coef = coefficients[:-1,j]
+        # revert changes for mean lunar time (tau = t - s + h)
+        coef[1] += coef[0] # add "s" values removed in table
+        coef[2] -= coef[0] # remove "h" values added in table
+        # add 5 to values following Doodson convention (prevent negatives)
+        coef[1:] += 5
+        # convert to single number and round off floating point errors
+        value = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
+        DO[c] = np.round(value, decimals=3)
+    # return the doodson number
+    return DO
+
 def _arguments_table(**kwargs):
     """
     Arguments table for tidal constituents [1]_ [2]_
@@ -602,5 +662,50 @@ def _arguments_table(**kwargs):
     coef[:,58] = [2.0, -5.0, 4.0, 1.0, 0.0, 0.0, 0.0] # eps2
     # mean sea level
     coef[:,59] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # z0
+    # return the coefficient table
+    return coef
+
+def _minor_table(**kwargs):
+    """
+    Arguments table for minor tidal constituents [1]_ [2]_
+
+    Returns
+    -------
+    coef: np.ndarray
+        Spectral lines for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    """
+    # modified Doodson coefficients for constituents
+    # using 7 index variables: tau, s, h, p, n, pp, k
+    coef = np.zeros((7, 20))
+    coef[:,0] = [1.0, -4.0, 1.0, 2.0, 0.0, 0.0, -1.0] # 2q1
+    coef[:,1] = [1.0, -4.0, 3.0, 0.0, 0.0, 0.0, -1.0] # sigma1
+    coef[:,2] = [1.0, -3.0, 3.0, -1.0, 0.0, 0.0, -1.0] # rho1
+    coef[:,3] = [1.0, -1.0, 1.0, -1.0, 0.0, 0.0, 1.0] # m1
+    coef[:,4] = [1.0, -1.0, 1.0, 1.0, 0.0, 0.0, 1.0] # m1
+    coef[:,5] = [1.0, -1.0, 3.0, -1.0, 0.0, 0.0, 1.0] # chi1
+    coef[:,6] = [1.0, 0.0, -2.0, 0.0, 0.0, 1.0, -1.0] # pi1
+    coef[:,7] = [1.0, 0.0, 3.0, 0.0, 0.0, 0.0, 1.0] # phi1
+    coef[:,8] = [1.0, 1.0, -1.0, 1.0, 0.0, 0.0, 1.0] # theta1
+    coef[:,9] = [1.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0] # j1
+    coef[:,10] = [1.0, 2.0, 1.0, 0.0, 0.0, 0.0, 1.0] # oo1
+    coef[:,11] = [2.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0] # 2n2
+    coef[:,12] = [2.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] # mu2
+    coef[:,13] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0] # nu2
+    coef[:,14] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]# lambda2
+    coef[:,15] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0] # l2
+    coef[:,16] = [2.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0] # l2 
+    coef[:,17] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0] # t2
+    coef[:,18] = [2.0, -5.0, 4.0, 1.0, 0.0, 0.0, 0.0] # eps2
+    coef[:,19] = [2.0, 1.0, 2.0, 0.0, 0.0, -1.0, 0.0] # eta2
     # return the coefficient table
     return coef

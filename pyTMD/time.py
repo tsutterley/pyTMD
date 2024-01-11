@@ -551,7 +551,7 @@ def convert_julian(JD: np.ndarray, **kwargs):
     else:
         single_value = False
 
-    # verify julian day
+    # verify Julian day
     JDO = np.floor(JD + 0.5)
     C = np.zeros_like(JD)
     # calculate C for dates before and after the switch to Gregorian
