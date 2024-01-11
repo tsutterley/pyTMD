@@ -156,6 +156,8 @@ def mean_longitudes(
         G. Francou, and J. Laskar "Numerical expressions for precession
         formulae and mean elements for the Moon and the planets", 
         *Astronomy and Astrophysics*, 282(2), 663--683, (1994).
+        `bibcode: 1994A%26A...282..663S 
+        <https://ui.adsabs.harvard.edu/abs/1994A%26A...282..663S>`_
     
     .. |eacute|    unicode:: U+00E9 .. LATIN SMALL LETTER E WITH ACUTE
     """
