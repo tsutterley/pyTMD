@@ -20,8 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
-    Updated 01/2024: create arguments coefficients table for minor constituents
-        include multiples of 90 degrees as variable following Ray 2017
+    Updated 01/2024: moved minor arguments calculation into new function
     Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 09/2023: moved constituent parameters function within this module
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -47,7 +46,7 @@ from __future__ import annotations
 
 import numpy as np
 import pyTMD.astro
-from pyTMD.arguments import arguments, _minor_table
+from pyTMD.arguments import arguments, minor_arguments
 from pyTMD.constants import constants
 
 # PURPOSE: Predict tides at single times
@@ -244,8 +243,8 @@ def infer_minor(
         **kwargs
     ):
     """
-    Calculate the tidal corrections for minor constituents inferred using
-    major constituents [1]_ [2]_ [3]_ [4]_
+    Infer the tidal values for minor constituents using their
+    relation with major constituents [1]_ [2]_ [3]_ [4]_
 
     Parameters
     ----------
@@ -263,7 +262,7 @@ def infer_minor(
     Returns
     -------
     dh: np.ndarray
-        Height from minor constituents
+        tidal time series for minor constituents
 
     References
     ----------
@@ -295,8 +294,6 @@ def infer_minor(
     n = nt if ((npts == 1) & (nt > 1)) else npts
     # allocate for output elevation correction
     dh = np.ma.zeros((n))
-    # convert time from days relative to Jan 1, 1992 to Modified Julian Days
-    MJD = 48622.0 + t
     # major constituents used for inferring minor tides
     cindex = ['q1', 'o1', 'p1', 'k1', 'n2', 'm2', 's2', 'k2', '2n2']
     # re-order major tides to correspond to order of cindex
@@ -355,116 +352,19 @@ def infer_minor(
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 
-    # set function for astronomical longitudes
-    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
-    # convert from Modified Julian Dates into Ephemeris Time
-    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
-        ASTRO5=ASTRO5)
-    # initial time conversions
-    hour = 24.0*np.mod(MJD, 1)
-    # convert from hours solar time into mean lunar time in degrees
-    tau = 15.0*hour - s + h
-    # variable for multiples of 90 degrees (Ray technical note 2017)
-    k = 90.0 + np.zeros((n))
-
-    # determine equilibrium arguments
-    fargs = np.c_[tau, s, h, p, n, pp, k]
-    arg = np.dot(fargs, _minor_table())
-
-    # determine nodal corrections f and u
-    sinn = np.sin(n*dtr)
-    cosn = np.cos(n*dtr)
-    sin2n = np.sin(2.0*n*dtr)
-    cos2n = np.cos(2.0*n*dtr)
-
-    # scale factor corrections for minor constituents
-    f = np.ones((n,20))
-    f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
-        (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
-    f[:,1] = f[:,0]# sigma1
-    f[:,2] = f[:,0]# rho1
-    f[:,3] = np.sqrt((1.0 + 0.185*cosn)**2 + (0.185*sinn)**2)# M12
-    f[:,4] = np.sqrt((1.0 + 0.201*cosn)**2 + (0.201*sinn)**2)# M11
-    f[:,5] = np.sqrt((1.0 + 0.221*cosn)**2 + (0.221*sinn)**2)# chi1
-    f[:,9] = np.sqrt((1.0 + 0.198*cosn)**2 + (0.198*sinn)**2)# J1
-    f[:,10] = np.sqrt((1.0 + 0.640*cosn + 0.134*cos2n)**2 +
-        (0.640*sinn + 0.134*sin2n)**2)# OO1
-    f[:,11] = np.sqrt((1.0 - 0.0373*cosn)**2 + (0.0373*sinn)**2)# 2N2
-    f[:,12] = f[:,11]# mu2
-    f[:,13] = f[:,11]# nu2
-    f[:,15] = f[:,11]# L2
-    f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
-
-    # phase corrections for minor constituents
-    u = np.zeros((n,20))
-    u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
-        1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
-    u[:,1] = u[:,0]# sigma1
-    u[:,2] = u[:,0]# rho1
-    u[:,3] = np.arctan2( 0.185*sinn, 1.0 + 0.185*cosn)/dtr# M12
-    u[:,4] = np.arctan2(-0.201*sinn, 1.0 + 0.201*cosn)/dtr# M11
-    u[:,5] = np.arctan2(-0.221*sinn, 1.0 + 0.221*cosn)/dtr# chi1
-    u[:,9] = np.arctan2(-0.198*sinn, 1.0 + 0.198*cosn)/dtr# J1
-    u[:,10] = np.arctan2(-0.640*sinn - 0.134*sin2n,
-        1.0 + 0.640*cosn + 0.134*cos2n)/dtr# OO1
-    u[:,11] = np.arctan2(-0.0373*sinn, 1.0 - 0.0373*cosn)/dtr# 2N2
-    u[:,12] = u[:,11]# mu2
-    u[:,13] = u[:,11]# nu2
-    u[:,15] = u[:,11]# L2
-    u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr# L2
-
-    if kwargs['corrections'] in ('FES',):
-        # additional astronomical terms for FES models
-        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
-        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
-        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
-        xi = -at1 - at2 + n*dtr
-        xi[xi > np.pi] -= 2.0*np.pi
-        nu = at1 - at2
-        I2 = np.tan(II/2.0)
-        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
-        P2 = np.sin(2.0*(p - xi))
-        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
-        R = np.arctan(P2/Q2)
-
-        f[:,0] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1
-        f[:,1] = f[:,0] # sigma1
-        f[:,2] = f[:,0] # rho1
-        f[:,3] = f[:,0] # M12
-        f[:,4] = np.sin(2.0*II)/0.7214 # M11
-        f[:,5] = f[:,4] # chi1
-        f[:,9] = f[:,5] # J1
-        f[:,10] = np.sin(II)*np.power(np.sin(II/2.0),2.0)/0.01640 # OO1
-        f[:,11] = np.power(np.cos(II/2.0),4.0)/0.9154 # 2N2
-        f[:,12] = f[:,11] # mu2
-        f[:,13] = f[:,11] # nu2
-        f[:,14] = f[:,11] # lambda2
-        f[:,15] = f[:,11]*Ra1 # L2
-        f[:,18] = f[:,11] # eps2
-        f[:,19] = np.power(np.sin(II),2.0)/0.1565 # eta2
-
-        u[:,0] = (2.0*xi - nu)/dtr # 2Q1
-        u[:,1] = u[:,0] # sigma1
-        u[:,2] = u[:,0] # rho1
-        u[:,3] = u[:,0] # M12
-        u[:,4] = -nu/dtr # M11
-        u[:,5] = u[:,4] # chi1
-        u[:,9] = u[:,4] # J1
-        u[:,10] = (-2.0*xi - nu)/dtr # OO1
-        u[:,11] = (2.0*xi - 2.0*nu)/dtr # 2N2
-        u[:,12] = u[:,11] # mu2
-        u[:,13] = u[:,11] # nu2
-        u[:,14] = (2.0*xi - 2.0*nu)/dtr # lambda2
-        u[:,15] = (2.0*xi - 2.0*nu - R)/dtr# L2
-        u[:,18] = u[:,12] # eps2
-        u[:,19] = -2.0*nu/dtr # eta2
+    # load the nodal corrections for minor constituents
+    # convert time to Modified Julian Days (MJD)
+    pu, pf, G = minor_arguments(t + 48622.0,
+        deltat=kwargs['deltat'],
+        corrections=kwargs['corrections']
+    )
 
     # sum over the minor tidal constituents of interest
     for k in minor_indices:
-        th = (arg[:,k] + u[:,k])*dtr
-        dh += zmin.real[:,k]*f[:,k]*np.cos(th) - \
-            zmin.imag[:,k]*f[:,k]*np.sin(th)
-    # return the inferred elevation
+        th = (G[:,k] + pu[:,k])*dtr
+        dh += zmin.real[:,k]*pf[:,k]*np.cos(th) - \
+            zmin.imag[:,k]*pf[:,k]*np.sin(th)
+    # return the inferred values
     return dh
 
 # PURPOSE: estimate long-period equilibrium tides

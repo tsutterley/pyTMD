@@ -39,7 +39,9 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 01/2024: add function to create arguments coefficients table
+        add function to calculate the arguments for minor constituents
         include multiples of 90 degrees as variable following Ray 2017
+        add function to calculate the Doodson numbers for constituents
     Updated 12/2023: made keyword argument for selecting M1 coefficients
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
@@ -71,7 +73,8 @@ def arguments(
         **kwargs
     ):
     """
-    Calculates the nodal corrections for tidal constituents [1]_ [2]_ [3]_
+    Calculates the nodal corrections for tidal constituents
+    [1]_ [2]_ [3]_ [4]_
 
     Parameters
     ----------
@@ -506,6 +509,164 @@ def arguments(
 
     # return values as tuple
     return (pu, pf, G)
+
+def minor_arguments(
+        MJD: np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the nodal corrections for minor tidal constituents
+    in order to infer their values [1]_ [2]_ [3]_ [4]_
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        modified Julian day of input date
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    pu: np.ndarray
+        nodal correction for the constituent amplitude
+    pf: np.ndarray
+        nodal correction for the constituent phase
+    G: np.ndarray
+        phase correction in degrees
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
+        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
+    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
+        model time series," *Advances in Water Resources*, 12(3), 109--120,
+        (1989). `doi: 10.1016/0309-1708(89)90017-1
+        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
+    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
+    """
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
+
+    # degrees to radians
+    dtr = np.pi/180.0
+    # set function for astronomical longitudes
+    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
+    # convert from Modified Julian Dates into Ephemeris Time
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
+        ASTRO5=ASTRO5)
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((n))
+
+    # determine equilibrium arguments
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    arg = np.dot(fargs, _minor_table())
+
+    # determine nodal corrections f and u
+    sinn = np.sin(n*dtr)
+    cosn = np.cos(n*dtr)
+    sin2n = np.sin(2.0*n*dtr)
+    cos2n = np.cos(2.0*n*dtr)
+
+    # scale factor corrections for minor constituents
+    f = np.ones((n,20))
+    f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
+        (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
+    f[:,1] = f[:,0]# sigma1
+    f[:,2] = f[:,0]# rho1
+    f[:,3] = np.sqrt((1.0 + 0.185*cosn)**2 + (0.185*sinn)**2)# M12
+    f[:,4] = np.sqrt((1.0 + 0.201*cosn)**2 + (0.201*sinn)**2)# M11
+    f[:,5] = np.sqrt((1.0 + 0.221*cosn)**2 + (0.221*sinn)**2)# chi1
+    f[:,9] = np.sqrt((1.0 + 0.198*cosn)**2 + (0.198*sinn)**2)# J1
+    f[:,10] = np.sqrt((1.0 + 0.640*cosn + 0.134*cos2n)**2 +
+        (0.640*sinn + 0.134*sin2n)**2)# OO1
+    f[:,11] = np.sqrt((1.0 - 0.0373*cosn)**2 + (0.0373*sinn)**2)# 2N2
+    f[:,12] = f[:,11]# mu2
+    f[:,13] = f[:,11]# nu2
+    f[:,15] = f[:,11]# L2
+    f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
+
+    # phase corrections for minor constituents
+    u = np.zeros((n,20))
+    u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
+        1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
+    u[:,1] = u[:,0]# sigma1
+    u[:,2] = u[:,0]# rho1
+    u[:,3] = np.arctan2( 0.185*sinn, 1.0 + 0.185*cosn)/dtr# M12
+    u[:,4] = np.arctan2(-0.201*sinn, 1.0 + 0.201*cosn)/dtr# M11
+    u[:,5] = np.arctan2(-0.221*sinn, 1.0 + 0.221*cosn)/dtr# chi1
+    u[:,9] = np.arctan2(-0.198*sinn, 1.0 + 0.198*cosn)/dtr# J1
+    u[:,10] = np.arctan2(-0.640*sinn - 0.134*sin2n,
+        1.0 + 0.640*cosn + 0.134*cos2n)/dtr# OO1
+    u[:,11] = np.arctan2(-0.0373*sinn, 1.0 - 0.0373*cosn)/dtr# 2N2
+    u[:,12] = u[:,11]# mu2
+    u[:,13] = u[:,11]# nu2
+    u[:,15] = u[:,11]# L2
+    u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr# L2
+
+    if kwargs['corrections'] in ('FES',):
+        # additional astronomical terms for FES models
+        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
+        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
+        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
+        xi = -at1 - at2 + n*dtr
+        xi[xi > np.pi] -= 2.0*np.pi
+        nu = at1 - at2
+        I2 = np.tan(II/2.0)
+        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
+        P2 = np.sin(2.0*(p - xi))
+        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
+        R = np.arctan(P2/Q2)
+
+        # scale factor corrections for minor constituents
+        f[:,0] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1
+        f[:,1] = f[:,0] # sigma1
+        f[:,2] = f[:,0] # rho1
+        f[:,3] = f[:,0] # M12
+        f[:,4] = np.sin(2.0*II)/0.7214 # M11
+        f[:,5] = f[:,4] # chi1
+        f[:,9] = f[:,5] # J1
+        f[:,10] = np.sin(II)*np.power(np.sin(II/2.0),2.0)/0.01640 # OO1
+        f[:,11] = np.power(np.cos(II/2.0),4.0)/0.9154 # 2N2
+        f[:,12] = f[:,11] # mu2
+        f[:,13] = f[:,11] # nu2
+        f[:,14] = f[:,11] # lambda2
+        f[:,15] = f[:,11]*Ra1 # L2
+        f[:,18] = f[:,11] # eps2
+        f[:,19] = np.power(np.sin(II),2.0)/0.1565 # eta2
+
+        # phase corrections for minor constituents
+        u[:,0] = (2.0*xi - nu)/dtr # 2Q1
+        u[:,1] = u[:,0] # sigma1
+        u[:,2] = u[:,0] # rho1
+        u[:,3] = u[:,0] # M12
+        u[:,4] = -nu/dtr # M11
+        u[:,5] = u[:,4] # chi1
+        u[:,9] = u[:,4] # J1
+        u[:,10] = (-2.0*xi - nu)/dtr # OO1
+        u[:,11] = (2.0*xi - 2.0*nu)/dtr # 2N2
+        u[:,12] = u[:,11] # mu2
+        u[:,13] = u[:,11] # nu2
+        u[:,14] = (2.0*xi - 2.0*nu)/dtr # lambda2
+        u[:,15] = (2.0*xi - 2.0*nu - R)/dtr# L2
+        u[:,18] = u[:,12] # eps2
+        u[:,19] = -2.0*nu/dtr # eta2
+
+    # return values as tuple
+    return (u, f, arg)
 
 def doodson_number(
         constituents: list | np.ndarray,
