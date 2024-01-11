@@ -355,19 +355,17 @@ def infer_minor(
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 
-    # initial time conversions
-    hour = 24.0*np.mod(MJD, 1)
-    # convert from hours solar time into degrees
-    # note: Doodson uses mean lunar time as the independent variable
-    # this conversion occurs with the coefficients in the table (tau - s + h)
-    tau = 15.0*hour
-    # variable for multiples of 90 degrees (Ray technical note 2017)
-    k = 90.0 + np.zeros((n))
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((n))
 
     # determine equilibrium arguments
     fargs = np.c_[tau, s, h, p, n, pp, k]
@@ -424,9 +422,9 @@ def infer_minor(
         xi[xi > np.pi] -= 2.0*np.pi
         nu = at1 - at2
         I2 = np.tan(II/2.0)
-        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(P - xi)) + 36.0*(I2**4))
-        P2 = np.sin(2.0*(P - xi))
-        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(P - xi))
+        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
+        P2 = np.sin(2.0*(p - xi))
+        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
         R = np.arctan(P2/Q2)
 
         f[:,0] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1

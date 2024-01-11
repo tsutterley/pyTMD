@@ -32,6 +32,8 @@ def test_arguments(corrections):
     # convert from hours into degrees
     t1 = 15.0*hour
     t2 = 30.0*hour
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
     # variable for multiples of 90 degrees (Ray technical note 2017)
     k = 90.0 + np.zeros((nt))
 
@@ -104,7 +106,7 @@ def test_arguments(corrections):
     arg[:,59] = 0.0 # Z0
 
     # determine equilibrium arguments using table
-    fargs = np.c_[t1, s, h, p, omega, pp, k]
+    fargs = np.c_[tau, s, h, p, omega, pp, k]
     test = np.dot(fargs, _arguments_table(corrections=corrections))
 
     # validate arguments between methods
@@ -125,6 +127,8 @@ def test_minor():
     # convert from hours into degrees
     t1 = 15.0*hour
     t2 = 30.0*hour
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
     # variable for multiples of 90 degrees (Ray technical note 2017)
     k = 90.0 + np.zeros((nt))
 
@@ -152,7 +156,7 @@ def test_minor():
     arg[:,19] = t2 + s + 2.0*h - pp # eta2
 
     # determine equilibrium arguments
-    fargs = np.c_[t1, s, h, p, n, pp, k]
+    fargs = np.c_[tau, s, h, p, n, pp, k]
     test = np.dot(fargs, _minor_table())
 
     # validate arguments between methods
