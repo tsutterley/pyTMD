@@ -11,6 +11,7 @@ matplotlib and cartopy
 
 Documentation is available at https://pytmd.readthedocs.io
 """
+import pyTMD.arguments
 import pyTMD.astro
 import pyTMD.eop
 import pyTMD.interpolate
@@ -22,11 +23,6 @@ import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
-from pyTMD.arguments import (
-    arguments, 
-    minor_arguments, 
-    doodson_number
-)
 from pyTMD.check_points import check_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,

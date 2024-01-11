@@ -45,8 +45,8 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import numpy as np
+import pyTMD.arguments
 import pyTMD.astro
-from pyTMD.arguments import arguments, minor_arguments
 from pyTMD.constants import constants
 
 # PURPOSE: Predict tides at single times
@@ -90,8 +90,11 @@ def map(t: float | np.ndarray,
     npts, nc = np.shape(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = arguments(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
+    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+        constituents,
+        deltat=deltat,
+        corrections=corrections
+    )
     # allocate for output tidal elevation
     ht = np.ma.zeros((npts))
     ht.mask = np.zeros((npts), dtype=bool)
@@ -152,8 +155,11 @@ def drift(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = arguments(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
+    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+        constituents,
+        deltat=deltat,
+        corrections=corrections
+    )
     # allocate for output time series
     ht = np.ma.zeros((nt))
     ht.mask = np.zeros((nt), dtype=bool)
@@ -214,8 +220,11 @@ def time_series(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = arguments(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
+    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+        constituents,
+        deltat=deltat,
+        corrections=corrections
+    )
     # allocate for output time series
     ht = np.ma.zeros((nt))
     ht.mask = np.zeros((nt), dtype=bool)
@@ -354,7 +363,7 @@ def infer_minor(
 
     # load the nodal corrections for minor constituents
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = minor_arguments(t + 48622.0,
+    pu, pf, G = pyTMD.arguments.minor_arguments(t + 48622.0,
         deltat=kwargs['deltat'],
         corrections=kwargs['corrections']
     )
