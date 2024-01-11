@@ -564,12 +564,15 @@ def minor_arguments(
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
+
+    # number of temporal values
+    nt = len(np.atleast_1d(MJD))
     # initial time conversions
     hour = 24.0*np.mod(MJD, 1)
     # convert from hours solar time into mean lunar time in degrees
     tau = 15.0*hour - s + h
     # variable for multiples of 90 degrees (Ray technical note 2017)
-    k = 90.0 + np.zeros((n))
+    k = 90.0 + np.zeros((nt))
 
     # determine equilibrium arguments
     fargs = np.c_[tau, s, h, p, n, pp, k]
@@ -582,7 +585,7 @@ def minor_arguments(
     cos2n = np.cos(2.0*n*dtr)
 
     # scale factor corrections for minor constituents
-    f = np.ones((n,20))
+    f = np.ones((nt, 20))
     f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
         (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
     f[:,1] = f[:,0]# sigma1
@@ -600,7 +603,7 @@ def minor_arguments(
     f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
 
     # phase corrections for minor constituents
-    u = np.zeros((n,20))
+    u = np.zeros((nt, 20))
     u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
         1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
     u[:,1] = u[:,0]# sigma1
