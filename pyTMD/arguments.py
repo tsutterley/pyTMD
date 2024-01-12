@@ -672,23 +672,29 @@ def minor_arguments(
     return (u, f, arg)
 
 def doodson_number(
-        constituents: list | np.ndarray,
+        constituents: str | list | np.ndarray,
         **kwargs
     ):
     """
-    Calculates the Doodson number for tidal constituents [1]_
+    Calculates the Doodson or Cartwright number for
+    tidal constituents [1]_
 
     Parameters
     ----------
-    constituents: list
-        tidal constituent IDs
+    constituents: str, list or np.ndarray
+        tidal constituent ID(s)
     corrections: str, default 'OTIS'
         use arguments from OTIS/ATLAS or GOT models
+    formalism: str, default 'Doodson'
+        constituent identifier formalism
+
+            - ``'Doodson'``
+            - ``'Cartwright'``
 
     Returns
     -------
-    DO: dict
-        Doodson number for each constituent
+    numbers: float or dict
+        Doodson or Cartwright number for each constituent
 
     References
     ----------
@@ -700,6 +706,7 @@ def doodson_number(
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('formalism', 'Doodson')
 
     # constituents array (not all are included in tidal program)
     cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
@@ -710,21 +717,32 @@ def doodson_number(
         's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
     # get the table of coefficients
     coefficients = _arguments_table(**kwargs)
-    # output dictionary with doodson numbers
-    DO = {}
-    # for each input constituent
-    for i,c in enumerate(constituents):
+    if isinstance(constituents, str):
         # map between given constituents and supported in tidal program
-        j, = [j for j,val in enumerate(cindex) if (val == c)]
-        # remove phase dependence "k"
-        coef = coefficients[:-1,j]
-        # add 5 to values following Doodson convention (prevent negatives)
-        coef[1:] += 5
-        # convert to single number and round off floating point errors
-        value = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
-        DO[c] = np.round(value, decimals=3)
-    # return the doodson number
-    return DO
+        j, = [j for j,val in enumerate(cindex) if (val == constituents)]
+        # extract identifier in formalism
+        if (kwargs['formalism'] == 'Cartwright'):
+            # extract Cartwright number
+            numbers = np.array(coefficients[:6,j])
+        elif (kwargs['formalism'] == 'Doodson'):
+            # convert from coefficients to Doodson number
+            numbers = _to_doodson_number(coefficients[:,j])
+    else:
+        # output dictionary with Doodson numbers
+        numbers = {}
+        # for each input constituent
+        for i,c in enumerate(constituents):
+            # map between given constituents and supported in tidal program
+            j, = [j for j,val in enumerate(cindex) if (val == c)]
+            # convert from coefficients to Doodson number
+            if (kwargs['formalism'] == 'Cartwright'):
+                # extract Cartwright number
+                numbers[c] = np.array(coefficients[:6,j])
+            elif (kwargs['formalism'] == 'Doodson'):
+                # convert from coefficients to Doodson number
+                numbers[c] = _to_doodson_number(coefficients[:,j])
+    # return the Doodson or Cartwright number
+    return numbers
 
 def _arguments_table(**kwargs):
     """
@@ -738,7 +756,7 @@ def _arguments_table(**kwargs):
     Returns
     -------
     coef: np.ndarray
-        Spectral lines for each constituent
+        Doodson coefficients (Cartwright numbers) for each constituent
 
     References
     ----------
@@ -838,7 +856,7 @@ def _minor_table(**kwargs):
     Returns
     -------
     coef: np.ndarray
-        Spectral lines for each constituent
+        Doodson coefficients (Cartwright numbers) for each constituent
 
     References
     ----------
@@ -881,4 +899,47 @@ def _minor_table(**kwargs):
     coef[:,18] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
     coef[:,19] = [2.0, 3.0, 0.0, 0.0, 0.0, -1.0, 0.0] # eta2
     # return the coefficient table
+    return coef
+
+def _to_doodson_number(coef: list | np.ndarray):
+    """
+    Converts Cartwright numbers into a Doodson number
+
+    Parameters
+    ----------
+    coef: list or np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+
+    Returns
+    -------
+    DO: float
+        Doodson number for constituent
+    """
+    # assert length and verify array
+    coef = np.array(coef[:6])
+    # add 5 to values following Doodson convention (prevent negatives)
+    coef[1:] += 5
+    # convert to single number and round off floating point errors
+    DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
+    return np.round(DO, decimals=3)
+
+def _from_doodson_number(DO: float | np.ndarray):
+    """
+    Converts Doodson numbers into Cartwright numbers
+
+    Parameters
+    ----------
+    DO: float or np.ndarray
+        Doodson number for constituent
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+    """
+    # convert from Doodson number to Cartwright numbers
+    # multiply by 1000 to prevent floating point errors
+    coef = np.array([np.mod(1e3*DO, 10**(6-o))//10**(5-o) for o in range(6)])
+    # remove 5 from values following Doodson convention
+    coef[1:] -= 5
     return coef

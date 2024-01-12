@@ -548,7 +548,7 @@ class Test_CATS2008:
                 assert np.all(np.abs(difference) < eps)
 
     # PURPOSE: Tests solving for harmonic constants
-    def test_solve():
+    def test_solve(self):
         # get model parameters
         model = pyTMD.io.model(filepath).elevation('CATS2008')
 

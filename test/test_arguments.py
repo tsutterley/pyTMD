@@ -6,7 +6,13 @@ Verify arguments table matches prior arguments array
 import pytest
 import numpy as np
 import pyTMD.astro
-from pyTMD.arguments import doodson_number, _arguments_table, _minor_table
+from pyTMD.arguments import (
+    doodson_number,
+    _arguments_table,
+    _minor_table,
+    _to_doodson_number,
+    _from_doodson_number
+)
 
 @pytest.mark.parametrize("corrections", ['OTIS', 'GOT'])
 def test_arguments(corrections):
@@ -199,6 +205,17 @@ def test_doodson():
     exp['m8'] = 855.555
     # get observed values for constituents
     obs = doodson_number(exp.keys())
+    cartwright = doodson_number(exp.keys(), formalism='Cartwright')
     # check values
     for key,val in exp.items():
         assert val == obs[key]
+        # check values when entered as string
+        test = doodson_number(key)
+        assert val == test
+        # check conversion to and from Doodson numbers
+        doodson = _to_doodson_number(cartwright[key])
+        # check values when entered as Cartwright
+        assert val == doodson
+        # check values when entered as Doodson
+        coefficients = _from_doodson_number(val)
+        assert np.all(cartwright[key] == coefficients)
