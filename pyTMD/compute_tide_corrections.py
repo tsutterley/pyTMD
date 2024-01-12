@@ -59,7 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class for coordinate reprojection 
+    Updated 12/2023: use new crs class for coordinate reprojection
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
         use defaults from eop module for pole tide and EOP files

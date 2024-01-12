@@ -56,6 +56,7 @@ import pyTMD.time
 import pyTMD.utilities
 import pyTMD.check_points
 import pyTMD.ellipse
+import pyTMD.solve
 from oct2py import octave
 
 # current file path
@@ -545,6 +546,47 @@ class Test_CATS2008:
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
+
+    # PURPOSE: Tests solving for harmonic constants
+    def test_solve():
+        # get model parameters
+        model = pyTMD.io.model(filepath).elevation('CATS2008')
+
+        # calculate a forecast every minute
+        minutes = np.arange(366*1440)
+        # convert time to days relative to Jan 1, 1992 (48622 MJD)
+        year, month, day = 2000, 1, 1
+        tide_time = pyTMD.time.convert_calendar_dates(year, month, day,
+            minute=minutes)
+
+        # read tidal constants and interpolate to coordinates
+        constituents = pyTMD.io.OTIS.read_constants(
+            model.grid_file, model.model_file,
+            model.projection, type=model.type,
+            grid=model.format)
+        c = constituents.fields
+        DELTAT = np.zeros_like(tide_time)
+
+        # interpolate constants to a coordinate
+        LAT,LON = (-76.0, -40.0)
+        amp,ph,D = pyTMD.io.OTIS.interpolate_constants(
+            np.atleast_1d(LON), np.atleast_1d(LAT),
+            constituents, model.projection, type=model.type,
+            method='spline', extrapolate=True)
+
+        # calculate complex form of constituent oscillation
+        hc = amp*np.exp(-1j*ph*np.pi/180.0)
+        # predict tidal elevations at times
+        TIDE = pyTMD.predict.time_series(tide_time, hc, c,
+            deltat=DELTAT, corrections=model.format)
+        # solve for amplitude and phase
+        famp, fph = pyTMD.solve.constants(tide_time, TIDE.data, c)
+        # calculate complex form of constituent oscillation
+        fhc = famp*np.exp(-1j*fph*np.pi/180.0)
+        # verify differences are within tolerance
+        eps = 5e-3
+        for k,cons in enumerate(c):
+            assert np.isclose(hc[0][k], fhc[k], rtol=eps, atol=eps)
 
     # parameterize type: heights versus currents
     # parameterize interpolation method

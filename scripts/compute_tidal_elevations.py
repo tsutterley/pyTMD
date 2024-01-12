@@ -97,7 +97,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class to get projection information 
+    Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations

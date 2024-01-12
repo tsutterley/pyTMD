@@ -75,7 +75,7 @@ class widgets:
         # pass through some ipywidgets objects
         self.HBox = ipywidgets.HBox
         self.VBox = ipywidgets.VBox
-        
+
         # set the directory with tide models
         self.directory = ipywidgets.Text(
             value='',

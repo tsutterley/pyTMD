@@ -72,7 +72,7 @@ class crs:
         self.name = None
         self.transformer = None
         self._direction = None
-    
+
     def convert(self,
             i1: np.ndarray,
             i2: np.ndarray,
@@ -136,7 +136,7 @@ class crs:
             return self.transform(i1, i2)
         # projection not found or available
         raise Exception(f'PROJ: {PROJ} conversion function not found')
-    
+
     def transform(self, i1: np.ndarray, i2: np.ndarray):
         """
         Performs Coordinates Reference System (CRS) transformations
@@ -147,7 +147,7 @@ class crs:
             Input x-coordinates
         i2: np.ndarray
             Input y-coordinates
-        
+
         Returns
         -------
         o1: np.ndarray
@@ -206,7 +206,7 @@ class crs:
             return CRS
         # no projection can be made
         raise pyproj.exceptions.CRSError
-    
+
     def _EPSG3031(self, EPSG: int | str = 4326):
         """
         Transform for models in EPSG:3031 (Antarctic Polar Stereographic)
@@ -281,7 +281,7 @@ class crs:
         self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
             always_xy=True)
         return self
-    
+
     # function for models in (idealized) PSNorth projection
     def _PSNorth(self, EPSG: int | str = 4326):
         """

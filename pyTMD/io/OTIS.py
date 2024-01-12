@@ -59,7 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class for coordinate reprojection 
+    Updated 12/2023: use new crs class for coordinate reprojection
     Updated 10/2023: fix transport variable entry for TMD3 models
     Updated 09/2023: prevent overwriting ATLAS compact x and y coordinates
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format

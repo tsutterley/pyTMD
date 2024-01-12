@@ -152,13 +152,13 @@ def mean_longitudes(
     References
     ----------
     .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] J. L. Simon, P. Bretagnon, J. Chapront, M. Chapront-Touz\ |eacute|\, 
+    .. [2] J. L. Simon, P. Bretagnon, J. Chapront, M. Chapront-Touz\ |eacute|\,
         G. Francou, and J. Laskar "Numerical expressions for precession
-        formulae and mean elements for the Moon and the planets", 
+        formulae and mean elements for the Moon and the planets",
         *Astronomy and Astrophysics*, 282(2), 663--683, (1994).
-        `bibcode: 1994A%26A...282..663S 
+        `bibcode: 1994A%26A...282..663S
         <https://ui.adsabs.harvard.edu/abs/1994A%26A...282..663S>`_
-    
+
     .. |eacute|    unicode:: U+00E9 .. LATIN SMALL LETTER E WITH ACUTE
     """
     circle = 360.0
@@ -244,9 +244,9 @@ def doodson_arguments(
         apply_correction: bool = True,
     ):
     """
-    Computes astronomical phase angles for the six Doodson 
+    Computes astronomical phase angles for the six Doodson
     Arguments: `tau`, `S`, `H`, `P`, and `N'`, and `Ps`
-    [1]_ [2]_ 
+    [1]_ [2]_
 
     Parameters
     ----------
@@ -255,7 +255,7 @@ def doodson_arguments(
     equinox: bool, default False
         use equinox method for calculating mean lunar time
     apply_correction: bool, default True
-        Apply correction for mean lunar longitude 
+        Apply correction for mean lunar longitude
 
     Returns
     -------
@@ -297,7 +297,7 @@ def doodson_arguments(
     if equinox:
         # create timescale from Modified Julian Day (MJD)
         ts = timescale(MJD=MJD)
-        # use Greenwich Mean Sidereal Time (GMST) from the 
+        # use Greenwich Mean Sidereal Time (GMST) from the
         # Equinox method converted to degrees
         TAU = 360.0*ts.st + 180.0 - S
     else:

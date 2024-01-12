@@ -28,7 +28,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class for coordinate reprojection 
+    Updated 12/2023: use new crs class for coordinate reprojection
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: new function name for coordinate reference systems
     Updated 12/2022: refactored OTIS model input and output

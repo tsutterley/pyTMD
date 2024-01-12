@@ -4,7 +4,7 @@ test_coordinates.py (12/2023)
 Verify forward and backwards coordinate conversions
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class for coordinate reprojection 
+    Updated 12/2023: use new crs class for coordinate reprojection
     Written 08/2020
 """
 import pytest

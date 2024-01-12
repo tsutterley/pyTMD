@@ -68,7 +68,7 @@ PROGRAM DEPENDENCIES:
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class to get projection information 
+    Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds

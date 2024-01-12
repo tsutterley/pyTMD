@@ -79,7 +79,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
-    Updated 12/2023: use new crs class to get projection information 
+    Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
         use defaults from eop module for pole tide and EOP files
