@@ -2,8 +2,7 @@
 astro
 =====
 - Astronomical and nutation routines
-- Computes the basic astronomical mean longitudes: `S`, `H`, `P`, `N` and `PP`
-- Computes astronomical phase angles for the sun and moon:  `S`, `H`, `P`, `TAU`, `ZNS` and `PS`
+- Computes the basic astronomical mean longitudes and other fundamental orbital parameters
 - Computes the solar and lunar positions in Earth-Centered Earth-Fixed (ECEF) coordinates
 
 Calling Sequence
@@ -24,7 +23,7 @@ Calling Sequence
 
 .. autofunction:: pyTMD.astro.mean_longitudes
 
-.. autofunction:: pyTMD.astro.phase_angles
+.. autofunction:: pyTMD.astro.doodson_arguments
 
 .. autofunction:: pyTMD.astro.delaunay_arguments
 

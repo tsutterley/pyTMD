@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 u"""
-test_coordinates.py (08/2020)
+test_coordinates.py (12/2023)
 Verify forward and backwards coordinate conversions
+
+UPDATE HISTORY:
+    Updated 12/2023: use new crs class for coordinate reprojection
+    Written 08/2020
 """
 import pytest
 import numpy as np
-import pyTMD.convert_crs
+import pyTMD.crs
 
 # parameterize projections
 @pytest.mark.parametrize("PROJ", ['3031','CATS2008','3976','PSNorth','4326'])
@@ -16,8 +20,8 @@ def test_coordinates(PROJ):
     i1 = np.arange(-180,180+1,1)
     i2 = np.linspace(startlat[PROJ],endlat[PROJ],len(i1))
     # convert latitude and longitude to and from projection
-    o1, o2 = pyTMD.convert_crs(i1,i2,PROJ,'F')
-    lon, lat = pyTMD.convert_crs(o1,o2,PROJ,'B')
+    o1, o2 = pyTMD.crs().convert(i1,i2,PROJ,'F')
+    lon, lat = pyTMD.crs().convert(o1,o2,PROJ,'B')
     # calculate great circle distance between inputs and outputs
     cdist = np.arccos(np.sin(i2*np.pi/180.0)*np.sin(lat*np.pi/180.0) +
         np.cos(i2*np.pi/180.0)*np.cos(lat*np.pi/180.0)*

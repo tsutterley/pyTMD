@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (12/2023)
 
 Gravitational and ellipsoidal parameters
 
@@ -37,6 +37,7 @@ REFERENCE:
         https://iers-conventions.obspm.fr/content/tn36.pdf
 
 UPDATE HISTORY:
+    Updated 12/2023: add string representation of constants object
     Updated 10/2023: add value for WMO standard gravity
     Updated 03/2023: add basic variable typing
         set ellipsoid name and output units as constants attributes
@@ -101,12 +102,12 @@ class constants(object):
         assert self.units in _units
 
         # set parameters for ellipsoid
-        if self.name in ('CLK66','NAD27'):
+        if self.name in ('CLK66', 'NAD27'):
             # Clarke 1866
             self.a_axis = 6378206.4# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/294.9786982# flattening of the ellipsoid
 
-        elif self.name in ('GRS80','NAD83'):
+        elif self.name in ('GRS80', 'NAD83'):
             # Geodetic Reference System 1980
             # North American Datum 1983
             self.a_axis = 6378135.0# [m] semimajor axis of the ellipsoid
@@ -174,7 +175,7 @@ class constants(object):
             self.flat = 1.0/298.25642# flattening of the ellipsoid
 
         # set default parameters if not listed as part of ellipsoid
-        if self.name not in ('GRS80','GRS67','NAD83','TOPEX','EGM96'):
+        if self.name not in ('GRS80', 'GRS67', 'NAD83', 'TOPEX', 'EGM96'):
             # for ellipsoids not listing the Geocentric Gravitational Constant
             self.GM = 3.986004418e14# [m^3/s^2]
 
@@ -388,3 +389,11 @@ class constants(object):
         """Average density
         """
         return self.GM/(self.G*self.volume)
+
+    def __str__(self):
+        """String representation of the ``constants`` object
+        """
+        properties = ['pyTMD.constants']
+        properties.append(f"    name: {self.name}")
+        properties.append(f"    units: {self.units}")
+        return '\n'.join(properties)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (12/2023)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -61,12 +61,14 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    crs.py: Coordinate Reference System (CRS) routines
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
     Updated 04/2023: check if datetime before converting to seconds
@@ -110,21 +112,14 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file
     try:
-        crs = pyproj.CRS.from_string(attributes['projection'])
+        crs = pyTMD.crs().from_input(attributes['projection'])
     except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    # EPSG projection code
+    # coordinate reference system from input argument
     try:
-        crs = pyproj.CRS.from_epsg(int(PROJECTION))
-    except (ValueError,pyproj.exceptions.CRSError):
-        pass
-    else:
-        return crs
-    # coordinate reference system string
-    try:
-        crs = pyproj.CRS.from_string(PROJECTION)
+        crs = pyTMD.crs().from_input(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:

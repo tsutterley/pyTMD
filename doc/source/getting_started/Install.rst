@@ -34,7 +34,7 @@ the `Python Package Index (pypi) <https://pypi.org/project/pyTMD/>`_,
 and from `conda-forge <https://anaconda.org/conda-forge/pytmd>`_.
 
 
-The simplest installation for most users will likely be using ``conda``:
+The simplest installation for most users will likely be using ``conda`` or ``mamba``:
 
 .. code-block:: bash
 

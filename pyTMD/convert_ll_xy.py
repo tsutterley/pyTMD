@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 12/2023: updated function call to use crs class
     Updated 03/2023: deprecated in favor of convert_crs.py
     Updated 02/2023: use named exception before passing to custom
     Updated 11/2022: place some imports within try/except statements
@@ -74,7 +75,7 @@ def convert_ll_xy(*args, **kwargs):
     o2: float
         Projected y-coordinates (``'F'``) or latitude (``'B``')
     """
-    warnings.warn("Deprecated. Please use pyTMD.convert_crs instead",
+    warnings.warn("Deprecated. Please use pyTMD.crs().convert instead",
         DeprecationWarning)
     # call updated function to not break current workflows
-    return pyTMD.convert_crs(*args, **kwargs)
+    return pyTMD.crs().convert(*args, **kwargs)

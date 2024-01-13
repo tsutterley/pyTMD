@@ -8,7 +8,7 @@ Ocean and Load Tides
 The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface.
 Ocean tides are typically observed using float gauges, GPS stations, gravimeters, tiltmeters, pressure recorders, and satellite altimeters.
 For each of these measurements, it is important to note the `vertical datum of the measurement technique <https://www.esr.org/data-products/antarctic_tg_database/ocean-tide-and-ocean-tide-loading/>`_.
-Ocean tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation [Meeus1998]_.
+Ocean tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation [Doodson1921]_ [Meeus1998]_.
 A secondary tidal effect, known as load tides, is due to the elastic response of the Earth's crust to ocean tidal loading, which produces deformation of both the sea floor and adjacent land areas.
 Tidal oscillations for both ocean and load tides can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
 
@@ -21,7 +21,7 @@ or 3) an unconstrained hydrodynamic model [Stammer2014]_.
 Solid Earth Tides
 #################
 
-Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun [Agnew2015]_ [Meeus1998]_ [Montenbruck1989]_.
+Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun [Agnew2015]_ [Doodson1921]_ [Meeus1998]_ [Montenbruck1989]_.
 However, while ocean tides are apparent to observers on the coast, solid Earth tides are typically more difficult to observe due to the reference frame of the observer moving.
 The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object [Agnew2015]_ [Wahr1981]_.
 Analytical approximate positions for the sun and moon can be calculated within ``pyTMD``, and high-resolution numerical ephemerides for the sun and moon can be downloaded from the `Jet Propulsion Laboratory <https://ssd.jpl.nasa.gov/planets/orbits.html>`_.
@@ -81,6 +81,30 @@ As opposed to simple vertical offsets, changing the terrestial reference system 
 This involves converting from a geographic coordinate system into a Cartesian coordinate system.
 Within ``pyTMD``, solid Earth tides are calculated using ECEF coordinates, and pole tides are calculated using geocentric coordinates.
 
+Nutation is the periodic oscillation of the Earth's rotation axis around its mean position.
+Nutation is often split into two components, the nutation in longitude and the nutation in obliquity.
+The angle between the equator and the orbital plane of Earth around the Sun (the ecliptic) defines the inclination of the Earth's rotation axis (obliquity of the ecliptic).
+
+Time
+####
+
+The Julian Day (JD) is the continuous count of days starting at noon on January 1, 4713 B.C (-4712-01-01T12:00:00).
+The Modified Julian Day (MJD) differs from the Julian Day by reducing the number of digits for modern periods, and by beginning at midnight.
+The MJD is calculated from the Julian Day by
+
+.. math::
+    :label: 4
+
+    MJD = JD - 2400000.5
+
+The start of the Modified Julian Day calendar is 1858-11-17T00:00:00.
+Time in Julian centuries (36525 days) are calculated relative to noon on January 1, 2000 (2000-01-01T12:00:00).
+
+.. math::
+    :label: 5
+
+    T = \frac{JD - 2451545.0}{36525}
+
 References
 ##########
 
@@ -89,6 +113,8 @@ References
 .. [Desai2002] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of Geophysical Research: Oceans*, 107(C11), (2002). `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
 
 .. [Desai2015] S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015). `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
+
+.. [Doodson1921] A. T. Doodson and H. Lamb, "The harmonic development of the tide-generating potential", *Proceedings of the Royal Society of London. Series A, Containing Papers of a Mathematical and Physical Character*, 100(704), 305--329, (1921). `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
 
 .. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of Barotropic Ocean Tides", *Journal of Atmospheric and Oceanic Technology*, 19(2), 183--204, (2002). `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
 

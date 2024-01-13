@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (12/2023)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -85,7 +85,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
     arguments.py: load the nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
-    convert_crs.py: convert points to and from Coordinates Reference Systems
+    crs.py: Coordinate Reference System (CRS) routines
     io/model.py: retrieves tide model parameters for named tide models
     io/OTIS.py: extract tidal harmonic constants from OTIS tide models
     io/ATLAS.py: extract tidal harmonic constants from netcdf models
@@ -94,6 +94,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 05/2023: use timescale class for time conversion operations
@@ -160,21 +161,14 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file
     try:
-        crs = pyproj.CRS.from_string(attributes['projection'])
+        crs = pyTMD.crs().from_input(attributes['projection'])
     except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    # EPSG projection code
+    # coordinate reference system from input argument
     try:
-        crs = pyproj.CRS.from_epsg(int(PROJECTION))
-    except (ValueError,pyproj.exceptions.CRSError):
-        pass
-    else:
-        return crs
-    # coordinate reference system string
-    try:
-        crs = pyproj.CRS.from_string(PROJECTION)
+        crs = pyTMD.crs().from_input(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:

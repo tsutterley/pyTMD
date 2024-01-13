@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (01/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
 CALLING SEQUENCE:
-    pu,pf,G = arguments(MJD, constituents)
+    pu, pf, G = arguments(MJD, constituents)
 
 INPUTS:
     MJD: Modified Julian Day of input date
     constituents: tidal constituent IDs
 
 OUTPUTS:
-    pu,pf: nodal corrections for the constituents
+    pu, pf: nodal corrections for the constituents
     G: phase correction in degrees
 
 OPTIONS:
@@ -38,6 +38,11 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 01/2024: add function to create arguments coefficients table
+        add function to calculate the arguments for minor constituents
+        include multiples of 90 degrees as variable following Ray 2017
+        add function to calculate the Doodson numbers for constituents
+    Updated 12/2023: made keyword argument for selecting M1 coefficients
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
         function renamed from original load_nodal_corrections
@@ -68,18 +73,24 @@ def arguments(
         **kwargs
     ):
     """
-    Calculates the nodal corrections for tidal constituents [1]_ [2]_ [3]_
+    Calculates the nodal corrections for tidal constituents
+    [1]_ [2]_ [3]_ [4]_
 
     Parameters
     ----------
     MJD: np.ndarray
-        modified julian day of input date
+        modified Julian day of input date
     constituents: list
         tidal constituent IDs
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT models
+    M1: str, default 'Ray'
+        coefficients to use for M1 tides
+
+                - ``'Doodson'``
+                - ``'Ray'``
 
     Returns
     -------
@@ -110,110 +121,51 @@ def arguments(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('M1', 'Ray')
 
     # constituents array (not all are included in tidal program)
-    cindex = ['sa','ssa','mm','msf','mf','mt','alpha1','2q1','sigma1','q1',
-        'rho1','o1','tau1','m1','chi1','pi1','p1','s1','k1','psi1','phi1',
-        'theta1','j1','oo1','2n2','mu2','n2','nu2','m2a','m2','m2b','lambda2',
-        'l2','t2','s2','r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4',
-        'm4','ms4','mk4','s4','s5','m6','s6','s7','s8','m8','mks2','msqm','mtm',
-        'n4','eps2','z0']
+    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
+        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
+        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
+        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
+        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
+        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
 
     # set function for astronomical longitudes
-    ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
+    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
     # convert from Modified Julian Dates into Ephemeris Time
-    s, h, p, omega, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
+
     # number of temporal values
     nt = len(np.atleast_1d(MJD))
     # initial time conversions
     hour = 24.0*np.mod(MJD, 1)
-    t1 = 15.0*hour
-    t2 = 30.0*hour
-
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((nt))
     # degrees to radians
     dtr = np.pi/180.0
 
-    # Determine equilibrium arguments
-    arg = np.zeros((nt, 60))
-    arg[:,0] = h - pp # Sa
-    arg[:,1] = 2.0*h # Ssa
-    arg[:,2] = s - p # Mm
-    arg[:,3] = 2.0*s - 2.0*h # MSf
-    arg[:,4] = 2.0*s # Mf
-    arg[:,5] = 3.0*s - p # Mt
-    arg[:,6] = t1 - 5.0*s + 3.0*h + p - 90.0 # alpha1
-    arg[:,7] = t1 - 4.0*s + h + 2.0*p - 90.0 # 2Q1
-    arg[:,8] = t1 - 4.0*s + 3.0*h - 90.0 # sigma1
-    arg[:,9] = t1 - 3.0*s + h + p - 90.0 # q1
-    arg[:,10] = t1 - 3.0*s + 3.0*h - p - 90.0 # rho1
-    arg[:,11] = t1 - 2.0*s + h - 90.0 # o1
-    arg[:,12] = t1 - 2.0*s + 3.0*h + 90.0 # tau1
-    arg[:,13] = t1 - s + h + 90.0 # M1
-    arg[:,14] = t1 - s + 3.0*h - p + 90.0 # chi1
-    arg[:,15] = t1 - 2.0*h + pp - 90.0 # pi1
-    arg[:,16] = t1 - h - 90.0 # p1
-    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
-        arg[:,17] = t1 + 90.0 # s1
-    elif kwargs['corrections'] in ('GOT','FES'):
-        arg[:,17] = t1 + 180.0 # s1 (Doodson's phase)
-    arg[:,18] = t1 + h + 90.0 # k1
-    arg[:,19] = t1 + 2.0*h - pp + 90.0 # psi1
-    arg[:,20] = t1 + 3.0*h + 90.0 # phi1
-    arg[:,21] = t1 + s - h + p + 90.0 # theta1
-    arg[:,22] = t1 + s + h - p + 90.0 # J1
-    arg[:,23] = t1 + 2.0*s + h + 90.0 # OO1
-    arg[:,24] = t2 - 4.0*s + 2.0*h + 2.0*p # 2N2
-    arg[:,25] = t2 - 4.0*s + 4.0*h # mu2
-    arg[:,26] = t2 - 3.0*s + 2.0*h + p # n2
-    arg[:,27] = t2 - 3.0*s + 4.0*h - p # nu2
-    arg[:,28] = t2 - 2.0*s + h + pp # M2a
-    arg[:,29] = t2 - 2.0*s + 2.0*h # M2
-    arg[:,30] = t2 - 2.0*s + 3.0*h - pp # M2b
-    arg[:,31] = t2 - s + p + 180.0 # lambda2
-    arg[:,32] = t2 - s + 2.0*h - p + 180.0 # L2
-    arg[:,33] = t2 - h + pp # T2
-    arg[:,34] = t2 # S2
-    arg[:,35] = t2 + h - pp + 180.0 # R2
-    arg[:,36] = t2 + 2.0*h # K2
-    arg[:,37] = t2 + s + 2.0*h - pp # eta2
-    arg[:,38] = t2 - 5.0*s + 4.0*h + p # MNS2
-    arg[:,39] = t2 + 2.0*s - 2.0*h # 2SM2
-    arg[:,40] = 1.5*arg[:,29] # M3
-    arg[:,41] = arg[:,18] + arg[:,29] # MK3
-    arg[:,42] = 3.0*t1 # S3
-    arg[:,43] = arg[:,26] + arg[:,29] # MN4
-    arg[:,44] = 2.0*arg[:,29] # M4
-    arg[:,45] = arg[:,29] + arg[:,34] # MS4
-    arg[:,46] = arg[:,29] + arg[:,36] # MK4
-    arg[:,47] = 4.0*t1 # S4
-    arg[:,48] = 5.0*t1 # S5
-    arg[:,49] = 3.0*arg[:,29] # M6
-    arg[:,50] = 3.0*t2 # S6
-    arg[:,51] = 7.0*t1 # S7
-    arg[:,52] = 4.0*t2 # S8
-    # shallow water constituents
-    arg[:,53] = 4.0*arg[:,29] # m8
-    arg[:,54] = arg[:,29] + arg[:,36] - arg[:,34] # mks2
-    arg[:,55] = 4.0*s - 2.0*h # msqm
-    arg[:,56] = 3.0*s - p # mtm
-    arg[:,57] = 2.0*arg[:,26] # n4
-    arg[:,58] = t2 - 5.0*s + 4.0*h + p # eps2
-    # mean sea level
-    arg[:,59] = 0.0 # Z0
+    # determine equilibrium arguments
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    arg = np.dot(fargs, _arguments_table(**kwargs))
 
     # determine nodal corrections f and u
-    sinn = np.sin(omega*dtr)
-    cosn = np.cos(omega*dtr)
-    sin2n = np.sin(2.0*omega*dtr)
-    cos2n = np.cos(2.0*omega*dtr)
-    sin3n = np.sin(3.0*omega*dtr)
+    sinn = np.sin(n*dtr)
+    cosn = np.cos(n*dtr)
+    sin2n = np.sin(2.0*n*dtr)
+    cos2n = np.cos(2.0*n*dtr)
+    sin3n = np.sin(3.0*n*dtr)
 
     # set nodal corrections
+    # scale factor correction
     f = np.zeros((nt, 60))
+    # phase correction
     u = np.zeros((nt, 60))
     # determine nodal corrections f and u for each model type
-    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
+    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
         f[:,0] = 1.0 # Sa
         f[:,1] = 1.0 # Ssa
         f[:,2] = 1.0 - 0.130*cosn # Mm
@@ -231,12 +183,14 @@ def arguments(
         temp2 = (0.189*sinn - 0.0058*sin2n)**2
         f[:,11] = np.sqrt(temp1 + temp2) # O1
         f[:,12] = 1.0 # tau1
-        # Doodson's
-        # Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-omega)*dtr)
-        # Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-omega)*dtr)
-        # Ray's
-        Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
-        Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
+        if (kwargs['M1'] == 'Doodson'):
+            # A. T. Doodson's coefficients for M1 tides
+            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-n)*dtr)
+            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-n)*dtr)
+        elif (kwargs['M1'] == 'Ray'):
+            # R. Ray's coefficients for M1 tides
+            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-n)*dtr)
+            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-n)*dtr)
         f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
         f[:,14] = np.sqrt((1.0+0.221*cosn)**2+(0.221*sinn)**2) # chi1
         f[:,15] = 1.0 # pi1
@@ -262,8 +216,10 @@ def arguments(
         f[:,29] = f[:,24] # M2
         f[:,30] = 1.0 # M2b
         f[:,31] = 1.0 # lambda2
-        Ltmp1 = 1.0 - 0.25*np.cos(2*p*dtr) - 0.11*np.cos((2.0*p-omega)*dtr) - 0.04*cosn
-        Ltmp2 = 0.25*np.sin(2*p*dtr) + 0.11*np.sin((2.0*p-omega)*dtr) + 0.04*sinn
+        Ltmp1 = 1.0 - 0.25*np.cos(2*p*dtr) - \
+            0.11*np.cos((2.0*p - n)*dtr) - 0.04*cosn
+        Ltmp2 = 0.25*np.sin(2*p*dtr) + \
+            0.11*np.sin((2.0*p - n)*dtr) + 0.04*sinn
         f[:,32] = np.sqrt(Ltmp1**2 + Ltmp2**2) # L2
         f[:,33] = 1.0 # T2
         f[:,34] = 1.0 # S2
@@ -365,10 +321,10 @@ def arguments(
 
     elif kwargs['corrections'] in ('FES',):
         # additional astronomical terms for FES models
-        II = np.arccos(0.913694997 - 0.035692561*np.cos(omega*dtr))
-        at1 = np.arctan(1.01883*np.tan(omega*dtr/2.0))
-        at2 = np.arctan(0.64412*np.tan(omega*dtr/2.0))
-        xi = -at1 - at2 + omega*dtr
+        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
+        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
+        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
+        xi = -at1 - at2 + n*dtr
         xi[xi > np.pi] -= 2.0*np.pi
         nu = at1 - at2
         I2 = np.tan(II/2.0)
@@ -393,9 +349,14 @@ def arguments(
         f[:,9] = f[:,7] # q1
         f[:,10] = f[:,7] # rho1
         f[:,11] = f[:,7] # O1
-        # Ray's
-        Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-omega)*dtr)
-        Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-omega)*dtr)
+        if (kwargs['M1'] == 'Doodson'):
+            # A. T. Doodson's coefficients for M1 tides
+            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-n)*dtr)
+            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-n)*dtr)
+        elif (kwargs['M1'] == 'Ray'):
+            # R. Ray's coefficients for M1 tides
+            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-n)*dtr)
+            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-n)*dtr)
         f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
         f[:,14] = np.sin(2.0*II) / 0.7214 # chi1
         f[:,15] = 1.0 # pi1
@@ -533,15 +494,459 @@ def arguments(
 
     # take pu,pf,G for the set of given constituents
     nc = len(constituents)
+    # scale factor correction
     pu = np.zeros((nt,nc))
+    # phase correction
     pf = np.zeros((nt,nc))
+    # equilibrium arguments
     G = np.zeros((nt,nc))
     for i,c in enumerate(constituents):
         # map between given constituents and supported in tidal program
-        j, = [j for j,val in enumerate(cindex) if (val == c)]
+        assert c.lower() in cindex, f'Unsupported constituent {c.lower()}'
+        j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
         pu[:,i] = u[:,j]*dtr
         pf[:,i] = f[:,j]
         G[:,i] = arg[:,j]
 
     # return values as tuple
     return (pu, pf, G)
+
+def minor_arguments(
+        MJD: np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the nodal corrections for minor tidal constituents
+    in order to infer their values [1]_ [2]_ [3]_ [4]_
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        modified Julian day of input date
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    pu: np.ndarray
+        nodal correction for the constituent amplitude
+    pf: np.ndarray
+        nodal correction for the constituent phase
+    G: np.ndarray
+        phase correction in degrees
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
+        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
+    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
+        model time series," *Advances in Water Resources*, 12(3), 109--120,
+        (1989). `doi: 10.1016/0309-1708(89)90017-1
+        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
+    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
+    """
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
+
+    # degrees to radians
+    dtr = np.pi/180.0
+    # set function for astronomical longitudes
+    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
+    # convert from Modified Julian Dates into Ephemeris Time
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
+        ASTRO5=ASTRO5)
+
+    # number of temporal values
+    nt = len(np.atleast_1d(MJD))
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((nt))
+
+    # determine equilibrium arguments
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    arg = np.dot(fargs, _minor_table())
+
+    # determine nodal corrections f and u
+    sinn = np.sin(n*dtr)
+    cosn = np.cos(n*dtr)
+    sin2n = np.sin(2.0*n*dtr)
+    cos2n = np.cos(2.0*n*dtr)
+
+    # scale factor corrections for minor constituents
+    f = np.ones((nt, 20))
+    f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
+        (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
+    f[:,1] = f[:,0]# sigma1
+    f[:,2] = f[:,0]# rho1
+    f[:,3] = np.sqrt((1.0 + 0.185*cosn)**2 + (0.185*sinn)**2)# M12
+    f[:,4] = np.sqrt((1.0 + 0.201*cosn)**2 + (0.201*sinn)**2)# M11
+    f[:,5] = np.sqrt((1.0 + 0.221*cosn)**2 + (0.221*sinn)**2)# chi1
+    f[:,9] = np.sqrt((1.0 + 0.198*cosn)**2 + (0.198*sinn)**2)# J1
+    f[:,10] = np.sqrt((1.0 + 0.640*cosn + 0.134*cos2n)**2 +
+        (0.640*sinn + 0.134*sin2n)**2)# OO1
+    f[:,11] = np.sqrt((1.0 - 0.0373*cosn)**2 + (0.0373*sinn)**2)# 2N2
+    f[:,12] = f[:,11]# mu2
+    f[:,13] = f[:,11]# nu2
+    f[:,15] = f[:,11]# L2
+    f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
+
+    # phase corrections for minor constituents
+    u = np.zeros((nt, 20))
+    u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
+        1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
+    u[:,1] = u[:,0]# sigma1
+    u[:,2] = u[:,0]# rho1
+    u[:,3] = np.arctan2( 0.185*sinn, 1.0 + 0.185*cosn)/dtr# M12
+    u[:,4] = np.arctan2(-0.201*sinn, 1.0 + 0.201*cosn)/dtr# M11
+    u[:,5] = np.arctan2(-0.221*sinn, 1.0 + 0.221*cosn)/dtr# chi1
+    u[:,9] = np.arctan2(-0.198*sinn, 1.0 + 0.198*cosn)/dtr# J1
+    u[:,10] = np.arctan2(-0.640*sinn - 0.134*sin2n,
+        1.0 + 0.640*cosn + 0.134*cos2n)/dtr# OO1
+    u[:,11] = np.arctan2(-0.0373*sinn, 1.0 - 0.0373*cosn)/dtr# 2N2
+    u[:,12] = u[:,11]# mu2
+    u[:,13] = u[:,11]# nu2
+    u[:,15] = u[:,11]# L2
+    u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr# L2
+
+    if kwargs['corrections'] in ('FES',):
+        # additional astronomical terms for FES models
+        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
+        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
+        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
+        xi = -at1 - at2 + n*dtr
+        xi[xi > np.pi] -= 2.0*np.pi
+        nu = at1 - at2
+        I2 = np.tan(II/2.0)
+        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
+        P2 = np.sin(2.0*(p - xi))
+        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
+        R = np.arctan(P2/Q2)
+
+        # scale factor corrections for minor constituents
+        f[:,0] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1
+        f[:,1] = f[:,0] # sigma1
+        f[:,2] = f[:,0] # rho1
+        f[:,3] = f[:,0] # M12
+        f[:,4] = np.sin(2.0*II)/0.7214 # M11
+        f[:,5] = f[:,4] # chi1
+        f[:,9] = f[:,5] # J1
+        f[:,10] = np.sin(II)*np.power(np.sin(II/2.0),2.0)/0.01640 # OO1
+        f[:,11] = np.power(np.cos(II/2.0),4.0)/0.9154 # 2N2
+        f[:,12] = f[:,11] # mu2
+        f[:,13] = f[:,11] # nu2
+        f[:,14] = f[:,11] # lambda2
+        f[:,15] = f[:,11]*Ra1 # L2
+        f[:,18] = f[:,11] # eps2
+        f[:,19] = np.power(np.sin(II),2.0)/0.1565 # eta2
+
+        # phase corrections for minor constituents
+        u[:,0] = (2.0*xi - nu)/dtr # 2Q1
+        u[:,1] = u[:,0] # sigma1
+        u[:,2] = u[:,0] # rho1
+        u[:,3] = u[:,0] # M12
+        u[:,4] = -nu/dtr # M11
+        u[:,5] = u[:,4] # chi1
+        u[:,9] = u[:,4] # J1
+        u[:,10] = (-2.0*xi - nu)/dtr # OO1
+        u[:,11] = (2.0*xi - 2.0*nu)/dtr # 2N2
+        u[:,12] = u[:,11] # mu2
+        u[:,13] = u[:,11] # nu2
+        u[:,14] = (2.0*xi - 2.0*nu)/dtr # lambda2
+        u[:,15] = (2.0*xi - 2.0*nu - R)/dtr# L2
+        u[:,18] = u[:,12] # eps2
+        u[:,19] = -2.0*nu/dtr # eta2
+
+    # return values as tuple
+    return (u, f, arg)
+
+def doodson_number(
+        constituents: str | list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the Doodson or Cartwright number for
+    tidal constituents [1]_
+
+    Parameters
+    ----------
+    constituents: str, list or np.ndarray
+        tidal constituent ID(s)
+    corrections: str, default 'OTIS'
+        use arguments from OTIS/ATLAS or GOT models
+    formalism: str, default 'Doodson'
+        constituent identifier formalism
+
+            - ``'Cartwright'``
+            - ``'Doodson'``
+
+    Returns
+    -------
+    numbers: float, np.ndarray or dict
+        Doodson or Cartwright number for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('formalism', 'Doodson')
+    # validate inputs
+    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
+        f'Unknown formalism {kwargs["formalism"]}'
+
+    # constituents array (not all are included in tidal program)
+    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
+        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
+        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
+        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
+        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
+        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
+    # get the table of coefficients
+    coefficients = _arguments_table(**kwargs)
+    if isinstance(constituents, str):
+        # map between given constituents and supported in tidal program
+        assert constituents.lower() in cindex, \
+            f'Unsupported constituent {constituents}'
+        j, = [j for j,val in enumerate(cindex) if (val == constituents.lower())]
+        # extract identifier in formalism
+        if (kwargs['formalism'] == 'Cartwright'):
+            # extract Cartwright number
+            numbers = np.array(coefficients[:6,j])
+        elif (kwargs['formalism'] == 'Doodson'):
+            # convert from coefficients to Doodson number
+            numbers = _to_doodson_number(coefficients[:,j])
+    else:
+        # output dictionary with Doodson numbers
+        numbers = {}
+        # for each input constituent
+        for i,c in enumerate(constituents):
+            # map between given constituents and supported in tidal program
+            assert c.lower() in cindex, f'Unsupported constituent {c}'
+            j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
+            # convert from coefficients to Doodson number
+            if (kwargs['formalism'] == 'Cartwright'):
+                # extract Cartwright number
+                numbers[c] = np.array(coefficients[:6,j])
+            elif (kwargs['formalism'] == 'Doodson'):
+                # convert from coefficients to Doodson number
+                numbers[c] = _to_doodson_number(coefficients[:,j])
+    # return the Doodson or Cartwright number
+    return numbers
+
+def _arguments_table(**kwargs):
+    """
+    Arguments table for tidal constituents [1]_ [2]_
+
+    Parameters
+    ----------
+    corrections: str, default 'OTIS'
+        use arguments from OTIS/ATLAS or GOT models
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+
+    # modified Doodson coefficients for constituents
+    # using 7 index variables: tau, s, h, p, n, pp, k
+    # tau: mean lunar time
+    # s: mean longitude of moon
+    # h: mean longitude of sun
+    # p: mean longitude of lunar perigee
+    # n: mean longitude of ascending lunar node
+    # pp: mean longitude of solar perigee
+    # k: 90-degree phase
+    coef = np.zeros((7, 60))
+    coef[:,0] = [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0] # Sa
+    coef[:,1] = [0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0] # Ssa
+    coef[:,2] = [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0] # Mm
+    coef[:,3] = [0.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0] # MSf
+    coef[:,4] = [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Mf
+    coef[:,5] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0] # Mt
+    coef[:,6] = [1.0, -4.0, 2.0, 1.0, 0.0, 0.0, -1.0] # alpha1
+    coef[:,7] = [1.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0] # 2q1
+    coef[:,8] = [1.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0] # sigma1
+    coef[:,9] = [1.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]# q1
+    coef[:,10] = [1.0, -2.0, 2.0, -1.0, 0.0, 0.0, -1.0] # rho1
+    coef[:,11] = [1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0] # o1
+    coef[:,12] = [1.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0] # tau1
+    coef[:,13] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0] # m1
+    coef[:,14] = [1.0, 0.0, 2.0, -1.0, 0.0, 0.0, 1.0] # chi1
+    coef[:,15] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0] # pi1
+    coef[:,16] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0] # p1
+    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
+        coef[:,17] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0] # s1
+    elif kwargs['corrections'] in ('GOT', 'FES'):
+        coef[:,17] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0] # s1 (Doodson's phase)
+    coef[:,18] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0] # k1
+    coef[:,19] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, 1.0] # psi1
+    coef[:,20] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0] # phi1
+    coef[:,21] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0] # theta1
+    coef[:,22] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0] # j1
+    coef[:,23] = [1.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0] # oo1
+    coef[:,24] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0] # 2n2
+    coef[:,25] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0] # mu2
+    coef[:,26] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0] # n2
+    coef[:,27] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0] # nu2
+    coef[:,28] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0] # m2a
+    coef[:,29] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m2
+    coef[:,30] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0] # m2b
+    coef[:,31] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 2.0] # lambda2
+    coef[:,32] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0] # l2
+    coef[:,33] = [2.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0] # t2
+    coef[:,34] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0] # s2
+    coef[:,35] = [2.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0] # r2
+    coef[:,36] = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0] # k2
+    coef[:,37] = [2.0, 3.0, 0.0, 0.0, 0.0, -1.0, 0.0] # eta2
+    coef[:,38] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # mns2
+    coef[:,39] = [2.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0] # 2sm2
+    coef[:,40] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m3
+    coef[:,41] = coef[:,18] + coef[:,29] # mk3
+    coef[:,42] = [3.0, 3.0, -3.0, 0.0, 0.0, 0.0, 0.0] # s3
+    coef[:,43] = coef[:,26] + coef[:,29] # mn4
+    coef[:,44] = [4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m4
+    coef[:,45] = coef[:,29] + coef[:,34] # ms4
+    coef[:,46] = coef[:,29] + coef[:,36] # mk4
+    coef[:,47] = [4.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0] # s4
+    coef[:,48] = [5.0, 5.0, -5.0, 0.0, 0.0, 0.0, 0.0] # s5
+    coef[:,49] = [6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m6
+    coef[:,50] = [6.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0] # s6
+    coef[:,51] = [7.0, 7.0, -7.0, 0.0, 0.0, 0.0, 0.0] # s7
+    coef[:,52] = [8.0, 8.0, -8.0, 0.0, 0.0, 0.0, 0.0] # s8
+    # shallow water constituents
+    coef[:,53] = [8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m8
+    coef[:,54] = coef[:,29] + coef[:,36] - coef[:,34] # mks2
+    coef[:,55] = [0.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0] # msqm
+    coef[:,56] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0] # mtm
+    coef[:,57] = [4.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0] # n4
+    coef[:,58] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
+    # mean sea level
+    coef[:,59] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # z0
+    # return the coefficient table
+    return coef
+
+def _minor_table(**kwargs):
+    """
+    Arguments table for minor tidal constituents [1]_ [2]_
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    """
+    # modified Doodson coefficients for constituents
+    # using 7 index variables: tau, s, h, p, n, pp, k
+    # tau: mean lunar time
+    # s: mean longitude of moon
+    # h: mean longitude of sun
+    # p: mean longitude of lunar perigee
+    # n: mean longitude of ascending lunar node
+    # pp: mean longitude of solar perigee
+    # k: 90-degree phase
+    coef = np.zeros((7, 20))
+    coef[:,0] = [1.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0] # 2q1
+    coef[:,1] = [1.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0] # sigma1
+    coef[:,2] = [1.0, -2.0, 2.0, -1.0, 0.0, 0.0, -1.0] # rho1
+    coef[:,3] = [1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0] # m1
+    coef[:,4] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0] # m1
+    coef[:,5] = [1.0, 0.0, 2.0, -1.0, 0.0, 0.0, 1.0] # chi1
+    coef[:,6] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0] # pi1
+    coef[:,7] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0] # phi1
+    coef[:,8] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0] # theta1
+    coef[:,9] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0] # j1
+    coef[:,10] = [1.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0] # oo1
+    coef[:,11] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0] # 2n2
+    coef[:,12] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0] # mu2
+    coef[:,13] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0] # nu2
+    coef[:,14] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 2.0]# lambda2
+    coef[:,15] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0] # l2
+    coef[:,16] = [2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0] # l2
+    coef[:,17] = [2.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0] # t2
+    coef[:,18] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
+    coef[:,19] = [2.0, 3.0, 0.0, 0.0, 0.0, -1.0, 0.0] # eta2
+    # return the coefficient table
+    return coef
+
+def _to_doodson_number(coef: list | np.ndarray):
+    """
+    Converts Cartwright numbers into a Doodson number
+
+    Parameters
+    ----------
+    coef: list or np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+
+    Returns
+    -------
+    DO: float
+        Doodson number for constituent
+    """
+    # assert length and verify array
+    coef = np.array(coef[:6])
+    # add 5 to values following Doodson convention (prevent negatives)
+    coef[1:] += 5
+    # convert to single number and round off floating point errors
+    DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
+    return np.round(DO, decimals=3)
+
+def _from_doodson_number(DO: float | np.ndarray):
+    """
+    Converts Doodson numbers into Cartwright numbers
+
+    Parameters
+    ----------
+    DO: float or np.ndarray
+        Doodson number for constituent
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+    """
+    # convert from Doodson number to Cartwright numbers
+    # multiply by 1000 to prevent floating point errors
+    coef = np.array([np.mod(1e3*DO, 10**(6-o))//10**(5-o) for o in range(6)])
+    # remove 5 from values following Doodson convention
+    coef[1:] -= 5
+    return coef

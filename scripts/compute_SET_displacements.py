@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (12/2023)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -72,6 +72,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
+    crs.py: Coordinate Reference System (CRS) routines
     time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
@@ -96,6 +97,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
         add option for using higher resolution ephemerides from JPL
@@ -125,21 +127,14 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file
     try:
-        crs = pyproj.CRS.from_string(attributes['projection'])
+        crs = pyTMD.crs().from_input(attributes['projection'])
     except (ValueError,KeyError,pyproj.exceptions.CRSError):
         pass
     else:
         return crs
-    # EPSG projection code
+    # coordinate reference system from input argument
     try:
-        crs = pyproj.CRS.from_epsg(int(PROJECTION))
-    except (ValueError,pyproj.exceptions.CRSError):
-        pass
-    else:
-        return crs
-    # coordinate reference system string
-    try:
-        crs = pyproj.CRS.from_string(PROJECTION)
+        crs = pyTMD.crs().from_input(PROJECTION)
     except (ValueError,pyproj.exceptions.CRSError):
         pass
     else:

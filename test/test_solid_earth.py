@@ -1,5 +1,5 @@
 """
-test_solid_earth.py (04/2023)
+test_solid_earth.py (12/2023)
 Tests the steps for calculating the solid earth tides
 
 PYTHON DEPENDENCIES:
@@ -8,6 +8,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 04/2023: added test for using JPL ephemerides for positions
     Written 04/2023
 """
@@ -129,7 +130,7 @@ def test_phase_angles():
     s, h, p, N, PP = pyTMD.astro.mean_longitudes(MJD, ASTRO5=True)
     PR = dtr*pyTMD.astro.polynomial_sum(np.array([0.0, 1.396971278,
         3.08889e-4, 2.1e-8, 7.0e-9]), T)
-    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    TAU, S, H, P, ZNS, PS = pyTMD.astro.doodson_arguments(MJD)
     assert np.isclose(dtr*s + PR, S)
     assert np.isclose(dtr*h, H)
     assert np.isclose(dtr*p, P)

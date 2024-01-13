@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (12/2023)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 12/2023: pass through VBox and HBox
     Updated 08/2023: place matplotlib within try/except statements
     Updated 05/2023: don't set a default directory for tide models
     Updated 04/2023: using pathlib to define and expand paths
@@ -71,6 +72,9 @@ class widgets:
         kwargs.setdefault('style', {})
         # set style
         self.style = copy.copy(kwargs['style'])
+        # pass through some ipywidgets objects
+        self.HBox = ipywidgets.HBox
+        self.VBox = ipywidgets.VBox
 
         # set the directory with tide models
         self.directory = ipywidgets.Text(

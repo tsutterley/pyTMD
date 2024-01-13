@@ -551,7 +551,7 @@ def convert_julian(JD: np.ndarray, **kwargs):
     else:
         single_value = False
 
-    # verify julian day
+    # verify Julian day
     JDO = np.floor(JD + 0.5)
     C = np.zeros_like(JD)
     # calculate C for dates before and after the switch to Gregorian
@@ -902,6 +902,12 @@ class timescale:
         """Number of dimensions in ``timescale`` object
         """
         return np.ndim(self.MJD)
+
+    def __str__(self):
+        """String representation of the ``timescale`` object
+        """
+        properties = ['pyTMD.time.timescale']
+        return '\n'.join(properties)
 
     def __len__(self):
         """Number of time values

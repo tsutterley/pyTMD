@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (04/2023)
+test_fes_predict.py (01/2024)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 01/2024: test doodson and cartwright numbers of each constituent
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 09/2021: update check tide points to add compression flags
@@ -38,6 +39,7 @@ import pyTMD.time
 import pyTMD.io.model
 import pyTMD.utilities
 import pyTMD.predict
+import pyTMD.arguments
 import pyTMD.check_points
 
 # current file path
@@ -192,6 +194,24 @@ def test_compare_FES2014(METHOD):
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
+    # expected Doodson numbers for constituents
+    exp = {}
+    exp['2n2'] = 235.755
+    exp['k1'] = 165.555
+    exp['k2'] = 275.555
+    exp['m2'] = 255.555
+    exp['m4'] = 455.555
+    exp['mf'] = 75.555
+    exp['mm'] = 65.455
+    exp['msqm'] = 93.555
+    exp['mtm'] = 85.455
+    exp['n2'] = 245.655
+    exp['o1'] = 145.555
+    exp['p1'] = 163.555
+    exp['q1'] = 135.655
+    exp['s1'] = 164.555
+    exp['s2'] = 273.555
+
     # will verify differences between model outputs are within tolerance
     eps = np.finfo(np.float16).eps
     # calculate differences between methods
@@ -199,6 +219,11 @@ def test_compare_FES2014(METHOD):
         # calculate difference in amplitude and phase
         difference = hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
+        # verify doodson numbers
+        assert (constituents.doodson_number[i] == exp[cons])
+        # verify cartwright numbers
+        assert np.all(constituents.cartwright_number[i] ==
+                pyTMD.arguments._from_doodson_number(exp[cons]))
 
     # validate iteration within constituents class
     for field, hc in constituents:

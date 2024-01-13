@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (09/2023)
+Written by Tyler Sutterley (01/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,8 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 01/2024: moved minor arguments calculation into new function
+    Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 09/2023: moved constituent parameters function within this module
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
@@ -43,8 +45,8 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import numpy as np
+import pyTMD.arguments
 import pyTMD.astro
-from pyTMD.arguments import arguments
 from pyTMD.constants import constants
 
 # PURPOSE: Predict tides at single times
@@ -85,22 +87,25 @@ def map(t: float | np.ndarray,
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # number of points and number of constituents
-    npts,nc = np.shape(hc)
+    npts, nc = np.shape(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = arguments(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
+    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+        constituents,
+        deltat=deltat,
+        corrections=corrections
+    )
     # allocate for output tidal elevation
     ht = np.ma.zeros((npts))
-    ht.mask = np.zeros((npts),dtype=bool)
+    ht.mask = np.zeros((npts), dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','TMD3','netcdf'):
+        if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
             # load parameters for each constituent
             amp, ph, omega, alpha, species = _constituent_parameters(c)
             # add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[0,k]
-        elif corrections in ('GOT','FES'):
+        elif corrections in ('GOT', 'FES'):
             th = G[0,k]*np.pi/180.0 + pu[0,k]
         # sum over all tides
         ht.data[:] += pf[0,k]*hc.real[:,k]*np.cos(th) - \
@@ -150,19 +155,22 @@ def drift(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = arguments(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
+    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+        constituents,
+        deltat=deltat,
+        corrections=corrections
+    )
     # allocate for output time series
     ht = np.ma.zeros((nt))
-    ht.mask = np.zeros((nt),dtype=bool)
+    ht.mask = np.zeros((nt), dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','TMD3','netcdf'):
+        if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
             # load parameters for each constituent
             amp, ph, omega, alpha, species = _constituent_parameters(c)
             # add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[:,k]
-        elif corrections in ('GOT','FES'):
+        elif corrections in ('GOT', 'FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         # sum over all tides
         ht.data[:] += pf[:,k]*hc.real[:,k]*np.cos(th) - \
@@ -212,19 +220,22 @@ def time_series(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu,pf,G = arguments(t + 48622.0, constituents,
-        deltat=deltat, corrections=corrections)
+    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+        constituents,
+        deltat=deltat,
+        corrections=corrections
+    )
     # allocate for output time series
     ht = np.ma.zeros((nt))
-    ht.mask = np.zeros((nt),dtype=bool)
+    ht.mask = np.zeros((nt), dtype=bool)
     # for each constituent
     for k,c in enumerate(constituents):
-        if corrections in ('OTIS','ATLAS','TMD3','netcdf'):
+        if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
             # load parameters for each constituent
             amp, ph, omega, alpha, species = _constituent_parameters(c)
             # add component for constituent to output tidal time series
             th = omega*t*86400.0 + ph + pu[:,k]
-        elif corrections in ('GOT','FES'):
+        elif corrections in ('GOT', 'FES'):
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         # sum over all tides at location
         ht.data[:] += pf[:,k]*hc.real[0,k]*np.cos(th) - \
@@ -241,8 +252,8 @@ def infer_minor(
         **kwargs
     ):
     """
-    Calculate the tidal corrections for minor constituents inferred using
-    major constituents [1]_ [2]_ [3]_ [4]_
+    Infer the tidal values for minor constituents using their
+    relation with major constituents [1]_ [2]_ [3]_ [4]_
 
     Parameters
     ----------
@@ -260,7 +271,7 @@ def infer_minor(
     Returns
     -------
     dh: np.ndarray
-        Height from minor constituents
+        tidal time series for minor constituents
 
     References
     ----------
@@ -292,15 +303,13 @@ def infer_minor(
     n = nt if ((npts == 1) & (nt > 1)) else npts
     # allocate for output elevation correction
     dh = np.ma.zeros((n))
-    # convert time from days relative to Jan 1, 1992 to Modified Julian Days
-    MJD = 48622.0 + t
     # major constituents used for inferring minor tides
     cindex = ['q1', 'o1', 'p1', 'k1', 'n2', 'm2', 's2', 'k2', '2n2']
     # re-order major tides to correspond to order of cindex
     z = np.ma.zeros((n,9),dtype=np.complex64)
     nz = 0
     for i,c in enumerate(cindex):
-        j = [j for j,val in enumerate(constituents) if (val == c)]
+        j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
         if j:
             j1, = j
             z[:,i] = zmajor[:,j1]
@@ -310,13 +319,14 @@ def infer_minor(
         raise Exception('Not enough constituents for inference')
 
     # list of minor constituents
-    minor = ['2q1','sigma1','rho1','m12','m11','chi1','pi1','phi1','theta1',
-        'j1','oo1','2n2','mu2','nu2','lambda2','l2','l2','t2','eps2','eta2']
+    minor = ['2q1', 'sigma1', 'rho1', 'm1', 'm1', 'chi1', 'pi1',
+        'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+        'l2', 'l2', 't2', 'eps2', 'eta2']
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
 
     # relationship between major and minor constituent amplitude and phase
-    zmin = np.zeros((n,20),dtype=np.complex64)
+    zmin = np.zeros((n, 20), dtype=np.complex64)
     zmin[:,0] = 0.263*z[:,0] - 0.0252*z[:,1]# 2Q1
     zmin[:,1] = 0.297*z[:,0] - 0.0264*z[:,1]# sigma1
     zmin[:,2] = 0.164*z[:,0] + 0.0048*z[:,1]# rho1
@@ -351,129 +361,19 @@ def infer_minor(
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 
-    hour = (t % 1)*24.0
-    t1 = 15.0*hour
-    t2 = 30.0*hour
-    # set function for astronomical longitudes
-    ASTRO5 = True if kwargs['corrections'] in ('GOT','FES') else False
-    # convert from Modified Julian Dates into Ephemeris Time
-    S,H,P,omega,pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
-        ASTRO5=ASTRO5)
-
-    # determine equilibrium tidal arguments
-    arg = np.zeros((n,20))
-    arg[:,0] = t1 - 4.0*S + H + 2.0*P - 90.0# 2Q1
-    arg[:,1] = t1 - 4.0*S + 3.0*H - 90.0# sigma1
-    arg[:,2] = t1 - 3.0*S + 3.0*H - P - 90.0# rho1
-    arg[:,3] = t1 - S + H - P + 90.0# M12
-    arg[:,4] = t1 - S + H + P + 90.0# M11
-    arg[:,5] = t1 - S + 3.0*H - P + 90.0# chi1
-    arg[:,6] = t1 - 2.0*H + pp - 90.0# pi1
-    arg[:,7] = t1 + 3.0*H + 90.0# phi1
-    arg[:,8] = t1 + S - H + P + 90.0# theta1
-    arg[:,9] = t1 + S + H - P + 90.0# J1
-    arg[:,10] = t1 + 2.0*S + H + 90.0# OO1
-    arg[:,11] = t2 - 4.0*S + 2.0*H + 2.0*P# 2N2
-    arg[:,12] = t2 - 4.0*S + 4.0*H# mu2
-    arg[:,13] = t2 - 3.0*S + 4.0*H - P# nu2
-    arg[:,14] = t2 - S + P + 180.0# lambda2
-    arg[:,15] = t2 - S + 2.0*H - P + 180.0# L2
-    arg[:,16] = t2 - S + 2.0*H + P# L2
-    arg[:,17] = t2 - H + pp# t2
-    arg[:,18] = t2 - 5.0*S + 4.0*H + P # eps2
-    arg[:,19] = t2 + S + 2.0*H - pp # eta2
-
-    # determine nodal corrections f and u
-    sinn = np.sin(omega*dtr)
-    cosn = np.cos(omega*dtr)
-    sin2n = np.sin(2.0*omega*dtr)
-    cos2n = np.cos(2.0*omega*dtr)
-
-    f = np.ones((n,20))
-    f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
-        (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
-    f[:,1] = f[:,0]# sigma1
-    f[:,2] = f[:,0]# rho1
-    f[:,3] = np.sqrt((1.0 + 0.185*cosn)**2 + (0.185*sinn)**2)# M12
-    f[:,4] = np.sqrt((1.0 + 0.201*cosn)**2 + (0.201*sinn)**2)# M11
-    f[:,5] = np.sqrt((1.0 + 0.221*cosn)**2 + (0.221*sinn)**2)# chi1
-    f[:,9] = np.sqrt((1.0 + 0.198*cosn)**2 + (0.198*sinn)**2)# J1
-    f[:,10] = np.sqrt((1.0 + 0.640*cosn + 0.134*cos2n)**2 +
-        (0.640*sinn + 0.134*sin2n)**2)# OO1
-    f[:,11] = np.sqrt((1.0 - 0.0373*cosn)**2 + (0.0373*sinn)**2)# 2N2
-    f[:,12] = f[:,11]# mu2
-    f[:,13] = f[:,11]# nu2
-    f[:,15] = f[:,11]# L2
-    f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
-
-    u = np.zeros((n,20))
-    u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
-        1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
-    u[:,1] = u[:,0]# sigma1
-    u[:,2] = u[:,0]# rho1
-    u[:,3] = np.arctan2( 0.185*sinn, 1.0 + 0.185*cosn)/dtr# M12
-    u[:,4] = np.arctan2(-0.201*sinn, 1.0 + 0.201*cosn)/dtr# M11
-    u[:,5] = np.arctan2(-0.221*sinn, 1.0 + 0.221*cosn)/dtr# chi1
-    u[:,9] = np.arctan2(-0.198*sinn, 1.0 + 0.198*cosn)/dtr# J1
-    u[:,10] = np.arctan2(-0.640*sinn - 0.134*sin2n,
-        1.0 + 0.640*cosn + 0.134*cos2n)/dtr# OO1
-    u[:,11] = np.arctan2(-0.0373*sinn, 1.0 - 0.0373*cosn)/dtr# 2N2
-    u[:,12] = u[:,11]# mu2
-    u[:,13] = u[:,11]# nu2
-    u[:,15] = u[:,11]# L2
-    u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr# L2
-
-    if kwargs['corrections'] in ('FES',):
-        # additional astronomical terms for FES models
-        II = np.arccos(0.913694997 - 0.035692561*np.cos(omega*dtr))
-        at1 = np.arctan(1.01883*np.tan(omega*dtr/2.0))
-        at2 = np.arctan(0.64412*np.tan(omega*dtr/2.0))
-        xi = -at1 - at2 + omega*dtr
-        xi[xi > np.pi] -= 2.0*np.pi
-        nu = at1 - at2
-        I2 = np.tan(II/2.0)
-        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(P - xi)) + 36.0*(I2**4))
-        P2 = np.sin(2.0*(P - xi))
-        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(P - xi))
-        R = np.arctan(P2/Q2)
-
-        f[:,0] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1
-        f[:,1] = f[:,0] # sigma1
-        f[:,2] = f[:,0] # rho1
-        f[:,3] = f[:,0] # M12
-        f[:,4] = np.sin(2.0*II)/0.7214 # M11
-        f[:,5] = f[:,4] # chi1
-        f[:,9] = f[:,5] # J1
-        f[:,10] = np.sin(II)*np.power(np.sin(II/2.0),2.0)/0.01640 # OO1
-        f[:,11] = np.power(np.cos(II/2.0),4.0)/0.9154 # 2N2
-        f[:,12] = f[:,11] # mu2
-        f[:,13] = f[:,11] # nu2
-        f[:,14] = f[:,11] # lambda2
-        f[:,15] = f[:,11]*Ra1 # L2
-        f[:,18] = f[:,11] # eps2
-        f[:,19] = np.power(np.sin(II),2.0)/0.1565 # eta2
-
-        u[:,0] = (2.0*xi - nu)/dtr # 2Q1
-        u[:,1] = u[:,0] # sigma1
-        u[:,2] = u[:,0] # rho1
-        u[:,3] = u[:,0] # M12
-        u[:,4] = -nu/dtr # M11
-        u[:,5] = u[:,4] # chi1
-        u[:,9] = u[:,4] # J1
-        u[:,10] = (-2.0*xi - nu)/dtr # OO1
-        u[:,11] = (2.0*xi - 2.0*nu)/dtr # 2N2
-        u[:,12] = u[:,11] # mu2
-        u[:,13] = u[:,11] # nu2
-        u[:,14] = (2.0*xi - 2.0*nu)/dtr # lambda2
-        u[:,15] = (2.0*xi - 2.0*nu - R)/dtr# L2
-        u[:,18] = u[:,12] # eps2
-        u[:,19] = -2.0*nu/dtr # eta2
+    # load the nodal corrections for minor constituents
+    # convert time to Modified Julian Days (MJD)
+    pu, pf, G = pyTMD.arguments.minor_arguments(t + 48622.0,
+        deltat=kwargs['deltat'],
+        corrections=kwargs['corrections']
+    )
 
     # sum over the minor tidal constituents of interest
     for k in minor_indices:
-        th = (arg[:,k] + u[:,k])*dtr
-        dh += zmin.real[:,k]*f[:,k]*np.cos(th)-zmin.imag[:,k]*f[:,k]*np.sin(th)
-    # return the inferred elevation
+        th = (G[:,k] + pu[:,k])*dtr
+        dh += zmin.real[:,k]*pf[:,k]*np.cos(th) - \
+            zmin.imag[:,k]*pf[:,k]*np.sin(th)
+    # return the inferred values
     return dh
 
 # PURPOSE: estimate long-period equilibrium tides
@@ -714,51 +614,56 @@ def _constituent_parameters(c):
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # constituents array that are included in tidal program
-    cindex = ['m2','s2','k1','o1','n2','p1','k2','q1','2n2','mu2','nu2','l2',
-        't2','j1','m1','oo1','rho1','mf','mm','ssa','m4','ms4','mn4','m6','m8',
-        'mk3','s6','2sm2','2mk3']
+    cindex = ['m2', 's2', 'k1', 'o1', 'n2', 'p1', 'k2', 'q1', '2n2', 'mu2',
+        'nu2', 'l2', 't2', 'j1', 'm1', 'oo1', 'rho1', 'mf', 'mm', 'ssa',
+        'm4', 'ms4', 'mn4', 'm6', 'm8', 'mk3', 's6', '2sm2', '2mk3']
     # species type (spherical harmonic dependence of quadrupole potential)
-    species_all = np.array([2,2,1,1,2,1,2,1,2,2,2,2,2,1,1,1,1,0,0,0,0,0,0,
-        0,0,0,0,0,0])
-    # loading love number
+    _species = np.array([2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 1, 1,
+        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    # Load Love numbers
     # alpha = correction factor for first order load tides
-    alpha_all = np.array([0.693,0.693,0.736,0.695,0.693,0.706,0.693,0.695,0.693,
-        0.693,0.693,0.693,0.693,0.695,0.695,0.695,0.695,0.693,0.693,0.693,
-        0.693,0.693,0.693,0.693,0.693,0.693,0.693,0.693,0.693])
+    _alpha = np.array([0.693, 0.693, 0.736, 0.695, 0.693, 0.706, 0.693,
+        0.695, 0.693, 0.693, 0.693, 0.693, 0.693, 0.695, 0.695, 0.695, 0.695,
+        0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693,
+        0.693, 0.693])
     # omega: angular frequency of constituent, in radians
-    omega_all = np.array([1.405189e-04,1.454441e-04,7.292117e-05,6.759774e-05,
-        1.378797e-04,7.252295e-05,1.458423e-04,6.495854e-05,1.352405e-04,
-        1.355937e-04,1.382329e-04,1.431581e-04,1.452450e-04,7.556036e-05,
-        7.028195e-05,7.824458e-05,6.531174e-05,0.053234e-04,0.026392e-04,
-        0.003982e-04,2.810377e-04,2.859630e-04,2.783984e-04,4.215566e-04,
-        5.620755e-04,2.134402e-04,4.363323e-04,1.503693e-04,2.081166e-04])
+    _omega = np.array([1.405189e-04, 1.454441e-04, 7.292117e-05, 6.759774e-05,
+        1.378797e-04, 7.252295e-05, 1.458423e-04, 6.495854e-05, 1.352405e-04,
+        1.355937e-04, 1.382329e-04, 1.431581e-04, 1.452450e-04, 7.556036e-05,
+        7.028195e-05, 7.824458e-05, 6.531174e-05, 0.053234e-04, 0.026392e-04,
+        0.003982e-04, 2.810377e-04, 2.859630e-04, 2.783984e-04, 4.215566e-04,
+        5.620755e-04, 2.134402e-04, 4.363323e-04, 1.503693e-04, 2.081166e-04])
     # Astronomical arguments (relative to t0 = 1 Jan 0:00 1992)
     # phases for each constituent are referred to the time when the phase of
     # the forcing for that constituent is zero on the Greenwich meridian
-    phase_all = np.array([1.731557546,0.000000000,0.173003674,1.558553872,
-        6.050721243,6.110181633,3.487600001,5.877717569,4.086699633,
-        3.463115091,5.427136701,0.553986502,0.052841931,2.137025284,
-        2.436575100,1.929046130,5.254133027,1.756042456,1.964021610,
-        3.487600001,3.463115091,1.731557546,1.499093481,5.194672637,
-        6.926230184,1.904561220,0.000000000,4.551627762,3.809122439])
+    _phase = np.array([1.731557546, 0.000000000, 0.173003674, 1.558553872,
+        6.050721243, 6.110181633, 3.487600001, 5.877717569, 4.086699633,
+        3.463115091, 5.427136701, 0.553986502, 0.052841931, 2.137025284,
+        2.436575100, 1.929046130, 5.254133027, 1.756042456, 1.964021610,
+        3.487600001, 3.463115091, 1.731557546, 1.499093481, 5.194672637,
+        6.926230184, 1.904561220, 0.000000000, 4.551627762, 3.809122439])
     # amplitudes of equilibrium tide in meters
-    # amplitude_all = np.array([0.242334,0.112743,0.141565,0.100661,0.046397,
-    amplitude_all = np.array([0.2441,0.112743,0.141565,0.100661,0.046397,
-        0.046848,0.030684,0.019273,0.006141,0.007408,0.008811,0.006931,0.006608,
-        0.007915,0.007915,0.004338,0.003661,0.042041,0.022191,0.019567,0.,0.,0.,
-        0.,0.,0.,0.,0.,0.])
+    # _amplitude = np.array([0.242334,0.112743,0.141565,0.100661,0.046397,
+    _amplitude = np.array([0.2441, 0.112743, 0.141565, 0.100661, 0.046397,
+        0.046848, 0.030684, 0.019273, 0.006141, 0.007408, 0.008811, 0.006931,
+        0.006608, 0.007915, 0.007915, 0.004338, 0.003661, 0.042041, 0.022191,
+        0.019567, 0., 0., 0., 0., 0., 0., 0., 0., 0.])
 
     # map between input constituent and cindex
     j = [j for j,val in enumerate(cindex) if (val == c.lower())]
     # set the values for the constituent
     if j:
-        amplitude, = amplitude_all[j]
-        phase, = phase_all[j]
-        omega, = omega_all[j]
-        alpha, = alpha_all[j]
-        species, = species_all[j]
+        amplitude, = _amplitude[j]
+        phase, = _phase[j]
+        omega, = _omega[j]
+        alpha, = _alpha[j]
+        species, = _species[j]
     else:
-        amplitude = 0.0; phase = 0.0; omega = 0.0; alpha = 0.0; species = 0
+        amplitude = 0.0
+        phase = 0.0
+        omega = 0.0
+        alpha = 0.0
+        species = 0
     # return the values for the constituent
     return (amplitude, phase, omega, alpha, species)
 
@@ -1014,8 +919,8 @@ def _frequency_dependence_diurnal(
         [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     ])
-    # get phase angles
-    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    # get phase angles (Doodson arguments)
+    TAU, S, H, P, ZNS, PS = pyTMD.astro.doodson_arguments(MJD)
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))
     sinphi = XYZ[:,2]/radius
@@ -1070,8 +975,8 @@ def _frequency_dependence_long_period(
         [2.0, 0.0, 0.0, 0.0, 0.0, -0.13, -0.11, -0.15, -0.07],
         [2.0, 0.0, 0.0, 1.0, 0.0, -0.05, -0.05, -0.06, -0.03]
     ])
-    # get phase angles
-    S, H, P, TAU, ZNS, PS = pyTMD.astro.phase_angles(MJD)
+    # get phase angles (Doodson arguments)
+    TAU, S, H, P, ZNS, PS = pyTMD.astro.doodson_arguments(MJD)
     # Compute the normalized position vector of coordinates
     radius = np.sqrt(np.sum(XYZ**2, axis=1))
     sinphi = XYZ[:,2]/radius

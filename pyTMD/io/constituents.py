@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (01/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 01/2024: added properties for Doodson and Cartwright numbers
     Updated 08/2023: added default for printing constituent class
     Updated 07/2023: output constituent from get and pop as copy
     Updated 03/2023: add basic variable typing to function inputs
@@ -19,6 +20,7 @@ from __future__ import division, annotations
 
 import copy
 import numpy as np
+import pyTMD.arguments
 
 class constituents:
     """
@@ -152,6 +154,48 @@ class constituents:
         ph.data[ph.mask] = ph.fill_value
         return ph
 
+    @property
+    def doodson_number(self):
+        """constituent Doodson number
+        """
+        doodson_numbers = []
+        # for each constituent ID
+        for f in self.fields:
+            try:
+                # try to get the Doodson number
+                n = pyTMD.arguments.doodson_number(f)
+            except (AssertionError, ValueError) as exc:
+                n = None
+            # add Doodson number to the combined list
+            doodson_numbers.append(n)
+        # return the list of Doodson numbers
+        return doodson_numbers
+
+    @property
+    def cartwright_number(self):
+        """constituent Cartwright numbers
+        """
+        cartwright_numbers = []
+        # for each constituent ID
+        for f in self.fields:
+            try:
+                # try to get the Cartwright numbers
+                n = pyTMD.arguments.doodson_number(f, formalism='Cartwright')
+            except (AssertionError, ValueError) as exc:
+                n = None
+            # add Cartwright numbers to the combined list
+            cartwright_numbers.append(n)
+        # return the list of Cartwright numbers
+        return cartwright_numbers
+
+    def __str__(self):
+        """String representation of the ``constituents`` object
+        """
+        properties = ['pyTMD.constituents']
+        fields = ', '.join(self.fields)
+        properties.append(f"    constituents: {fields}")
+        return '\n'.join(properties)
+
     def __len__(self):
         """Number of constituents
         """
@@ -174,8 +218,3 @@ class constituents:
         constituent = getattr(self, field)
         self.__index__ += 1
         return (field, constituent)
-
-    def __str__(self):
-        """Print the list of constituents
-        """
-        return ', '.join(self.fields)

@@ -12,6 +12,7 @@ ocean, load, solid Earth and pole tides
     getting_started/Install.rst
     getting_started/Getting-Started.rst
     getting_started/Background.rst
+    getting_started/Glossary.rst
     getting_started/Contributing.rst
     getting_started/Code-of-Conduct.rst
     getting_started/Resources.rst
@@ -34,7 +35,7 @@ ocean, load, solid Earth and pole tides
     api_reference/check_points.rst
     api_reference/compute_tide_corrections.rst
     api_reference/constants.rst
-    api_reference/convert_crs.rst
+    api_reference/crs.rst
     api_reference/ellipse.rst
     api_reference/eop.rst
     api_reference/interpolate.rst
@@ -46,6 +47,7 @@ ocean, load, solid Earth and pole tides
     api_reference/io/model.rst
     api_reference/io/ocean_pole_tide.rst
     api_reference/predict.rst
+    api_reference/solve.rst
     api_reference/spatial.rst
     api_reference/time.rst
     api_reference/utilities.rst

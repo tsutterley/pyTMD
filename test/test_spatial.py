@@ -400,7 +400,7 @@ def test_convert_geodetic():
     assert np.isclose(longitude, ln1).all()
     assert np.isclose(latitude, lt1).all()
     assert np.isclose(height, h1).all()
-     # validate outputs for Bowring iterative method
+    # validate outputs for Bowring iterative method
     assert np.isclose(longitude, ln2).all()
     assert np.isclose(latitude, lt2).all()
     assert np.isclose(height, h2).all()

@@ -11,17 +11,18 @@ matplotlib and cartopy
 
 Documentation is available at https://pytmd.readthedocs.io
 """
+import pyTMD.arguments
 import pyTMD.astro
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
+import pyTMD.solve
 import pyTMD.spatial
 import pyTMD.time
 import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
-from pyTMD.arguments import arguments
 from pyTMD.check_points import check_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,
@@ -36,6 +37,7 @@ from pyTMD.constants import (
     _ellipsoids
 )
 from pyTMD.convert_crs import convert_crs
+from pyTMD.crs import crs
 from pyTMD.ellipse import ellipse
 
 # Deprecated functions

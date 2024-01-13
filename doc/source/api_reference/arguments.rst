@@ -3,7 +3,7 @@ arguments
 =========
 
 - Calculates the nodal corrections for tidal constituents
-- Based on Richard Ray's ``ARGUMENTS`` fortran subroutine
+- Originally based on Richard Ray's ``ARGUMENTS`` fortran subroutine
 
 Calling Sequence
 ----------------
@@ -11,11 +11,23 @@ Calling Sequence
 .. code-block:: python
 
     import pyTMD.arguments
-    pu,pf,G = pyTMD.arguments(MJD, constituents,
+    pu,pf,G = pyTMD.arguments.arguments(MJD, constituents,
         deltat=DELTAT, corrections=CORRECTIONS)
 
 `Source code`__
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/arguments.py
 
-.. autofunction:: pyTMD.arguments
+.. autofunction:: pyTMD.arguments.arguments
+
+.. autofunction:: pyTMD.arguments.minor_arguments
+
+.. autofunction:: pyTMD.arguments.doodson_number
+
+.. autofunction:: pyTMD.arguments._arguments_table
+
+.. autofunction:: pyTMD.arguments._minor_table
+
+.. autofunction:: pyTMD.arguments._to_doodson_number
+
+.. autofunction:: pyTMD.arguments._from_doodson_number
