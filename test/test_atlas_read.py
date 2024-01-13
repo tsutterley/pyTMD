@@ -38,6 +38,7 @@ import numpy as np
 import pyTMD.io
 import pyTMD.time
 import pyTMD.io.model
+import pyTMD.arguments
 import pyTMD.utilities
 
 # current file path
@@ -197,6 +198,13 @@ def test_compare_TPXO9_v2(METHOD):
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
+    # expected Doodson numbers for constituents
+    exp = {}
+    exp['m2'] = 255.555
+    exp['s2'] = 273.555
+    exp['o1'] = 145.555
+    exp['k1'] = 165.555
+
     # will verify differences between model outputs are within tolerance
     eps = np.finfo(np.float16).eps
     # calculate differences between methods
@@ -206,6 +214,11 @@ def test_compare_TPXO9_v2(METHOD):
         # calculate difference in amplitude and phase
         difference = hc1[:,i] - hc2[:,i]
         assert np.all(np.abs(difference) <= eps)
+        # verify doodson numbers
+        assert (constituents.doodson_number[i] == exp[cons])
+        # verify cartwright numbers
+        assert np.all(constituents.cartwright_number[i] ==
+                pyTMD.arguments._from_doodson_number(exp[cons]))
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['bilinear'])

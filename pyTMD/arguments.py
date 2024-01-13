@@ -502,6 +502,7 @@ def arguments(
     G = np.zeros((nt,nc))
     for i,c in enumerate(constituents):
         # map between given constituents and supported in tidal program
+        assert c.lower() in cindex, f'Unsupported constituent {c.lower()}'
         j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
         pu[:,i] = u[:,j]*dtr
         pf[:,i] = f[:,j]
@@ -707,6 +708,8 @@ def doodson_number(
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
     kwargs.setdefault('formalism', 'Doodson')
+    # validate inputs
+    assert kwargs['formalism'] in ('Cartwright', 'Doodson'), 'Unknown formalism'
 
     # constituents array (not all are included in tidal program)
     cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
@@ -719,6 +722,7 @@ def doodson_number(
     coefficients = _arguments_table(**kwargs)
     if isinstance(constituents, str):
         # map between given constituents and supported in tidal program
+        assert constituents.lower() in cindex, f'Unsupported constituent'
         j, = [j for j,val in enumerate(cindex) if (val == constituents.lower())]
         # extract identifier in formalism
         if (kwargs['formalism'] == 'Cartwright'):
@@ -733,6 +737,7 @@ def doodson_number(
         # for each input constituent
         for i,c in enumerate(constituents):
             # map between given constituents and supported in tidal program
+            assert c.lower() in cindex, f'Unsupported constituent {c.lower()}'
             j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
             # convert from coefficients to Doodson number
             if (kwargs['formalism'] == 'Cartwright'):

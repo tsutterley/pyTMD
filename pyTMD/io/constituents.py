@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (08/2023)
+Written by Tyler Sutterley (01/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 01/2024: added properties for Doodson and Cartwright numbers
     Updated 08/2023: added default for printing constituent class
     Updated 07/2023: output constituent from get and pop as copy
     Updated 03/2023: add basic variable typing to function inputs
@@ -19,6 +20,7 @@ from __future__ import division, annotations
 
 import copy
 import numpy as np
+import pyTMD.arguments
 
 class constituents:
     """
@@ -151,6 +153,19 @@ class constituents:
         ph.mask = np.copy(constituent.mask)
         ph.data[ph.mask] = ph.fill_value
         return ph
+
+    @property
+    def doodson_number(self):
+        """Doodson number of constituents
+        """
+        return [pyTMD.arguments.doodson_number(f) for f in self.fields]
+
+    @property
+    def cartwright_number(self):
+        """Cartwright numbers of constituents
+        """
+        return [pyTMD.arguments.doodson_number(f, formalism='Cartwright')
+                for f in self.fields]
 
     def __str__(self):
         """String representation of the ``constituents`` object
