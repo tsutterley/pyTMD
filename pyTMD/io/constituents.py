@@ -156,13 +156,13 @@ class constituents:
 
     @property
     def doodson_number(self):
-        """Doodson number of constituents
+        """constituent Doodson number
         """
         return [pyTMD.arguments.doodson_number(f) for f in self.fields]
 
     @property
     def cartwright_number(self):
-        """Cartwright numbers of constituents
+        """constituent Cartwright numbers
         """
         return [pyTMD.arguments.doodson_number(f, formalism='Cartwright')
                 for f in self.fields]

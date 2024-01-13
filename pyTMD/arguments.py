@@ -694,7 +694,7 @@ def doodson_number(
 
     Returns
     -------
-    numbers: float or dict
+    numbers: float, np.ndarray or dict
         Doodson or Cartwright number for each constituent
 
     References
@@ -709,7 +709,8 @@ def doodson_number(
     kwargs.setdefault('corrections', 'OTIS')
     kwargs.setdefault('formalism', 'Doodson')
     # validate inputs
-    assert kwargs['formalism'] in ('Cartwright', 'Doodson'), 'Unknown formalism'
+    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
+        f'Unknown formalism {kwargs["formalism"]}'
 
     # constituents array (not all are included in tidal program)
     cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
@@ -722,7 +723,8 @@ def doodson_number(
     coefficients = _arguments_table(**kwargs)
     if isinstance(constituents, str):
         # map between given constituents and supported in tidal program
-        assert constituents.lower() in cindex, f'Unsupported constituent'
+        assert constituents.lower() in cindex, \
+            f'Unsupported constituent {constituents}'
         j, = [j for j,val in enumerate(cindex) if (val == constituents.lower())]
         # extract identifier in formalism
         if (kwargs['formalism'] == 'Cartwright'):
@@ -737,7 +739,7 @@ def doodson_number(
         # for each input constituent
         for i,c in enumerate(constituents):
             # map between given constituents and supported in tidal program
-            assert c.lower() in cindex, f'Unsupported constituent {c.lower()}'
+            assert c.lower() in cindex, f'Unsupported constituent {c}'
             j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
             # convert from coefficients to Doodson number
             if (kwargs['formalism'] == 'Cartwright'):
