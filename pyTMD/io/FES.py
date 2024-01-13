@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (06/2023)
+Written by Tyler Sutterley (01/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -56,6 +56,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 01/2024: attempt to extract constituent IDs from filenames
     Updated 06/2023: extract ocean tide model variables for FES2012
     Updated 04/2023: added global HAMTIDE11 model
         using pathlib to define and expand tide model paths
@@ -353,6 +354,11 @@ def read_constants(
         model_file = pathlib.Path(model_file).expanduser()
         if not model_file.exists():
             raise FileNotFoundError(str(model_file))
+        # try to parse the constituent from the model file
+        try:
+            cons = pyTMD.io.model.parse_file(model_file, raise_error=True)
+        except ValueError as exc:
+            cons = str(i)
         # read constituent from elevation file
         if kwargs['version'] in ('FES1999','FES2004'):
             # FES ascii constituent files
@@ -367,7 +373,7 @@ def read_constants(
             lon = extend_array(lon, dlon)
             hc = extend_matrix(hc)
         # append extended constituent
-        constituents.append(str(i), hc)
+        constituents.append(cons, hc)
         # set model coordinates
         setattr(constituents, 'longitude', lon)
         setattr(constituents, 'latitude', lat)

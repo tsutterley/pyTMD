@@ -158,14 +158,35 @@ class constituents:
     def doodson_number(self):
         """constituent Doodson number
         """
-        return [pyTMD.arguments.doodson_number(f) for f in self.fields]
+        doodson_numbers = []
+        # for each constituent ID
+        for f in self.fields:
+            try:
+                # try to get the Doodson number
+                n = pyTMD.arguments.doodson_number(f)
+            except (AssertionError, ValueError) as exc:
+                n = None
+            # add Doodson number to the combined list
+            doodson_numbers.append(n)
+        # return the list of Doodson numbers
+        return doodson_numbers
 
     @property
     def cartwright_number(self):
         """constituent Cartwright numbers
         """
-        return [pyTMD.arguments.doodson_number(f, formalism='Cartwright')
-                for f in self.fields]
+        cartwright_numbers = []
+        # for each constituent ID
+        for f in self.fields:
+            try:
+                # try to get the Cartwright numbers
+                n = pyTMD.arguments.doodson_number(f, formalism='Cartwright')
+            except (AssertionError, ValueError) as exc:
+                n = None
+            # add Cartwright numbers to the combined list
+            cartwright_numbers.append(n)
+        # return the list of Cartwright numbers
+        return cartwright_numbers
 
     def __str__(self):
         """String representation of the ``constituents`` object

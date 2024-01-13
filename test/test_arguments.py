@@ -198,6 +198,8 @@ def test_doodson():
     exp['ssa'] = 57.555
     exp['msf'] = 73.555
     exp['mf'] = 75.555
+    exp['msqm'] = 93.555
+    exp['mtm'] = 85.455
     # short-period species
     exp['m3'] = 355.555
     exp['m4'] = 455.555
