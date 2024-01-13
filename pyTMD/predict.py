@@ -309,7 +309,7 @@ def infer_minor(
     z = np.ma.zeros((n,9),dtype=np.complex64)
     nz = 0
     for i,c in enumerate(cindex):
-        j = [j for j,val in enumerate(constituents) if (val == c)]
+        j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
         if j:
             j1, = j
             z[:,i] = zmajor[:,j1]

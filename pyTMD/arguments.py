@@ -502,7 +502,7 @@ def arguments(
     G = np.zeros((nt,nc))
     for i,c in enumerate(constituents):
         # map between given constituents and supported in tidal program
-        j, = [j for j,val in enumerate(cindex) if (val == c)]
+        j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
         pu[:,i] = u[:,j]*dtr
         pf[:,i] = f[:,j]
         G[:,i] = arg[:,j]
@@ -688,8 +688,8 @@ def doodson_number(
     formalism: str, default 'Doodson'
         constituent identifier formalism
 
-            - ``'Doodson'``
             - ``'Cartwright'``
+            - ``'Doodson'``
 
     Returns
     -------
@@ -719,7 +719,7 @@ def doodson_number(
     coefficients = _arguments_table(**kwargs)
     if isinstance(constituents, str):
         # map between given constituents and supported in tidal program
-        j, = [j for j,val in enumerate(cindex) if (val == constituents)]
+        j, = [j for j,val in enumerate(cindex) if (val == constituents.lower())]
         # extract identifier in formalism
         if (kwargs['formalism'] == 'Cartwright'):
             # extract Cartwright number
@@ -733,7 +733,7 @@ def doodson_number(
         # for each input constituent
         for i,c in enumerate(constituents):
             # map between given constituents and supported in tidal program
-            j, = [j for j,val in enumerate(cindex) if (val == c)]
+            j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
             # convert from coefficients to Doodson number
             if (kwargs['formalism'] == 'Cartwright'):
                 # extract Cartwright number
