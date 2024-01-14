@@ -186,7 +186,7 @@ def extract_constants(
             - ``'OTIS'``: combined global or local solution
             - ``'TMD3'``: combined global or local netCDF4 solution
     apply_flexure: bool, default False
-        Apply ice flexure scaling factor to height constituents
+        Apply ice flexure scaling factor to height values
 
     Returns
     -------
@@ -491,7 +491,7 @@ def read_constants(
             - ``'OTIS'``: combined global or local solution
             - ``'TMD3'``: combined global or local netCDF4 solution
     apply_flexure: bool, default False
-        Apply ice flexure scaling factor to height constituents
+        Apply ice flexure scaling factor to height values
 
     Returns
     -------

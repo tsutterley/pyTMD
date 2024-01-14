@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (01/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -57,7 +57,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
-    --apply-flexure: Apply ice flexure scaling factor to height constituents
+    --infer-minor: Infer the height values for minor constituents
+    --apply-flexure: Apply ice flexure scaling factor to height values
         Only valid for models containing flexure fields
     -f X, --fill-value X: Invalid value for spatial fields
     -V, --verbose: Verbose output of processing run
@@ -97,6 +98,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 01/2024: made the inferrence of minor constituents an option
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -199,6 +201,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     METHOD='spline',
     EXTRAPOLATE=False,
     CUTOFF=None,
+    INFER_MINOR=False,
     APPLY_FLEXURE=False,
     FILL_VALUE=-9999.0,
     VERBOSE=False,
@@ -312,15 +315,19 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     # calculate constituent oscillation
     hc = amp*np.exp(cph)
 
-    # predict tidal elevations at time and infer minor corrections
+    # predict tidal elevations at time
     if (TYPE == 'grid'):
         tide = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
-            MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
-                deltat=deltat[i], corrections=model.format)
+            # calculate values for minor constituents by inferrence
+            if INFER_MINOR:
+                MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
+                    deltat=deltat[i], corrections=model.format)
+            else:
+                MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components and reform grid
             tide[:,:,i] = np.reshape((TIDE+MINOR), (ny,nx))
             tide.mask[:,:,i] = np.reshape((TIDE.mask | MINOR.mask), (ny,nx))
@@ -329,18 +336,26 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
             deltat=deltat, corrections=model.format)
-        minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
-            deltat=deltat, corrections=model.format)
-        tide.data[:] += minor.data[:]
+        # calculate values for minor constituents by inferrence
+        if INFER_MINOR:
+            minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
+                deltat=deltat, corrections=model.format)
+            tide.data[:] += minor.data[:]
     elif (TYPE == 'time series'):
         tide = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         tide.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
             # calculate constituent oscillation for station
-            TIDE = pyTMD.predict.time_series(timescale.tide, hc[s,None,:], c,
+            HC = hc[s,None,:]
+            TIDE = pyTMD.predict.time_series(timescale.tide, HC, c,
                 deltat=deltat, corrections=model.format)
-            MINOR = pyTMD.predict.infer_minor(timescale.tide, hc[s,None,:], c,
-                deltat=deltat, corrections=model.format)
+            # calculate values for minor constituents by inferrence
+            if INFER_MINOR:
+                MINOR = pyTMD.predict.infer_minor(timescale.tide, HC, c,
+                    deltat=deltat, corrections=model.format)
+            else:
+                MINOR = np.ma.zeros_like(TIDE)
+            # add major and minor components
             tide.data[s,:] = TIDE.data[:] + MINOR.data[:]
             tide.mask[s,:] = (TIDE.mask | MINOR.mask)
     # replace invalid values with fill value
@@ -494,10 +509,14 @@ def arguments():
     parser.add_argument('--cutoff','-c',
         type=np.float64, default=10.0,
         help='Extrapolation cutoff in kilometers')
-    # apply flexure scaling factors to height constituents
+    # infer minor constituents from major
+    parser.add_argument('--infer-minor',
+        default=False, action='store_true',
+        help='Infer the height values for minor constituents')
+    # apply flexure scaling factors to height values
     parser.add_argument('--apply-flexure',
         default=False, action='store_true',
-        help='Apply ice flexure scaling factor to height constituents')
+        help='Apply ice flexure scaling factor to height values')
     # fill value for output spatial fields
     parser.add_argument('--fill-value','-f',
         type=float, default=-9999.0,
@@ -545,6 +564,7 @@ def main():
         EXTRAPOLATE=args.extrapolate,
         CUTOFF=args.cutoff,
         APPLY_FLEXURE=args.apply_flexure,
+        INFER_MINOR=args.infer_minor,
         FILL_VALUE=args.fill_value,
         VERBOSE=args.verbose,
         MODE=args.mode)
