@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2024: moved minor arguments calculation into new function
+        added more constituent parameters for OTIS/ATLAS predictions
     Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 09/2023: moved constituent parameters function within this module
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -582,7 +583,7 @@ def solid_earth_tide(
     # return the solid earth tide
     return dxt
 
-def _constituent_parameters(c):
+def _constituent_parameters(c, **kwargs):
     """
     Loads parameters for a given tidal constituent
 
@@ -590,6 +591,8 @@ def _constituent_parameters(c):
     ----------
     c: list
         tidal constituent ID
+    raise_error: bool, default False
+        Raise exception if constituent is unsupported
 
     Returns
     -------
@@ -613,26 +616,30 @@ def _constituent_parameters(c):
 
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
+    # default keyword arguments
+    kwargs.setdefault('raise_error', False)
     # constituents array that are included in tidal program
     cindex = ['m2', 's2', 'k1', 'o1', 'n2', 'p1', 'k2', 'q1', '2n2', 'mu2',
         'nu2', 'l2', 't2', 'j1', 'm1', 'oo1', 'rho1', 'mf', 'mm', 'ssa',
-        'm4', 'ms4', 'mn4', 'm6', 'm8', 'mk3', 's6', '2sm2', '2mk3']
+        'm4', 'ms4', 'mn4', 'm6', 'm8', 'mk3', 's6', '2sm2', '2mk3',
+        'msf', 'sa', 'mt', '2q1']
     # species type (spherical harmonic dependence of quadrupole potential)
     _species = np.array([2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 1, 1,
-        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
     # Load Love numbers
     # alpha = correction factor for first order load tides
     _alpha = np.array([0.693, 0.693, 0.736, 0.695, 0.693, 0.706, 0.693,
         0.695, 0.693, 0.693, 0.693, 0.693, 0.693, 0.695, 0.695, 0.695, 0.695,
         0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693, 0.693,
-        0.693, 0.693])
+        0.693, 0.693, 0.693, 0.693, 0.693, 0.693])
     # omega: angular frequency of constituent, in radians
     _omega = np.array([1.405189e-04, 1.454441e-04, 7.292117e-05, 6.759774e-05,
         1.378797e-04, 7.252295e-05, 1.458423e-04, 6.495854e-05, 1.352405e-04,
         1.355937e-04, 1.382329e-04, 1.431581e-04, 1.452450e-04, 7.556036e-05,
         7.028195e-05, 7.824458e-05, 6.531174e-05, 0.053234e-04, 0.026392e-04,
         0.003982e-04, 2.810377e-04, 2.859630e-04, 2.783984e-04, 4.215566e-04,
-        5.620755e-04, 2.134402e-04, 4.363323e-04, 1.503693e-04, 2.081166e-04])
+        5.620755e-04, 2.134402e-04, 4.363323e-04, 1.503693e-04, 2.081166e-04,
+        4.925200e-06, 1.990970e-07, 7.962619e-06, 6.231934e-05])
     # Astronomical arguments (relative to t0 = 1 Jan 0:00 1992)
     # phases for each constituent are referred to the time when the phase of
     # the forcing for that constituent is zero on the Greenwich meridian
@@ -641,13 +648,15 @@ def _constituent_parameters(c):
         3.463115091, 5.427136701, 0.553986502, 0.052841931, 2.137025284,
         2.436575100, 1.929046130, 5.254133027, 1.756042456, 1.964021610,
         3.487600001, 3.463115091, 1.731557546, 1.499093481, 5.194672637,
-        6.926230184, 1.904561220, 0.000000000, 4.551627762, 3.809122439])
+        6.926230184, 1.904561220, 0.000000000, 4.551627762, 3.809122439,
+        4.551627762, 6.232786837, 3.720064066, 3.91369596])
     # amplitudes of equilibrium tide in meters
     # _amplitude = np.array([0.242334,0.112743,0.141565,0.100661,0.046397,
     _amplitude = np.array([0.2441, 0.112743, 0.141565, 0.100661, 0.046397,
         0.046848, 0.030684, 0.019273, 0.006141, 0.007408, 0.008811, 0.006931,
         0.006608, 0.007915, 0.007915, 0.004338, 0.003661, 0.042041, 0.022191,
-        0.019567, 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+        0.019567, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.003681, 0.003104,
+        0.008044, 0.002565])
 
     # map between input constituent and cindex
     j = [j for j,val in enumerate(cindex) if (val == c.lower())]
@@ -658,6 +667,8 @@ def _constituent_parameters(c):
         omega, = _omega[j]
         alpha, = _alpha[j]
         species, = _species[j]
+    elif kwargs['raise_error']:
+        raise ValueError(f'Unsupported constituent {c}')
     else:
         amplitude = 0.0
         phase = 0.0

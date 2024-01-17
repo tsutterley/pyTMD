@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (01/2024)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -97,6 +97,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
@@ -239,14 +240,8 @@ def compute_SET_displacements(input_file, output_file,
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
     # compute ephemerides for lunisolar coordinates
-    if (EPHEMERIDES.lower() == 'approximate'):
-        # get low-resolution solar and lunar ephemerides
-        SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD)
-        LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD)
-    elif (EPHEMERIDES.upper() == 'JPL'):
-        # compute solar and lunar ephemerides from JPL kernel
-        SX, SY, SZ = pyTMD.astro.solar_ephemerides(timescale.MJD)
-        LX, LY, LZ = pyTMD.astro.lunar_ephemerides(timescale.MJD)
+    SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD, ephemerides=EPHEMERIDES)
+    LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD, ephemerides=EPHEMERIDES)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):

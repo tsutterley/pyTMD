@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 astro.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (01/2024)
 Astronomical and nutation routines
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ REFERENCES:
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
+    Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: refactored phase_angles function to doodson_arguments
         added option to compute mean lunar time using equinox method
     Updated 05/2023: add wrapper function for nutation angles
@@ -430,7 +431,47 @@ def mean_obliquity(MJD: np.ndarray):
     return atr*polynomial_sum(epsilon0, T)
 
 # PURPOSE: compute coordinates of the sun in an ECEF frame
-def solar_ecef(MJD: np.ndarray):
+def solar_ecef(MJD: np.ndarray, **kwargs):
+    """
+    Wrapper function for calculating the positional coordinates
+    of the sun in an Earth-centric, Earth-Fixed (ECEF) frame
+    [1]_ [2]_ [3]_
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        Modified Julian Day (MJD) of input date
+    ephemerides: str, default 'approximate'
+        Method for calculating solar ephemerides
+
+            - ``'approximate'``: low-resolution ephemerides
+            - ``'JPL'``: computed ephemerides from JPL kernels
+    kwargs: dict
+        Keyword options for ephemeris calculation
+
+    Returns
+    -------
+    X, Y, Z: np.ndarray
+        ECEF coordinates of the sun (meters)
+
+    References
+    ----------
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
+        146 pp., (1989).
+    .. [3] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
+        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
+        *The Astronomical Journal*, 161(3), 105, (2021).
+        `doi: 10.3847/1538-3881/abd414
+        <https://doi.org/10.3847/1538-3881/abd414>`_
+    """
+    kwargs.setdefault('ephemerides', 'approximate')
+    if (kwargs['ephemerides'].lower() == 'approximate'):
+        return solar_approximate(MJD, **kwargs)
+    elif (kwargs['ephemerides'].upper() == 'JPL'):
+        return solar_ephemerides(MJD, **kwargs)
+
+def solar_approximate(MJD, **kwargs):
     """
     Computes approximate positional coordinates of the sun in an
     Earth-centric, Earth-Fixed (ECEF) frame [1]_ [2]_
@@ -537,7 +578,47 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     return (X, Y, Z)
 
 # PURPOSE: compute coordinates of the moon in an ECEF frame
-def lunar_ecef(MJD: np.ndarray):
+def lunar_ecef(MJD: np.ndarray, **kwargs):
+    """
+    Wrapper function for calculating the positional coordinates
+    of the moon in an Earth-centric, Earth-Fixed (ECEF) frame
+    [1]_ [2]_ [3]_
+
+    Parameters
+    ----------
+    MJD: np.ndarray
+        Modified Julian Day (MJD) of input date
+    ephemerides: str, default 'approximate'
+        Method for calculating lunar ephemerides
+
+            - ``'approximate'``: low-resolution ephemerides
+            - ``'JPL'``: computed ephemerides from JPL kernels
+    kwargs: dict
+        Keyword options for ephemeris calculation
+
+    Returns
+    -------
+    X, Y, Z: np.ndarray
+        ECEF coordinates of the moon (meters)
+
+    References
+    ----------
+    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
+    .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
+        146 pp., (1989).
+    .. [3] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
+        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
+        *The Astronomical Journal*, 161(3), 105, (2021).
+        `doi: 10.3847/1538-3881/abd414
+        <https://doi.org/10.3847/1538-3881/abd414>`_
+    """
+    kwargs.setdefault('ephemerides', 'approximate')
+    if (kwargs['ephemerides'].lower() == 'approximate'):
+        return lunar_approximate(MJD, **kwargs)
+    elif (kwargs['ephemerides'].upper() == 'JPL'):
+        return lunar_ephemerides(MJD, **kwargs)
+
+def lunar_approximate(MJD, **kwargs):
     """
     Computes approximate positional coordinates of the moon in an
     Earth-centric, Earth-Fixed (ECEF) frame [1]_ [2]_

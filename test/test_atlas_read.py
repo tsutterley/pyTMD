@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 01/2024: test doodson and cartwright numbers of each constituent
+        refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -389,7 +390,7 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     # time dimension
     delta_time = 0.0
     # calculate tide map
-    tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
+    tide = pyTMD.compute.tide_elevations(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL=MODEL, GZIP=True,
         EPOCH=(2000,1,1,0,0,0), TYPE='grid', TIME='TAI',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)

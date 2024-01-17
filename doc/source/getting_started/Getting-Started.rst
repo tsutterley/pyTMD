@@ -83,14 +83,23 @@ Programs
 ########
 
 For users wanting to compute tide corrections for use with numpy arrays or pandas dataframes
-`compute_tide_corrections() <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute_tide_corrections.py>`_
-is the place to start.  It is a function that takes ``x``, ``y``, and ``time`` coordinates and
-computes the corresponding tidal elevation.
+`pyTMD.compute <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/compute.py>`_
+is the place to start.
+These are a series of functions that take ``x``, ``y``, and ``time`` coordinates and
+compute the corresponding tidal elevation or currents.
 
 .. code-block:: python
 
-    tide = compute_tide_corrections(x, y, delta_time, DIRECTORY=path_to_tide_models,
-        MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='GPS',
+    import pyTMD
+    tide_h = pyTMD.compute.tide_elevations(x, y, delta_time,
+        DIRECTORY=path_to_tide_models,
+        MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0),
+        TYPE='drift', TIME='GPS',
+        METHOD='spline', FILL_VALUE=np.nan)
+    tide_uv = pyTMD.compute.tide_currents(x, y, delta_time,
+        DIRECTORY=path_to_tide_models,
+        MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0),
+        TYPE='drift', TIME='GPS',
         METHOD='spline', FILL_VALUE=np.nan)
 
 

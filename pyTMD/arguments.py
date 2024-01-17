@@ -42,6 +42,7 @@ UPDATE HISTORY:
         add function to calculate the arguments for minor constituents
         include multiples of 90 degrees as variable following Ray 2017
         add function to calculate the Doodson numbers for constituents
+        add option to return None and not raise error for Doodson numbers
     Updated 12/2023: made keyword argument for selecting M1 coefficients
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using renamed astro mean_longitudes function
@@ -691,6 +692,8 @@ def doodson_number(
 
             - ``'Cartwright'``
             - ``'Doodson'``
+    raise_error: bool, default True
+        Raise exception if constituent is unsupported
 
     Returns
     -------
@@ -708,6 +711,7 @@ def doodson_number(
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
     kwargs.setdefault('formalism', 'Doodson')
+    kwargs.setdefault('raise_error', True)
     # validate inputs
     assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
         f'Unknown formalism {kwargs["formalism"]}'
@@ -722,9 +726,12 @@ def doodson_number(
     # get the table of coefficients
     coefficients = _arguments_table(**kwargs)
     if isinstance(constituents, str):
+        # check that given constituents is supported in tidal program
+        if (constituents.lower() not in cindex) and kwargs['raise_error']:
+            raise ValueError(f'Unsupported constituent {constituents}')
+        elif (constituents.lower() not in cindex):
+            return None
         # map between given constituents and supported in tidal program
-        assert constituents.lower() in cindex, \
-            f'Unsupported constituent {constituents}'
         j, = [j for j,val in enumerate(cindex) if (val == constituents.lower())]
         # extract identifier in formalism
         if (kwargs['formalism'] == 'Cartwright'):
@@ -732,14 +739,19 @@ def doodson_number(
             numbers = np.array(coefficients[:6,j])
         elif (kwargs['formalism'] == 'Doodson'):
             # convert from coefficients to Doodson number
-            numbers = _to_doodson_number(coefficients[:,j])
+            numbers = _to_doodson_number(coefficients[:,j], **kwargs)
     else:
         # output dictionary with Doodson numbers
         numbers = {}
         # for each input constituent
         for i,c in enumerate(constituents):
+            # check that given constituents is supported in tidal program
+            if (c.lower() not in cindex) and kwargs['raise_error']:
+                raise ValueError(f'Unsupported constituent {c}')
+            elif (c.lower() not in cindex):
+                numbers[c] = None
+                continue
             # map between given constituents and supported in tidal program
-            assert c.lower() in cindex, f'Unsupported constituent {c}'
             j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
             # convert from coefficients to Doodson number
             if (kwargs['formalism'] == 'Cartwright'):
@@ -747,7 +759,7 @@ def doodson_number(
                 numbers[c] = np.array(coefficients[:6,j])
             elif (kwargs['formalism'] == 'Doodson'):
                 # convert from coefficients to Doodson number
-                numbers[c] = _to_doodson_number(coefficients[:,j])
+                numbers[c] = _to_doodson_number(coefficients[:,j], **kwargs)
     # return the Doodson or Cartwright number
     return numbers
 
@@ -908,7 +920,7 @@ def _minor_table(**kwargs):
     # return the coefficient table
     return coef
 
-def _to_doodson_number(coef: list | np.ndarray):
+def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     """
     Converts Cartwright numbers into a Doodson number
 
@@ -916,19 +928,29 @@ def _to_doodson_number(coef: list | np.ndarray):
     ----------
     coef: list or np.ndarray
         Doodson coefficients (Cartwright numbers) for constituent
+    raise_error: bool, default True
+        Raise exception if constituent is unsupported
 
     Returns
     -------
     DO: float
         Doodson number for constituent
     """
+    # default keyword arguments
+    kwargs.setdefault('raise_error', True)
     # assert length and verify array
     coef = np.array(coef[:6])
     # add 5 to values following Doodson convention (prevent negatives)
     coef[1:] += 5
-    # convert to single number and round off floating point errors
-    DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
-    return np.round(DO, decimals=3)
+    # check for unsupported constituents
+    if (np.any(coef < 0) or np.any(coef > 10)) and kwargs['raise_error']:
+        raise ValueError('Unsupported constituent')
+    elif (np.any(coef < 0) or np.any(coef > 10)):
+        return None
+    else:
+        # convert to single number and round off floating point errors
+        DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
+        return np.round(DO, decimals=3)
 
 def _from_doodson_number(DO: float | np.ndarray):
     """
