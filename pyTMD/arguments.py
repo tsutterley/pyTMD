@@ -922,13 +922,13 @@ def _minor_table(**kwargs):
     # return the coefficient table
     return coef
 
-def _constituent_parameters(c, **kwargs):
+def _constituent_parameters(c: str, **kwargs):
     """
     Loads parameters for a given tidal constituent
 
     Parameters
     ----------
-    c: list
+    c: str
         tidal constituent ID
     raise_error: bool, default False
         Raise exception if constituent is unsupported
