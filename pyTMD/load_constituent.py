@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-load_constituent.py (09/2023)
+load_constituent.py (01/2024)
 Loads parameters for a given tidal constituent
 
 CALLING SEQUENCE:
@@ -26,13 +26,14 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 01/2024: moved constituent parameters function to arguments
     Updated 09/2023: deprecated in favor of pyTMD.predict function
     Updated 04/2022: updated docstrings to numpy documentation format
     Updated 07/2020: add more constituents from OTPSnc and function docstrings
     Updated 09/2017: Rewritten in Python
 """
 import warnings
-import pyTMD.predict
+import pyTMD.arguments
 
 def load_constituent(c):
     """
@@ -69,4 +70,4 @@ def load_constituent(c):
     warnings.warn("Deprecated. Please use pyTMD.predict instead",
         DeprecationWarning)
     # call updated function to not break current workflows
-    return pyTMD.predict._constituent_parameters(c)
+    return pyTMD.arguments._constituent_parameters(c)
