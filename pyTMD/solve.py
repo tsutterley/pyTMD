@@ -171,11 +171,13 @@ def _generating_force(
 
     # longitude (in radians) of u and v nodes
     phi_v = gridlon*np.pi/180.0
-    phi_u = phi_u - dph/2.0
+    # x-coordinates for u transports
+    phi_u = phi_v - dph/2.0
 
     # colatitudes (in radians) of u and v nodes
     th_u = (90.0 - gridlat)*np.pi/180.0
-    th_v = th_v + dth/2.0
+    # y-coordinates for v transports
+    th_v = th_u + dth/2.0
 
     # load parameters for each constituent
     amp, ph, omega, alpha, species = \

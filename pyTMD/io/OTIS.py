@@ -292,7 +292,7 @@ def extract_constants(
         # masks zero values
         mask = (hu == 0) | mu.astype(bool)
         bathymetry = np.ma.array(hu, mask=mask)
-        # x coordinates for u transports
+        # x-coordinates for u transports
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # create current masks and bathymetry estimates
@@ -307,7 +307,7 @@ def extract_constants(
         # masks zero values
         mask = (hv == 0) | mv.astype(bool)
         bathymetry = np.ma.array(hv, mask=mask)
-        # y coordinates for v transports
+        # y-coordinates for v transports
         yi -= dy/2.0
 
     # interpolate bathymetry and mask to output points
@@ -557,7 +557,7 @@ def read_constants(
         # masks zero values
         mask = (hu == 0) | mu.astype(bool)
         bathymetry = np.ma.array(hu, mask=mask)
-        # x coordinates for u transports
+        # x-coordinates for u transports
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # create current masks and bathymetry estimates
@@ -572,7 +572,7 @@ def read_constants(
         # masks zero values
         mask = (hv == 0) | mv.astype(bool)
         bathymetry = np.ma.array(hv, mask=mask)
-        # y coordinates for v transports
+        # y-coordinates for v transports
         yi -= dy/2.0
 
     # read each constituent
