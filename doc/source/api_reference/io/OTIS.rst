@@ -65,6 +65,6 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.OTIS.extend_matrix
 
-.. autofunction:: pyTMD.io.OTIS.Muv
+.. autofunction:: pyTMD.io.OTIS._mask_nodes
 
-.. autofunction:: pyTMD.io.OTIS.Huv
+.. autofunction:: pyTMD.io.OTIS._interpolate_to_nodes
