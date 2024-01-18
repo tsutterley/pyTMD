@@ -67,7 +67,7 @@ def load_constituent(c):
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # raise warning for deprecated function call
-    warnings.warn("Deprecated. Please use pyTMD.predict instead",
+    warnings.warn("Deprecated. Please use pyTMD.arguments instead",
         DeprecationWarning)
     # call updated function to not break current workflows
     return pyTMD.arguments._constituent_parameters(c)

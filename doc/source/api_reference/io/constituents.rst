@@ -1,6 +1,6 @@
-===============
-io.constituents
-===============
+============
+constituents
+============
 
 Basic tide model constituent class
 

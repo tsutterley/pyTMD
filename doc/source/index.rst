@@ -39,13 +39,7 @@ ocean, load, solid Earth and pole tides
     api_reference/ellipse.rst
     api_reference/eop.rst
     api_reference/interpolate.rst
-    api_reference/io/ATLAS.rst
-    api_reference/io/FES.rst
-    api_reference/io/GOT.rst
-    api_reference/io/OTIS.rst
-    api_reference/io/constituents.rst
-    api_reference/io/model.rst
-    api_reference/io/ocean_pole_tide.rst
+    api_reference/io/io.rst
     api_reference/predict.rst
     api_reference/solve.rst
     api_reference/spatial.rst

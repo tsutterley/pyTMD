@@ -1,6 +1,6 @@
-==================
-io.ocean_pole_tide
-==================
+===============
+ocean_pole_tide
+===============
 
 - Reads ocean pole load tide coefficients provided by IERS as computed by `Desai et al. (2002) <https://doi.org/10.1029/2001JC001224>`_ and `Desai et al. (2015) <https://doi.org/10.1007/s00190-015-0848-7>`_
 - See `materials from Chapter 7 of the IERS Conventions <https://webtai.bipm.org/iers/convupdt/convupdt_c7.html>`_

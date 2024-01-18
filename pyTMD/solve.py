@@ -141,8 +141,8 @@ def _generating_force(
         c: str,
     ):
     """
-    Computes the astronomical tide generating force for a tidal
-    constituent [1]_
+    Computes the astronomical tide generating force (the horizontal gradient
+    of the tide generating potential) for a tidal constituent [1]_
 
     Parameters
     ----------

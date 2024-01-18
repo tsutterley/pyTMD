@@ -52,6 +52,7 @@ import posixpath
 import numpy as np
 import pyTMD.io
 import pyTMD.io.model
+import pyTMD.compute
 import pyTMD.predict
 import pyTMD.time
 import pyTMD.utilities
@@ -696,6 +697,29 @@ class Test_CATS2008:
             EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
+
+    # parameterize interpolation method
+    # only use fast interpolation routines
+    @pytest.mark.parametrize("METHOD", ['spline','nearest'])
+    @pytest.mark.parametrize("EXTRAPOLATE", [True])
+    # PURPOSE: test the tide currents wrapper function
+    def test_Ross_Ice_Shelf_currents(self, METHOD, EXTRAPOLATE):
+        # create a drift track along the Ross Ice Shelf
+        xlimits = np.array([-740000,520000])
+        ylimits = np.array([-1430000,-300000])
+        # x and y coordinates
+        x = np.linspace(xlimits[0],xlimits[1],24)
+        y = np.linspace(ylimits[0],ylimits[1],24)
+        # time dimension
+        delta_time = np.zeros((24))*3600
+        # calculate tide drift corrections
+        tide = pyTMD.compute.tide_currents(x, y, delta_time,
+            DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
+            EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
+            EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
+        # iterate over zonal and meridional currents
+        for key,val in tide.items():
+            assert np.any(val)
 
     # PURPOSE: test definition file functionality
     @pytest.mark.parametrize("MODEL", ['CATS2008'])

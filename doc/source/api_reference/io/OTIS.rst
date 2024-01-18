@@ -1,6 +1,6 @@
-=======
-io.OTIS
-=======
+====
+OTIS
+====
 
 - Reads OTIS format tidal solutions provided by Ohio State University and ESR
 
@@ -16,8 +16,10 @@ Calling Sequence
 .. code-block:: python
 
     import pyTMD.io
-    amp,ph,D,c = pyTMD.io.OTIS.extract_constants(ilon, ilat, grid_file, model_file,
-        EPSG, type='z', method='spline', grid='OTIS')
+    amp,ph,D,c = pyTMD.io.OTIS.extract_constants(ilon, ilat, grid_file, model_file, EPSG,
+        type='z',
+        method='spline',
+        grid='OTIS')
 
 `Source code`__
 
