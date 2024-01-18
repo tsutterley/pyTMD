@@ -1,6 +1,6 @@
-========
-io.ATLAS
-========
+=====
+ATLAS
+=====
 
 - Reads netCDF format tidal solutions provided by Ohio State University and ESR
 - Spatially interpolates tidal constituents to input coordinates
@@ -12,7 +12,8 @@ Calling Sequence
 
     import pyTMD.io
     amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(ilon, ilat, grid_file, model_files,
-       type='z', method='spline')
+       type='z',
+       method='spline')
 
 `Source code`__
 

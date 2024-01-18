@@ -1,5 +1,5 @@
 """
-test_solid_earth.py (12/2023)
+test_solid_earth.py (01/2024)
 Tests the steps for calculating the solid earth tides
 
 PYTHON DEPENDENCIES:
@@ -8,6 +8,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 04/2023: added test for using JPL ephemerides for positions
     Written 04/2023
@@ -15,10 +16,10 @@ UPDATE HISTORY:
 import pytest
 import numpy as np
 import pyTMD.astro
+import pyTMD.compute
 import pyTMD.predict
 import pyTMD.time
 import pyTMD.utilities
-from pyTMD.compute_tide_corrections import compute_SET_corrections
 
 def test_out_of_phase_diurnal():
     """Test out-of-phase diurnal corrections with IERS outputs
@@ -262,10 +263,10 @@ def test_solid_earth_radial(EPHEMERIDES):
         -0.09726749,-0.09726755,-0.11400376,-0.11400391,
         -0.11400412,-0.11400434])
     # predict radial solid earth tides
-    tide_free = compute_SET_corrections(longitudes, latitudes, times,
+    tide_free = pyTMD.compute.SET_displacements(longitudes, latitudes, times,
         EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
         EPHEMERIDES=EPHEMERIDES)
-    tide_mean = compute_SET_corrections(longitudes, latitudes, times,
+    tide_mean = pyTMD.compute.SET_displacements(longitudes, latitudes, times,
         EPSG=4326, TYPE='drift', TIME='datetime', ELLIPSOID='WGS84',
         TIDE_SYSTEM='mean_tide', EPHEMERIDES=EPHEMERIDES)
     # as using estimated ephemerides, assert within 1/2 mm
@@ -298,12 +299,12 @@ def download_jpl_ephemerides():
 def test_solar_ecef():
     """Test solar ECEF coordinates with ephemeride predictions
     """
-    # calculate solar ephemerides
     MJD = 55414.0
-    x1, y1, z1 = pyTMD.astro.solar_ecef(MJD)
+    # calculate approximate solar ephemerides
+    x1, y1, z1 = pyTMD.astro.solar_ecef(MJD, ephemerides='approximate')
     r1 = np.sqrt(x1**2 + y1**2 + z1**2)
     # predict solar ephemerides
-    x2, y2, z2 = pyTMD.astro.solar_ephemerides(MJD)
+    x2, y2, z2 = pyTMD.astro.solar_ecef(MJD, ephemerides='JPL')
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
     assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=1e9).all()
@@ -313,12 +314,12 @@ def test_solar_ecef():
 def test_lunar_ecef():
     """Test lunar ECEF coordinates with ephemeride predictions
     """
-    # calculate solar ephemerides
     MJD = 55414.0
-    x1, y1, z1 = pyTMD.astro.lunar_ecef(MJD)
+    # calculate approximate lunar ephemerides
+    x1, y1, z1 = pyTMD.astro.lunar_ecef(MJD, ephemerides='approximate')
     r1 = np.sqrt(x1**2 + y1**2 + z1**2)
-    # predict solar ephemerides
-    x2, y2, z2 = pyTMD.astro.lunar_ephemerides(MJD)
+    # predict lunar ephemerides
+    x2, y2, z2 = pyTMD.astro.lunar_ecef(MJD, ephemerides='JPL')
     r2 = np.sqrt(x2**2 + y2**2 + z2**2)
     # test distances
     assert np.isclose(np.c_[x1,y1,z1], np.c_[x2,y2,z2], atol=5e6).all()

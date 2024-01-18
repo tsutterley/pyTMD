@@ -1,6 +1,6 @@
-========
-io.model
-========
+=====
+model
+=====
 
 Retrieves tide model parameters for named tide models and from model definition files
 

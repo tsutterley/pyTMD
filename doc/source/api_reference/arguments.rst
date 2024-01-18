@@ -28,6 +28,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.arguments._minor_table
 
+.. autofunction:: pyTMD.arguments._constituent_parameters
+
 .. autofunction:: pyTMD.arguments._to_doodson_number
 
 .. autofunction:: pyTMD.arguments._from_doodson_number

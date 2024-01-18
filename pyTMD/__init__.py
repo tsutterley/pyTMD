@@ -13,6 +13,7 @@ Documentation is available at https://pytmd.readthedocs.io
 """
 import pyTMD.arguments
 import pyTMD.astro
+import pyTMD.compute
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict

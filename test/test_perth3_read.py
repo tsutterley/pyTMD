@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (04/2023)
+test_perth3_read.py (01/2024)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 01/2024: refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 09/2021: added test for model definition files
@@ -38,8 +39,8 @@ import pyTMD.io
 import pyTMD.time
 import pyTMD.io.model
 import pyTMD.utilities
+import pyTMD.compute
 import pyTMD.predict
-import pyTMD.compute_tide_corrections
 import pyTMD.check_points
 
 # current file path
@@ -238,7 +239,7 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
     # time dimension
     delta_time = 0.0
     # calculate tide map
-    tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
+    tide = pyTMD.compute.tide_elevations(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL='GOT4.7', GZIP=True,
         EPOCH=pyTMD.time._atlas_sdp_epoch, TYPE='grid', TIME='GPS',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
@@ -277,5 +278,5 @@ def test_extend_array():
 def test_unlisted_model():
     ermsg = "Unlisted tide model"
     with pytest.raises(Exception, match=ermsg):
-        pyTMD.compute_tide_corrections(None, None, None,
+        pyTMD.compute.tide_elevations(None, None, None,
             DIRECTORY=filepath, MODEL='invalid')

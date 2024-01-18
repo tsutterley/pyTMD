@@ -1,6 +1,6 @@
-======
-io.GOT
-======
+===
+GOT
+===
 
 - Reads files for Richard Ray's Global Ocean Tide (GOT) models
 - Spatially interpolates tidal constituents to input coordinates
@@ -11,7 +11,7 @@ Calling Sequence
 .. code-block:: python
 
     import pyTMD.io
-    amp,ph,c = pyTMD.io.GOT.extract_constants(ilon,i lat, model_files,
+    amp,ph,c = pyTMD.io.GOT.extract_constants(ilon, ilat, model_files,
        method='spline')
 
 `Source code`__

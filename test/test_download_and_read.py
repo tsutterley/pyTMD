@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (04/2023)
+test_download_and_read.py (01/2024)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 01/2024: refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
     Updated 11/2022: added encoding for writing ascii files
@@ -51,6 +52,7 @@ import posixpath
 import numpy as np
 import pyTMD.io
 import pyTMD.io.model
+import pyTMD.compute
 import pyTMD.predict
 import pyTMD.time
 import pyTMD.utilities
@@ -690,11 +692,34 @@ class Test_CATS2008:
         # time dimension
         delta_time = np.zeros((24))*3600
         # calculate tide drift corrections
-        tide = pyTMD.compute_tide_corrections(x, y, delta_time,
+        tide = pyTMD.compute.tide_elevations(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
             EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
+
+    # parameterize interpolation method
+    # only use fast interpolation routines
+    @pytest.mark.parametrize("METHOD", ['spline','nearest'])
+    @pytest.mark.parametrize("EXTRAPOLATE", [True])
+    # PURPOSE: test the tide currents wrapper function
+    def test_Ross_Ice_Shelf_currents(self, METHOD, EXTRAPOLATE):
+        # create a drift track along the Ross Ice Shelf
+        xlimits = np.array([-740000,520000])
+        ylimits = np.array([-1430000,-300000])
+        # x and y coordinates
+        x = np.linspace(xlimits[0],xlimits[1],24)
+        y = np.linspace(ylimits[0],ylimits[1],24)
+        # time dimension
+        delta_time = np.zeros((24))*3600
+        # calculate tide drift corrections
+        tide = pyTMD.compute.tide_currents(x, y, delta_time,
+            DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
+            EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
+            EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
+        # iterate over zonal and meridional currents
+        for key,val in tide.items():
+            assert np.any(val)
 
     # PURPOSE: test definition file functionality
     @pytest.mark.parametrize("MODEL", ['CATS2008'])
@@ -967,7 +992,7 @@ class Test_AOTIM5_2018:
         # time dimension
         delta_time = 0.0
         # calculate tide map
-        tide = pyTMD.compute_tide_corrections(xgrid, ygrid, delta_time,
+        tide = pyTMD.compute.tide_elevations(xgrid, ygrid, delta_time,
             DIRECTORY=filepath, MODEL='AOTIM-5-2018', GZIP=False,
             EPOCH=pyTMD.time._j2000_epoch, TYPE='grid', TIME='UTC',
             EPSG=3413, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
