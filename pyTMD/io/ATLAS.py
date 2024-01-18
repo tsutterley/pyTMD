@@ -222,8 +222,8 @@ def extract_constants(
     global_grid = False
     # replace original values with extend arrays/matrices
     if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
-        lon = extend_array(lon, dlon)
-        bathymetry = extend_matrix(bathymetry)
+        lon = _extend_array(lon, dlon)
+        bathymetry = _extend_matrix(bathymetry)
         # set global grid flag
         global_grid = True
     # create masks
@@ -283,7 +283,7 @@ def extract_constants(
         constituents.append(cons)
         # replace original values with extend matrices
         if global_grid:
-            hc = extend_matrix(hc)
+            hc = _extend_matrix(hc)
         # update constituent mask with bathymetry mask
         hc.mask[:] |= bathymetry.mask[:]
         # interpolate amplitude and phase of the constituent
@@ -394,8 +394,8 @@ def read_constants(
     # grid step size of tide model
     dlon = lon[1] - lon[0]
     # replace original values with extend arrays/matrices
-    lon = extend_array(lon, dlon)
-    bathymetry = extend_matrix(bathymetry)
+    lon = _extend_array(lon, dlon)
+    bathymetry = _extend_matrix(bathymetry)
     # save output constituents
     constituents = pyTMD.io.constituents(
         longitude=lon,
@@ -414,7 +414,7 @@ def read_constants(
         hc, cons = read_netcdf_file(model_file, kwargs['type'],
             compressed=kwargs['compressed'])
         # replace original values with extend matrices
-        hc = extend_matrix(hc)
+        hc = _extend_matrix(hc)
         hc.mask[:] |= bathymetry.mask[:]
         # append extended constituent
         constituents.append(cons,  hc)
@@ -610,53 +610,6 @@ def interpolate_constants(
     phase[phase < 0] += 360.0
     # return the interpolated values
     return (amplitude, phase, D)
-
-# PURPOSE: Extend a longitude array
-def extend_array(input_array: np.ndarray, step_size: float):
-    """
-    Extends a longitude array
-
-    Parameters
-    ----------
-    input_array: np.ndarray
-        array to extend
-    step_size: float
-        step size between elements of array
-
-    Returns
-    -------
-    temp: np.ndarray
-        extended array
-    """
-    n = len(input_array)
-    temp = np.zeros((n+2), dtype=input_array.dtype)
-    # extended array [x-1,x0,...,xN,xN+1]
-    temp[0] = input_array[0] - step_size
-    temp[1:-1] = input_array[:]
-    temp[-1] = input_array[-1] + step_size
-    return temp
-
-# PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix: np.ndarray):
-    """
-    Extends a global matrix
-
-    Parameters
-    ----------
-    input_matrix: np.ndarray
-        matrix to extend
-
-    Returns
-    -------
-    temp: np.ndarray
-        extended matrix
-    """
-    ny, nx = np.shape(input_matrix)
-    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
-    temp[:,0] = input_matrix[:,-1]
-    temp[:,1:-1] = input_matrix[:,:]
-    temp[:,-1] = input_matrix[:,0]
-    return temp
 
 # PURPOSE: read grid file
 def read_netcdf_grid(
@@ -1177,3 +1130,50 @@ def output_netcdf_transport(
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()
+
+# PURPOSE: Extend a longitude array
+def _extend_array(input_array: np.ndarray, step_size: float):
+    """
+    Extends a longitude array
+
+    Parameters
+    ----------
+    input_array: np.ndarray
+        array to extend
+    step_size: float
+        step size between elements of array
+
+    Returns
+    -------
+    temp: np.ndarray
+        extended array
+    """
+    n = len(input_array)
+    temp = np.zeros((n+2), dtype=input_array.dtype)
+    # extended array [x-1,x0,...,xN,xN+1]
+    temp[0] = input_array[0] - step_size
+    temp[1:-1] = input_array[:]
+    temp[-1] = input_array[-1] + step_size
+    return temp
+
+# PURPOSE: Extend a global matrix
+def _extend_matrix(input_matrix: np.ndarray):
+    """
+    Extends a global matrix
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to extend
+
+    Returns
+    -------
+    temp: np.ndarray
+        extended matrix
+    """
+    ny, nx = np.shape(input_matrix)
+    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
+    temp[:,0] = input_matrix[:,-1]
+    temp[:,1:-1] = input_matrix[:,:]
+    temp[:,-1] = input_matrix[:,0]
+    return temp

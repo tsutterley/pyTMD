@@ -251,7 +251,7 @@ def extract_constants(
     global_grid = False
     # replace original values with extend arrays/matrices
     if np.isclose(xi[-1] - xi[0], 360.0 - dx) & (EPSG == '4326'):
-        xi = extend_array(xi, dx)
+        xi = _extend_array(xi, dx)
         # set global grid flag
         global_grid = True
 
@@ -268,8 +268,8 @@ def extract_constants(
     if (kwargs['type'] == 'z'):
         # replace original values with extend matrices
         if global_grid:
-            hz = extend_matrix(hz)
-            mz = extend_matrix(mz)
+            hz = _extend_matrix(hz)
+            mz = _extend_matrix(mz)
         # masks zero values
         mask = (hz == 0) | mz.astype(bool)
         bathymetry = np.ma.array(hz, mask=mask)
@@ -281,8 +281,8 @@ def extract_constants(
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
         if global_grid:
-            hu = extend_matrix(hu)
-            mu = extend_matrix(mu)
+            hu = _extend_matrix(hu)
+            mu = _extend_matrix(mu)
         # masks zero values
         mask = (hu == 0) | mu.astype(bool)
         bathymetry = np.ma.array(hu, mask=mask)
@@ -296,8 +296,8 @@ def extract_constants(
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
         if global_grid:
-            hv = extend_matrix(hv)
-            mv = extend_matrix(mv)
+            hv = _extend_matrix(hv)
+            mv = _extend_matrix(mv)
         # masks zero values
         mask = (hv == 0) | mv.astype(bool)
         bathymetry = np.ma.array(hv, mask=mask)
@@ -388,7 +388,7 @@ def extract_constants(
 
         # replace original values with extend matrices
         if global_grid:
-            hc = extend_matrix(hc)
+            hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
 
@@ -524,7 +524,7 @@ def read_constants(
     global_grid = False
     # replace original values with extend arrays/matrices
     if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
-        xi = extend_array(xi, dx)
+        xi = _extend_array(xi, dx)
         # set global grid flag
         global_grid = True
 
@@ -533,8 +533,8 @@ def read_constants(
     if (kwargs['type'] == 'z'):
         # replace original values with extend matrices
         if global_grid:
-            hz = extend_matrix(hz)
-            mz = extend_matrix(mz)
+            hz = _extend_matrix(hz)
+            mz = _extend_matrix(mz)
         # masks zero values
         mask = (hz == 0) | mz.astype(bool)
         bathymetry = np.ma.array(hz, mask=mask)
@@ -546,8 +546,8 @@ def read_constants(
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
         if global_grid:
-            hu = extend_matrix(hu)
-            mu = extend_matrix(mu)
+            hu = _extend_matrix(hu)
+            mu = _extend_matrix(mu)
         # masks zero values
         mask = (hu == 0) | mu.astype(bool)
         bathymetry = np.ma.array(hu, mask=mask)
@@ -561,8 +561,8 @@ def read_constants(
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
         if global_grid:
-            hv = extend_matrix(hv)
-            mv = extend_matrix(mv)
+            hv = _extend_matrix(hv)
+            mv = _extend_matrix(mv)
         # masks zero values
         mask = (hv == 0) | mv.astype(bool)
         bathymetry = np.ma.array(hv, mask=mask)
@@ -622,7 +622,7 @@ def read_constants(
 
         # replace original values with extend matrices
         if global_grid:
-            hc = extend_matrix(hc)
+            hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
         # append extended constituent
@@ -809,53 +809,6 @@ def interpolate_constants(
     phase.data[phase.mask] = phase.fill_value
     # return the interpolated values
     return (amplitude, phase, D)
-
-# PURPOSE: Extend a longitude array
-def extend_array(input_array: np.ndarray, step_size: float):
-    """
-    Extends a longitude array
-
-    Parameters
-    ----------
-    input_array: np.ndarray
-        array to extend
-    step_size: float
-        step size between elements of array
-
-    Returns
-    -------
-    temp: np.ndarray
-        extended array
-    """
-    n = len(input_array)
-    temp = np.zeros((n+2), dtype=input_array.dtype)
-    # extended array [x-1,x0,...,xN,xN+1]
-    temp[0] = input_array[0] - step_size
-    temp[1:-1] = input_array[:]
-    temp[-1] = input_array[-1] + step_size
-    return temp
-
-# PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix: np.ndarray):
-    """
-    Extends a global matrix
-
-    Parameters
-    ----------
-    input_matrix: np.ndarray
-        matrix to extend
-
-    Returns
-    -------
-    temp: np.ndarray
-        extended matrix
-    """
-    ny, nx = np.shape(input_matrix)
-    temp = np.ma.zeros((ny, nx+2), dtype=input_matrix.dtype)
-    temp[:,0] = input_matrix[:,-1]
-    temp[:,1:-1] = input_matrix[:,:]
-    temp[:,-1] = input_matrix[:,0]
-    return temp
 
 # PURPOSE: read tide grid file
 def read_otis_grid(input_file: str | pathlib.Path):
@@ -1866,6 +1819,53 @@ def output_otis_transport(
         fid.write(struct.pack('>i',constituent_header))
     # close the output OTIS file
     fid.close()
+
+# PURPOSE: Extend a longitude array
+def _extend_array(input_array: np.ndarray, step_size: float):
+    """
+    Extends a longitude array
+
+    Parameters
+    ----------
+    input_array: np.ndarray
+        array to extend
+    step_size: float
+        step size between elements of array
+
+    Returns
+    -------
+    temp: np.ndarray
+        extended array
+    """
+    n = len(input_array)
+    temp = np.zeros((n+2), dtype=input_array.dtype)
+    # extended array [x-1,x0,...,xN,xN+1]
+    temp[0] = input_array[0] - step_size
+    temp[1:-1] = input_array[:]
+    temp[-1] = input_array[-1] + step_size
+    return temp
+
+# PURPOSE: Extend a global matrix
+def _extend_matrix(input_matrix: np.ndarray):
+    """
+    Extends a global matrix
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to extend
+
+    Returns
+    -------
+    temp: np.ndarray
+        extended matrix
+    """
+    ny, nx = np.shape(input_matrix)
+    temp = np.ma.zeros((ny, nx+2), dtype=input_matrix.dtype)
+    temp[:,0] = input_matrix[:,-1]
+    temp[:,1:-1] = input_matrix[:,:]
+    temp[:,-1] = input_matrix[:,0]
+    return temp
 
 # PURPOSE: construct masks for u and v nodes
 def _mask_nodes(hz: np.ndarray, global_grid: bool = True):

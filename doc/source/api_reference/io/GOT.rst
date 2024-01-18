@@ -30,6 +30,6 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.GOT.output_netcdf_file
 
-.. autofunction:: pyTMD.io.GOT.extend_array
+.. autofunction:: pyTMD.io.GOT._extend_array
 
-.. autofunction:: pyTMD.io.GOT.extend_matrix
+.. autofunction:: pyTMD.io.GOT._extend_matrix
