@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (01/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 01/2024: construct currents masks differently if not global
     Updated 12/2023: use new crs class for coordinate reprojection
     Updated 10/2023: fix transport variable entry for TMD3 models
     Updated 09/2023: prevent overwriting ATLAS compact x and y coordinates
@@ -247,7 +248,7 @@ def extract_constants(
 
     # create current masks and bathymetry estimates
     if (kwargs['type'] != 'z'):
-        mz,mu,mv = Muv(hz)
+        mu,mv = Muv(hz)
         hu,hv = Huv(hz)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
@@ -281,8 +282,8 @@ def extract_constants(
         bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # create current masks and bathymetry estimates
-        mz,mu,mv = Muv(hz)
-        hu,hv = Huv(hz)
+        mu,mv = Muv(hz, global_grid=global_grid)
+        hu,hv = Huv(hz, global_grid=global_grid)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
@@ -296,8 +297,8 @@ def extract_constants(
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # create current masks and bathymetry estimates
-        mz,mu,mv = Muv(hz)
-        hu,hv = Huv(hz)
+        mu,mv = Muv(hz, global_grid=global_grid)
+        hu,hv = Huv(hz, global_grid=global_grid)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
@@ -546,8 +547,8 @@ def read_constants(
         bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # create current masks and bathymetry estimates
-        mz,mu,mv = Muv(hz)
-        hu,hv = Huv(hz)
+        mu,mv = Muv(hz, global_grid=global_grid)
+        hu,hv = Huv(hz, global_grid=global_grid)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
@@ -561,8 +562,8 @@ def read_constants(
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # create current masks and bathymetry estimates
-        mz,mu,mv = Muv(hz)
-        hu,hv = Huv(hz)
+        mu,mv = Muv(hz, global_grid=global_grid)
+        hu,hv = Huv(hz, global_grid=global_grid)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
@@ -1873,45 +1874,96 @@ def output_otis_transport(
     # close the output OTIS file
     fid.close()
 
-# For a rectangular bathymetry grid:
-# construct masks for zeta, u and v nodes on a C-grid
-def Muv(hz: np.ndarray):
+# PURPOSE: construct masks for u and v nodes
+def Muv(hz: np.ndarray, global_grid: bool = True):
     """
-    Construct masks for zeta, u and v nodes on a C-grid
+    Construct masks for u and v nodes on a C-grid
+
+    Parameters
+    ----------
+    hz: np.ndarray
+        bathymetry of grid centers
+    global_grid: bool, default True
+        input grid is global
     """
+    # shape of input bathymetry
     ny, nx = np.shape(hz)
+    # for grid center mask: find where bathymetry is greater than 0
     mz = (hz > 0).astype(int)
-    # x-indices
-    indx = np.zeros((nx), dtype=int)
-    indx[:-1] = np.arange(1,nx)
-    indx[-1] = 0
-    # y-indices
-    indy = np.zeros((ny), dtype=int)
-    indy[:-1] = np.arange(1,ny)
-    indy[-1] = 0
-    # calculate mu and mv
+    # initialize integer masks for u and v grids
     mu = np.zeros((ny, nx), dtype=int)
     mv = np.zeros((ny, nx), dtype=int)
-    mu[indy,:] = mz*mz[indy,:]
-    mv[:,indx] = mz*mz[:,indx]
-    return (mu, mv, mz)
+    # wrap mask if global
+    if global_grid:
+        # x-indices
+        indx = np.zeros((nx), dtype=int)
+        indx[:-1] = np.arange(1,nx)
+        indx[-1] = 0
+        # y-indices
+        indy = np.zeros((ny), dtype=int)
+        indy[:-1] = np.arange(1,ny)
+        indy[-1] = 0
+        # calculate masks on u and v grids
+        mu[indy,:] = mz*mz[indy,:]
+        mv[:,indx] = mz*mz[:,indx]
+    else:
+        # x-indices
+        indx = np.zeros((nx), dtype=int)
+        indx[0] = 0
+        indx[1:] = np.arange(nx-1)
+        # y-indices
+        indy = np.zeros((ny), dtype=int)
+        indy[0] = 0
+        indy[1:] = np.arange(ny-1)
+        # calculate masks on u and v grids
+        mu = mz*mz[indy,:]
+        mv = mz*mz[:,indx]
+    # return the masks
+    return (mu, mv)
 
-# PURPOSE: Interpolate bathymetry to zeta, u and v nodes on a C-grid
-def Huv(hz: np.ndarray):
+# PURPOSE: interpolate bathymetry to u and v nodes
+def Huv(hz: np.ndarray, global_grid: bool = True):
     """
-    Interpolate bathymetry to zeta, u and v nodes on a C-grid
+    Interpolate bathymetry to u and v nodes on a C-grid
+
+    Parameters
+    ----------
+    hz: np.ndarray
+        bathymetry of grid centers
+    global_grid: bool, default True
+        input grid is global
     """
+    # shape of input bathymetry
     ny, nx = np.shape(hz)
-    mu, mv, mz = Muv(hz)
-    # x-indices
-    indx = np.zeros((nx), dtype=int)
-    indx[0] = nx-1
-    indx[1:] = np.arange(1, nx)
-    # y-indices
-    indy = np.zeros((ny), dtype=int)
-    indy[0] = ny-1
-    indy[1:] = np.arange(1,ny)
-    # calculate hu and hv
-    hu = mu*(hz + hz[indy,:])/2.0
-    hv = mv*(hz + hz[:,indx])/2.0
+    # get masks for u and v nodes
+    mu, mv = Muv(hz)
+    # initialize bathymetry for u and v grids
+    hu = np.zeros((ny, nx), dtype=hz.dtype)
+    hv = np.zeros((ny, nx), dtype=hz.dtype)
+    # wrap bathymetry if global
+    if global_grid:
+        # x-indices
+        indx = np.zeros((nx), dtype=int)
+        indx[:-1] = np.arange(1,nx)
+        indx[-1] = 0
+        # y-indices
+        indy = np.zeros((ny), dtype=int)
+        indy[:-1] = np.arange(1,ny)
+        indy[-1] = 0
+        # calculate bathymetry at u and v nodes
+        hu[indy,:] = mu*(hz + hz[indy,:])/2.0
+        hv[:,indx] = mv*(hz + hz[:,indx])/2.0
+    else:
+        # x-indices
+        indx = np.zeros((nx), dtype=int)
+        indx[0] = 0
+        indx[1:] = np.arange(nx-1)
+        # y-indices
+        indy = np.zeros((ny), dtype=int)
+        indy[0] = 0
+        indy[1:] = np.arange(ny-1)
+        # calculate bathymetry at u and v nodes
+        hu = mu*(hz + hz[indy,:])/2.0
+        hv = mv*(hz + hz[:,indx])/2.0
+    # return the bathymetry values
     return (hu, hv)
