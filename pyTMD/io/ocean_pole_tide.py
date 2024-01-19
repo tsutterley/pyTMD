@@ -129,15 +129,15 @@ def ocean_pole_tide(input_file: str | pathlib.Path = _ocean_pole_tide_file):
         ue[ilon,ilat] = uer + 1j*uei
 
     # extend matrix for bilinear interpolation
-    glon = extend_array(glon,dlon)
-    ur = extend_matrix(ur)
-    un = extend_matrix(un)
-    ue = extend_matrix(ue)
+    glon = _extend_array(glon,dlon)
+    ur = _extend_matrix(ur)
+    un = _extend_matrix(un)
+    ue = _extend_matrix(ue)
     # return values
     return (ur, un, ue, glon, glat)
 
 # PURPOSE: Extend a longitude array
-def extend_array(input_array: np.ndarray, step_size: float):
+def _extend_array(input_array: np.ndarray, step_size: float):
     """
     Extends a longitude array
 
@@ -162,7 +162,7 @@ def extend_array(input_array: np.ndarray, step_size: float):
     return temp
 
 # PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix: np.ndarray):
+def _extend_matrix(input_matrix: np.ndarray):
     """
     Extends a global matrix
 

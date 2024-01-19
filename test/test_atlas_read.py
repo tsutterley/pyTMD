@@ -422,5 +422,5 @@ def test_extend_array():
     dlon = 1
     lon = np.arange(0, 360, dlon)
     valid = np.arange(-dlon, 360 + dlon, dlon)
-    test = pyTMD.io.ATLAS.extend_array(lon, dlon)
+    test = pyTMD.io.ATLAS._extend_array(lon, dlon)
     assert np.all(test == valid)

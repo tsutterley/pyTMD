@@ -236,8 +236,8 @@ def extract_constants(
         dlon = lon[1] - lon[0]
         # replace original values with extend arrays/matrices
         if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
-            lon = extend_array(lon, dlon)
-            hc = extend_matrix(hc)
+            lon = _extend_array(lon, dlon)
+            hc = _extend_matrix(hc)
         # determine if any input points are outside of the model bounds
         invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
                   (ilat < lat.min()) | (ilat > lat.max())
@@ -370,8 +370,8 @@ def read_constants(
         dlon = lon[1] - lon[0]
         # replace original values with extend arrays/matrices
         if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
-            lon = extend_array(lon, dlon)
-            hc = extend_matrix(hc)
+            lon = _extend_array(lon, dlon)
+            hc = _extend_matrix(hc)
         # append extended constituent
         constituents.append(cons, hc)
         # set model coordinates
@@ -531,53 +531,6 @@ def interpolate_constants(
     phase.data[phase.mask] = phase.fill_value
     # return the interpolated values
     return (amplitude, phase)
-
-# PURPOSE: Extend a longitude array
-def extend_array(input_array: np.ndarray, step_size: float):
-    """
-    Extends a longitude array
-
-    Parameters
-    ----------
-    input_array: np.ndarray
-        array to extend
-    step_size: float
-        step size between elements of array
-
-    Returns
-    -------
-    temp: np.ndarray
-        extended array
-    """
-    n = len(input_array)
-    temp = np.zeros((n+2), dtype=input_array.dtype)
-    # extended array [x-1,x0,...,xN,xN+1]
-    temp[0] = input_array[0] - step_size
-    temp[1:-1] = input_array[:]
-    temp[-1] = input_array[-1] + step_size
-    return temp
-
-# PURPOSE: Extend a global matrix
-def extend_matrix(input_matrix: np.ndarray):
-    """
-    Extends a global matrix
-
-    Parameters
-    ----------
-    input_matrix: np.ndarray
-        matrix to extend
-
-    Returns
-    -------
-    temp: np.ndarray
-        extended matrix
-    """
-    ny, nx = np.shape(input_matrix)
-    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
-    temp[:,0] = input_matrix[:,-1]
-    temp[:,1:-1] = input_matrix[:,:]
-    temp[:,-1] = input_matrix[:,0]
-    return temp
 
 # PURPOSE: read FES ascii tide model grid files
 def read_ascii_file(
@@ -850,3 +803,50 @@ def output_netcdf_file(
     logging.info(list(fileID.variables.keys()))
     # Closing the NetCDF file
     fileID.close()
+
+# PURPOSE: Extend a longitude array
+def _extend_array(input_array: np.ndarray, step_size: float):
+    """
+    Extends a longitude array
+
+    Parameters
+    ----------
+    input_array: np.ndarray
+        array to extend
+    step_size: float
+        step size between elements of array
+
+    Returns
+    -------
+    temp: np.ndarray
+        extended array
+    """
+    n = len(input_array)
+    temp = np.zeros((n+2), dtype=input_array.dtype)
+    # extended array [x-1,x0,...,xN,xN+1]
+    temp[0] = input_array[0] - step_size
+    temp[1:-1] = input_array[:]
+    temp[-1] = input_array[-1] + step_size
+    return temp
+
+# PURPOSE: Extend a global matrix
+def _extend_matrix(input_matrix: np.ndarray):
+    """
+    Extends a global matrix
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to extend
+
+    Returns
+    -------
+    temp: np.ndarray
+        extended matrix
+    """
+    ny, nx = np.shape(input_matrix)
+    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
+    temp[:,0] = input_matrix[:,-1]
+    temp[:,1:-1] = input_matrix[:,:]
+    temp[:,-1] = input_matrix[:,0]
+    return temp

@@ -61,10 +61,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.OTIS.output_otis_transport
 
-.. autofunction:: pyTMD.io.OTIS.extend_array
+.. autofunction:: pyTMD.io.OTIS._extend_array
 
-.. autofunction:: pyTMD.io.OTIS.extend_matrix
+.. autofunction:: pyTMD.io.OTIS._extend_matrix
 
-.. autofunction:: pyTMD.io.OTIS.Muv
+.. autofunction:: pyTMD.io.OTIS._mask_nodes
 
-.. autofunction:: pyTMD.io.OTIS.Huv
+.. autofunction:: pyTMD.io.OTIS._interpolate_to_nodes
