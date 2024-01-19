@@ -271,7 +271,7 @@ def test_extend_array():
     dlon = 1
     lon = np.arange(-180, 180, dlon)
     valid = np.arange(-180 - dlon, 180 + 2.0*dlon, dlon)
-    test = pyTMD.io.GOT.extend_array(lon, dlon)
+    test = pyTMD.io.GOT._extend_array(lon, dlon)
     assert np.all(test == valid)
 
 # PURPOSE: test the catch in the correction wrapper function
