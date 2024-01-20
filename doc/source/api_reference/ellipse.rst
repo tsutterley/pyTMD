@@ -10,10 +10,12 @@ Calling Sequence
 .. code-block:: python
 
     import pyTMD
-    umajor,uminor,uincl,uphase = pyTMD.ellipse(u,v)
+    umajor,uminor,uincl,uphase = pyTMD.ellipse.ellipse(u,v)
 
 `Source code`__
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/ellipse.py
 
-.. autofunction:: pyTMD.ellipse
+.. autofunction:: pyTMD.ellipse.ellipse
+
+.. autofunction:: pyTMD.ellipse.inverse

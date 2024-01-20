@@ -534,7 +534,12 @@ class Test_CATS2008:
         # compute tidal ellipse parameters for python program
         test = {}
         test['umajor'],test['uminor'],test['uincl'],test['uphase'] = \
-            pyTMD.ellipse(hc1['U'],hc1['V'])
+            pyTMD.ellipse.ellipse(hc1['U'],hc1['V'])
+        # calculate currents using tidal ellipse inverse
+        inverse = {}
+        inverse['U'],inverse['V'] = pyTMD.ellipse.inverse(
+            test['umajor'],test['uminor'],test['uincl'],test['uphase']
+        )
         # compute tidal ellipse parameters for TMD matlab program
         valid = {}
         valid['umajor'],valid['uminor'],valid['uincl'],valid['uphase'] = \
@@ -545,6 +550,15 @@ class Test_CATS2008:
             difference = np.ma.zeros((valid_stations,len(c)))
             difference.data[:] = test[key].data - valid[key].T
             difference.mask = (test[key].mask | np.isnan(valid[key].T))
+            difference.data[difference.mask] = 0.0
+            if not np.all(difference.mask):
+                assert np.all(np.abs(difference) < eps)
+
+        # calculate differences between forward and inverse functions
+        for key in ['U', 'V']:
+            difference = np.ma.zeros((valid_stations,len(c)))
+            difference.data[:] = hc1[key].data - inverse[key].T
+            difference.mask = (hc1[key].mask | np.isnan(inverse[key].T))
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
