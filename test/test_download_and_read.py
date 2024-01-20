@@ -557,8 +557,8 @@ class Test_CATS2008:
         # calculate differences between forward and inverse functions
         for key in ['U', 'V']:
             difference = np.ma.zeros((valid_stations,len(c)))
-            difference.data[:] = hc1[key].data - inverse[key].T
-            difference.mask = (hc1[key].mask | np.isnan(inverse[key].T))
+            difference.data[:] = hc1[key].data - inverse[key].data
+            difference.mask = (hc1[key].mask | inverse[key].mask)
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
