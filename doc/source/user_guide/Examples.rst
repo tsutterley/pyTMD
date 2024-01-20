@@ -10,6 +10,8 @@ Jupyter Notebooks providing demonstrations of ``pyTMD`` functionality:
     Check if a given point is within a tide model domain
 - Plot Tidal Forecasts at a Location |github forecasts| |nbviewer forecasts|
     Plots a weekly forecast of tidal displacements at a given location
+- Solve for Harmonic Constants at a Location |github solve| |nbviewer solve|
+    Solves for the amplitude and phase of harmonic constituents at a given location
 - Plot Range of Tidal Amplitudes around Antarctica |github range| |nbviewer range|
     Plot the total combined tidal amplitude for all constituents around Antarctica
 - Plot Tides in the Arctic Ocean |github arctic| |nbviewer arctic|
@@ -32,6 +34,12 @@ Jupyter Notebooks providing demonstrations of ``pyTMD`` functionality:
 
 .. |nbviewer forecasts| image:: https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg
    :target: https://nbviewer.jupyter.org/github/tsutterley/pyTMD/blob/main/notebooks/Plot\ Tide\ Forecasts.ipynb
+
+.. |github solve| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github
+   :target: https://github.com/tsutterley/pyTMD/blob/main/notebooks/Solve\ Synthetic\ Tides.ipynb
+
+.. |nbviewer solve| image:: https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg
+   :target: https://nbviewer.jupyter.org/github/tsutterley/pyTMD/blob/main/notebooks/Solve\ Synthetic\ Tides.ipynb
 
 .. |github currents| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github
    :target: https://github.com/tsutterley/pyTMD/blob/main/notebooks/Plot\ Antarctic\ Tidal\ Currents.ipynb

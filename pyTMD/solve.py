@@ -18,7 +18,7 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     arguments.py: loads nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
-    predict.py: predict tidal values using harmonic constants
+    constants.py: calculate reference parameters for common ellipsoids
 
 UPDATE HISTORY:
     Updated 01/2024: add functions for tide generating forces and potentials
@@ -30,14 +30,14 @@ from __future__ import annotations
 import numpy as np
 import scipy.linalg
 import pyTMD.arguments
-from pyTMD.constants import constants
+import pyTMD.constants
 
 # get WGS84 ellipsoid parameters in meters-kg-seconds
-_wgs84 = constants(ellipsoid='WGS84', units='MKS')
+_wgs84 = pyTMD.constants.constants(ellipsoid='WGS84', units='MKS')
 
 def constants(t: float | np.ndarray,
         ht: np.ndarray,
-        constituents: list | np.ndarray,
+        constituents: str | list | np.ndarray,
         deltat: float | np.ndarray = 0.0,
         corrections: str = 'OTIS',
         solver: str = 'lstsq'
@@ -51,8 +51,8 @@ def constants(t: float | np.ndarray,
         days relative to 1992-01-01T00:00:00
     ht: np.ndarray
         elevation time series (meters)
-    constituents: list or np.ndarray
-        tidal constituent IDs
+    constituents: str, list or np.ndarray
+        tidal constituent ID(s)
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
@@ -81,6 +81,9 @@ def constants(t: float | np.ndarray,
 
     .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
+    # check if input constituents is a string
+    if isinstance(constituents, str):
+        constituents = [constituents]
     # check that there are enough values for a time series fit
     nt = len(np.atleast_1d(t))
     nc = len(constituents)
