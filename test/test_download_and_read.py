@@ -531,6 +531,8 @@ class Test_CATS2008:
             # calculate constituent oscillation for station
             hc2[TYPE] = amp*np.exp(cph)
 
+        # number of constituents
+        nc = len(c)
         # compute tidal ellipse parameters for python program
         test = {}
         test['umajor'],test['uminor'],test['uincl'],test['uphase'] = \
@@ -547,7 +549,7 @@ class Test_CATS2008:
 
         # calculate differences between matlab and python version
         for key in ['umajor','uminor','uincl','uphase']:
-            difference = np.ma.zeros((valid_stations,len(c)))
+            difference = np.ma.zeros((valid_stations, nc))
             difference.data[:] = test[key].data - valid[key].T
             difference.mask = (test[key].mask | np.isnan(valid[key].T))
             difference.data[difference.mask] = 0.0
@@ -556,7 +558,7 @@ class Test_CATS2008:
 
         # calculate differences between forward and inverse functions
         for key in ['U', 'V']:
-            difference = np.ma.zeros((valid_stations,len(c)))
+            difference = np.ma.zeros((valid_stations, nc), dtype=np.complex128)
             difference.data[:] = hc1[key].data - inverse[key].data
             difference.mask = (hc1[key].mask | inverse[key].mask)
             difference.data[difference.mask] = 0.0

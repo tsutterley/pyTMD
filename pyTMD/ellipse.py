@@ -85,7 +85,12 @@ def ellipse(u: np.ndarray, v: np.ndarray):
     uminor = (ap - am)
     # determine the inclination and phase using Foreman's formula
     uincl = (em + ep)/2.0
-    uphase = np.mod((em - ep)/2.0, 360)
+    uphase = (em - ep)/2.0
+    # adjust orientation of ellipse
+    k = (uincl//180.0)
+    uincl -= 180.0*k
+    uphase += 180.0*k
+    uphase = np.mod(uphase, 360.0)
     # return values
     return (umajor, uminor, uincl, uphase)
 
