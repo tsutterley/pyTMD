@@ -26,6 +26,7 @@ REFERENCE:
 
 UPDATE HISTORY:
     Updated 01/2024: added inverse function to get currents from parameters
+        use complex algebra to calculate tidal ellipse parameters
     Updated 09/2023: renamed to ellipse.py (from tidal_ellipse.py)
     Updated 03/2023: add basic variable typing to function inputs
     Updated 04/2022: updated docstrings to numpy documentation format
@@ -69,27 +70,23 @@ def ellipse(u: np.ndarray, v: np.ndarray):
     # validate inputs
     u = np.atleast_1d(u)
     v = np.atleast_1d(v)
-    # change to polar coordinates
-    t1p = u.real - v.imag
-    t2p = v.real + u.imag
-    t1m = u.real + v.imag
-    t2m = v.real - u.imag
+    # wp, wm: complex radius of positively and negatively rotating vectors
+    wp = (u + 1j*v)/2.0
+    wm = np.conj(u - 1j*v)/2.0
     # ap, am: amplitudes of positively and negatively rotating vectors
-    ap = np.sqrt(t1p**2 + t2p**2)/2.0
-    am = np.sqrt(t1m**2 + t2m**2)/2.0
+    ap = np.abs(wp)
+    am = np.abs(wm)
     # ep, em: phases of positively and negatively rotating vectors
-    ep = 180.0*np.arctan2(t2p, t1p)/np.pi
-    ep[ep < 0.0] += 360.0
-    em = 180.0*np.arctan2(t2m, t1m)/np.pi
-    em[em < 0.0] += 360.0
+    ep = np.angle(wp, deg=True)
+    em = np.angle(wm, deg=True)
     # determine the amplitudes of the semimajor and semiminor axes
     # using Foreman's formula
     umajor = (ap + am)
     uminor = (ap - am)
     # determine the inclination and phase using Foreman's formula
-    uincl = 0.5 * (em + ep)
+    uincl = (em + ep)/2.0
+    uphase = (em - ep)/2.0
     uincl[uincl > 180.0] -= 180.0
-    uphase = -0.5*(ep - em)
     uphase[uphase < 0.0] += 360.0
     uphase[uphase >= 360.0] -= 360.0
     # return values
@@ -139,28 +136,15 @@ def inverse(
     uphase = np.atleast_1d(uphase)*np.pi/180.0
     # ep, em: phases of positively and negatively rotating vectors
     ep = (uincl - uphase)
-    ep[ep < 0] += 2*np.pi
-    ep[ep > 2*np.pi] -= 2*np.pi
     em = (uincl + uphase)
-    em[em < 0] += 2*np.pi
-    em[em > 2*np.pi] -= 2*np.pi
     # ap, am: amplitudes of positively and negatively rotating vectors
     ap = (umajor + uminor)/2.0
     am = (umajor - uminor)/2.0
-    # currents in polar coordinates
-    rp = np.tan(ep)
-    rm = np.tan(em)
-    t1p = 2.0*ap/np.sqrt(1.0 + rp**2)
-    t2p = rp*t1p
-    t1m = 2.0*am/np.sqrt(1.0 + rm**2)
-    t2m = rm*t1m
-    # adjust quadrants
-    t1m[np.arctan(rm) < 0] *= -1.0
-    t2m[np.arctan(rm) < 0] *= -1.0
-    t1p[np.isclose(np.arctan(rp) + np.pi, ep)] *= -1.0
-    t2p[np.isclose(np.arctan(rp) + np.pi, ep)] *= -1.0
-    # calculate currents
-    u = (t1m + t1p)/2.0 + 1j*(t2p - t2m)/2.0
-    v = (t2m + t2p)/2.0 + 1j*(t1m - t1p)/2.0
+    # wp, wm: complex radius of positively and negatively rotating vectors
+    wp = ap * np.exp(1j*ep)
+    wm = am * np.exp(1j*em)
+    # calculate complex currents
+    u = wp + np.conj(wm)
+    v = -1j*(wp - np.conj(wm))
     # return values
     return (u, v)
