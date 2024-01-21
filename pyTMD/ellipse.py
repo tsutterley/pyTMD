@@ -155,12 +155,12 @@ def inverse(
     t1m = 2.0*am/np.sqrt(1.0 + rm**2)
     t2m = rm*t1m
     # adjust quadrants
-    if (np.arctan(rm) < 0):
-        t1m *= -1.0
-        t2m *= -1.0
-    elif np.isclose(np.arctan(rp) + np.pi, ep):
-        t1p *= -1.0
-        t2p *= -1.0
+    i1, = np.nonzero(np.arctan(rm) < 0)
+    t1m[i1] *= -1.0
+    t2m[i1] *= -1.0
+    i2, = np.nonzero(np.isclose(np.arctan(rp) + np.pi, ep))
+    t1p[i2] *= -1.0
+    t2p[i2] *= -1.0
     # calculate currents
     u = (t1m + t1p)/2.0 + 1j*(t2p - t2m)/2.0
     v = (t2m + t2p)/2.0 + 1j*(t1m - t1p)/2.0
