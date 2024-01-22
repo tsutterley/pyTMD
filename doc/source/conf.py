@@ -14,19 +14,21 @@
 # import sys
 import datetime
 # sys.path.insert(0, os.path.abspath('.'))
-from pkg_resources import get_distribution
+import importlib.metadata
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'pyTMD'
+# package metadata
+metadata = importlib.metadata.metadata("pyTMD")
+project = metadata["Name"]
 year = datetime.date.today().year
 copyright = f"2017\u2013{year}, Tyler C. Sutterley"
 author = 'Tyler C. Sutterley'
 
 # The full version, including alpha/beta/rc tags
 # get semantic version from setuptools-scm
-version = get_distribution("pyTMD").version
+version = metadata["version"]
 # append "v" before the version
 release = f"v{version}"
 
@@ -62,8 +64,8 @@ pygments_style = 'native'
 
 # -- Options for HTML output -------------------------------------------------
 
-# html_title = "pyTMD"
-html_short_title = "pyTMD"
+# html_title = metadata["Name"]
+html_short_title = metadata["Name"]
 html_show_sourcelink = False
 html_show_sphinx = True
 html_show_copyright = True
@@ -81,7 +83,7 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_logo = "_assets/pyTMD_logo.png"
 html_static_path = ['_static']
-repository_url = f"https://github.com/tsutterley/pyTMD"
+repository_url = metadata['Home-page']
 html_context = {
     "menu_links": [
         (

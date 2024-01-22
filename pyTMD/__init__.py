@@ -14,6 +14,7 @@ Documentation is available at https://pytmd.readthedocs.io
 import pyTMD.arguments
 import pyTMD.astro
 import pyTMD.compute
+import pyTMD.ellipse
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
@@ -39,7 +40,6 @@ from pyTMD.constants import (
 )
 from pyTMD.convert_crs import convert_crs
 from pyTMD.crs import crs
-from pyTMD.ellipse import ellipse
 
 # Deprecated functions
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
