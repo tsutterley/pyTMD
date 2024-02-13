@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (02/2024)
 
 Gravitational and ellipsoidal parameters
 
@@ -37,6 +37,7 @@ REFERENCE:
         https://iers-conventions.obspm.fr/content/tn36.pdf
 
 UPDATE HISTORY:
+    Updated 02/2024: add capability to define a custom datum
     Updated 12/2023: add string representation of constants object
     Updated 10/2023: add value for WMO standard gravity
     Updated 03/2023: add basic variable typing
@@ -51,7 +52,7 @@ _ellipsoids = ['CLK66', 'GRS67', 'GRS80', 'WGS72', 'WGS84', 'ATS77',
     'EGM96', 'IERS']
 _units = ['MKS', 'CGS']
 
-class constants(object):
+class constants:
     """
     Class for gravitational and ellipsoidal parameters
 
@@ -93,12 +94,22 @@ class constants(object):
         Geocentric gravitational constant
     """
     np.seterr(invalid='ignore')
-    def __init__(self, ellipsoid: str = 'WGS84', units: str = 'MKS'):
+    def __init__(self, **kwargs):
+        # set default keyword arguments
+        kwargs.setdefault('ellipsoid', 'WGS84')
+        kwargs.setdefault('units', 'MKS')
+        kwargs.setdefault('a_axis', None)
+        kwargs.setdefault('flat', None)
+        kwargs.setdefault('GM', None)
+        kwargs.setdefault('omega', None)
         # set ellipsoid name and units
-        self.name = ellipsoid.upper()
-        self.units = units.upper()
+        self.units = kwargs['units'].upper()
+        if ((kwargs['a_axis'] is not None) and (kwargs['flat'] is not None)):
+            self.name = 'user_defined'
+        else:
+            self.name = kwargs['ellipsoid'].upper()
         # validate ellipsoid and units
-        assert self.name in _ellipsoids
+        assert self.name in _ellipsoids + ['user_defined']
         assert self.units in _units
 
         # set parameters for ellipsoid
@@ -174,12 +185,25 @@ class constants(object):
             self.a_axis = 6378136.6# [m] semimajor axis of the ellipsoid
             self.flat = 1.0/298.25642# flattening of the ellipsoid
 
+        elif (self.name == 'user_defined'):
+            # custom datum
+            self.a_axis = np.float64(kwargs['a_axis'])
+            self.flat = np.float64(kwargs['flat'])
+
         # set default parameters if not listed as part of ellipsoid
-        if self.name not in ('GRS80', 'GRS67', 'NAD83', 'TOPEX', 'EGM96'):
+        # Geocentric Gravitational Constant
+        if kwargs['GM'] is not None:
+            # user defined Geocentric Gravitational Constant
+            self.GM = np.float64(kwargs['GM'])
+        elif self.name not in ('GRS80', 'GRS67', 'NAD83', 'TOPEX', 'EGM96'):
             # for ellipsoids not listing the Geocentric Gravitational Constant
             self.GM = 3.986004418e14# [m^3/s^2]
 
-        if self.name not in ('GRS67'):
+        # angular velocity of the Earth
+        if kwargs['omega'] is not None:
+            # user defined angular velocity of the Earth
+            self.omega = np.float64(kwargs['omega'])
+        elif self.name not in ('GRS67'):
             # for ellipsoids not listing the angular velocity of the Earth
             self.omega = 7292115e-11# [rad/s]
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 time.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (02/2024)
 Utilities for calculating time operations
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 02/2024: move the immutable parameters in timescale class
     Updated 10/2023: add function to output timescale to string arrays
     Updated 06/2023: improve conversion of timescale to datetime arrays
     Updated 05/2023: add timescale class for converting between time scales
@@ -615,38 +616,25 @@ class timescale:
         Number of leap seconds
     MJD: np.ndarray
         Modified Julian Days
-    century: float
-        Days in a Julian century
-    day: float
-        Seconds in a day
-    turn: float
-        Fraction of a full turn
-    turndeg: float
-        Degrees in a full turn
-    tau: float
-        Radians in a full turn
-    deg2rad: float
-        Degrees to radians
-    deg2asec: float
-        Degrees to arcseconds
     """
+    # Julian century
+    century = 36525.0
+    # seconds per day
+    day = 86400.0
+    # 360 degrees
+    turn = 1.0
+    turndeg = 360.0
+    tau = 2.0*np.pi
+    # degrees to radians
+    deg2rad = np.pi/180.0
+    # degrees to arcseconds
+    deg2asec = 3600.0
+
     def __init__(self, MJD=None):
         # leap seconds
         self.leaps = None
         # modified Julian Days
         self.MJD = MJD
-        # Julian century
-        self.century = 36525.0
-        # seconds per day
-        self.day = 86400.0
-        # 360 degrees
-        self.turn = 1.0
-        self.turndeg = 360.0
-        self.tau = 2.0*np.pi
-        # degrees to radians
-        self.deg2rad = np.pi/180.0
-        # degrees to arcseconds
-        self.deg2asec = 3600.0
         # iterator
         self.__index__ = 0
 

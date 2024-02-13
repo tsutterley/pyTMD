@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (02/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 02/2024: don't overwrite hu and hv in _interpolate_to_nodes
     Updated 01/2024: construct currents masks differently if not global
         renamed currents masks and bathymetry interpolation functions
     Updated 12/2023: use new crs class for coordinate reprojection
@@ -1433,8 +1434,8 @@ def create_atlas_mask(
     """
     # create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
-    x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)
-    y30 = np.arange(-90.0+d30/2.0, 90.0+d30/2.0, d30)
+    x30 = np.arange(d30/2.0, 360.0 + d30/2.0, d30)
+    y30 = np.arange(-90.0 + d30/2.0, 90.0 + d30/2.0, d30)
     # interpolate global mask to create initial 2 arc-minute mask
     xcoords=np.clip((len(xi)-1)*(x30-xi[0])/(xi[-1]-xi[0]),0,len(xi)-1)
     ycoords=np.clip((len(yi)-1)*(y30-yi[0])/(yi[-1]-yi[0]),0,len(yi)-1)
@@ -1499,8 +1500,8 @@ def interpolate_atlas_model(
         high-resolution tidal solution for variable
     """
     # create resampled grid dimensions
-    xs = np.arange(spacing/2.0, 360.0+spacing/2.0, spacing)
-    ys = np.arange(-90.0+spacing/2.0, 90.0+spacing/2.0, spacing)
+    xs = np.arange(spacing/2.0, 360.0 + spacing/2.0, spacing)
+    ys = np.arange(-90.0 + spacing/2.0, 90.0 + spacing/2.0, spacing)
     # interpolate global solution
     zs = np.ma.zeros((len(ys),len(xs)), dtype=zi.dtype)
     zs.mask = np.zeros((len(ys),len(xs)), dtype=bool)
@@ -1890,11 +1891,11 @@ def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
     if global_grid:
         # x-indices
         indx = np.zeros((nx), dtype=int)
-        indx[:-1] = np.arange(1,nx)
+        indx[:-1] = np.arange(1, nx)
         indx[-1] = 0
         # y-indices
         indy = np.zeros((ny), dtype=int)
-        indy[:-1] = np.arange(1,ny)
+        indy[:-1] = np.arange(1, ny)
         indy[-1] = 0
         # calculate masks on u and v grids
         mu[indy,:] = mz*mz[indy,:]
@@ -1909,8 +1910,8 @@ def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
         indy[0] = 0
         indy[1:] = np.arange(ny-1)
         # calculate masks on u and v grids
-        mu = mz*mz[indy,:]
-        mv = mz*mz[:,indx]
+        mu[:,:] = mz*mz[indy,:]
+        mv[:,:] = mz*mz[:,indx]
     # return the masks
     return (mu, mv)
 
@@ -1937,11 +1938,11 @@ def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
     if global_grid:
         # x-indices
         indx = np.zeros((nx), dtype=int)
-        indx[:-1] = np.arange(1,nx)
+        indx[:-1] = np.arange(1, nx)
         indx[-1] = 0
         # y-indices
         indy = np.zeros((ny), dtype=int)
-        indy[:-1] = np.arange(1,ny)
+        indy[:-1] = np.arange(1, ny)
         indy[-1] = 0
         # calculate data at u and v nodes
         hu[indy,:] = mu*(hz + hz[indy,:])/2.0
@@ -1956,7 +1957,7 @@ def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
         indy[0] = 0
         indy[1:] = np.arange(ny-1)
         # calculate data at u and v nodes
-        hu = mu*(hz + hz[indy,:])/2.0
-        hv = mv*(hz + hz[:,indx])/2.0
+        hu[:,:] = mu*(hz + hz[indy,:])/2.0
+        hv[:,:] = mv*(hz + hz[:,indx])/2.0
     # return the interpolated data values
     return (hu, hv)

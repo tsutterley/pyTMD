@@ -18,13 +18,13 @@ import pyTMD.ellipse
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
-import pyTMD.solve
 import pyTMD.spatial
 import pyTMD.time
 import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
+from pyTMD import solve
 from pyTMD.check_points import check_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,

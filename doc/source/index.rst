@@ -41,7 +41,7 @@ ocean, load, solid Earth and pole tides
     api_reference/interpolate.rst
     api_reference/io/io.rst
     api_reference/predict.rst
-    api_reference/solve.rst
+    api_reference/solve/solve.rst
     api_reference/spatial.rst
     api_reference/time.rst
     api_reference/utilities.rst
