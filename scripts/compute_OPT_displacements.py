@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (02/2024)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -90,6 +90,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
@@ -262,7 +263,7 @@ def compute_OPT_displacements(input_file, output_file,
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants(ELLIPSOID)
+    units = pyTMD.datum(ELLIPSOID)
     # mean equatorial gravitational acceleration [m/s^2]
     ge = 9.7803278
     # density of sea water [kg/m^3]

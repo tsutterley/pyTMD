@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 u"""
 test_ocean_pole_tide.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (02/2024)
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: single implicit import of pyTMD
         use constants class for ellipsoidal parameters
@@ -51,7 +52,7 @@ def test_ocean_pole_tide(METHOD):
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants('IERS')
+    units = pyTMD.datum('IERS')
     # universal constant of gravitation for test [m^3/(kg*s^2)]
     G = 6.673e-11
     # mean equatorial gravitational acceleration [m/s^2]

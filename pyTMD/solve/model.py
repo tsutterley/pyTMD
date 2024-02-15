@@ -32,7 +32,7 @@ import numpy as np
 import scipy.sparse
 import scipy.ndimage
 import pyTMD.arguments
-from pyTMD.constants import constants
+from pyTMD.crs import datum
 
 # attempt imports
 try:
@@ -143,7 +143,7 @@ class model:
     def generating_force(self, c: str):
         """
         Computes the astronomical tide generating force (the horizontal gradient
-        of the tide generating potential) for a tidal constituent [1]_
+        of the tide generating potential) for a tidal constituent
 
         Parameters
         ----------
@@ -194,7 +194,7 @@ class model:
     def generating_potential(self, c: str):
         """
         Computes the astronomical tide generating potential for a tidal
-        constituent converted to an equilibrium tide elevation [1]_
+        constituent converted to an equilibrium tide elevation
 
         Parameters
         ----------
@@ -491,7 +491,7 @@ class model:
     def ellipsoid(self):
         """Ellipsoidal parameters based on user definitions
         """
-        return constants(
+        return datum(
             ellipsoid=None,
             a_axis=self.a_axis,
             flat=self.flat,
@@ -552,6 +552,8 @@ class model:
         properties.append(f"    crs: {self.crs.name}")
         extent = ', '.join(map(str, self.extent))
         properties.append(f"    extent: {extent}")
+        spacing = ', '.join(map(str, self.spacing))
+        properties.append(f"    spacing: {spacing}")
         shape = ', '.join(map(str, self.shape))
         properties.append(f"    shape: {shape}")
         return '\n'.join(properties)

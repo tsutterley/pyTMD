@@ -34,7 +34,6 @@ ocean, load, solid Earth and pole tides
     api_reference/astro.rst
     api_reference/check_points.rst
     api_reference/compute.rst
-    api_reference/constants.rst
     api_reference/crs.rst
     api_reference/ellipse.rst
     api_reference/eop.rst
