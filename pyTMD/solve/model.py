@@ -14,6 +14,9 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
+    pyproj: Python interface to PROJ library
+        https://pypi.org/project/pyproj/
+        https://pyproj4.github.io/pyproj/
 
 PROGRAM DEPENDENCIES:
     arguments.py: loads nodal corrections for tidal constituents
@@ -24,11 +27,18 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
+import logging
 import numpy as np
 import scipy.sparse
 import scipy.ndimage
 import pyTMD.arguments
 from pyTMD.constants import constants
+
+# attempt imports
+try:
+    import pyproj
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.critical("pyproj not available")
 
 class _kernels:
     """
@@ -47,17 +57,17 @@ class model:
     Parameters
     ----------
     extent: list, tuple or np.ndarray
-        spatial extent of the grid in degrees
+        spatial extent of the grid
     spacing: list, tuple or np.ndarray
-        grid spacing in degrees
+        grid spacing
+    crs: int, str, pyproj.CRS or NoneType, default None
+        Coordinate Reference System definition
     a_axis: float, default 6378137.0
         Semi-major axis of the Earth's ellipsoid [m]
     flat: float, default 1.0/298.257223563
         Flattening of the Earth's ellipsoid
     GM: float, default 3.986004418e14
         Geocentric Gravitational Constant [m^3/s^2]
-    gamma: float, default 9.80665
-        gravitational acceleration [m/s^2]
     omega: float, default 7.292115e-5
         average angular rotation rate of the Earth [rad/s]
     beta: float, default 0.90
@@ -97,11 +107,11 @@ class model:
         # set initial attributes
         self.extent = [None, None, None, None]
         self.spacing = [None, None]
+        # set the spatial projection reference information
+        if ('crs' in kwargs):
+            self._crs(kwargs.pop('crs'))
+            self._get_geod()
         # model parameters and constants
-        # semi-major axis of the ellipsoid [m] (WGS84 definition)
-        self.a_axis = 6378137.0
-        # flattening of the ellipsoid (WGS84 definition)
-        self.flat = 1.0/298.257223563
         # Geocentric Gravitational Constant [m^3/s^2]
         self.GM = 3.986004418e14
         # standard gravitational acceleration [m/s^2]
@@ -126,6 +136,8 @@ class model:
         # set optional fields or redefine constants
         for key, val in kwargs.items():
             setattr(self, key, val)
+        # validate inputs
+        self._validate_inputs()
 
     # PURPOSE: calculate the astronomical tide generating force
     def generating_force(self, c: str):
@@ -138,27 +150,28 @@ class model:
         c: str
             tidal constituent ID
         """
-        # x and y coordinates for u transports in radians
-        phi_u, th_u = np.meshgrid(
-            self.deg2rad*self.lon_u,
-            self.deg2rad*(90.0 - self.lat_u)
-        )
-        # x and y coordinates for v transports in radians
-        phi_v, th_v = np.meshgrid(
-            self.deg2rad*self.lon_v,
-            self.deg2rad*(90.0 - self.lat_v)
-        )
+        # longitudes and latitudes for u and v transports
+        lon_u, lat_u = self.get_latlon(self.x_u, self.y_u)
+        lon_v, lat_v = self.get_latlon(self.x_v, self.y_v)
+        # longitudes and colatitudes for u transports in radians
+        phi_u = self.deg2rad*lon_u
+        th_u = self.deg2rad*(90.0 - lat_u)
+        # longitudes and colatitudes for v transports in radians
+        phi_v = self.deg2rad*lon_v
+        th_v = self.deg2rad*(90.0 - lat_v)
+        # gravitational acceleration at each colatitude [m/s^2]
+        gamma_u = self.gamma_0(th_u)
+        gamma_v = self.gamma_0(th_v)
 
         # load parameters for each constituent
-        amp, ph, omega, alpha, species = \
+        amp, phase, omega, alpha, species = \
             pyTMD.arguments._constituent_parameters(c)
         # uniform zonal dependence of astronomical forcing
-        ph = 0.0
+        phase = 0.0
 
         # calculate forcing for constituent
-        coeff = (alpha*self.gamma*amp/self.rad_e)
-        Fu = coeff*np.exp(1j*phi_u*species + 1j*ph)
-        Fv = coeff*np.exp(1j*phi_v*species + 1j*ph)
+        Fu = alpha*amp*gamma_u*np.exp(1j*phi_u*species + 1j*phase)/self.rad_e
+        Fv = alpha*amp*gamma_v*np.exp(1j*phi_v*species + 1j*phase)/self.rad_e
         # calculate latitudinal dependence of forcing
         # for a given spherical harmonic dependence
         if (species == 1):
@@ -188,21 +201,20 @@ class model:
         c: str
             tidal constituent ID
         """
-        # x and y coordinates for heights in radians
-        phi_z, th_z = np.meshgrid(
-            self.deg2rad*self.lon_z,
-            self.deg2rad*(90.0 - self.lat_z)
-        )
+        # longitudes and latitudes for zeta nodes
+        lon_z, lat_z = self.get_latlon(self.x_z, self.y_z)
+        # longitudes and colatitudes for zeta nodes in radians
+        phi_z = self.deg2rad*lon_z
+        th_z = self.deg2rad*(90.0 - lat_z)
 
         # load parameters for each constituent
-        amp, ph, omega, alpha, species = \
+        amp, phase, omega, alpha, species = \
             pyTMD.arguments._constituent_parameters(c)
         # uniform zonal dependence of astronomical potential
-        ph = 0.0
+        phase = 0.0
 
         # calculate potential for constituent
-        coeff = (alpha*amp)
-        zeta = coeff*np.exp(1j*phi_z*species + 1j*ph)
+        zeta = alpha*amp*np.exp(1j*phi_z*species + 1j*phase)
 
         # calculate latitudinal dependence of potential
         # for a given spherical harmonic dependence
@@ -218,27 +230,91 @@ class model:
         # return the generating potential and the angular frequency
         return (zeta, omega)
 
-    def f(self, lat: np.ndarray):
-        """Coriolis parameter at latitudes
+    def f(self, theta: np.ndarray):
+        """Coriolis parameter at colatitudes
 
         Parameters
         ----------
-        lat: np.ndarray
-            Latitude [degrees]
+        theta: np.ndarray
+            Colatitude [radians]
         """
-        theta = self.deg2rad*(90.0 - lat)
         return 2.0*self.omega*np.cos(theta)
 
-    def gamma_0(self, lat: np.ndarray):
-        """Normal gravity at latitudes
+    def gamma_0(self, theta: np.ndarray):
+        """Normal gravity at colatitudes
 
         Parameters
         ----------
-        lat: np.ndarray
-            Latitude [degrees]
+        theta: np.ndarray
+            Colatitude [radians]
         """
-        theta = self.deg2rad*(90.0 - lat)
         return self.ellipsoid.gamma_0(theta)
+
+    def get_latlon(self, x: np.ndarray, y: np.ndarray):
+        """
+        Get the latitude and longitude of grid cells
+
+        Parameters
+        ----------
+        x: np.ndarray
+            x-coordinates of grid cells
+        y: np.ndarray
+            y-coordinates of grid cells
+
+        Returns
+        -------
+        longitude: np.ndarray
+            longitude coordinates of grid cells
+        latitude: np.ndarray
+            latitude coordinates of grid cells
+        """
+        # target spatial reference (WGS84 latitude and longitude)
+        target_crs = pyproj.CRS.from_epsg(4326)
+        # create transformation
+        transformer = pyproj.Transformer.from_crs(self.crs, target_crs,
+            always_xy=True)
+        # create meshgrid of points in original projection
+        xgrid, ygrid = np.meshgrid(x, y)
+        # convert coordinates to latitude and longitude
+        longitude, latitude = transformer.transform(xgrid, ygrid)
+        return longitude, latitude
+
+    # PURPOSE: try to get the projection information
+    def _crs(self, projection: int | str | pyproj.CRS):
+        """
+        Attempt to retrieve the Coordinate Reference System
+
+        Parameters
+        ----------
+        projection: int, str or pyproj.CRS
+            Coordinate Reference System definition
+        """
+        if isinstance(projection, pyproj.CRS):
+            self.crs = projection
+            return self
+        # EPSG projection code
+        try:
+            self.crs = pyproj.CRS.from_epsg(int(projection))
+        except (ValueError, pyproj.exceptions.CRSError):
+            pass
+        else:
+            return self
+        # coordinate reference system string
+        try:
+            self.crs = pyproj.CRS.from_string(projection)
+        except (ValueError, pyproj.exceptions.CRSError):
+            pass
+        else:
+            return self
+        # no projection can be made
+        raise pyproj.exceptions.CRSError
+
+    def _get_geod(self):
+        """Get the geodetic parameters describing the ellipsoid
+        """
+        self.a_axis = self.crs.get_geod().a
+        self.flat = self.crs.get_geod().f
+        return self
 
     # PURPOSE: construct masks for u, v and zeta nodes
     def _mask_nodes(self, hz: np.ndarray):
@@ -352,6 +428,26 @@ class model:
         # calculate the convolution
         return scipy.ndimage.convolve(array, kernel, **kwargs)
 
+    def _validate_inputs(self):
+        """Check if class inputs are appropriate
+        """
+        assert isinstance(self.extent, (list, tuple, np.ndarray))
+        assert len(self.extent) == 4
+        assert isinstance(self.spacing, (list, tuple, np.ndarray))
+        assert len(self.spacing) == 2
+        assert isinstance(self.crs, pyproj.CRS)
+        assert isinstance(self.a_axis, (int, float))
+        assert isinstance(self.flat, (int, float))
+        assert isinstance(self.GM, (int, float))
+        assert isinstance(self.omega, (int, float))
+        assert isinstance(self.beta, (int, float))
+        assert isinstance(self.rho_w, (int, float))
+        assert isinstance(self.c_drag, (int, float))
+        assert isinstance(self.h2, (int, float))
+        assert isinstance(self.k2, (int, float))
+        assert isinstance(self.N_0, (int, float))
+        assert isinstance(self.b_len, (int, float))
+
     # grid dimensions
     @property
     def dimensions(self) -> list:
@@ -386,10 +482,10 @@ class model:
     def global_grid(self) -> bool:
         """Defines if the grid is global in terms of longitude
         """
-        return np.isclose(
-            self.lon_z[-1] - self.lon_z[0],
-            self.turndeg - self.spacing[0]
-        )
+        return np.logical_not(self.crs.is_projected) and \
+            np.isclose(self.x_z[-1] - self.x_z[0],
+                self.turndeg - self.spacing[0]
+            )
 
     @property
     def ellipsoid(self):
@@ -410,42 +506,42 @@ class model:
         return self.ellipsoid.rad_e
 
     @property
-    def lon_z(self):
-        """Longitude coordinates for zeta nodes on an Arakawa C-grid
+    def x_z(self):
+        """x-coordinates for zeta nodes on an Arakawa C-grid
         """
         return self.extent[0] + self.spacing[0]*np.arange(self.dimensions[1]) + \
             self.spacing[0]/2.0
 
     @property
-    def lat_z(self):
-        """Latitude coordinates for zeta nodes on an Arakawa C-grid
+    def y_z(self):
+        """y-coordinates for zeta nodes on an Arakawa C-grid
         """
         return self.extent[2] + self.spacing[1]*np.arange(self.dimensions[0]) + \
             self.spacing[1]/2.0
 
     @property
-    def lon_u(self):
-        """Longitude coordinates for U nodes on an Arakawa C-grid
+    def x_u(self):
+        """x-coordinates for U nodes on an Arakawa C-grid
         """
         return self.extent[0] + self.spacing[0]*np.arange(self.dimensions[1])
 
     @property
-    def lat_u(self):
-        """Latitude coordinates for U nodes on an Arakawa C-grid
+    def y_u(self):
+        """y-coordinates for U nodes on an Arakawa C-grid
         """
         return self.extent[2] + self.spacing[1]*np.arange(self.dimensions[0]) + \
             self.spacing[1]/2.0
 
     @property
-    def lon_v(self):
-        """Longitude coordinates for V nodes on an Arakawa C-grid
+    def x_v(self):
+        """x-coordinates for V nodes on an Arakawa C-grid
         """
         return self.extent[0] + self.spacing[0]*np.arange(self.dimensions[1]) + \
             self.spacing[0]/2.0
 
     @property
-    def lat_v(self):
-        """Latitude coordinates for V nodes on an Arakawa C-grid
+    def y_v(self):
+        """y-coordinates for V nodes on an Arakawa C-grid
         """
         return self.extent[2] + self.spacing[1]*np.arange(self.dimensions[0])
 
@@ -453,6 +549,7 @@ class model:
         """String representation of the ``model`` object
         """
         properties = ['pyTMD.solve.model']
+        properties.append(f"    crs: {self.crs.name}")
         extent = ', '.join(map(str, self.extent))
         properties.append(f"    extent: {extent}")
         shape = ', '.join(map(str, self.shape))
