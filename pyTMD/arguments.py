@@ -98,9 +98,9 @@ def arguments(
     Returns
     -------
     pu: np.ndarray
-        nodal correction for the constituent amplitude
+        nodal angle correction
     pf: np.ndarray
-        nodal correction for the constituent phase
+        nodal factor correction
     G: np.ndarray
         phase correction in degrees
 
@@ -163,12 +163,13 @@ def arguments(
     sin3n = np.sin(3.0*n*dtr)
 
     # set nodal corrections
-    # scale factor correction
+    # nodal factor correction
     f = np.zeros((nt, 60))
-    # phase correction
+    # nodal angle correction
     u = np.zeros((nt, 60))
     # determine nodal corrections f and u for each model type
     if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
+        # nodal factors
         f[:,0] = 1.0 # Sa
         f[:,1] = 1.0 # Ssa
         f[:,2] = 1.0 - 0.130*cosn # Mm
@@ -256,6 +257,7 @@ def arguments(
         # mean sea level
         f[:,59] = 1.0 # Z0
 
+        # nodal angles
         u[:,0] = 0.0 # Sa
         u[:,1] = 0.0 # Ssa
         u[:,2] = 0.0 # Mm
@@ -342,6 +344,7 @@ def arguments(
         Q_sec = (np.sin(II)**2)*np.cos(2.0*nu) + 0.0727
         nu_sec = 0.5*np.arctan(P_sec/Q_sec)
 
+        # nodal factors
         f[:,0] = 1.0 # Sa
         f[:,1] = 1.0 # Ssa
         f[:,2] = (2.0/3.0 - np.power(np.sin(II),2.0))/0.5021 # Mm
@@ -414,6 +417,7 @@ def arguments(
         # mean sea level
         f[:,59] = 1.0 # Z0
 
+        # nodal angles
         u[:,0] = 0.0 # Sa
         u[:,1] = 0.0 # Ssa
         u[:,2] = 0.0 # Mm
@@ -473,6 +477,7 @@ def arguments(
         u[:,59] = 0.0 # Z0
 
     elif kwargs['corrections'] in ('GOT',):
+        # nodal factors
         f[:,9] = 1.009 + 0.187*cosn - 0.015*cos2n# Q1
         f[:,11] = f[:,9]# O1
         f[:,16] = 1.0 # P1
@@ -484,6 +489,7 @@ def arguments(
         f[:,36] = 1.024 + 0.286*cosn + 0.008*cos2n# K2
         f[:,44] = f[:,29]**2# M4
 
+        # nodal angles
         u[:,9] = 10.8*sinn - 1.3*sin2n# Q1
         u[:,11] = u[:,9]# O1
         u[:,16] = 0.0 # P1
@@ -495,13 +501,13 @@ def arguments(
         u[:,36] = -17.7*sinn + 0.7*sin2n# K2
         u[:,44] = -4.2*sinn# M4
 
-    # take pu,pf,G for the set of given constituents
+    # number of constituents of interest
     nc = len(constituents)
-    # scale factor correction
+    # nodal factor corrections for given constituents
     pu = np.zeros((nt,nc))
-    # phase correction
+    # nodal angle corrections for given constituents
     pf = np.zeros((nt,nc))
-    # equilibrium arguments
+    # equilibrium arguments for given constituents
     G = np.zeros((nt,nc))
     for i,c in enumerate(constituents):
         # map between given constituents and supported in tidal program
@@ -534,9 +540,9 @@ def minor_arguments(
     Returns
     -------
     pu: np.ndarray
-        nodal correction for the constituent amplitude
+        nodal angle correction
     pf: np.ndarray
-        nodal correction for the constituent phase
+        nodal factor correction
     G: np.ndarray
         phase correction in degrees
 
@@ -588,7 +594,7 @@ def minor_arguments(
     sin2n = np.sin(2.0*n*dtr)
     cos2n = np.cos(2.0*n*dtr)
 
-    # scale factor corrections for minor constituents
+    # nodal factor corrections for minor constituents
     f = np.ones((nt, 20))
     f[:,0] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 +
         (0.189*sinn - 0.0058*sin2n)**2)# 2Q1
@@ -606,7 +612,7 @@ def minor_arguments(
     f[:,15] = f[:,11]# L2
     f[:,16] = np.sqrt((1.0 + 0.441*cosn)**2 + (0.441*sinn)**2)# L2
 
-    # phase corrections for minor constituents
+    # nodal angle corrections for minor constituents
     u = np.zeros((nt, 20))
     u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
         1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
@@ -638,7 +644,7 @@ def minor_arguments(
         Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
         R = np.arctan(P2/Q2)
 
-        # scale factor corrections for minor constituents
+        # nodal factor corrections for minor constituents
         f[:,0] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1
         f[:,1] = f[:,0] # sigma1
         f[:,2] = f[:,0] # rho1
@@ -655,7 +661,7 @@ def minor_arguments(
         f[:,18] = f[:,11] # eps2
         f[:,19] = np.power(np.sin(II),2.0)/0.1565 # eta2
 
-        # phase corrections for minor constituents
+        # nodal angle corrections for minor constituents
         u[:,0] = (2.0*xi - nu)/dtr # 2Q1
         u[:,1] = u[:,0] # sigma1
         u[:,2] = u[:,0] # rho1

@@ -120,7 +120,7 @@ class grid:
             y: np.ndarray,
             scale: float = 1.0
         ):
-        """Calculate the step size of the grid
+        """Calculate the step size of the grid cells in meters
 
         Parameters
         ----------
