@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 02/2024: don't overwrite hu and hv in _interpolate_to_nodes
+        changed variable for setting global grid flag to is_global
     Updated 01/2024: construct currents masks differently if not global
         renamed currents masks and bathymetry interpolation functions
     Updated 12/2023: use new crs class for coordinate reprojection
@@ -249,12 +250,12 @@ def extract_constants(
     dy = yi[1] - yi[0]
 
     # if global: extend limits
-    global_grid = False
+    is_global = False
     # replace original values with extend arrays/matrices
     if np.isclose(xi[-1] - xi[0], 360.0 - dx) & (EPSG == '4326'):
         xi = _extend_array(xi, dx)
         # set global grid flag
-        global_grid = True
+        is_global = True
 
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
@@ -268,7 +269,7 @@ def extract_constants(
     # update masks for each type
     if (kwargs['type'] == 'z'):
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hz = _extend_matrix(hz)
             mz = _extend_matrix(mz)
         # masks zero values
@@ -276,12 +277,12 @@ def extract_constants(
         bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hu = _extend_matrix(hu)
             mu = _extend_matrix(mu)
         # masks zero values
@@ -291,12 +292,12 @@ def extract_constants(
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hv = _extend_matrix(hv)
             mv = _extend_matrix(mv)
         # masks zero values
@@ -388,7 +389,7 @@ def extract_constants(
                 u,hc = read_otis_transport(model_file, i)
 
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
@@ -522,18 +523,18 @@ def read_constants(
     dy = yi[1] - yi[0]
 
     # if global: extend limits
-    global_grid = False
+    is_global = False
     # replace original values with extend arrays/matrices
     if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
         xi = _extend_array(xi, dx)
         # set global grid flag
-        global_grid = True
+        is_global = True
 
     # update masks for each type
     # save output constituents
     if (kwargs['type'] == 'z'):
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hz = _extend_matrix(hz)
             mz = _extend_matrix(mz)
         # masks zero values
@@ -541,12 +542,12 @@ def read_constants(
         bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hu = _extend_matrix(hu)
             mu = _extend_matrix(mu)
         # masks zero values
@@ -556,12 +557,12 @@ def read_constants(
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hv = _extend_matrix(hv)
             mv = _extend_matrix(mv)
         # masks zero values
@@ -622,7 +623,7 @@ def read_constants(
                 u,hc = read_otis_transport(model_file, i)
 
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
@@ -1869,7 +1870,7 @@ def _extend_matrix(input_matrix: np.ndarray):
     return temp
 
 # PURPOSE: construct masks for u and v nodes
-def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
+def _mask_nodes(hz: np.ndarray, is_global: bool = True):
     """
     Construct masks for u and v nodes on a C-grid
 
@@ -1877,8 +1878,8 @@ def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
     ----------
     hz: np.ndarray
         bathymetry of grid centers
-    global_grid: bool, default True
-        input grid is global
+    is_global: bool, default True
+        input grid is global in terms of longitude
     """
     # shape of input bathymetry
     ny, nx = np.shape(hz)
@@ -1888,7 +1889,7 @@ def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
     mu = np.zeros((ny, nx), dtype=int)
     mv = np.zeros((ny, nx), dtype=int)
     # wrap mask if global
-    if global_grid:
+    if is_global:
         # x-indices
         indx = np.zeros((nx), dtype=int)
         indx[:-1] = np.arange(1, nx)
@@ -1916,7 +1917,7 @@ def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
     return (mu, mv)
 
 # PURPOSE: interpolate data to u and v nodes
-def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
+def _interpolate_to_nodes(hz: np.ndarray, is_global: bool = True):
     """
     Interpolate data to u and v nodes on a C-grid
 
@@ -1924,8 +1925,8 @@ def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
     ----------
     hz: np.ndarray
         data at grid centers
-    global_grid: bool, default True
-        input grid is global
+    is_global: bool, default True
+        input grid is global in terms of longitude
     """
     # shape of input data
     ny, nx = np.shape(hz)
@@ -1935,7 +1936,7 @@ def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
     hu = np.zeros((ny, nx), dtype=hz.dtype)
     hv = np.zeros((ny, nx), dtype=hz.dtype)
     # wrap data if global
-    if global_grid:
+    if is_global:
         # x-indices
         indx = np.zeros((nx), dtype=int)
         indx[:-1] = np.arange(1, nx)
