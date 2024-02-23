@@ -212,7 +212,7 @@ class model:
         kernel: np.ndarray
             Weights kernel
         kwargs: dict
-            Keyword arguments for scipy.ndimage.convolve
+            Keyword arguments for ``scipy.ndimage.convolve``
         """
         # define default for how array will be extended at boundaries
         if self.grid.is_global:
