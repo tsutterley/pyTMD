@@ -13,3 +13,4 @@ General Attributes and Methods
 
 .. autoclass:: pyTMD.solve.grid
    :members:
+   :private-members:

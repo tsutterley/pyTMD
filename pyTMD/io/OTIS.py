@@ -59,7 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
-    Updated 02/2024: don't overwrite hu and hv in _interpolate_to_nodes
+    Updated 02/2024: don't overwrite hu and hv in _interpolate_zeta
         changed variable for setting global grid flag to is_global
     Updated 01/2024: construct currents masks differently if not global
         renamed currents masks and bathymetry interpolation functions
@@ -278,7 +278,7 @@ def extract_constants(
     elif kwargs['type'] in ('u','U'):
         # interpolate masks and bathymetry to u, v nodes
         mu,mv = _mask_nodes(hz, is_global=is_global)
-        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
@@ -293,7 +293,7 @@ def extract_constants(
     elif kwargs['type'] in ('v','V'):
         # interpolate masks and bathymetry to u, v nodes
         mu,mv = _mask_nodes(hz, is_global=is_global)
-        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
@@ -543,7 +543,7 @@ def read_constants(
     elif kwargs['type'] in ('u','U'):
         # interpolate masks and bathymetry to u, v nodes
         mu,mv = _mask_nodes(hz, is_global=is_global)
-        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
@@ -558,7 +558,7 @@ def read_constants(
     elif kwargs['type'] in ('v','V'):
         # interpolate masks and bathymetry to u, v nodes
         mu,mv = _mask_nodes(hz, is_global=is_global)
-        hu,hv = _interpolate_to_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
@@ -1881,10 +1881,26 @@ def _mask_nodes(hz: np.ndarray, is_global: bool = True):
     is_global: bool, default True
         input grid is global in terms of longitude
     """
-    # shape of input bathymetry
-    ny, nx = np.shape(hz)
     # for grid center mask: find where bathymetry is greater than 0
     mz = (hz > 0).astype(int)
+    mu, mv = _interpolate_mask(mz, is_global=is_global)
+    # return the masks
+    return (mu, mv)
+
+# PURPOSE: interpolate mask to u and v nodes
+def _interpolate_mask(mz: np.ndarray, is_global: bool = True):
+    """
+    Interpolate mask from zeta nodes to u and v nodes on a C-grid
+
+    Parameters
+    ----------
+    mz: np.ndarray
+        mask at grid centers
+    is_global: bool, default True
+        input grid is global in terms of longitude
+    """
+    # shape of input mask
+    ny, nx = np.shape(mz)
     # initialize integer masks for u and v grids
     mu = np.zeros((ny, nx), dtype=int)
     mv = np.zeros((ny, nx), dtype=int)
@@ -1917,9 +1933,9 @@ def _mask_nodes(hz: np.ndarray, is_global: bool = True):
     return (mu, mv)
 
 # PURPOSE: interpolate data to u and v nodes
-def _interpolate_to_nodes(hz: np.ndarray, is_global: bool = True):
+def _interpolate_zeta(hz: np.ndarray, is_global: bool = True):
     """
-    Interpolate data to u and v nodes on a C-grid
+    Interpolate data from zeta nodes to u and v nodes on a C-grid
 
     Parameters
     ----------

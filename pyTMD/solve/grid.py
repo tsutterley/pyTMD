@@ -8,6 +8,8 @@ PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
+    scipy: Scientific Tools for Python
+        https://docs.scipy.org/doc/
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
         https://pyproj4.github.io/pyproj/
@@ -23,6 +25,7 @@ from __future__ import annotations
 
 import logging
 import numpy as np
+import scipy.ndimage
 from pyTMD.crs import datum
 from pyTMD.spatial import scale_areas
 
@@ -211,10 +214,20 @@ class grid:
         hz: np.ndarray
             bathymetry at grid centers
         """
-        # shape of input bathymetry
-        ny, nx = self.shape
+        # check shape of input bathymetry
+        assert hz.shape == self.shape, 'Input data does not match grid shape'
         # for grid center mask: find where bathymetry is greater than 0
         self.mask_z = (hz > 0).astype(int)
+        self._interpolate_mask()
+        # return the masks
+        return self
+
+    def _interpolate_mask(self):
+        """
+        Interpolate mask from zeta nodes to u and v nodes on a C-grid
+        """
+        # shape of input bathymetry
+        ny, nx = self.shape
         # initialize integer masks for u and v grids
         self.mask_u = np.zeros((ny, nx), dtype=int)
         self.mask_v = np.zeros((ny, nx), dtype=int)
@@ -246,8 +259,60 @@ class grid:
         # return the masks
         return self
 
+    def _simplify_mask(self, mask: np.ndarray):
+        """
+        Simplify a mask by removing isolated points
+
+        Parameters
+        ----------
+        mask: np.ndarray
+            input mask to be simplified
+
+        Returns
+        -------
+        isolated: np.ndarray
+            simplified mask
+        """
+        ny, nx = mask.shape
+        laplacian = -4.0*np.copy(mask)
+        laplacian += mask*np.roll(mask, 1, axis=1)
+        laplacian += mask*np.roll(mask, -1, axis=1)
+        temp = np.roll(mask,1,axis=0)
+        temp[0,:] = mask[1,:]
+        laplacian += mask*temp
+        temp = np.roll(mask,-1,axis=0)
+        temp[ny-1,:] = mask[ny-2,:]
+        laplacian += mask*temp
+        # create mask of isolated points
+        isolated = np.where(np.abs(laplacian) >= 3, 1, 0)
+        return isolated
+
+    def _smooth_mask(self,
+            mask: np.ndarray,
+            sigma: float = 0.15
+        ):
+        """
+        Simplify a mask using a Gaussian filter
+
+        Parameters
+        ----------
+        mask: np.ndarray
+            input mask to be simplified
+        sigma: float, default 0.15
+            standard deviation of the Gaussian filter
+
+        Returns
+        -------
+        smoothed: np.ndarray
+            simplified mask
+        """
+        # use a Gaussian filter to smooth mask
+        smoothed = scipy.ndimage.gaussian_filter(mask, sigma,
+            mode='constant', cval=0).astype(int)
+        return smoothed
+
     # PURPOSE: interpolate data to u and v nodes
-    def _interpolate_to_nodes(self, data_z: np.ndarray):
+    def _interpolate_zeta(self, data_z: np.ndarray):
         """
         Interpolate data from zeta nodes to u and v nodes on a C-grid
 
@@ -258,6 +323,7 @@ class grid:
         """
         # shape of input data
         ny, nx = self.shape
+        assert data_z.shape == (ny, nx), 'Input data does not match grid shape'
         # initialize data for u and v grids
         data_u = np.zeros((ny, nx), dtype=data_z.dtype)
         data_v = np.zeros((ny, nx), dtype=data_z.dtype)
@@ -288,6 +354,38 @@ class grid:
             data_v[:,:] = self.mask_v*(data_z + data_z[:,indx])/2.0
         # return the interpolated data values
         return (data_u, data_v)
+
+    def _interpolate_currents(self,
+            data_u: np.ndarray,
+            data_v: np.ndarray
+        ):
+        """
+        Interpolate data from u and v nodes on a C-grid
+
+        Parameters
+        ----------
+        data_u: np.ndarray
+            data at u nodes
+        data_v: np.ndarray
+            data at v nodes
+
+        Returns
+        -------
+        interp_u: np.ndarray
+            interpolated u data at v nodes
+        interp_v: np.ndarray
+            interpolated v data at u nodes
+        """
+        # shape of input data
+        ny, nx = self.shape
+        assert data_u.shape == (ny, nx), 'Input data does not match grid shape'
+        assert data_v.shape == (ny, nx), 'Input data does not match grid shape'
+        # pad the data
+        pad_u = np.pad(data_u, ((0, 0), (1, 1)), mode='edge')
+        interp_u = self.mask_v*(pad_u[:,0:-2] + 2.0*pad_u[:,1:-1] + pad_u[:,2:])/4.0
+        pad_v = np.pad(data_v, ((1, 1), (0, 0)), mode='edge')
+        interp_v = self.mask_u*(pad_v[0:-2,:] + 2.0*pad_v[1:-1,:] + pad_v[2:,:])/4.0
+        return (interp_u, interp_v)
 
     # grid dimensions
     @property

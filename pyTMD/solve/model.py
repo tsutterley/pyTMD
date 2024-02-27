@@ -14,6 +14,9 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
+    pyproj: Python interface to PROJ library
+        https://pypi.org/project/pyproj/
+        https://pyproj4.github.io/pyproj/
 
 PROGRAM DEPENDENCIES:
     arguments.py: loads nodal corrections for tidal constituents
@@ -48,8 +51,8 @@ class model:
     ----------
     grid: pyTMD.solve.grid
         Finite difference grid
-    beta: float, default 0.90
-        load tide and self attraction correction
+    beta: float, default 0.10
+        scaling factor for load tides and self attraction effects
     rho_w: float, default 1035.0
         average density of sea water [kg/m^3]
     c_drag: float, default 0.003
@@ -74,6 +77,8 @@ class model:
     """
     # seconds per day
     day = 86400.0
+    # # sidereal day in seconds
+    # ts = 86164.0
     # 360 degrees
     turndeg = 360.0
     # degrees to radians
@@ -81,14 +86,14 @@ class model:
     # convolution kernels
     _kernel = _kernels()
 
-    def __init__(self, grid, **kwargs):
+    def __init__(self, grid: pyTMD.solve.grid, **kwargs):
         # set initial attributes
         # set the finite difference grid
         assert isinstance(grid, pyTMD.solve.grid)
         self.grid = grid
         # model parameters and constants
-        # load tide and self attraction correction
-        self.beta = 0.90
+        # load tide and self attraction scaling factor
+        self.beta = 0.10
         # average density of sea water [kg/m^3]
         self.rho_w = 1035.0
         # non-dimensional quadratic bottom drag coefficient
