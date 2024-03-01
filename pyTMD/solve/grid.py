@@ -3,6 +3,13 @@ u"""
 grid.py
 Written by Tyler Sutterley (02/2024)
 Class for setting up finite difference grids for tidal modeling
+on an Arakawa-C grid
+
+    +-- v --+
+    |       |
+    u   h   u
+    |       |
+    +-- v --+
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -35,9 +42,20 @@ try:
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
 
+class _kernels:
+    """
+    Class for defining convolution kernels for finite differences
+    """
+    # convolution arrays for differentials
+    dx = np.array([[1, -1]]) # dz/dx
+    dy = np.array([[1], [-1]]) # dz/dy
+    dx2 = np.array([[1, -2, 1]]) # d2z/dx2
+    dy2 = np.array([[1], [-2], [1]]) # d2z/dy2
+
 class grid:
     """
     Class for setting up finite difference grids for tidal modeling
+    on an Arakawa-C grid
 
     Parameters
     ----------
@@ -62,6 +80,8 @@ class grid:
     turndeg = 360.0
     # degrees to radians
     deg2rad = np.pi/180.0
+    # convolution kernels
+    _kernel = _kernels()
 
     def __init__(self, **kwargs):
         # set initial attributes
@@ -226,36 +246,13 @@ class grid:
         """
         Interpolate mask from zeta nodes to u and v nodes on a C-grid
         """
-        # shape of input bathymetry
-        ny, nx = self.shape
-        # initialize integer masks for u and v grids
-        self.mask_u = np.zeros((ny, nx), dtype=int)
-        self.mask_v = np.zeros((ny, nx), dtype=int)
-        # wrap mask if global
-        if self.is_global:
-            # x-indices
-            indx = np.zeros((nx), dtype=int)
-            indx[:-1] = np.arange(1, nx)
-            indx[-1] = 0
-            # y-indices
-            indy = np.zeros((ny), dtype=int)
-            indy[:-1] = np.arange(1, ny)
-            indy[-1] = 0
-            # calculate masks on u and v grids
-            self.mask_u[indy,:] = self.mask_z*self.mask_z[indy,:]
-            self.mask_v[:,indx] = self.mask_z*self.mask_z[:,indx]
-        else:
-            # x-indices
-            indx = np.zeros((nx), dtype=int)
-            indx[0] = 0
-            indx[1:] = np.arange(nx-1)
-            # y-indices
-            indy = np.zeros((ny), dtype=int)
-            indy[0] = 0
-            indy[1:] = np.arange(ny-1)
-            # calculate masks on u and v grids
-            self.mask_u[:,:] = self.mask_z*self.mask_z[indy,:]
-            self.mask_v[:,:] = self.mask_z*self.mask_z[:,indx]
+        # wrap data if global
+        mode = 'wrap' if self.is_global else 'edge'
+        # calculate masks on u and v grids
+        tmp = np.pad(self.mask_z, ((0, 0), (1, 1)), mode=mode)
+        self.mask_u = (tmp[:,:-1]*tmp[:,1:])
+        tmp = np.pad(self.mask_z, ((1, 1), (0, 0)), mode='edge')
+        self.mask_v = (tmp[:-1,:]*tmp[1:,:])
         # return the masks
         return self
 
@@ -324,34 +321,13 @@ class grid:
         # shape of input data
         ny, nx = self.shape
         assert data_z.shape == (ny, nx), 'Input data does not match grid shape'
-        # initialize data for u and v grids
-        data_u = np.zeros((ny, nx), dtype=data_z.dtype)
-        data_v = np.zeros((ny, nx), dtype=data_z.dtype)
         # wrap data if global
-        if self.is_global:
-            # x-indices
-            indx = np.zeros((nx), dtype=int)
-            indx[:-1] = np.arange(1, nx)
-            indx[-1] = 0
-            # y-indices
-            indy = np.zeros((ny), dtype=int)
-            indy[:-1] = np.arange(1, ny)
-            indy[-1] = 0
-            # calculate data at u and v nodes
-            data_u[indy,:] = self.mask_u*(data_z + data_z[indy,:])/2.0
-            data_v[:,indx] = self.mask_v*(data_z + data_z[:,indx])/2.0
-        else:
-            # x-indices
-            indx = np.zeros((nx), dtype=int)
-            indx[0] = 0
-            indx[1:] = np.arange(nx-1)
-            # y-indices
-            indy = np.zeros((ny), dtype=int)
-            indy[0] = 0
-            indy[1:] = np.arange(ny-1)
-            # calculate data at u and v nodes
-            data_u[:,:] = self.mask_u*(data_z + data_z[indy,:])/2.0
-            data_v[:,:] = self.mask_v*(data_z + data_z[:,indx])/2.0
+        mode = 'wrap' if self.is_global else 'edge'
+        # calculate data at u and v nodes
+        tmp = np.pad(data_z, ((0, 0), (1, 1)), mode=mode)
+        data_u = 0.5*self.mask_u*(tmp[:,:-1] + tmp[:,1:])
+        tmp = np.pad(data_z, ((1, 1), (0, 0)), mode='edge')
+        data_v = 0.5*self.mask_v*(tmp[:-1,:] + tmp[1:,:])
         # return the interpolated data values
         return (data_u, data_v)
 
@@ -378,19 +354,76 @@ class grid:
         """
         # shape of input data
         ny, nx = self.shape
-        assert data_u.shape == (ny, nx), 'Input data does not match grid shape'
-        assert data_v.shape == (ny, nx), 'Input data does not match grid shape'
-        # pad the data
-        pad_u = np.pad(data_u, ((0, 0), (1, 1)), mode='edge')
-        interp_u = self.mask_v*(pad_u[:,0:-2] + 2.0*pad_u[:,1:-1] + pad_u[:,2:])/4.0
-        pad_v = np.pad(data_v, ((1, 1), (0, 0)), mode='edge')
-        interp_v = self.mask_u*(pad_v[0:-2,:] + 2.0*pad_v[1:-1,:] + pad_v[2:,:])/4.0
+        assert data_u.shape == (ny, nx+1), 'Input data does not match grid shape'
+        assert data_v.shape == (ny+1, nx), 'Input data does not match grid shape'
+        # pad the data and calculate the center average
+        interp_u = self._center_average(data_u)[:,1:-1]
+        interp_v = self._center_average(data_v)[1:-1,:]
         return (interp_u, interp_v)
+
+    def _center_average(self, data: np.ndarray, mode: str = 'edge'):
+        """
+        Calculates the four point average of a field
+
+        Parameters
+        ----------
+        data: np.ndarray
+            data array to average
+        """
+        tmp1 = np.pad(data, ((0, 0), (1, 1)), mode=mode)
+        tmp2 = np.pad(tmp1, ((1, 1), (0, 0)), mode='edge')
+        return 0.25*(tmp2[:-1,:-1] + tmp2[:-1,1:] + tmp2[1:, :-1] + tmp2[1:,1:])
+
+    def _diffx(self, data: np.ndarray):
+        """
+        Calculates the difference of a field over x-coordinates
+
+        Parameters
+        ----------
+        data: np.ndarray
+            data array to difference
+        """
+        return data[:,1:] - data[:,:-1]
+
+    def _diffy(self, data: np.ndarray):
+        """
+        Calculates the difference of a field over y-coordinates
+
+        Parameters
+        ----------
+        data: np.ndarray
+            data array to difference
+        """
+        return data[1:,:] - data[:-1,:]
+
+    def convolve(self,
+            array: np.ndarray,
+            kernel: np.ndarray,
+            **kwargs
+        ):
+        """Convolve a two-dimensional array with a given kernel
+
+        Parameters
+        ----------
+        array: np.ndarray
+            Input array
+        kernel: np.ndarray
+            Weights kernel
+        kwargs: dict
+            Keyword arguments for ``scipy.ndimage.convolve``
+        """
+        # define default for how array will be extended at boundaries
+        if self.is_global:
+            kwargs.setdefault('mode', 'wrap')
+        else:
+            kwargs.setdefault('mode', 'nearest')
+        # calculate the convolution
+        return scipy.ndimage.convolve(array, kernel, **kwargs)
 
     # grid dimensions
     @property
     def dimensions(self) -> list:
-        """Dimensions of the grid
+        """Dimensions of the zeta grid
         """
         dims = [None, None]
         # calculate y dimensions with extents
@@ -401,7 +434,7 @@ class grid:
 
     @property
     def shape(self) -> tuple:
-        """Shape of the grid
+        """Shape of the zeta grid
         """
         return (self.dimensions[0], self.dimensions[1], )
 
@@ -413,7 +446,7 @@ class grid:
 
     @property
     def size(self) -> int:
-        """Total number of nodes in the grid
+        """Total number of nodes in the zeta grid
         """
         return np.prod(self.shape)
 
@@ -506,7 +539,7 @@ class grid:
     def x_u(self):
         """x-coordinates for U nodes on an Arakawa C-grid
         """
-        return self.extent[0] + self.spacing[0]*np.arange(self.dimensions[1])
+        return self.extent[0] + self.spacing[0]*np.arange(self.dimensions[1] + 1)
 
     @property
     def y_u(self):
@@ -526,7 +559,7 @@ class grid:
     def y_v(self):
         """y-coordinates for V nodes on an Arakawa C-grid
         """
-        return self.extent[2] + self.spacing[1]*np.arange(self.dimensions[0])
+        return self.extent[2] + self.spacing[1]*np.arange(self.dimensions[0] + 1)
 
     def __validate__(self):
         """Check if class inputs are appropriate

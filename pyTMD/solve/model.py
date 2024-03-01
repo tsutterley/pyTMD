@@ -29,19 +29,7 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import numpy as np
-import scipy.sparse
-import scipy.ndimage
 import pyTMD.arguments
-
-class _kernels:
-    """
-    Class for defining convolution kernels for finite differences
-    """
-    # convolution arrays for differentials
-    dx = np.array([[1, -1]]) # dz/dx
-    dy = np.array([[1], [-1]]) # dz/dy
-    dx2 = np.array([[1, -2, 1]]) # d2z/dx2
-    dy2 = np.array([[1], [-2], [1]]) # d2z/dy2
 
 class model:
     """
@@ -83,8 +71,6 @@ class model:
     turndeg = 360.0
     # degrees to radians
     deg2rad = np.pi/180.0
-    # convolution kernels
-    _kernel = _kernels()
 
     def __init__(self, grid: pyTMD.solve.grid, **kwargs):
         # set initial attributes
@@ -202,30 +188,6 @@ class model:
             zeta *= -1.0*(3.0/2.0*np.cos(th_z)**2 - 1.0/2.0)
         # return the generating potential and the angular frequency
         return (zeta, omega)
-
-    def convolve(self,
-            array: np.ndarray,
-            kernel: np.ndarray,
-            **kwargs
-        ):
-        """Convolve a two-dimensional array with a given kernel
-
-        Parameters
-        ----------
-        array: np.ndarray
-            Input array
-        kernel: np.ndarray
-            Weights kernel
-        kwargs: dict
-            Keyword arguments for ``scipy.ndimage.convolve``
-        """
-        # define default for how array will be extended at boundaries
-        if self.grid.is_global:
-            kwargs.setdefault('mode', 'wrap')
-        else:
-            kwargs.setdefault('mode', 'nearest')
-        # calculate the convolution
-        return scipy.ndimage.convolve(array, kernel, **kwargs)
 
     def __validate__(self):
         """Check if class inputs are appropriate

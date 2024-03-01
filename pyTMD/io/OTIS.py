@@ -1905,30 +1905,12 @@ def _interpolate_mask(mz: np.ndarray, is_global: bool = True):
     mu = np.zeros((ny, nx), dtype=int)
     mv = np.zeros((ny, nx), dtype=int)
     # wrap mask if global
-    if is_global:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[:-1] = np.arange(1, nx)
-        indx[-1] = 0
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[:-1] = np.arange(1, ny)
-        indy[-1] = 0
-        # calculate masks on u and v grids
-        mu[indy,:] = mz*mz[indy,:]
-        mv[:,indx] = mz*mz[:,indx]
-    else:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[0] = 0
-        indx[1:] = np.arange(nx-1)
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[0] = 0
-        indy[1:] = np.arange(ny-1)
-        # calculate masks on u and v grids
-        mu[:,:] = mz*mz[indy,:]
-        mv[:,:] = mz*mz[:,indx]
+    mode = 'wrap' if is_global else 'edge'
+    # calculate masks on u and v grids
+    tmp = np.pad(mz, ((0, 0), (1, 0)), mode=mode)
+    mu[:,:] = (tmp[:,:-1]*tmp[:,1:])
+    tmp = np.pad(mz, ((1, 0), (0, 0)), mode='edge')
+    mv[:,:] = (tmp[:-1,:]*tmp[1:,:])
     # return the masks
     return (mu, mv)
 
@@ -1952,29 +1934,11 @@ def _interpolate_zeta(hz: np.ndarray, is_global: bool = True):
     hu = np.zeros((ny, nx), dtype=hz.dtype)
     hv = np.zeros((ny, nx), dtype=hz.dtype)
     # wrap data if global
-    if is_global:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[:-1] = np.arange(1, nx)
-        indx[-1] = 0
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[:-1] = np.arange(1, ny)
-        indy[-1] = 0
-        # calculate data at u and v nodes
-        hu[indy,:] = mu*(hz + hz[indy,:])/2.0
-        hv[:,indx] = mv*(hz + hz[:,indx])/2.0
-    else:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[0] = 0
-        indx[1:] = np.arange(nx-1)
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[0] = 0
-        indy[1:] = np.arange(ny-1)
-        # calculate data at u and v nodes
-        hu[:,:] = mu*(hz + hz[indy,:])/2.0
-        hv[:,:] = mv*(hz + hz[:,indx])/2.0
+    mode = 'wrap' if is_global else 'edge'
+    # calculate data at u and v nodes
+    tmp = np.pad(hz, ((0, 0), (1, 0)), mode=mode)
+    hu[:,:] = 0.5*mu*(tmp[:,:-1] + tmp[:,1:])
+    tmp = np.pad(hz, ((1, 0), (0, 0)), mode='edge')
+    hv[:,:] = 0.5*mv*(tmp[:-1,:] + tmp[1:,:])
     # return the interpolated data values
     return (hu, hv)
