@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (02/2024)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -97,6 +97,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
@@ -232,7 +233,7 @@ def compute_SET_displacements(input_file, output_file,
     nt = len(timescale)
 
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
 
     # flatten heights
     h = np.ravel(dinput['data']) if ('data' in dinput.keys()) else 0.0

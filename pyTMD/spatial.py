@@ -19,9 +19,10 @@ PYTHON DEPENDENCIES:
         https://github.com/yaml/pyyaml
 
 PROGRAM DEPENDENCIES:
-    constants.py: calculate reference parameters for common ellipsoids
+    crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 10/2023: can read from netCDF4 or HDF5 variable groups
         apply no formatting to columns in ascii file output
     Updated 09/2023: add function to invert field mapping keys and values
@@ -80,7 +81,7 @@ import pathlib
 import datetime
 import numpy as np
 import pyTMD.time
-from pyTMD.constants import constants
+from pyTMD.crs import datum
 import pyTMD.version
 # attempt imports
 try:
@@ -1271,7 +1272,7 @@ def wrap_longitudes(lon: float | np.ndarray):
     return phi*180.0/np.pi
 
 # get WGS84 parameters
-_wgs84 = constants(ellipsoid='WGS84', units='MKS')
+_wgs84 = datum(ellipsoid='WGS84', units='MKS')
 
 def to_cartesian(
         lon: np.ndarray,

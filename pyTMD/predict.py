@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (02/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -16,10 +16,11 @@ PYTHON DEPENDENCIES:
 PROGRAM DEPENDENCIES:
     arguments.py: loads nodal corrections for tidal constituents
     astro.py: computes the basic astronomical mean longitudes
-    constants.py: calculate reference parameters for common ellipsoids
+    crs.py: Coordinate Reference System (CRS) routines
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: moved minor arguments calculation into new function
         moved constituent parameters function from predict to arguments
     Updated 12/2023: phase_angles function renamed to doodson_arguments
@@ -48,7 +49,7 @@ from __future__ import annotations
 import numpy as np
 import pyTMD.arguments
 import pyTMD.astro
-from pyTMD.constants import constants
+from pyTMD.crs import datum
 
 # PURPOSE: Predict tides at single times
 def map(t: float | np.ndarray,
@@ -458,7 +459,7 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     return lpet
 
 # get IERS parameters
-_iers = constants(ellipsoid='IERS', units='MKS')
+_iers = datum(ellipsoid='IERS', units='MKS')
 
 # PURPOSE: estimate solid Earth tides due to gravitational attraction
 def solid_earth_tide(

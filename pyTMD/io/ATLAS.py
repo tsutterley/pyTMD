@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (02/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 02/2024: changed variable for setting global grid flag to is_global
     Updated 10/2023: add generic wrapper function for reading constituents
     Updated 04/2023: using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -219,13 +220,13 @@ def extract_constants(
     # grid step size of tide model
     dlon = lon[1] - lon[0]
     # if global: extend limits
-    global_grid = False
+    is_global = False
     # replace original values with extend arrays/matrices
     if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
         lon = _extend_array(lon, dlon)
         bathymetry = _extend_matrix(bathymetry)
         # set global grid flag
-        global_grid = True
+        is_global = True
     # create masks
     bathymetry.mask = (bathymetry.data == 0)
     # determine if any input points are outside of the model bounds
@@ -282,7 +283,7 @@ def extract_constants(
         # append constituent to list
         constituents.append(cons)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hc = _extend_matrix(hc)
         # update constituent mask with bathymetry mask
         hc.mask[:] |= bathymetry.mask[:]

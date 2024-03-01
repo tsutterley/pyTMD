@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (02/2024)
 Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -71,7 +71,6 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/pyproj/
 
 PROGRAM DEPENDENCIES:
-    constants.py: gravitational and ellipsoidal parameters
     crs.py: Coordinate Reference System (CRS) routines
     eop.py: utilities for calculating Earth Orientation Parameters (EOP)
     spatial: utilities for reading, writing and operating on spatial data
@@ -79,6 +78,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
@@ -244,7 +244,7 @@ def compute_LPT_displacements(input_file, output_file,
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
     # tidal love number appropriate for the load tide
     hb2 = 0.6207
 

@@ -67,4 +67,6 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.OTIS._mask_nodes
 
-.. autofunction:: pyTMD.io.OTIS._interpolate_to_nodes
+.. autofunction:: pyTMD.io.OTIS._interpolate_mask
+
+.. autofunction:: pyTMD.io.OTIS._interpolate_zeta

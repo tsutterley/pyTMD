@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (02/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: made the inferrence of minor constituents an option
         refactored lunisolar ephemerides functions
         renamed module to compute and added tidal currents function
@@ -110,7 +111,6 @@ import logging
 import pathlib
 import numpy as np
 import scipy.interpolate
-import pyTMD.constants
 import pyTMD.crs
 import pyTMD.eop
 import pyTMD.io
@@ -838,7 +838,7 @@ def LPT_displacements(
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
     # tidal love number appropriate for the load tide
     hb2 = 0.6207
 
@@ -1017,7 +1017,7 @@ def OPT_displacements(
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
     # mean equatorial gravitational acceleration [m/s^2]
     ge = 9.7803278
     # density of sea water [kg/m^3]
@@ -1201,7 +1201,7 @@ def SET_displacements(
     nt = len(timescale)
 
     # earth and physical parameters for ellipsoid
-    units = pyTMD.constants(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
 
     # convert input coordinates to cartesian
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,

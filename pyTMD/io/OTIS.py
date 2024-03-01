@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (02/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,8 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 02/2024: don't overwrite hu and hv in _interpolate_zeta
+        changed variable for setting global grid flag to is_global
     Updated 01/2024: construct currents masks differently if not global
         renamed currents masks and bathymetry interpolation functions
     Updated 12/2023: use new crs class for coordinate reprojection
@@ -248,12 +250,12 @@ def extract_constants(
     dy = yi[1] - yi[0]
 
     # if global: extend limits
-    global_grid = False
+    is_global = False
     # replace original values with extend arrays/matrices
     if np.isclose(xi[-1] - xi[0], 360.0 - dx) & (EPSG == '4326'):
         xi = _extend_array(xi, dx)
         # set global grid flag
-        global_grid = True
+        is_global = True
 
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
@@ -267,7 +269,7 @@ def extract_constants(
     # update masks for each type
     if (kwargs['type'] == 'z'):
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hz = _extend_matrix(hz)
             mz = _extend_matrix(mz)
         # masks zero values
@@ -275,12 +277,12 @@ def extract_constants(
         bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hu = _extend_matrix(hu)
             mu = _extend_matrix(mu)
         # masks zero values
@@ -290,12 +292,12 @@ def extract_constants(
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hv = _extend_matrix(hv)
             mv = _extend_matrix(mv)
         # masks zero values
@@ -387,7 +389,7 @@ def extract_constants(
                 u,hc = read_otis_transport(model_file, i)
 
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
@@ -521,18 +523,18 @@ def read_constants(
     dy = yi[1] - yi[0]
 
     # if global: extend limits
-    global_grid = False
+    is_global = False
     # replace original values with extend arrays/matrices
     if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
         xi = _extend_array(xi, dx)
         # set global grid flag
-        global_grid = True
+        is_global = True
 
     # update masks for each type
     # save output constituents
     if (kwargs['type'] == 'z'):
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hz = _extend_matrix(hz)
             mz = _extend_matrix(mz)
         # masks zero values
@@ -540,12 +542,12 @@ def read_constants(
         bathymetry = np.ma.array(hz, mask=mask)
     elif kwargs['type'] in ('u','U'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mu = np.logical_not(mu).astype(mu.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hu = _extend_matrix(hu)
             mu = _extend_matrix(mu)
         # masks zero values
@@ -555,12 +557,12 @@ def read_constants(
         xi -= dx/2.0
     elif kwargs['type'] in ('v','V'):
         # interpolate masks and bathymetry to u, v nodes
-        mu,mv = _mask_nodes(hz, global_grid=global_grid)
-        hu,hv = _interpolate_to_nodes(hz, global_grid=global_grid)
+        mu,mv = _mask_nodes(hz, is_global=is_global)
+        hu,hv = _interpolate_zeta(hz, is_global=is_global)
         # invert current masks to be True for invalid points
         mv = np.logical_not(mv).astype(mv.dtype)
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hv = _extend_matrix(hv)
             mv = _extend_matrix(mv)
         # masks zero values
@@ -621,7 +623,7 @@ def read_constants(
                 u,hc = read_otis_transport(model_file, i)
 
         # replace original values with extend matrices
-        if global_grid:
+        if is_global:
             hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
@@ -1433,8 +1435,8 @@ def create_atlas_mask(
     """
     # create 2 arc-minute grid dimensions
     d30 = 1.0/30.0
-    x30 = np.arange(d30/2.0, 360.0+d30/2.0, d30)
-    y30 = np.arange(-90.0+d30/2.0, 90.0+d30/2.0, d30)
+    x30 = np.arange(d30/2.0, 360.0 + d30/2.0, d30)
+    y30 = np.arange(-90.0 + d30/2.0, 90.0 + d30/2.0, d30)
     # interpolate global mask to create initial 2 arc-minute mask
     xcoords=np.clip((len(xi)-1)*(x30-xi[0])/(xi[-1]-xi[0]),0,len(xi)-1)
     ycoords=np.clip((len(yi)-1)*(y30-yi[0])/(yi[-1]-yi[0]),0,len(yi)-1)
@@ -1499,8 +1501,8 @@ def interpolate_atlas_model(
         high-resolution tidal solution for variable
     """
     # create resampled grid dimensions
-    xs = np.arange(spacing/2.0, 360.0+spacing/2.0, spacing)
-    ys = np.arange(-90.0+spacing/2.0, 90.0+spacing/2.0, spacing)
+    xs = np.arange(spacing/2.0, 360.0 + spacing/2.0, spacing)
+    ys = np.arange(-90.0 + spacing/2.0, 90.0 + spacing/2.0, spacing)
     # interpolate global solution
     zs = np.ma.zeros((len(ys),len(xs)), dtype=zi.dtype)
     zs.mask = np.zeros((len(ys),len(xs)), dtype=bool)
@@ -1868,7 +1870,7 @@ def _extend_matrix(input_matrix: np.ndarray):
     return temp
 
 # PURPOSE: construct masks for u and v nodes
-def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
+def _mask_nodes(hz: np.ndarray, is_global: bool = True):
     """
     Construct masks for u and v nodes on a C-grid
 
@@ -1876,55 +1878,53 @@ def _mask_nodes(hz: np.ndarray, global_grid: bool = True):
     ----------
     hz: np.ndarray
         bathymetry of grid centers
-    global_grid: bool, default True
-        input grid is global
+    is_global: bool, default True
+        input grid is global in terms of longitude
     """
-    # shape of input bathymetry
-    ny, nx = np.shape(hz)
     # for grid center mask: find where bathymetry is greater than 0
     mz = (hz > 0).astype(int)
+    mu, mv = _interpolate_mask(mz, is_global=is_global)
+    # return the masks
+    return (mu, mv)
+
+# PURPOSE: interpolate mask to u and v nodes
+def _interpolate_mask(mz: np.ndarray, is_global: bool = True):
+    """
+    Interpolate mask from zeta nodes to u and v nodes on a C-grid
+
+    Parameters
+    ----------
+    mz: np.ndarray
+        mask at grid centers
+    is_global: bool, default True
+        input grid is global in terms of longitude
+    """
+    # shape of input mask
+    ny, nx = np.shape(mz)
     # initialize integer masks for u and v grids
     mu = np.zeros((ny, nx), dtype=int)
     mv = np.zeros((ny, nx), dtype=int)
     # wrap mask if global
-    if global_grid:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[:-1] = np.arange(1,nx)
-        indx[-1] = 0
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[:-1] = np.arange(1,ny)
-        indy[-1] = 0
-        # calculate masks on u and v grids
-        mu[indy,:] = mz*mz[indy,:]
-        mv[:,indx] = mz*mz[:,indx]
-    else:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[0] = 0
-        indx[1:] = np.arange(nx-1)
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[0] = 0
-        indy[1:] = np.arange(ny-1)
-        # calculate masks on u and v grids
-        mu = mz*mz[indy,:]
-        mv = mz*mz[:,indx]
+    mode = 'wrap' if is_global else 'edge'
+    # calculate masks on u and v grids
+    tmp = np.pad(mz, ((0, 0), (1, 0)), mode=mode)
+    mu[:,:] = (tmp[:,:-1]*tmp[:,1:])
+    tmp = np.pad(mz, ((1, 0), (0, 0)), mode='edge')
+    mv[:,:] = (tmp[:-1,:]*tmp[1:,:])
     # return the masks
     return (mu, mv)
 
 # PURPOSE: interpolate data to u and v nodes
-def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
+def _interpolate_zeta(hz: np.ndarray, is_global: bool = True):
     """
-    Interpolate data to u and v nodes on a C-grid
+    Interpolate data from zeta nodes to u and v nodes on a C-grid
 
     Parameters
     ----------
     hz: np.ndarray
         data at grid centers
-    global_grid: bool, default True
-        input grid is global
+    is_global: bool, default True
+        input grid is global in terms of longitude
     """
     # shape of input data
     ny, nx = np.shape(hz)
@@ -1934,29 +1934,11 @@ def _interpolate_to_nodes(hz: np.ndarray, global_grid: bool = True):
     hu = np.zeros((ny, nx), dtype=hz.dtype)
     hv = np.zeros((ny, nx), dtype=hz.dtype)
     # wrap data if global
-    if global_grid:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[:-1] = np.arange(1,nx)
-        indx[-1] = 0
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[:-1] = np.arange(1,ny)
-        indy[-1] = 0
-        # calculate data at u and v nodes
-        hu[indy,:] = mu*(hz + hz[indy,:])/2.0
-        hv[:,indx] = mv*(hz + hz[:,indx])/2.0
-    else:
-        # x-indices
-        indx = np.zeros((nx), dtype=int)
-        indx[0] = 0
-        indx[1:] = np.arange(nx-1)
-        # y-indices
-        indy = np.zeros((ny), dtype=int)
-        indy[0] = 0
-        indy[1:] = np.arange(ny-1)
-        # calculate data at u and v nodes
-        hu = mu*(hz + hz[indy,:])/2.0
-        hv = mv*(hz + hz[:,indx])/2.0
+    mode = 'wrap' if is_global else 'edge'
+    # calculate data at u and v nodes
+    tmp = np.pad(hz, ((0, 0), (1, 0)), mode=mode)
+    hu[:,:] = 0.5*mu*(tmp[:,:-1] + tmp[:,1:])
+    tmp = np.pad(hz, ((1, 0), (0, 0)), mode='edge')
+    hv[:,:] = 0.5*mv*(tmp[:-1,:] + tmp[1:,:])
     # return the interpolated data values
     return (hu, hv)

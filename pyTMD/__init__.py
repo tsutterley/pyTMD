@@ -18,13 +18,13 @@ import pyTMD.ellipse
 import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
-import pyTMD.solve
 import pyTMD.spatial
 import pyTMD.time
 import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
 from pyTMD import io
+from pyTMD import solve
 from pyTMD.check_points import check_points
 from pyTMD.compute_tide_corrections import (
     compute_corrections,
@@ -34,15 +34,15 @@ from pyTMD.compute_tide_corrections import (
     compute_OPT_corrections,
     compute_SET_corrections,
 )
-from pyTMD.constants import (
-    constants,
+from pyTMD.crs import (
+    crs,
+    datum,
     _ellipsoids
 )
-from pyTMD.convert_crs import convert_crs
-from pyTMD.crs import crs
 
 # Deprecated functions
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
+from pyTMD.convert_crs import convert_crs
 from pyTMD.convert_ll_xy import convert_ll_xy
 from pyTMD.load_nodal_corrections import load_nodal_corrections
 
