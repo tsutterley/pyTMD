@@ -244,7 +244,7 @@ def compute_LPT_displacements(input_file, output_file,
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.datum(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
     # tidal love number appropriate for the load tide
     hb2 = 0.6207
 

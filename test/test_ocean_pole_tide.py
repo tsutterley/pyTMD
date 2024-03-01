@@ -52,7 +52,7 @@ def test_ocean_pole_tide(METHOD):
     dtr = np.pi/180.0
     atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
-    units = pyTMD.datum('IERS')
+    units = pyTMD.datum(ellipsoid='IERS', units='MKS')
     # universal constant of gravitation for test [m^3/(kg*s^2)]
     G = 6.673e-11
     # mean equatorial gravitational acceleration [m/s^2]

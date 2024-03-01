@@ -233,7 +233,7 @@ def compute_SET_displacements(input_file, output_file,
     nt = len(timescale)
 
     # earth and physical parameters for ellipsoid
-    units = pyTMD.datum(ELLIPSOID)
+    units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
 
     # flatten heights
     h = np.ravel(dinput['data']) if ('data' in dinput.keys()) else 0.0
