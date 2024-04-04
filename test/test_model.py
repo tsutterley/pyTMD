@@ -1,5 +1,5 @@
 """
-test_model.py (04/2023)
+test_model.py (04/2024)
 Tests the reading of model definition files
 """
 from __future__ import annotations
@@ -494,21 +494,21 @@ def test_definition_TPXO9_currents():
         'TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
-    model_files['v'] = ['TPXO9_atlas_v5/v_2n2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_k1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_k2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_m2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_m4_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_mf_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_mm_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_mn4_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_ms4_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_n2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_o1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_p1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_q1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_s1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_s2_tpxo9_atlas_30_v5.nc']
+    model_files['v'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_m4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_mf_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_mn4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_ms4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_o1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_p1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
     assert m.grid_file == pathlib.Path('TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc')
     for t in ['u','v']:
         assert sorted(m.model_file[t]) == [pathlib.Path(f) for f in model_files[t]]
@@ -541,21 +541,21 @@ def test_definition_TPXO9_currents_glob():
         'TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
-    model_files['v'] = ['TPXO9_atlas_v5/v_2n2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_k1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_k2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_m2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_m4_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_mf_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_mm_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_mn4_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_ms4_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_n2_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_o1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_p1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_q1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_s1_tpxo9_atlas_30_v5.nc',
-        'TPXO9_atlas_v5/v_s2_tpxo9_atlas_30_v5.nc']
+    model_files['v'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_m4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_mf_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_mn4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_ms4_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_n2_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_o1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_p1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc',
+        'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
     # create temporary files for testing glob functionality
     for t in ['u','v']:
         for model_file in model_files[t]:
@@ -576,7 +576,7 @@ def test_definition_TPXO9_currents_glob():
             fid.write('{0}\t{1}\n'.format(attr,val))
     # append glob strings for model file
     glob_string_u = r'TPXO9_atlas_v5/u*.nc'
-    glob_string_v = r'TPXO9_atlas_v5/v*.nc'
+    glob_string_v = r'TPXO9_atlas_v5/u*.nc'
     fid.write('{0}\t{1};{2}\n'.format('model_file',glob_string_u,glob_string_v))
     fid.write('{0}\t{1}\n'.format('grid_file',m.grid_file))
     fid.seek(0)

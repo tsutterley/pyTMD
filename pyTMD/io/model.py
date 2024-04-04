@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (11/2023)
+Written by Tyler Sutterley (04/2024)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 04/2024: append v-components of velocity only to netcdf format
     Updated 11/2023: revert TPXO9-atlas currents changes to separate dicts
     Updated 09/2023: fix scale values for TPXO9-atlas currents
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -726,12 +727,16 @@ class model:
                 'u_s2_tpxo9_atlas_30','u_k2_tpxo9_atlas_30',
                 'u_m4_tpxo9_atlas_30','u_ms4_tpxo9_atlas_30',
                 'u_mn4_tpxo9_atlas_30','u_2n2_tpxo9_atlas_30']
-            model_files['v'] = ['v_q1_tpxo9_atlas_30','v_o1_tpxo9_atlas_30',
-                'v_p1_tpxo9_atlas_30','v_k1_tpxo9_atlas_30',
-                'v_n2_tpxo9_atlas_30','v_m2_tpxo9_atlas_30',
-                'v_s2_tpxo9_atlas_30','v_k2_tpxo9_atlas_30',
-                'v_m4_tpxo9_atlas_30','v_ms4_tpxo9_atlas_30',
-                'v_mn4_tpxo9_atlas_30','v_2n2_tpxo9_atlas_30']
+            # add v-component if format is netcdf
+            if (self.format == 'netcdf'):
+                model_files['v'] = ['v_q1_tpxo9_atlas_30',
+                    'v_o1_tpxo9_atlas_30','v_p1_tpxo9_atlas_30',
+                    'v_k1_tpxo9_atlas_30','v_n2_tpxo9_atlas_30',
+                    'v_m2_tpxo9_atlas_30','v_s2_tpxo9_atlas_30',
+                    'v_k2_tpxo9_atlas_30','v_m4_tpxo9_atlas_30',
+                    'v_ms4_tpxo9_atlas_30','v_mn4_tpxo9_atlas_30',
+                    'v_2n2_tpxo9_atlas_30']
+            # build model file dictionary
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -751,12 +756,16 @@ class model:
                 'u_s2_tpxo9_atlas_30_v2','u_k2_tpxo9_atlas_30_v2',
                 'u_m4_tpxo9_atlas_30_v2','u_ms4_tpxo9_atlas_30_v2',
                 'u_mn4_tpxo9_atlas_30_v2','u_2n2_tpxo9_atlas_30_v2']
-            model_files['v'] = ['v_q1_tpxo9_atlas_30_v2','v_o1_tpxo9_atlas_30_v2',
-                'v_p1_tpxo9_atlas_30_v2','v_k1_tpxo9_atlas_30_v2',
-                'v_n2_tpxo9_atlas_30_v2','v_m2_tpxo9_atlas_30_v2',
-                'v_s2_tpxo9_atlas_30_v2','v_k2_tpxo9_atlas_30_v2',
-                'v_m4_tpxo9_atlas_30_v2','v_ms4_tpxo9_atlas_30_v2',
-                'v_mn4_tpxo9_atlas_30_v2','v_2n2_tpxo9_atlas_30_v2']
+            # add v-component if format is netcdf
+            if (self.format == 'netcdf'):
+                model_files['v'] = ['v_q1_tpxo9_atlas_30_v2',
+                    'v_o1_tpxo9_atlas_30_v2','v_p1_tpxo9_atlas_30_v2',
+                    'v_k1_tpxo9_atlas_30_v2','v_n2_tpxo9_atlas_30_v2',
+                    'v_m2_tpxo9_atlas_30_v2','v_s2_tpxo9_atlas_30_v2',
+                    'v_k2_tpxo9_atlas_30_v2','v_m4_tpxo9_atlas_30_v2',
+                    'v_ms4_tpxo9_atlas_30_v2','v_mn4_tpxo9_atlas_30_v2',
+                    'v_2n2_tpxo9_atlas_30_v2']
+            # build model file dictionary
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -776,13 +785,17 @@ class model:
                 'u_m4_tpxo9_atlas_30_v3','u_ms4_tpxo9_atlas_30_v3',
                 'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
                 'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
-            model_files['v'] = ['v_q1_tpxo9_atlas_30_v3','v_o1_tpxo9_atlas_30_v3',
-                'v_p1_tpxo9_atlas_30_v3','v_k1_tpxo9_atlas_30_v3',
-                'v_n2_tpxo9_atlas_30_v3','v_m2_tpxo9_atlas_30_v3',
-                'v_s2_tpxo9_atlas_30_v3','v_k2_tpxo9_atlas_30_v3',
-                'v_m4_tpxo9_atlas_30_v3','v_ms4_tpxo9_atlas_30_v3',
-                'v_mn4_tpxo9_atlas_30_v3','v_2n2_tpxo9_atlas_30_v3',
-                'v_mf_tpxo9_atlas_30_v3','v_mm_tpxo9_atlas_30_v3']
+            # add v-component if format is netcdf
+            if (self.format == 'netcdf'):
+                model_files['v'] = ['v_q1_tpxo9_atlas_30_v3',
+                    'v_o1_tpxo9_atlas_30_v3','v_p1_tpxo9_atlas_30_v3',
+                    'v_k1_tpxo9_atlas_30_v3','v_n2_tpxo9_atlas_30_v3',
+                    'v_m2_tpxo9_atlas_30_v3','v_s2_tpxo9_atlas_30_v3',
+                    'v_k2_tpxo9_atlas_30_v3','v_m4_tpxo9_atlas_30_v3',
+                    'v_ms4_tpxo9_atlas_30_v3','v_mn4_tpxo9_atlas_30_v3',
+                    'v_2n2_tpxo9_atlas_30_v3','v_mf_tpxo9_atlas_30_v3',
+                    'v_mm_tpxo9_atlas_30_v3']
+            # build model file dictionary
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -802,13 +815,17 @@ class model:
                 'u_m4_tpxo9_atlas_30_v4','u_ms4_tpxo9_atlas_30_v4',
                 'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
                 'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
-            model_files['v'] = ['v_q1_tpxo9_atlas_30_v4','v_o1_tpxo9_atlas_30_v4',
-                'v_p1_tpxo9_atlas_30_v4','v_k1_tpxo9_atlas_30_v4',
-                'v_n2_tpxo9_atlas_30_v4','v_m2_tpxo9_atlas_30_v4',
-                'v_s2_tpxo9_atlas_30_v4','v_k2_tpxo9_atlas_30_v4',
-                'v_m4_tpxo9_atlas_30_v4','v_ms4_tpxo9_atlas_30_v4',
-                'v_mn4_tpxo9_atlas_30_v4','v_2n2_tpxo9_atlas_30_v4',
-                'v_mf_tpxo9_atlas_30_v4','v_mm_tpxo9_atlas_30_v4']
+            # add v-component if format is netcdf
+            if (self.format == 'netcdf'):
+                model_files['v'] = ['v_q1_tpxo9_atlas_30_v4',
+                    'v_o1_tpxo9_atlas_30_v4','v_p1_tpxo9_atlas_30_v4',
+                    'v_k1_tpxo9_atlas_30_v4','v_n2_tpxo9_atlas_30_v4',
+                    'v_m2_tpxo9_atlas_30_v4','v_s2_tpxo9_atlas_30_v4',
+                    'v_k2_tpxo9_atlas_30_v4','v_m4_tpxo9_atlas_30_v4',
+                    'v_ms4_tpxo9_atlas_30_v4','v_mn4_tpxo9_atlas_30_v4',
+                    'v_2n2_tpxo9_atlas_30_v4','v_mf_tpxo9_atlas_30_v4',
+                    'v_mm_tpxo9_atlas_30_v4']
+            # build model file dictionary
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
@@ -829,14 +846,17 @@ class model:
                 'u_ms4_tpxo9_atlas_30_v5','u_mn4_tpxo9_atlas_30_v5',
                 'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
                 'u_mm_tpxo9_atlas_30_v5']
-            model_files['v'] = ['v_q1_tpxo9_atlas_30_v5','v_o1_tpxo9_atlas_30_v5',
-                'v_p1_tpxo9_atlas_30_v5','v_k1_tpxo9_atlas_30_v5',
-                'v_n2_tpxo9_atlas_30_v5','v_m2_tpxo9_atlas_30_v5',
-                'v_s1_tpxo9_atlas_30_v5','v_s2_tpxo9_atlas_30_v5',
-                'v_k2_tpxo9_atlas_30_v5','v_m4_tpxo9_atlas_30_v5',
-                'v_ms4_tpxo9_atlas_30_v5','v_mn4_tpxo9_atlas_30_v5',
-                'v_2n2_tpxo9_atlas_30_v5','v_mf_tpxo9_atlas_30_v5',
-                'v_mm_tpxo9_atlas_30_v5']
+            # add v-component if format is netcdf
+            if (self.format == 'netcdf'):
+                model_files['v'] = ['u_q1_tpxo9_atlas_30_v5',
+                    'u_o1_tpxo9_atlas_30_v5','u_p1_tpxo9_atlas_30_v5',
+                    'u_k1_tpxo9_atlas_30_v5','u_n2_tpxo9_atlas_30_v5',
+                    'u_m2_tpxo9_atlas_30_v5','u_s1_tpxo9_atlas_30_v5',
+                    'u_s2_tpxo9_atlas_30_v5','u_k2_tpxo9_atlas_30_v5',
+                    'u_m4_tpxo9_atlas_30_v5','u_ms4_tpxo9_atlas_30_v5',
+                    'u_mn4_tpxo9_atlas_30_v5','u_2n2_tpxo9_atlas_30_v5',
+                    'u_mf_tpxo9_atlas_30_v5','u_mm_tpxo9_atlas_30_v5']
+            # build model file dictionary
             self.model_file = {}
             for key,val in model_files.items():
                 self.model_file[key] = self.pathfinder(val)
