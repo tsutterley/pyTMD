@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (10/2023)
+Written by Tyler Sutterley (03/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 03/2024: can calculate polar stereographic distortion for distances
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 10/2023: can read from netCDF4 or HDF5 variable groups
         apply no formatting to columns in ascii file output
@@ -78,6 +79,7 @@ import gzip
 import uuid
 import logging
 import pathlib
+import warnings
 import datetime
 import numpy as np
 import pyTMD.time
@@ -791,7 +793,8 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
-    ny, nx, nt = output[fields[0]].shape
+    reference_fields = [v for v in fields if output[v].ndim == 3]
+    ny, nx, nt = output[reference_fields[0]].shape
     fileID.createDimension('y', ny)
     fileID.createDimension('x', nx)
     fileID.createDimension('time', nt)
@@ -840,7 +843,8 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
-    nstation, nt = output[fields[0]].shape
+    reference_fields = [v for v in fields if output[v].ndim == 2]
+    nstation, nt = output[reference_fields[0]].shape
     fileID.createDimension('station', nstation)
     fileID.createDimension('time', nt)
     # defining the NetCDF variables
@@ -1629,14 +1633,20 @@ def _zhu_closed_form(
     # return latitude, longitude and height
     return (lon, lat, h)
 
-def scale_areas(
+def scale_areas(*args, **kwargs):
+    warnings.warn("Deprecated. Please use pyTMD.spatial.scale_factors instead",
+        DeprecationWarning)
+    return scale_factors(*args, **kwargs)
+
+def scale_factors(
         lat: np.ndarray,
         flat: float = _wgs84.flat,
-        ref: float = 70.0
+        reference_latitude: float = 70.0,
+        metric: str = 'area'
     ):
     """
-    Calculates area scaling factors for a polar stereographic projection
-    including special case of at the exact pole [1]_ [2]_
+    Calculates scaling factors to account for polar stereographic
+    distortion including special case of at the exact pole [1]_ [2]_
 
     Parameters
     ----------
@@ -1644,13 +1654,18 @@ def scale_areas(
         latitude (degrees north)
     flat: float, default 1.0/298.257223563
         ellipsoidal flattening
-    ref: float, default 70.0
+    reference_latitude: float, default 70.0
         reference latitude (true scale latitude)
+    metric: str, default 'area'
+        metric to calculate scaling factors
+
+            - ``'distance'``: scale factors for distance
+            - ``'area'``: scale factors for area
 
     Returns
     -------
     scale: np.ndarray
-        area scaling factors at input latitudes
+        scaling factors at input latitudes
 
     References
     ----------
@@ -1658,10 +1673,11 @@ def scale_areas(
         Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
     .. [2] JPL Technical Memorandum 3349-85-101
     """
+    assert metric.lower() in ['distance', 'area'], 'Unknown metric'
     # convert latitude from degrees to positive radians
     theta = np.abs(lat)*np.pi/180.0
     # convert reference latitude from degrees to positive radians
-    theta_ref = np.abs(ref)*np.pi/180.0
+    theta_ref = np.abs(reference_latitude)*np.pi/180.0
     # square of the eccentricity of the ellipsoid
     # ecc2 = (1-b**2/a**2) = 2.0*flat - flat^2
     ecc2 = 2.0*flat - flat**2
@@ -1678,6 +1694,10 @@ def scale_areas(
     # distance scaling
     k = (mref/m)*(t/tref)
     kp = 0.5*mref*np.sqrt(((1.0+ecc)**(1.0+ecc))*((1.0-ecc)**(1.0-ecc)))/tref
-    # area scaling
-    scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/(kp**2), 1.0/(k**2))
+    if (metric.lower() == 'distance'):
+        # distance scaling
+        scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/kp, 1.0/k)
+    elif (metric.lower() == 'area'):
+        # area scaling
+        scale = np.where(np.isclose(theta, np.pi/2.0), 1.0/(kp**2), 1.0/(k**2))
     return scale

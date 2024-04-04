@@ -84,4 +84,4 @@ General Methods
 
 .. autofunction:: pyTMD.spatial._zhu_closed_form
 
-.. autofunction:: pyTMD.spatial.scale_areas
+.. autofunction:: pyTMD.spatial.scale_factors
