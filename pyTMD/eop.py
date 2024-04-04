@@ -197,9 +197,9 @@ def pull_pole_coordinates(FILE: str, verbose: bool = False):
 
 # PURPOSE: connects to servers and downloads finals files
 def update_finals_file(
-        username: str or None = None,
-        password: str or None = None,
-        timeout: int or None = 20,
+        username: str | None = None,
+        password: str | None = None,
+        timeout: int | None = 20,
         verbose: bool = False,
         mode: oct = 0o775
     ):

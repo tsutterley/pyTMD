@@ -275,7 +275,7 @@ def extrapolate(
         fill_value: float = None,
         dtype: str | np.dtype = np.float64,
         cutoff: int | float = np.inf,
-        EPSG: str or int = '4326',
+        EPSG: str | int = '4326',
         **kwargs
     ):
     """

@@ -29,9 +29,9 @@ Presently, the following models and their directories parameterized within ``pyT
 - Circum-Antarctic Tidal Simulations [Padman2008]_
 
     * CATS0201: ``<path_to_tide_models>/cats0201_tmd/``
-    * `CATS2008 <https://www.usap-dc.org/view/dataset/601235>`_: ``<path_to_tide_models>/CATS2008/``
+    * `CATS2008 <https://doi.org/10.15784/601235>`_: ``<path_to_tide_models>/CATS2008/``
     * CATS2008_load: ``<path_to_tide_models>/CATS2008a_SPOTL_Load/``
-    * `CATS2008-v2023 <https://www.chadagreene.com/tide_data/CATS2008_v2023.nc.zip>`_: ``<path_to_tide_models>/CATS2008_v2023/``
+    * `CATS2008-v2023 <https://doi.org/10.15784/601772>`_: ``<path_to_tide_models>/CATS2008_v2023/``
 
 - Arctic Ocean and Greenland Coast Tidal Simulations [Padman2004]_
 
