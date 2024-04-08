@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import numpy as np
 import scipy.sparse.linalg
-import pyTMD.solve.grid as pygrid
+import pyTMD.solve.grid as fdgrid
 import pyTMD.solve.model as model
 from pyTMD.utilities import reify
 
@@ -85,7 +85,7 @@ class forward(model):
     deg2rad = np.pi/180.0
 
     # inherit model class
-    def __init__(self, grid: pygrid, **kwargs):
+    def __init__(self, grid: fdgrid, **kwargs):
         # set initial model
         super().__init__(grid, **kwargs)
         # create iterator and stop index
@@ -122,24 +122,47 @@ class forward(model):
         kwargs.setdefault('H0', np.zeros((self.ny, self.nx)))
         # open boundary conditions of the model
         kwargs.setdefault('ob', np.zeros((self.ny, self.nx), dtype=bool))
+        # polynomial coefficients for calculating time-variable
+        # boundary conditions
+        kwargs.setdefault('pc', [0])
         # set the initial data type for all fields
         self.dtype = np.array([kwargs['u0'][0],
             kwargs['v0'][0], kwargs['z0'][0]]).dtype
+        self.iscomplex = np.iscomplexobj([kwargs['u0'][0],
+            kwargs['v0'][0], kwargs['z0'][0]])
         # time variable
         self.t = np.copy(kwargs['t0'])
         # model fields
         self.k = np.copy(kwargs['k'])
         self.H0 = np.copy(kwargs['H0'])
+        # boundary condition polynomial coefficients
+        self._pc = np.copy(kwargs['pc'])
+        # allocate field for flattened open boundary condition
+        self._ob = kwargs['ob'].flatten().astype(bool)
+        # initial conditions for the currents and heights
+        # setting data type to be uniform between fields
+        u0 = kwargs['u0'].flatten().astype(self.dtype)
+        v0 = kwargs['v0'].flatten().astype(self.dtype)
+        z0 = kwargs['z0'].flatten().astype(self.dtype)
+        # save boundary conditions
+        if self.has_ob:
+            self._u0 = u0[self._iob].copy()
+            self._v0 = v0[self._iob].copy()
+            self._z0 = z0[self._iob].copy()
         # allocate fields for the currents and heights
-        self._u = kwargs['u0'].flatten().astype(self.dtype)
-        self._v = kwargs['v0'].flatten().astype(self.dtype)
-        self._z = kwargs['z0'].flatten().astype(self.dtype)
+        if self.iscomplex:
+            th = self.polynomial_sum(self._pc, self.t)
+            self._u = u0.real*np.cos(th) - u0.imag*np.sin(th)
+            self._v = v0.real*np.cos(th) - v0.imag*np.sin(th)
+            self._z = z0.real*np.cos(th) - z0.imag*np.sin(th)
+        else:
+            self._u = u0.copy()
+            self._v = v0.copy()
+            self._z = z0.copy()
         # create links for reshaped output fields
         self.u = self._u.reshape(self.ny, self.nx)
         self.v = self._v.reshape(self.ny, self.nx)
         self.z = self._z.reshape(self.ny, self.nx)
-        # allocate field for flattened open boundary condition
-        self._ob = kwargs['ob'].flatten().astype(bool)
         # state vector
         self.state = np.r_[self._u, self._v, self._z]
         # setup the model operators and the model
@@ -155,6 +178,21 @@ class forward(model):
             input field to be converted
         """
         return scipy.sparse.spdiags(M.flatten(), 0, M.size, M.size)
+
+    def polynomial_sum(self, c: list | np.ndarray, t: np.ndarray):
+        """
+        Calculates the sum of a polynomial function of time
+
+        Parameters
+        ----------
+        c: list or np.ndarray
+            leading coefficient of polynomials of increasing order
+        t: np.ndarray
+            delta time
+        """
+        # convert time to array if importing a single value
+        t = np.atleast_1d(t)
+        return np.sum([ci * (t ** i) for i, ci in enumerate(c)], axis=0)
 
     def _linear_operators(self):
         """Create the operators for the inverse model
@@ -280,7 +318,7 @@ class forward(model):
             scipy.sparse.hstack([-self.nu*DEL2u, -self.d0(f_u)*Vu, self.d0(gp)*FDx]),
             scipy.sparse.hstack([self.d0(f_v)*Uv, -self.nu*DEL2v, self.d0(gp)*FDy]),
             scipy.sparse.hstack([DIVzu, DIVzv, scipy.sparse.csc_matrix((n, n))])
-        ], dtype=self.dtype).tocsc()
+        ]).tocsc()
 
     def _nonlinear_terms(self):
         """Calculate nonlinear terms for the model
@@ -323,6 +361,23 @@ class forward(model):
         # function for solving the sparse linear system
         self.solve = scipy.sparse.linalg.factorized(A[:,self.imask])
         self.rhs = B[:,self.imask]
+
+    def _enforce_boundary(self):
+        """Enforce the model boundary conditions
+        """
+        # enforce open boundary conditions for currents and heights
+        if self.iscomplex and self.has_ob:
+            th = self.polynomial_sum(self._pc, self.t)
+            self._u[self._iob] = self._u0.real*np.cos(th) - \
+                self._u0.imag*np.sin(th)
+            self._v[self._iob] = self._v0.real*np.cos(th) - \
+                self._v0.imag*np.sin(th)
+            self._z[self._iob] = self._z0.real*np.cos(th) - \
+                self._z0.imag*np.sin(th)
+        elif self.has_ob:
+            self._u[self._iob] = self._u0.copy()
+            self._v[self._iob] = self._v0.copy()
+            self._z[self._iob] = self._z0.copy()
 
     def run(self, N: int):
         """Run the model for a number of time steps
@@ -390,6 +445,12 @@ class forward(model):
         """
         n = self.grid.size
         return np.flatnonzero(np.r_[np.zeros((n)), np.zeros((n)), self.mask_z])
+    
+    @reify
+    def has_ob(self) -> np.ndarray:
+        """Defines if the model has open boundary conditions
+        """
+        return np.any(self._ob)
 
     def __str__(self):
         """String representation of the ``forward`` object
@@ -425,6 +486,8 @@ class forward(model):
         self._u[self._iu] = self.state[self.iu]
         self._v[self._iv] = self.state[self.iv]
         self._z[self._iz] = self.state[self.iz]
+        # enforce the boundary conditions at time step
+        self._enforce_boundary()
         # add to counter
         self.__index__ += 1
         return self

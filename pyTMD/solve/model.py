@@ -2,7 +2,7 @@
 u"""
 model.py
 Written by Tyler Sutterley (02/2024)
-Class for estimating tidal constituents using hydrodynamic modeling
+Base class for estimating tidal constituents using hydrodynamic modeling
 
 REFERENCES:
     G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
@@ -31,11 +31,12 @@ from __future__ import annotations
 
 import numpy as np
 import pyTMD.arguments
-from pyTMD.utilities import reify
+import pyTMD.solve.grid as fdgrid
 
 class model:
     """
-    Class for estimating tidal constituents using hydrodynamic modeling
+    Base class for estimating tidal constituents using
+    hydrodynamic modeling
 
     Parameters
     ----------
@@ -70,10 +71,10 @@ class model:
     # degrees to radians
     deg2rad = np.pi/180.0
 
-    def __init__(self, grid: pyTMD.solve.grid, **kwargs):
+    def __init__(self, grid: fdgrid, **kwargs):
         # set initial attributes
         # set the finite difference grid
-        assert isinstance(grid, pyTMD.solve.grid)
+        assert isinstance(grid, fdgrid)
         self.grid = grid
         # model parameters and constants
         # load tide and self attraction scaling factor
