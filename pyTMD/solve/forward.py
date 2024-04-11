@@ -2,7 +2,8 @@
 u"""
 forward.py
 Written by Tyler Sutterley (03/2024)
-Class for estimating non-linear parameters using a forward model
+Class for estimating non-linear parameters with a finite difference model
+using a Crank-Nicolson scheme
 
 REFERENCES:
     G. D. Egbert and S. Erofeeva, "Efficient Inverse Modeling of Barotropic
@@ -39,7 +40,8 @@ from pyTMD.utilities import reify
 
 class forward(model):
     """
-    Class for estimating non-linear parameters using a forward model
+    Class for estimating non-linear parameters using a finite
+    difference model with a Crank-Nicolson scheme
 
     Parameters
     ----------
@@ -195,7 +197,7 @@ class forward(model):
         return np.sum([ci * (t ** i) for i, ci in enumerate(c)], axis=0)
 
     def _linear_operators(self):
-        """Create the operators for the inverse model
+        """Create the operators for the finite difference model
         """
         # number of nodes
         n = self.size
@@ -345,7 +347,7 @@ class forward(model):
         return F[self.imask]
 
     def _factorize(self):
-        """Initialize the inverse model
+        """Initialize the linear system of equations
         """
         # number of nodes
         n = self.size
