@@ -71,11 +71,14 @@ class model:
     # degrees to radians
     deg2rad = np.pi/180.0
 
-    def __init__(self, grid: fdgrid, **kwargs):
+    def __init__(self, grid: fdgrid, constituents: list = [], **kwargs):
         # set initial attributes
         # set the finite difference grid
         assert isinstance(grid, fdgrid)
         self.grid = grid
+        # set the tidal constituents
+        assert isinstance(constituents, (list, np.ndarray))
+        self.constituents = constituents
         # model parameters and constants
         # load tide and self attraction scaling factor
         self.beta = 0.10
@@ -98,6 +101,31 @@ class model:
             setattr(self, key, val)
         # validate inputs
         self.__validate__()
+
+    # PURPOSE: load constituent parameters
+    def constituent_parameters(self, c: str):
+        """
+        Loads parameters for a given tidal constituent
+
+        Parameters
+        ----------
+        c: str
+            tidal constituent ID
+
+        Returns
+        -------
+        amplitude: float
+            amplitude of equilibrium tide for tidal constituent (meters)
+        phase: float
+            phase of tidal constituent (radians)
+        omega: float
+            angular frequency of constituent (radians)
+        alpha: float
+            load love number of tidal constituent
+        species: float
+            spherical harmonic dependence of quadrupole potential
+        """
+        return pyTMD.arguments._constituent_parameters(c)
 
     # PURPOSE: calculate the astronomical tide generating force
     def generating_force(self, c: str):
@@ -124,8 +152,7 @@ class model:
         gamma_v = self.grid.gamma_0(th_v)
 
         # load parameters for each constituent
-        amp, ph, omega, alpha, species = \
-            pyTMD.arguments._constituent_parameters(c)
+        amp, ph, omega, alpha, species = self.constituent_parameters(c)
         # uniform zonal dependence of astronomical forcing
         ph = 0.0
 
@@ -168,8 +195,7 @@ class model:
         th_z = self.deg2rad*(90.0 - lat_z)
 
         # load parameters for each constituent
-        amp, ph, omega, alpha, species = \
-            pyTMD.arguments._constituent_parameters(c)
+        amp, ph, omega, alpha, species = self.constituent_parameters(c)
         # uniform zonal dependence of astronomical potential
         ph = 0.0
 
