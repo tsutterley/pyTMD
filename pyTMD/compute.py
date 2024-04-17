@@ -112,9 +112,8 @@ import pathlib
 import numpy as np
 import scipy.interpolate
 import pyTMD.crs
-import pyTMD.eop
+import timescale.eop
 import pyTMD.io
-import pyTMD.time
 import pyTMD.io.model
 import pyTMD.predict
 import pyTMD.spatial
@@ -125,6 +124,10 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.critical("timescale not available")
 
 # PURPOSE: wrapper function for computing values
 def corrections(
@@ -307,13 +310,13 @@ def tide_elevations(
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             delta_time.flatten())
     else:
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS', 'ATLAS', 'TMD3'):
@@ -335,7 +338,7 @@ def tide_elevations(
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         # delta time (TT - UT1)
-        deltat = timescale.tt_ut1
+        deltat = ts.tt_ut1
     elif (model.format == 'FES'):
         amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
             type=model.type, version=model.version, method=METHOD,
@@ -344,7 +347,7 @@ def tide_elevations(
         # available model constituents
         c = model.constituents
         # delta time (TT - UT1)
-        deltat = timescale.tt_ut1
+        deltat = ts.tt_ut1
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -357,11 +360,11 @@ def tide_elevations(
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
+            TIDE = pyTMD.predict.map(ts.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
-                MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
+                MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                     deltat=deltat[i], corrections=model.format)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
@@ -371,11 +374,11 @@ def tide_elevations(
     elif (TYPE.lower() == 'drift'):
         tide = np.ma.zeros((nt), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
+        tide.data[:] = pyTMD.predict.drift(ts.tide, hc, c,
             deltat=deltat, corrections=model.format)
         # calculate values for minor constituents by inferrence
         if INFER_MINOR:
-            minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
+            minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                 deltat=deltat, corrections=model.format)
             tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
@@ -384,11 +387,11 @@ def tide_elevations(
         tide.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
             HC = hc[s,None,:]
-            TIDE = pyTMD.predict.time_series(timescale.tide, HC, c,
+            TIDE = pyTMD.predict.time_series(ts.tide, HC, c,
                 deltat=deltat, corrections=model.format)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
-                MINOR = pyTMD.predict.infer_minor(timescale.tide, HC, c,
+                MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                     deltat=deltat, corrections=model.format)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
@@ -530,13 +533,13 @@ def tide_currents(
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             delta_time.flatten())
     else:
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
 
     # python dictionary with tide model data
     tide = {}
@@ -565,7 +568,7 @@ def tide_currents(
             # available model constituents
             c = model.constituents
             # delta time (TT - UT1)
-            deltat = timescale.tt_ut1
+            deltat = ts.tt_ut1
 
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
@@ -578,11 +581,11 @@ def tide_currents(
             tide[t] = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
             tide[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
-                TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
+                TIDE = pyTMD.predict.map(ts.tide[i], hc, c,
                     deltat=deltat[i], corrections=model.format)
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
-                    MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
+                    MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                         deltat=deltat[i], corrections=model.format)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
@@ -592,11 +595,11 @@ def tide_currents(
         elif (TYPE.lower() == 'drift'):
             tide[t] = np.ma.zeros((nt), fill_value=FILL_VALUE)
             tide[t].mask = np.any(hc.mask,axis=1)
-            tide[t].data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
+            tide[t].data[:] = pyTMD.predict.drift(ts.tide, hc, c,
                 deltat=deltat, corrections=model.format)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
-                minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
+                minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                     deltat=deltat, corrections=model.format)
                 tide[t].data[:] += minor.data[:]
         elif (TYPE.lower() == 'time series'):
@@ -605,11 +608,11 @@ def tide_currents(
             tide[t].mask = np.zeros((nstation,nt),dtype=bool)
             for s in range(nstation):
                 HC = hc[s,None,:]
-                TIDE = pyTMD.predict.time_series(timescale.tide, HC, c,
+                TIDE = pyTMD.predict.time_series(ts.tide, HC, c,
                     deltat=deltat, corrections=model.format)
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
-                    MINOR = pyTMD.predict.infer_minor(timescale.tide, HC, c,
+                    MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                         deltat=deltat, corrections=model.format)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
@@ -696,15 +699,15 @@ def LPET_elevations(
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             delta_time.flatten())
     else:
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
     # convert tide times to dynamic time
-    tide_time = timescale.tide + timescale.tt_ut1
+    tide_time = ts.tide + ts.tt_ut1
 
     # predict long-period equilibrium tides at time
     if (TYPE == 'grid'):
@@ -793,7 +796,7 @@ def LPT_displacements(
     # validate input arguments
     assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
     assert ELLIPSOID in pyTMD._ellipsoids
-    assert CONVENTION in pyTMD.eop._conventions
+    assert CONVENTION in timescale.eop._conventions
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -818,18 +821,18 @@ def LPT_displacements(
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             delta_time.flatten())
     else:
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
 
     # convert dynamic time to Modified Julian Days (MJD)
-    MJD = timescale.tt - 2400000.5
+    MJD = ts.tt - 2400000.5
     # convert Julian days to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(timescale.tt, format='tuple')
+    Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
     # calculate time in year-decimal format
-    time_decimal = pyTMD.time.convert_calendar_decimal(Y, M, day=D,
+    time_decimal = timescale.time.convert_calendar_decimal(Y, M, day=D,
         hour=h, minute=m, second=s)
     # number of time points
     nt = len(time_decimal)
@@ -861,9 +864,9 @@ def LPT_displacements(
     dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
 
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
     # read and interpolate IERS daily polar motion values
-    px, py = pyTMD.eop.iers_polar_motion(MJD, k=3, s=0)
+    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
@@ -971,7 +974,7 @@ def OPT_displacements(
     # validate input arguments
     assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
     assert ELLIPSOID in pyTMD._ellipsoids
-    assert CONVENTION in pyTMD.eop._conventions
+    assert CONVENTION in timescale.eop._conventions
     assert METHOD in ('bilinear', 'spline', 'linear', 'nearest')
     # determine input data type based on variable dimensions
     if not TYPE:
@@ -997,18 +1000,18 @@ def OPT_displacements(
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             delta_time.flatten())
     else:
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
 
     # convert dynamic time to Modified Julian Days (MJD)
-    MJD = timescale.tt - 2400000.5
+    MJD = ts.tt - 2400000.5
     # convert Julian days to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(timescale.tt, format='tuple')
+    Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
     # calculate time in year-decimal format
-    time_decimal = pyTMD.time.convert_calendar_decimal(Y, M, day=D,
+    time_decimal = timescale.time.convert_calendar_decimal(Y, M, day=D,
         hour=h, minute=m, second=s)
     # number of time points
     nt = len(time_decimal)
@@ -1041,9 +1044,9 @@ def OPT_displacements(
     K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
 
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
     # read and interpolate IERS daily polar motion values
-    px, py = pyTMD.eop.iers_polar_motion(MJD, k=3, s=0)
+    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
@@ -1190,15 +1193,15 @@ def SET_displacements(
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             delta_time.flatten())
     else:
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
     # convert tide times to dynamical time
-    tide_time = timescale.tide + timescale.tt_ut1
+    tide_time = ts.tide + ts.tt_ut1
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
 
     # earth and physical parameters for ellipsoid
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
@@ -1207,8 +1210,8 @@ def SET_displacements(
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
     # compute ephemerides for lunisolar coordinates
-    SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD, ephemerides=EPHEMERIDES)
-    LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD, ephemerides=EPHEMERIDES)
+    SX, SY, SZ = pyTMD.astro.solar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
+    LX, LY, LZ = pyTMD.astro.lunar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):

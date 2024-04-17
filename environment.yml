@@ -21,3 +21,4 @@ dependencies:
   - pyyaml
   - scipy>=1.10.1
   - setuptools_scm
+  - timescale

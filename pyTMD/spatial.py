@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (03/2024)
+Written by Tyler Sutterley (04/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -17,11 +17,14 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/GDAL
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 03/2024: can calculate polar stereographic distortion for distances
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 10/2023: can read from netCDF4 or HDF5 variable groups
@@ -82,7 +85,6 @@ import pathlib
 import warnings
 import datetime
 import numpy as np
-import pyTMD.time
 from pyTMD.crs import datum
 import pyTMD.version
 # attempt imports
@@ -98,6 +100,10 @@ try:
     import netCDF4
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("netCDF4 not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("timescale not available")
 try:
     import yaml
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
@@ -288,7 +294,7 @@ def from_ascii(filename: str, **kwargs):
         # copy variables from column dict to output dictionary
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c][i] = pyTMD.time.parse(column[c])
+                dinput[c][i] = timescale.time.parse(column[c])
             else:
                 dinput[c][i] = np.float64(column[c])
     # convert to masked array if fill values

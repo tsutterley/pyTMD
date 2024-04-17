@@ -48,8 +48,7 @@ import logging
 import pathlib
 import warnings
 import numpy as np
-from pyTMD.time import timescale
-from pyTMD.eop import iers_polar_motion
+from timescale.eop import iers_polar_motion
 from pyTMD.utilities import get_data_path, from_jpl_ssd
 
 # attempt imports
@@ -57,6 +56,10 @@ try:
     import jplephem.spk
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("jplephem not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("timescale not available")
 
 # default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])
@@ -297,7 +300,7 @@ def doodson_arguments(
     # mean lunar time (degrees)
     if equinox:
         # create timescale from Modified Julian Day (MJD)
-        ts = timescale(MJD=MJD)
+        ts = timescale.time.Timescale(MJD=MJD)
         # use Greenwich Mean Sidereal Time (GMST) from the
         # Equinox method converted to degrees
         TAU = 360.0*ts.st + 180.0 - S
@@ -493,7 +496,7 @@ def solar_approximate(MJD, **kwargs):
         146 pp., (1989).
     """
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # mean longitude of solar perigee (radians)
     PP = ts.deg2rad*(282.94 + 1.7192 * ts.T)
     # mean anomaly of the sun (radians)
@@ -550,7 +553,7 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # download kernel file if not currently existing
     if not pathlib.Path(kwargs['kernel']).exists():
         from_jpl_ssd(kernel=None, local=kwargs['kernel'])
@@ -640,7 +643,7 @@ def lunar_approximate(MJD, **kwargs):
         146 pp., (1989).
     """
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # mean longitude of moon (p. 338)
     lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
             1.855835e-6, -1.53388e-8])
@@ -734,7 +737,7 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     if not pathlib.Path(kwargs['kernel']).exists():
         from_jpl_ssd(kernel=None, local=kwargs['kernel'])
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # read JPL ephemerides kernel
     SPK = jplephem.spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the moon
@@ -782,7 +785,7 @@ def gast(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
     # estimate the mean obliquity
@@ -826,7 +829,7 @@ def itrs(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
     # estimate the mean obliquity
@@ -880,7 +883,7 @@ def _eqeq_complement(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # get the fundamental arguments in radians
     fa = np.zeros((14, len(ts)))
     # mean anomaly of the moon (arcseconds)
@@ -976,7 +979,7 @@ def _nutation_angles(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
     # get the fundamental arguments in radians

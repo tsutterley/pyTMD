@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (04/2024)
 Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -69,15 +69,16 @@ PYTHON DEPENDENCIES:
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
-    eop.py: utilities for calculating Earth Orientation Parameters (EOP)
     spatial: utilities for reading, writing and operating on spatial data
-    time.py: utilities for calculating time operations
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for EOP and temporal operations
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
@@ -127,6 +128,10 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("timescale not available")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -216,26 +221,26 @@ def compute_LPT_displacements(input_file, output_file,
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = attributes['time']['units']
-        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = timescale.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = timescale.time.parse_date_string(TIME_UNITS)
 
     # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             np.ravel(dinput['time']))
     else:
         # convert time to seconds
         delta_time = to_secs*np.ravel(dinput['time'])
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=epoch1, standard=TIME_STANDARD)
 
     # convert dynamic time to Modified Julian Days (MJD)
-    MJD = timescale.tt - 2400000.5
+    MJD = ts.tt - 2400000.5
     # convert Julian days to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(timescale.tt, format='tuple')
+    Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
     # calculate time in year-decimal format
-    time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
+    time_decimal = timescale.time.convert_calendar_decimal(Y,M,day=D,
         hour=h,minute=m,second=s)
     # number of time points
     nt = len(time_decimal)
@@ -267,9 +272,10 @@ def compute_LPT_displacements(input_file, output_file,
     dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
 
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
+        convention=CONVENTION)
     # read and interpolate IERS daily polar motion values
-    px, py = pyTMD.eop.iers_polar_motion(MJD, k=3, s=0)
+    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
@@ -279,19 +285,22 @@ def compute_LPT_displacements(input_file, output_file,
         Srad = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            SRAD = dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
+            SRAD = dfactor*np.sin(2.0*theta) * \
+                (mx[i]*np.cos(phi) + my[i]*np.sin(phi))
             # reform grid
             Srad.data[:,:,i] = np.reshape(SRAD, (ny,nx))
             Srad.mask[:,:,i] = np.isnan(Srad.data[:,:,i])
     elif (TYPE == 'drift'):
         Srad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi)+my*np.sin(phi))
+        Srad.data[:] = dfactor*np.sin(2.0*theta) * \
+            (mx*np.cos(phi) + my*np.sin(phi))
         Srad.mask = np.isnan(Srad.data)
     elif (TYPE == 'time series'):
         Srad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         Srad.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
-            SRAD = dfactor[s]*np.sin(2.0*theta[s])*(mx*np.cos(phi[s])+my*np.sin(phi[s]))
+            SRAD = dfactor[s]*np.sin(2.0*theta[s]) * \
+                (mx*np.cos(phi[s]) + my*np.sin(phi[s]))
             Srad.data[s,:] = np.copy(SRAD)
             Srad.mask[s,:] = np.isnan(Srad.data[s,:])
     # replace invalid data with fill values
@@ -325,10 +334,10 @@ def compute_LPT_displacements(input_file, output_file,
     # output data dictionary
     output = {'lon':lon, 'lat':lat, 'tide_pole':Srad}
     if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
-        output['time'] = timescale.to_string()
+        output['time'] = ts.to_string()
     else:
         attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
-        output['time'] = timescale.tide
+        output['time'] = ts.tide
 
     # output to file
     if (FORMAT == 'csv'):
@@ -417,7 +426,7 @@ def arguments():
         help='Ellipsoid for calculating load pole tide parameters')
     # Earth orientation parameters
     parser.add_argument('--convention','-c',
-        type=str, choices=pyTMD.eop._conventions, default='2018',
+        type=str, choices=timescale.eop._conventions, default='2018',
         help='IERS mean or secular pole convention')
     # fill value for output spatial fields
     parser.add_argument('--fill-value','-f',

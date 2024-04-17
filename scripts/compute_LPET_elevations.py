@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPET_elevations.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (04/2024)
 Calculates long-period equilibrium tidal elevations for an input file
 
 INPUTS:
@@ -59,15 +59,17 @@ PYTHON DEPENDENCIES:
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
-    time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
     predict.py: calculates long-period equilibrium ocean tides
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
     Updated 05/2023: use timescale class for time conversion operations
@@ -107,6 +109,10 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("timescale not available")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -196,23 +202,23 @@ def compute_LPET_elevations(input_file, output_file,
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = attributes['time']['units']
-        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = timescale.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = timescale.time.parse_date_string(TIME_UNITS)
 
     # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             np.ravel(dinput['time']))
     else:
         # convert time to seconds
         delta_time = to_secs*np.ravel(dinput['time'])
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=epoch1, standard=TIME_STANDARD)
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
     # convert tide times to dynamical time
-    tide_time = timescale.tide + timescale.tt_ut1
+    tide_time = ts.tide + ts.tt_ut1
 
     # predict long-period equilibrium tides at time
     if (TYPE == 'grid'):
@@ -255,10 +261,10 @@ def compute_LPET_elevations(input_file, output_file,
     # output data dictionary
     output = {'lon':lon, 'lat':lat, 'tide_lpe':tide_lpe}
     if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
-        output['time'] = timescale.to_string()
+        output['time'] = ts.to_string()
     else:
         attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
-        output['time'] = timescale.tide
+        output['time'] = ts.tide
 
     # output to file
     if (FORMAT == 'csv'):

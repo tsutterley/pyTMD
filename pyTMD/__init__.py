@@ -15,11 +15,9 @@ import pyTMD.arguments
 import pyTMD.astro
 import pyTMD.compute
 import pyTMD.ellipse
-import pyTMD.eop
 import pyTMD.interpolate
 import pyTMD.predict
 import pyTMD.spatial
-import pyTMD.time
 import pyTMD.tools
 import pyTMD.utilities
 import pyTMD.version
@@ -44,7 +42,9 @@ from pyTMD.crs import (
 from pyTMD.calc_astrol_longitudes import calc_astrol_longitudes
 from pyTMD.convert_crs import convert_crs
 from pyTMD.convert_ll_xy import convert_ll_xy
+import pyTMD.eop
 from pyTMD.load_nodal_corrections import load_nodal_corrections
+import pyTMD.time
 
 # get semantic version from setuptools-scm
 __version__ = pyTMD.version.version

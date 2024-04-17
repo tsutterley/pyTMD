@@ -1,13 +1,16 @@
 """
-test_solid_earth.py (01/2024)
+test_solid_earth.py (04/2024)
 Tests the steps for calculating the solid earth tides
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
         https://numpy.org
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: phase_angles function renamed to doodson_arguments
     Updated 04/2023: added test for using JPL ephemerides for positions
@@ -18,8 +21,8 @@ import numpy as np
 import pyTMD.astro
 import pyTMD.compute
 import pyTMD.predict
-import pyTMD.time
 import pyTMD.utilities
+import timescale.time
 
 def test_out_of_phase_diurnal():
     """Test out-of-phase diurnal corrections with IERS outputs
@@ -212,9 +215,9 @@ def test_solid_earth_tide():
     XYZ = np.array([[4075578.385, 931852.890, 4801570.154]])
     SXYZ = np.array([[137859926952.015, 54228127881.4350, 23509422341.6960]])
     LXYZ = np.array([[-179996231.920342, -312468450.131567, -169288918.592160]])
-    tide_time = pyTMD.time.convert_calendar_dates(2009, 4, 13,
+    tide_time = timescale.time.convert_calendar_dates(2009, 4, 13,
         hour=0, minute=0, second=0,
-        epoch=pyTMD.time._tide_epoch)
+        epoch=timescale.time._tide_epoch)
     # expected results
     dx_expected = 0.7700420357108125891e-01
     dy_expected = 0.6304056321824967613e-01
@@ -227,9 +230,9 @@ def test_solid_earth_tide():
     XYZ = np.array([[1112200.5696, -4842957.8511, 3985345.9122]])
     SXYZ = np.array([[100210282451.6279, 103055630398.316, 56855096480.4475]])
     LXYZ = np.array([[369817604.4348, 1897917.5258, 120804980.8284]])
-    tide_time = pyTMD.time.convert_calendar_dates(2015, 7, 15,
+    tide_time = timescale.time.convert_calendar_dates(2015, 7, 15,
         hour=0, minute=0, second=0,
-        epoch=pyTMD.time._tide_epoch)
+        epoch=timescale.time._tide_epoch)
     # expected results
     dx_expected = 0.00509570869172363845
     dy_expected = 0.0828663025983528700
@@ -330,7 +333,7 @@ def test_earth_rotation_angle():
     """Test that the Earth rotation angle (ERA) matches expected outputs
     """
     # create timescale from modified Julian dates
-    ts = pyTMD.time.timescale(MJD=55414.0)
+    ts = timescale.time.Timescale(MJD=55414.0)
     # expected earth rotation angle as fraction of a turn
     expected = 0.8730204642501604
     assert np.isclose(360.0*expected, ts.era).all()
@@ -340,7 +343,7 @@ def test_greenwich():
     using Meeus approximation and calculation within pyTMD
     """
     # create timescale from modified Julian dates
-    ts = pyTMD.time.timescale(MJD=55414.0)
+    ts = timescale.time.Timescale(MJD=55414.0)
     # Meeus approximation
     GHA = np.mod(280.46061837504 + 360.9856473662862*(ts.T*36525.0), 360.0)
     # compare with pyTMD calculation
@@ -348,7 +351,7 @@ def test_greenwich():
 
 def test_sidereal():
     # create timescale from modified Julian dates
-    ts = pyTMD.time.timescale(MJD=55414.0)
+    ts = timescale.time.Timescale(MJD=55414.0)
     # expected side real time in hours
     expected = 20.96154017401333
     assert np.isclose(expected, 24.0*ts.st).all()

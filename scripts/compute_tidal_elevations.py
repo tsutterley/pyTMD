@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (04/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -82,9 +82,10 @@ PYTHON DEPENDENCIES:
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
-    time.py: utilities for calculating time operations
     spatial: utilities for reading, writing and operating on spatial data
     utilities.py: download and management utilities for syncing files
     arguments.py: load the nodal corrections for tidal constituents
@@ -98,6 +99,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: made the inferrence of minor constituents an option
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
@@ -163,6 +165,10 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("timescale not available")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -265,21 +271,21 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = attributes['time']['units']
-        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = timescale.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = timescale.time.parse_date_string(TIME_UNITS)
 
     # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             np.ravel(dinput['time']))
     else:
         # convert time to seconds
         delta_time = to_secs*np.ravel(dinput['time'])
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=epoch1, standard=TIME_STANDARD)
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
 
     # read tidal constants and interpolate to grid points
     if model.format in ('OTIS','ATLAS','TMD3'):
@@ -299,7 +305,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         # delta time (TT - UT1)
-        deltat = timescale.tt_ut1
+        deltat = ts.tt_ut1
     elif (model.format == 'FES'):
         amp,ph = pyTMD.io.FES.extract_constants(np.ravel(lon), np.ravel(lat),
             model.model_file, type=model.type, version=model.version,
@@ -308,7 +314,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         # available model constituents
         c = model.constituents
         # delta time (TT - UT1)
-        deltat = timescale.tt_ut1
+        deltat = ts.tt_ut1
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -320,11 +326,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         tide = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            TIDE = pyTMD.predict.map(timescale.tide[i], hc, c,
+            TIDE = pyTMD.predict.map(ts.tide[i], hc, c,
                 deltat=deltat[i], corrections=model.format)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
-                MINOR = pyTMD.predict.infer_minor(timescale.tide[i], hc, c,
+                MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                     deltat=deltat[i], corrections=model.format)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
@@ -334,11 +340,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     elif (TYPE == 'drift'):
         tide = np.ma.zeros((nt), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
-        tide.data[:] = pyTMD.predict.drift(timescale.tide, hc, c,
+        tide.data[:] = pyTMD.predict.drift(ts.tide, hc, c,
             deltat=deltat, corrections=model.format)
         # calculate values for minor constituents by inferrence
         if INFER_MINOR:
-            minor = pyTMD.predict.infer_minor(timescale.tide, hc, c,
+            minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                 deltat=deltat, corrections=model.format)
             tide.data[:] += minor.data[:]
     elif (TYPE == 'time series'):
@@ -347,11 +353,11 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         for s in range(nstation):
             # calculate constituent oscillation for station
             HC = hc[s,None,:]
-            TIDE = pyTMD.predict.time_series(timescale.tide, HC, c,
+            TIDE = pyTMD.predict.time_series(ts.tide, HC, c,
                 deltat=deltat, corrections=model.format)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
-                MINOR = pyTMD.predict.infer_minor(timescale.tide, HC, c,
+                MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                     deltat=deltat, corrections=model.format)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
@@ -389,10 +395,10 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     # output data dictionary
     output = {'lon':lon, 'lat':lat, output_variable:tide}
     if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
-        output['time'] = timescale.to_string()
+        output['time'] = ts.to_string()
     else:
         attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
-        output['time'] = timescale.tide
+        output['time'] = ts.tide
 
     # output to file
     if (FORMAT == 'csv'):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (04/2024)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -70,10 +70,11 @@ PYTHON DEPENDENCIES:
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
-    time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
     predict.py: calculates solid Earth tides
@@ -97,6 +98,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: use new crs class to get projection information
@@ -124,6 +126,10 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
+try:
+    import timescale.time
+except (AttributeError, ImportError, ModuleNotFoundError) as exc:
+    logging.debug("timescale not available")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -214,23 +220,23 @@ def compute_SET_displacements(input_file, output_file,
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = attributes['time']['units']
-        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = timescale.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = timescale.time.parse_date_string(TIME_UNITS)
 
     # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             np.ravel(dinput['time']))
     else:
         # convert time to seconds
         delta_time = to_secs*np.ravel(dinput['time'])
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=epoch1, standard=TIME_STANDARD)
     # convert tide times to dynamical time
-    tide_time = timescale.tide + timescale.tt_ut1
+    tide_time = ts.tide + ts.tt_ut1
     # number of time points
-    nt = len(timescale)
+    nt = len(ts)
 
     # earth and physical parameters for ellipsoid
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
@@ -241,8 +247,8 @@ def compute_SET_displacements(input_file, output_file,
     X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
         a_axis=units.a_axis, flat=units.flat)
     # compute ephemerides for lunisolar coordinates
-    SX, SY, SZ = pyTMD.astro.solar_ecef(timescale.MJD, ephemerides=EPHEMERIDES)
-    LX, LY, LZ = pyTMD.astro.lunar_ecef(timescale.MJD, ephemerides=EPHEMERIDES)
+    SX, SY, SZ = pyTMD.astro.solar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
+    LX, LY, LZ = pyTMD.astro.lunar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -329,10 +335,10 @@ def compute_SET_displacements(input_file, output_file,
     # output data dictionary
     output = {'lon':lon, 'lat':lat, 'tide_earth':tide_se}
     if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
-        output['time'] = timescale.to_string()
+        output['time'] = ts.to_string()
     else:
         attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
-        output['time'] = timescale.tide
+        output['time'] = ts.tide
 
     # output to file
     if (FORMAT == 'csv'):

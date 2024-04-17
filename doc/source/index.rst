@@ -36,13 +36,11 @@ ocean, load, solid Earth and pole tides
     api_reference/compute.rst
     api_reference/crs.rst
     api_reference/ellipse.rst
-    api_reference/eop.rst
     api_reference/interpolate.rst
     api_reference/io/io.rst
     api_reference/predict.rst
     api_reference/solve/solve.rst
     api_reference/spatial.rst
-    api_reference/time.rst
     api_reference/utilities.rst
 
 .. toctree::
