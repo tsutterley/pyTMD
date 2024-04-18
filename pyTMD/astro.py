@@ -48,7 +48,6 @@ import logging
 import pathlib
 import warnings
 import numpy as np
-from timescale.eop import iers_polar_motion
 from pyTMD.utilities import get_data_path, from_jpl_ssd
 
 # attempt imports
@@ -58,6 +57,7 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("jplephem not available")
 try:
     import timescale.time
+    from timescale.eop import iers_polar_motion
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("timescale not available")
 
