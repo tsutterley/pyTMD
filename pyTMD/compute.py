@@ -40,7 +40,7 @@ PYTHON DEPENDENCIES:
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
 

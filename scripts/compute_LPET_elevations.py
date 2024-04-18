@@ -52,7 +52,7 @@ PYTHON DEPENDENCIES:
     h5py: Python interface for Hierarchal Data Format 5 (HDF5)
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
         https://pypi.python.org/pypi/GDAL
     dateutil: powerful extensions to datetime

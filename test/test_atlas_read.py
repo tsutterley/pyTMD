@@ -11,7 +11,7 @@ PYTHON DEPENDENCIES:
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     boto3: Amazon Web Services (AWS) SDK for Python
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
