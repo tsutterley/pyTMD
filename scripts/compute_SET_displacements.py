@@ -99,6 +99,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 04/2024: use timescale for temporal operations
+        add debug mode printing input arguments and additional information
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: use new crs class to get projection information
@@ -111,9 +112,11 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
+import os
 import logging
 import pathlib
 import argparse
+import traceback
 import numpy as np
 import pyTMD
 import timescale.time
@@ -127,6 +130,15 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
+
+# PURPOSE: keep track of threads
+def info(args):
+    logging.debug(pathlib.Path(sys.argv[0]).name)
+    logging.debug(args)
+    logging.debug(f'module name: {__name__}')
+    if hasattr(os, 'getppid'):
+        logging.debug(f'parent process: {os.getppid():d}')
+    logging.debug(f'process id: {os.getpid():d}')
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -163,12 +175,7 @@ def compute_SET_displacements(input_file, output_file,
     TIDE_SYSTEM='tide_free',
     EPHEMERIDES='approximate',
     FILL_VALUE=-9999.0,
-    VERBOSE=False,
     MODE=0o775):
-
-    # create logger for verbosity level
-    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
-    logging.basicConfig(level=loglevel)
 
     # read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
@@ -435,10 +442,10 @@ def arguments():
         type=float, default=-9999.0,
         help='Invalid value for spatial fields')
     # verbose output of processing run
-    # print information about each input and output file
+    # print information about processing run
     parser.add_argument('--verbose','-V',
-        default=False, action='store_true',
-        help='Verbose output of run')
+        action='count', default=0,
+        help='Verbose output of processing run')
     # permissions mode of the local files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
@@ -452,28 +459,39 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
+    # create logger
+    loglevels = [logging.CRITICAL, logging.INFO, logging.DEBUG]
+    logging.basicConfig(level=loglevels[args.verbose])
+
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,'solid_earth_tide',args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
 
-    # run solid earth tide program for input file
-    compute_SET_displacements(args.infile, args.outfile,
-        FORMAT=args.format,
-        VARIABLES=args.variables,
-        HEADER=args.header,
-        DELIMITER=args.delimiter,
-        TYPE=args.type,
-        TIME_UNITS=args.epoch,
-        TIME=args.deltatime,
-        TIME_STANDARD=args.standard,
-        PROJECTION=args.projection,
-        ELLIPSOID=args.ellipsoid,
-        TIDE_SYSTEM=args.tide_system,
-        EPHEMERIDES=args.ephemerides,
-        FILL_VALUE=args.fill_value,
-        VERBOSE=args.verbose,
-        MODE=args.mode)
+    # try to run solid earth tide program for input file
+    try:
+        info(args)
+        compute_SET_displacements(args.infile, args.outfile,
+            FORMAT=args.format,
+            VARIABLES=args.variables,
+            HEADER=args.header,
+            DELIMITER=args.delimiter,
+            TYPE=args.type,
+            TIME_UNITS=args.epoch,
+            TIME=args.deltatime,
+            TIME_STANDARD=args.standard,
+            PROJECTION=args.projection,
+            ELLIPSOID=args.ellipsoid,
+            TIDE_SYSTEM=args.tide_system,
+            EPHEMERIDES=args.ephemerides,
+            FILL_VALUE=args.fill_value,
+            MODE=args.mode)
+    except Exception as exc:
+        # if there has been an error exception
+        # print the type, value, and stack trace of the
+        # current exception being handled
+        logging.critical(f'process id {os.getpid():d} failed')
+        logging.error(traceback.format_exc())
 
 # run main program
 if __name__ == '__main__':

@@ -100,6 +100,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2024: use timescale for temporal operations
+        add debug mode printing input arguments and additional information
     Updated 01/2024: made the inferrence of minor constituents an option
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
@@ -150,9 +151,11 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
+import os
 import logging
 import pathlib
 import argparse
+import traceback
 import numpy as np
 import pyTMD
 import timescale.time
@@ -167,6 +170,15 @@ try:
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
 
+# PURPOSE: keep track of threads
+def info(args):
+    logging.debug(pathlib.Path(sys.argv[0]).name)
+    logging.debug(args)
+    logging.debug(f'module name: {__name__}')
+    if hasattr(os, 'getppid'):
+        logging.debug(f'parent process: {os.getppid():d}')
+    logging.debug(f'process id: {os.getpid():d}')
+    
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file
@@ -207,12 +219,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     INFER_MINOR=False,
     APPLY_FLEXURE=False,
     FILL_VALUE=-9999.0,
-    VERBOSE=False,
     MODE=0o775):
-
-    # create logger for verbosity level
-    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
-    logging.basicConfig(level=loglevel)
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
@@ -525,10 +532,10 @@ def arguments():
         type=float, default=-9999.0,
         help='Invalid value for spatial fields')
     # verbose output of processing run
-    # print information about each input and output file
+    # print information about processing run
     parser.add_argument('--verbose','-V',
-        default=False, action='store_true',
-        help='Verbose output of run')
+        action='count', default=0,
+        help='Verbose output of processing run')
     # permissions mode of the local files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
@@ -542,35 +549,46 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
+    # create logger
+    loglevels = [logging.CRITICAL, logging.INFO, logging.DEBUG]
+    logging.basicConfig(level=loglevels[args.verbose])
+
     # set output file from input filename if not entered
     if not args.outfile:
-        flexure_flag = '_FLEXURE' if args.apply_flexure else ''
+        flexure_flag = '_flexure' if args.apply_flexure else ''
         vars = (args.infile.stem,args.tide,flexure_flag,args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}{3}'.format(*vars))
 
-    # run tidal elevation program for input file
-    compute_tidal_elevations(args.directory, args.infile, args.outfile,
-        TIDE_MODEL=args.tide,
-        ATLAS_FORMAT=args.atlas_format,
-        GZIP=args.gzip,
-        DEFINITION_FILE=args.definition_file,
-        FORMAT=args.format,
-        VARIABLES=args.variables,
-        HEADER=args.header,
-        DELIMITER=args.delimiter,
-        TYPE=args.type,
-        TIME_UNITS=args.epoch,
-        TIME=args.deltatime,
-        TIME_STANDARD=args.standard,
-        PROJECTION=args.projection,
-        METHOD=args.interpolate,
-        EXTRAPOLATE=args.extrapolate,
-        CUTOFF=args.cutoff,
-        APPLY_FLEXURE=args.apply_flexure,
-        INFER_MINOR=args.infer_minor,
-        FILL_VALUE=args.fill_value,
-        VERBOSE=args.verbose,
-        MODE=args.mode)
+    # try to run tidal elevation program for input file
+    try:
+        info(args)
+        compute_tidal_elevations(args.directory, args.infile, args.outfile,
+            TIDE_MODEL=args.tide,
+            ATLAS_FORMAT=args.atlas_format,
+            GZIP=args.gzip,
+            DEFINITION_FILE=args.definition_file,
+            FORMAT=args.format,
+            VARIABLES=args.variables,
+            HEADER=args.header,
+            DELIMITER=args.delimiter,
+            TYPE=args.type,
+            TIME_UNITS=args.epoch,
+            TIME=args.deltatime,
+            TIME_STANDARD=args.standard,
+            PROJECTION=args.projection,
+            METHOD=args.interpolate,
+            EXTRAPOLATE=args.extrapolate,
+            CUTOFF=args.cutoff,
+            APPLY_FLEXURE=args.apply_flexure,
+            INFER_MINOR=args.infer_minor,
+            FILL_VALUE=args.fill_value,
+            MODE=args.mode)
+    except Exception as exc:
+        # if there has been an error exception
+        # print the type, value, and stack trace of the
+        # current exception being handled
+        logging.critical(f'process id {os.getpid():d} failed')
+        logging.error(traceback.format_exc())
 
 # run main program
 if __name__ == '__main__':
