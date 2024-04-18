@@ -112,7 +112,6 @@ import pathlib
 import numpy as np
 import scipy.interpolate
 import pyTMD.crs
-import timescale.eop
 import pyTMD.io
 import pyTMD.io.model
 import pyTMD.predict
@@ -125,6 +124,7 @@ try:
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
 try:
+    import timescale.eop
     import timescale.time
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("timescale not available")

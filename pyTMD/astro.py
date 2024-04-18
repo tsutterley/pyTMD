@@ -56,8 +56,8 @@ try:
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("jplephem not available")
 try:
+    import timescale.eop
     import timescale.time
-    from timescale.eop import iers_polar_motion
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("timescale not available")
 
@@ -1057,7 +1057,7 @@ def _polar_motion_matrix(T: float | np.ndarray):
     # convert to MJD from centuries relative to 2000-01-01T12:00:00
     MJD = T*36525.0 + 51544.5
     sprime = -4.7e-5*T
-    px, py = iers_polar_motion(MJD)
+    px, py = timescale.eop.iers_polar_motion(MJD)
     # calculate the rotation matrices
     M1 = rotate(py*atr,'x')
     M2 = rotate(px*atr,'y')
