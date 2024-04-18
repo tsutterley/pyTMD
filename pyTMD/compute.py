@@ -117,17 +117,14 @@ import pyTMD.io.model
 import pyTMD.predict
 import pyTMD.spatial
 import pyTMD.utilities
+import timescale.eop
+import timescale.time
 
 # attempt imports
 try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
-try:
-    import timescale.eop
-    import timescale.time
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("timescale not available")
 
 # PURPOSE: wrapper function for computing values
 def corrections(

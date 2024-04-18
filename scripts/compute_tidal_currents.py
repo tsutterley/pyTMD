@@ -150,6 +150,7 @@ import pathlib
 import argparse
 import numpy as np
 import pyTMD
+import timescale.time
 
 # attempt imports
 try:
@@ -160,10 +161,6 @@ try:
     import pyproj
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.critical("pyproj not available")
-try:
-    import timescale.time
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("timescale not available")
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):

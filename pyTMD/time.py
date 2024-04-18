@@ -54,11 +54,7 @@ import logging
 import warnings
 import numpy as np
 import scipy.interpolate
-# attempt imports
-try:
-    import timescale.time
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("timescale not available")
+import timescale.time
 
 # conversion factors between time units and seconds
 _to_sec = {'microseconds': 1e-6, 'microsecond': 1e-6,
@@ -343,11 +339,7 @@ def convert_julian(*args, **kwargs):
     return timescale.time.convert_julian(*args, **kwargs)
 
 # delta time (TT - UT1) file
-try:
-    _delta_file = timescale.utilities.get_data_path(
-        ['data','merged_deltat.data'])
-except (AttributeError, NameError, ValueError) as exc:
-    _delta_file = None
+_delta_file = timescale.utilities.get_data_path(['data','merged_deltat.data'])
 
 class timescale(timescale.time.Timescale):
     """

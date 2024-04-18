@@ -87,6 +87,8 @@ import datetime
 import numpy as np
 from pyTMD.crs import datum
 import pyTMD.version
+import timescale.time
+
 # attempt imports
 try:
     import osgeo.gdal, osgeo.osr, osgeo.gdalconst
@@ -100,10 +102,6 @@ try:
     import netCDF4
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("netCDF4 not available")
-try:
-    import timescale.time
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("timescale not available")
 try:
     import yaml
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:

@@ -17,6 +17,7 @@ dependencies:
   - setuptools_scm
   - sphinx
   - sphinx_rtd_theme
+  - timescale>=0.0.3
   - pip:
     - sphinx-argparse>=0.4
     - ..

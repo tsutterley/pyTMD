@@ -48,6 +48,8 @@ import logging
 import pathlib
 import warnings
 import numpy as np
+import timescale.eop
+import timescale.time
 from pyTMD.utilities import get_data_path, from_jpl_ssd
 
 # attempt imports
@@ -55,11 +57,6 @@ try:
     import jplephem.spk
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("jplephem not available")
-try:
-    import timescale.eop
-    import timescale.time
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("timescale not available")
 
 # default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])

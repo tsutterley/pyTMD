@@ -28,21 +28,13 @@ from __future__ import annotations
 
 import warnings
 import logging
-# attempt imports
-try:
-    import timescale.eop
-    import timescale.utilities
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("timescale not available")
+import timescale.eop
+import timescale.utilities
 
 # IERS mean pole file for 2015 conventional mean pole
+_mean_pole_file = timescale.utilities.get_data_path(['data','mean-pole.tab'])
 # daily finals polar motion file from IERS
-try:
-    _mean_pole_file = timescale.utilities.get_data_path(['data','mean-pole.tab'])
-    _finals_file = timescale.utilities.get_data_path(['data','finals.all'])
-except (AttributeError, NameError, ValueError) as exc:
-    _mean_pole_file = None
-    _finals_file = None
+_finals_file = timescale.utilities.get_data_path(['data','finals.all'])
 
 # PURPOSE: connects to servers and downloads mean pole files
 def update_mean_pole(**kwargs):
