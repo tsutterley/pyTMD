@@ -36,9 +36,9 @@ except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("timescale not available")
 
 # IERS mean pole file for 2015 conventional mean pole
+# daily finals polar motion file from IERS
 try:
     _mean_pole_file = timescale.utilities.get_data_path(['data','mean-pole.tab'])
-    # daily polar motion file from IERS
     _finals_file = timescale.utilities.get_data_path(['data','finals.all'])
 except (AttributeError, NameError, ValueError) as exc:
     _mean_pole_file = None

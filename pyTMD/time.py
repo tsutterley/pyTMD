@@ -343,7 +343,11 @@ def convert_julian(*args, **kwargs):
     return timescale.time.convert_julian(*args, **kwargs)
 
 # delta time (TT - UT1) file
-_delta_file = timescale.utilities.get_data_path(['data','merged_deltat.data'])
+try:
+    _delta_file = timescale.utilities.get_data_path(
+        ['data','merged_deltat.data'])
+except (AttributeError, NameError, ValueError) as exc:
+    _delta_file = None
 
 class timescale(timescale.time.Timescale):
     """

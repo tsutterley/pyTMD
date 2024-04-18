@@ -122,8 +122,8 @@ def test_verify_GOT47(METHOD):
         model_file, method=METHOD, compressed=GZIP, scale=SCALE)
     assert all(c in constituents for c in cons)
     # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = timescale.time.interpolate_delta_time(delta_file, tide_time)
+    deltat = timescale.time.interpolate_delta_time(
+        timescale.time._delta_file, tide_time)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillations
