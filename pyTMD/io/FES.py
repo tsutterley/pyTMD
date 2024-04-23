@@ -103,12 +103,10 @@ import numpy as np
 import pyTMD.version
 import pyTMD.interpolate
 import pyTMD.io.constituents
+from pyTMD.utilities import import_dependency
 
 # attempt imports
-try:
-    import netCDF4
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("netCDF4 not available")
+netCDF4 = import_dependency('netCDF4')
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(

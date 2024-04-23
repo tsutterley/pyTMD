@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (04/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: made the inferrence of minor constituents an option
         refactored lunisolar ephemerides functions
@@ -119,12 +120,8 @@ import pyTMD.spatial
 import pyTMD.utilities
 import timescale.eop
 import timescale.time
-
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pyproj = pyTMD.utilities.import_dependency('pyproj')
 
 # PURPOSE: wrapper function for computing values
 def corrections(

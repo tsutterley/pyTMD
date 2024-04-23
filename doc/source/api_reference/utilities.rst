@@ -19,6 +19,8 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.get_data_path
 
+.. autofunction:: pyTMD.utilities.import_dependency
+
 .. autoclass:: pyTMD.utilities.reify
    :members:
 

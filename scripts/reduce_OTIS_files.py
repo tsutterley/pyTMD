@@ -29,6 +29,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 04/2024: add debug mode printing input arguments
+        use wrapper to importlib for optional dependencies
     Updated 12/2023: use new crs class for coordinate reprojection
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: new function name for coordinate reference systems
@@ -61,12 +62,10 @@ import numpy as np
 import pyTMD.crs
 import pyTMD.io
 import pyTMD.utilities
+import timescale.time
 
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pyproj = pyTMD.utilities.import_dependency('pyproj')
 
 # PURPOSE: keep track of threads
 def info(args):

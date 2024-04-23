@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 astro.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (04/2024)
 Astronomical and nutation routines
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ REFERENCES:
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
+    Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: refactored phase_angles function to doodson_arguments
         added option to compute mean lunar time using equinox method
@@ -50,13 +51,13 @@ import warnings
 import numpy as np
 import timescale.eop
 import timescale.time
-from pyTMD.utilities import get_data_path, from_jpl_ssd
-
+from pyTMD.utilities import (
+    get_data_path,
+    import_dependency,
+    from_jpl_ssd
+)
 # attempt imports
-try:
-    import jplephem.spk
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("jplephem not available")
+jplephem_spk = import_dependency('jplephem.spk')
 
 # default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])
@@ -555,7 +556,7 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     if not pathlib.Path(kwargs['kernel']).exists():
         from_jpl_ssd(kernel=None, local=kwargs['kernel'])
     # read JPL ephemerides kernel
-    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
+    SPK = jplephem_spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the sun
     # segment 0 SOLAR SYSTEM BARYCENTER -> segment 10 SUN
     SSB_to_Sun = SPK[0, 10]
@@ -736,7 +737,7 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     # create timescale from Modified Julian Day (MJD)
     ts = timescale.time.Timescale(MJD=MJD)
     # read JPL ephemerides kernel
-    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
+    SPK = jplephem_spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the moon
     # segment 3 EARTH BARYCENTER -> segment 399 EARTH
     EMB_to_Earth = SPK[3, 399]

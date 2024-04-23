@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_points.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (04/2024)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Ohio State University and ESR
@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 12/2023: use new crs class for coordinate reprojection
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
     Updated 04/2023: using pathlib to define and expand paths
@@ -74,17 +75,13 @@ import logging
 import pathlib
 import numpy as np
 import scipy.interpolate
-
 import pyTMD.crs
 import pyTMD.io
 import pyTMD.io.model
 import pyTMD.interpolate
-
+import pyTMD.utilities
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("pyproj not available")
+pyproj = pyTMD.utilities.import_dependency('pyproj')
 
 # PURPOSE: compute tides at points and times using tide model algorithms
 def check_points(x: np.ndarray, y: np.ndarray,

@@ -100,6 +100,7 @@ REFERENCES:
 UPDATE HISTORY:
     Updated 04/2024: use timescale for temporal operations
         add debug mode printing input arguments and additional information
+        use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: use new crs class to get projection information
@@ -118,18 +119,12 @@ import pathlib
 import argparse
 import traceback
 import numpy as np
-import pyTMD
+import pyTMD.utilities
 import timescale.time
 
 # attempt imports
-try:
-    import pandas as pd
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pandas not available")
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pd = pyTMD.utilities.import_dependency('pandas')
+pyproj = pyTMD.utilities.import_dependency('pyproj')
 
 # PURPOSE: keep track of threads
 def info(args):
