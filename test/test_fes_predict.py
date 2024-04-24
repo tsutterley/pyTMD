@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (01/2024)
+test_fes_predict.py (04/2024)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -12,11 +12,12 @@ PYTHON DEPENDENCIES:
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     boto3: Amazon Web Services (AWS) SDK for Python
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: test doodson and cartwright numbers of each constituent
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
@@ -35,12 +36,12 @@ import pathlib
 import posixpath
 import numpy as np
 import pyTMD.io
-import pyTMD.time
 import pyTMD.io.model
 import pyTMD.utilities
 import pyTMD.predict
 import pyTMD.arguments
 import pyTMD.check_points
+import timescale.time
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -126,8 +127,8 @@ def test_verify_FES2014():
         latitude, model_file, type=TYPE, version=VERSION,
         method='spline', compressed=True, scale=SCALE)
     # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+    deltat = timescale.time.interpolate_delta_time(
+        timescale.time._delta_file, tide_time)
     # calculate complex phase in radians for Euler's
     # calculate constituent oscillations
     hc = amp*np.exp(-1j*ph*np.pi/180.0)

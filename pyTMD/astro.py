@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 astro.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (04/2024)
 Astronomical and nutation routines
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ REFERENCES:
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
+    Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: refactored phase_angles function to doodson_arguments
         added option to compute mean lunar time using equinox method
@@ -48,15 +49,15 @@ import logging
 import pathlib
 import warnings
 import numpy as np
-from pyTMD.time import timescale
-from pyTMD.eop import iers_polar_motion
-from pyTMD.utilities import get_data_path, from_jpl_ssd
-
+import timescale.eop
+import timescale.time
+from pyTMD.utilities import (
+    get_data_path,
+    import_dependency,
+    from_jpl_ssd
+)
 # attempt imports
-try:
-    import jplephem.spk
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("jplephem not available")
+jplephem_spk = import_dependency('jplephem.spk')
 
 # default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])
@@ -297,7 +298,7 @@ def doodson_arguments(
     # mean lunar time (degrees)
     if equinox:
         # create timescale from Modified Julian Day (MJD)
-        ts = timescale(MJD=MJD)
+        ts = timescale.time.Timescale(MJD=MJD)
         # use Greenwich Mean Sidereal Time (GMST) from the
         # Equinox method converted to degrees
         TAU = 360.0*ts.st + 180.0 - S
@@ -493,7 +494,7 @@ def solar_approximate(MJD, **kwargs):
         146 pp., (1989).
     """
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # mean longitude of solar perigee (radians)
     PP = ts.deg2rad*(282.94 + 1.7192 * ts.T)
     # mean anomaly of the sun (radians)
@@ -550,12 +551,12 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # download kernel file if not currently existing
     if not pathlib.Path(kwargs['kernel']).exists():
         from_jpl_ssd(kernel=None, local=kwargs['kernel'])
     # read JPL ephemerides kernel
-    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
+    SPK = jplephem_spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the sun
     # segment 0 SOLAR SYSTEM BARYCENTER -> segment 10 SUN
     SSB_to_Sun = SPK[0, 10]
@@ -640,7 +641,7 @@ def lunar_approximate(MJD, **kwargs):
         146 pp., (1989).
     """
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # mean longitude of moon (p. 338)
     lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
             1.855835e-6, -1.53388e-8])
@@ -734,9 +735,9 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     if not pathlib.Path(kwargs['kernel']).exists():
         from_jpl_ssd(kernel=None, local=kwargs['kernel'])
     # create timescale from Modified Julian Day (MJD)
-    ts = timescale(MJD=MJD)
+    ts = timescale.time.Timescale(MJD=MJD)
     # read JPL ephemerides kernel
-    SPK = jplephem.spk.SPK.open(kwargs['kernel'])
+    SPK = jplephem_spk.SPK.open(kwargs['kernel'])
     # segments for computing position of the moon
     # segment 3 EARTH BARYCENTER -> segment 399 EARTH
     EMB_to_Earth = SPK[3, 399]
@@ -782,7 +783,7 @@ def gast(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
     # estimate the mean obliquity
@@ -826,7 +827,7 @@ def itrs(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
     # estimate the mean obliquity
@@ -880,7 +881,7 @@ def _eqeq_complement(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # get the fundamental arguments in radians
     fa = np.zeros((14, len(ts)))
     # mean anomaly of the moon (arcseconds)
@@ -976,7 +977,7 @@ def _nutation_angles(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - 2400000.5
     # get the fundamental arguments in radians
@@ -1054,7 +1055,7 @@ def _polar_motion_matrix(T: float | np.ndarray):
     # convert to MJD from centuries relative to 2000-01-01T12:00:00
     MJD = T*36525.0 + 51544.5
     sprime = -4.7e-5*T
-    px, py = iers_polar_motion(MJD)
+    px, py = timescale.eop.iers_polar_motion(MJD)
     # calculate the rotation matrices
     M1 = rotate(py*atr,'x')
     M2 = rotate(px*atr,'y')

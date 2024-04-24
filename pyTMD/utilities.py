@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (11/2023)
+Written by Tyler Sutterley (04/2024)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 04/2024: add wrapper to importlib for optional dependencies
     Updated 11/2023: updated ssl context to fix deprecation error
     Updated 06/2023: add functions to retrieve and revoke Earthdata tokens
     Updated 05/2023: add reify decorator for evaluation of properties
@@ -58,6 +59,7 @@ import logging
 import pathlib
 import builtins
 import warnings
+import importlib
 import posixpath
 import subprocess
 import lxml.etree
@@ -90,6 +92,46 @@ def get_data_path(relpath: list | str | pathlib.Path):
         return filepath.joinpath(*relpath)
     elif isinstance(relpath, (str, pathlib.Path)):
         return filepath.joinpath(relpath)
+
+def import_dependency(
+        name: str,
+        extra: str = "",
+        raise_exception: bool = False
+    ):
+    """
+    Import an optional dependency
+    
+    Adapted from ``pandas.compat._optional::import_optional_dependency``
+
+    Parameters
+    ----------
+    name: str
+        Module name
+    extra: str, default ""
+        Additional text to include in the ``ImportError`` message
+    raise_exception: bool, default False
+        Raise an ``ImportError`` if the module is not found
+
+    Returns
+    -------
+    module: obj
+        Imported module
+    """
+    # check if the module name is a string
+    msg = f"Invalid module name: '{name}'; must be a string"
+    assert isinstance(name, str), msg
+    # try to import the module
+    err = f"Missing optional dependency '{name}'. {extra}"
+    module = None
+    try:
+        module = importlib.import_module(name)
+    except (ImportError, ModuleNotFoundError) as exc:
+        if raise_exception:
+            raise ImportError(err) from exc
+        else:
+            logging.debug(err)
+    # return the module
+    return module
 
 class reify(object):
     """Class decorator that puts the result of the method it

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (01/2024)
+test_perth3_read.py (04/2024)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
@@ -36,12 +37,12 @@ import pathlib
 import posixpath
 import numpy as np
 import pyTMD.io
-import pyTMD.time
 import pyTMD.io.model
 import pyTMD.utilities
 import pyTMD.compute
 import pyTMD.predict
 import pyTMD.check_points
+import timescale.time
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -121,8 +122,8 @@ def test_verify_GOT47(METHOD):
         model_file, method=METHOD, compressed=GZIP, scale=SCALE)
     assert all(c in constituents for c in cons)
     # interpolate delta times from calendar dates to tide time
-    delta_file = pyTMD.utilities.get_data_path(['data','merged_deltat.data'])
-    deltat = pyTMD.time.interpolate_delta_time(delta_file, tide_time)
+    deltat = timescale.time.interpolate_delta_time(
+        timescale.time._delta_file, tide_time)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillations
@@ -241,7 +242,7 @@ def test_Ross_Ice_Shelf(METHOD, EXTRAPOLATE):
     # calculate tide map
     tide = pyTMD.compute.tide_elevations(xgrid, ygrid, delta_time,
         DIRECTORY=filepath, MODEL='GOT4.7', GZIP=True,
-        EPOCH=pyTMD.time._atlas_sdp_epoch, TYPE='grid', TIME='GPS',
+        EPOCH=timescale.time._atlas_sdp_epoch, TYPE='grid', TIME='GPS',
         EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
     assert np.any(tide)
 

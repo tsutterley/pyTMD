@@ -54,6 +54,7 @@ This software is also dependent on other commonly used Python packages:
 - `pyproj: Python interface to PROJ library <https://pypi.org/project/pyproj/>`_
 - `scipy: Scientific Tools for Python <https://www.scipy.org/>`_
 - `setuptools_scm: manager for python package versions using scm metadata <https://pypi.org/project/setuptools-scm>`_
+- `timescale: Python tools for time and astronomical calculations <https://pypi.org/project/timescale/>`_
 
 Optional Dependencies
 ---------------------

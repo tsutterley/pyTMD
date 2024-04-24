@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (03/2024)
+Written by Tyler Sutterley (04/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -17,11 +17,15 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/GDAL
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
+        use wrapper to importlib for optional dependencies
     Updated 03/2024: can calculate polar stereographic distortion for distances
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 10/2023: can read from netCDF4 or HDF5 variable groups
@@ -82,26 +86,18 @@ import pathlib
 import warnings
 import datetime
 import numpy as np
-import pyTMD.time
 from pyTMD.crs import datum
+from pyTMD.utilities import import_dependency
 import pyTMD.version
+import timescale.time
+
 # attempt imports
-try:
-    import osgeo.gdal, osgeo.osr, osgeo.gdalconst
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("GDAL not available")
-try:
-    import h5py
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("h5py not available")
-try:
-    import netCDF4
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("netCDF4 not available")
-try:
-    import yaml
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("PyYAML not available")
+gdal = import_dependency('osgeo.gdal')
+osr = import_dependency('osgeo.osr')
+gdalconst = import_dependency('osgeo.gdalconst')
+h5py = import_dependency('h5py')
+netCDF4 = import_dependency('netCDF4')
+yaml = import_dependency('yaml')
 
 def case_insensitive_filename(filename: str | pathlib.Path):
     """
@@ -288,7 +284,7 @@ def from_ascii(filename: str, **kwargs):
         # copy variables from column dict to output dictionary
         for c in columns:
             if (c == 'time') and kwargs['parse_dates']:
-                dinput[c][i] = pyTMD.time.parse(column[c])
+                dinput[c][i] = timescale.time.parse(column[c])
             else:
                 dinput[c][i] = np.float64(column[c])
     # convert to masked array if fill values
@@ -395,7 +391,7 @@ def from_netCDF4(filename: str, **kwargs):
                 group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
-        srs = osgeo.osr.SpatialReference()
+        srs = osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
@@ -505,7 +501,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
-        srs = osgeo.osr.SpatialReference()
+        srs = osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
@@ -538,16 +534,16 @@ def from_geotiff(filename: str, **kwargs):
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
         mmap_name = f"/vsigzip/{str(case_insensitive_filename(filename))}"
-        ds = osgeo.gdal.Open(mmap_name)
+        ds = gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         # read as GDAL memory-mapped (diskless) geotiff dataset
         mmap_name = f"/vsimem/{uuid.uuid4().hex}"
-        osgeo.gdal.FileFromMemBuffer(mmap_name, filename.read())
-        ds = osgeo.gdal.Open(mmap_name)
+        gdal.FileFromMemBuffer(mmap_name, filename.read())
+        ds = gdal.Open(mmap_name)
     else:
         # read geotiff dataset
-        ds = osgeo.gdal.Open(str(case_insensitive_filename(filename)),
-            osgeo.gdalconst.GA_ReadOnly)
+        ds = gdal.Open(str(case_insensitive_filename(filename)),
+            gdalconst.GA_ReadOnly)
     # print geotiff file if verbose
     logging.info(str(filename))
     # create python dictionary for output variables and attributes
@@ -960,7 +956,7 @@ def to_geotiff(
     # set default keyword arguments
     kwargs.setdefault('varname', 'data')
     kwargs.setdefault('driver', 'cog')
-    kwargs.setdefault('dtype', osgeo.gdal.GDT_Float64)
+    kwargs.setdefault('dtype', gdal.GDT_Float64)
     kwargs.setdefault('options', ['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
     # verify grid dimensions to be iterable
@@ -968,7 +964,7 @@ def to_geotiff(
     # grid shape
     ny, nx, nband = np.shape(output[varname])
     # output as geotiff or specified driver
-    driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
+    driver = gdal.GetDriverByName(kwargs['driver'])
     # set up the dataset with creation options
     filename = pathlib.Path(filename).expanduser().absolute()
     ds = driver.Create(str(filename), nx, ny, nband,
@@ -979,7 +975,7 @@ def to_geotiff(
     dx, dy = attributes['spacing']
     ds.SetGeoTransform([xmin, dx, 0, ymax, 0, dy])
     # set the spatial projection reference information
-    srs = osgeo.osr.SpatialReference()
+    srs = osr.SpatialReference()
     srs.ImportFromWkt(attributes['wkt'])
     # export
     ds.SetProjection( srs.ExportToWkt() )

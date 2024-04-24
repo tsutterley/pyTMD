@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (04/2024)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 12/2023: pass through VBox and HBox
     Updated 08/2023: place matplotlib within try/except statements
     Updated 05/2023: don't set a default directory for tide models
@@ -36,35 +37,22 @@ import logging
 import datetime
 import numpy as np
 import pyTMD.io.model
+from pyTMD.utilities import import_dependency
 
 # attempt imports
+IPython = import_dependency('IPython')
+ipyleaflet = import_dependency('ipyleaflet')
+ipywidgets = import_dependency('ipywidgets')
+pyproj = import_dependency('pyproj')
+matplotlib = import_dependency('matplotlib')
+plt = import_dependency('matplotlib.pyplot')
+cm = import_dependency('matplotlib.cm')
+colors = import_dependency('matplotlib.colors')
+
 try:
-    import IPython
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("IPython not available")
-try:
-    import ipyleaflet
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("ipyleaflet not available")
-try:
-    import ipywidgets
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("ipywidgets not available")
-try:
-    import matplotlib
     matplotlib.rcParams['axes.linewidth'] = 2.0
-    matplotlib.rcParams["animation.html"] = "jshtml"
-    import matplotlib.cm as cm
-    import matplotlib.colorbar
-    import matplotlib.animation
-    import matplotlib.pyplot as plt
-    import matplotlib.colors as colors
 except (AttributeError, ImportError, ModuleNotFoundError) as exc:
     logging.debug("matplotlib not available")
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("pyproj not available")
 
 class widgets:
     def __init__(self, **kwargs):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (12/2023)
+Written by Tyler Sutterley (04/2024)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -28,6 +28,8 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 04/2024: add debug mode printing input arguments
+        use wrapper to importlib for optional dependencies
     Updated 12/2023: use new crs class for coordinate reprojection
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: new function name for coordinate reference systems
@@ -51,23 +53,35 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
+import os
 import logging
 import pathlib
 import argparse
+import traceback
 import numpy as np
 import pyTMD.crs
 import pyTMD.io
 import pyTMD.utilities
+import timescale.time
 
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pyproj = pyTMD.utilities.import_dependency('pyproj')
+
+# PURPOSE: keep track of threads
+def info(args):
+    logging.debug(pathlib.Path(sys.argv[0]).name)
+    logging.debug(args)
+    logging.debug(f'module name: {__name__}')
+    if hasattr(os, 'getppid'):
+        logging.debug(f'parent process: {os.getppid():d}')
+    logging.debug(f'process id: {os.getpid():d}')
 
 # PURPOSE: reads OTIS-format tidal files and reduces to a regional subset
-def make_regional_OTIS_files(tide_dir, TIDE_MODEL, BOUNDS=4*[None],
-    PROJECTION='4326', MODE=0o775):
+def make_regional_OTIS_files(tide_dir, TIDE_MODEL,
+        BOUNDS=4*[None],
+        PROJECTION='4326',
+        MODE=0o775
+    ):
     # get parameters for tide model
     model = pyTMD.io.model(directory=tide_dir).grid(TIDE_MODEL)
     # directionaries with input and output files
@@ -236,6 +250,11 @@ def arguments():
     parser.add_argument('--bounds','-B',
         metavar=('xmin','xmax','ymin','ymax'), type=float, nargs=4,
         help='Grid bounds for reducing model')
+    # verbose output of processing run
+    # print information about processing run
+    parser.add_argument('--verbose','-V',
+        action='count', default=0,
+        help='Verbose output of processing run')
     # permissions mode of output reduced files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
@@ -249,9 +268,23 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
-    # run program
-    make_regional_OTIS_files(args.directory, args.tide, BOUNDS=args.bounds,
-        PROJECTION=args.projection, MODE=args.mode)
+    # create logger
+    loglevels = [logging.CRITICAL, logging.INFO, logging.DEBUG]
+    logging.basicConfig(level=loglevels[args.verbose])
+
+    # try to run reginal program
+    try:
+        info(args)
+        make_regional_OTIS_files(args.directory, args.tide,
+            BOUNDS=args.bounds,
+            PROJECTION=args.projection,
+            MODE=args.mode)
+    except Exception as exc:
+        # if there has been an error exception
+        # print the type, value, and stack trace of the
+        # current exception being handled
+        logging.critical(f'process id {os.getpid():d} failed')
+        logging.error(traceback.format_exc())
 
 # run main program
 if __name__ == '__main__':

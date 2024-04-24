@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (01/2024)
+test_download_and_read.py (04/2024)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: add check for read and interpolate constants
@@ -54,11 +55,11 @@ import pyTMD.io
 import pyTMD.io.model
 import pyTMD.compute
 import pyTMD.predict
-import pyTMD.time
 import pyTMD.utilities
 import pyTMD.check_points
 import pyTMD.ellipse
 import pyTMD.solve
+import timescale.time
 from oct2py import octave
 
 # current file path
@@ -375,8 +376,8 @@ class Test_CATS2008:
 
         # calculate daily results for a time period
         # convert time to days since 1992-01-01T00:00:00
-        tide_time = np.arange(pyTMD.time.convert_calendar_dates(2000,1,1),
-            pyTMD.time.convert_calendar_dates(2000,12,31)+1)
+        tide_time = np.arange(timescale.time.convert_calendar_dates(2000,1,1),
+            timescale.time.convert_calendar_dates(2000,12,31)+1)
         # serial dates for matlab program (days since 0000-01-01T00:00:00)
         SDtime = np.arange(convert_calendar_serial(2000,1,1),
             convert_calendar_serial(2000,12,31)+1)
@@ -574,7 +575,7 @@ class Test_CATS2008:
         minutes = np.arange(366*1440)
         # convert time to days relative to Jan 1, 1992 (48622 MJD)
         year, month, day = 2000, 1, 1
-        tide_time = pyTMD.time.convert_calendar_dates(year, month, day,
+        tide_time = timescale.time.convert_calendar_dates(year, month, day,
             minute=minutes)
 
         # read tidal constants and interpolate to coordinates
@@ -710,7 +711,7 @@ class Test_CATS2008:
         # calculate tide drift corrections
         tide = pyTMD.compute.tide_elevations(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
-            EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
+            EPOCH=timescale.time._j2000_epoch, TYPE='drift', TIME='UTC',
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 
@@ -731,7 +732,7 @@ class Test_CATS2008:
         # calculate tide drift corrections
         tide = pyTMD.compute.tide_currents(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
-            EPOCH=pyTMD.time._j2000_epoch, TYPE='drift', TIME='UTC',
+            EPOCH=timescale.time._j2000_epoch, TYPE='drift', TIME='UTC',
             EPSG=3031, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         # iterate over zonal and meridional currents
         for key,val in tide.items():
@@ -855,8 +856,8 @@ class Test_AOTIM5_2018:
 
         # calculate daily results for a time period
         # convert time to days since 1992-01-01T00:00:00
-        tide_time = np.arange(pyTMD.time.convert_calendar_dates(2000,1,1),
-            pyTMD.time.convert_calendar_dates(2000,12,31)+1)
+        tide_time = np.arange(timescale.time.convert_calendar_dates(2000,1,1),
+            timescale.time.convert_calendar_dates(2000,12,31)+1)
         # serial dates for matlab program (days since 0000-01-01T00:00:00)
         SDtime = np.arange(convert_calendar_serial(2000,1,1),
             convert_calendar_serial(2000,12,31)+1)
@@ -1010,7 +1011,7 @@ class Test_AOTIM5_2018:
         # calculate tide map
         tide = pyTMD.compute.tide_elevations(xgrid, ygrid, delta_time,
             DIRECTORY=filepath, MODEL='AOTIM-5-2018', GZIP=False,
-            EPOCH=pyTMD.time._j2000_epoch, TYPE='grid', TIME='UTC',
+            EPOCH=timescale.time._j2000_epoch, TYPE='grid', TIME='UTC',
             EPSG=3413, METHOD=METHOD, EXTRAPOLATE=EXTRAPOLATE)
         assert np.any(tide)
 
