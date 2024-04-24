@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (01/2024)
+test_atlas_read.py (04/2024)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -11,11 +11,12 @@ PYTHON DEPENDENCIES:
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     boto3: Amazon Web Services (AWS) SDK for Python
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: test doodson and cartwright numbers of each constituent
         refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
@@ -38,10 +39,10 @@ import pathlib
 import posixpath
 import numpy as np
 import pyTMD.io
-import pyTMD.time
 import pyTMD.io.model
 import pyTMD.arguments
 import pyTMD.utilities
+import timescale.time
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -262,8 +263,8 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
         MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         # convert from calendar dates into days since 1992-01-01T00:00:00
-        val['time'][j] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
-            hour=hh, minute=mm, second=ss, epoch=pyTMD.time._tide_epoch)
+        val['time'][j] = timescale.time.convert_calendar_dates(YY, MM, DD,
+            hour=hh, minute=mm, second=ss, epoch=timescale.time._tide_epoch)
         # add to counter
         j += 1
 
@@ -338,8 +339,8 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
         hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
         # convert from calendar dates into days since 1992-01-01T00:00:00
-        val['time'][i] = pyTMD.time.convert_calendar_dates(YY, MM, DD,
-            hour=hh, minute=mm, second=ss, epoch=pyTMD.time._tide_epoch)
+        val['time'][i] = timescale.time.convert_calendar_dates(YY, MM, DD,
+            hour=hh, minute=mm, second=ss, epoch=timescale.time._tide_epoch)
 
     # extract amplitude and phase from tide model
     amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(

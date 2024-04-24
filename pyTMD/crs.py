@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 crs.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (04/2024)
 Coordinates Reference System (CRS) routines
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 12/2023: converted conversion functions to class
     Updated 03/2023: add basic variable typing to function inputs
@@ -52,12 +53,9 @@ from __future__ import annotations
 
 import logging
 import numpy as np
-
+from pyTMD.utilities import import_dependency
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pyproj = import_dependency('pyproj')
 
 class crs:
     """Coordinate Reference System transformations for tide models

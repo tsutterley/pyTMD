@@ -51,7 +51,7 @@ Load and ocean pole tides are driven by variations in the Earth's figure axis (e
 These pole tides are due to Earth's ellipsoidal shape shifting as the rotation axis of the Earth
 moves with respect to the mean pole location, and for the case of ocean pole tides the centripetal effects of polar motion on the ocean [Desai2002]_ [Desai2015]_.
 The formalism for estimating the pole tides is also based upon `IERS Conventions <https://iers-conventions.obspm.fr/>`_.
-The Earth Orientation Parameters (EOPs) necessary for computing load pole and ocean pole tide variations are included within ``pyTMD``.
+``pyTMD`` uses the ``timescale`` library for reading the Earth Orientation Parameters (EOPs) necessary for computing load pole and ocean pole tide variations.
 The currently accepted formalism for estimating the reference position of the Earth's figure axis at a given date is the `IERS 2018 secular pole model <https://iers-conventions.obspm.fr/chapter7.php>`_:
 
 .. math::

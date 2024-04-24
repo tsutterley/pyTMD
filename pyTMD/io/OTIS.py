@@ -52,7 +52,7 @@ PYTHON DEPENDENCIES:
     scipy: Scientific Tools for Python
         https://docs.scipy.org/doc/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
@@ -128,12 +128,10 @@ import scipy.interpolate
 import pyTMD.crs
 import pyTMD.interpolate
 import pyTMD.io.constituents
+from pyTMD.utilities import import_dependency
 
 # attempt imports
-try:
-    import netCDF4
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.debug("netCDF4 not available")
+netCDF4 = import_dependency('netCDF4')
 
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_OPT_displacements.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (04/2024)
 Calculates radial ocean pole load tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -64,7 +64,7 @@ PYTHON DEPENDENCIES:
     h5py: Python interface for Hierarchal Data Format 5 (HDF5)
         https://www.h5py.org/
     netCDF4: Python interface to the netCDF C library
-         https://unidata.github.io/netcdf4-python/netCDF4/index.html
+        https://unidata.github.io/netcdf4-python/netCDF4/index.html
     gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
         https://pypi.python.org/pypi/GDAL
     pandas: Python Data Analysis Library
@@ -73,13 +73,13 @@ PYTHON DEPENDENCIES:
         https://dateutil.readthedocs.io/en/stable/
     pyproj: Python interface to PROJ library
         https://pypi.org/project/pyproj/
+    timescale: Python tools for time and astronomical calculations
+        https://pypi.org/project/timescale/
 
 PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
-    time.py: utilities for calculating time operations
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
-    eop.py: utilities for calculating Earth Orientation Parameters (EOP)
     io/ocean_pole_tide.py: read ocean pole load tide map from IERS
 
 REFERENCES:
@@ -90,6 +90,9 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 04/2024: use timescale for EOP and temporal operations
+        add debug mode printing input arguments and additional information
+        use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 12/2023: use new crs class to get projection information
     Updated 10/2023: can write datetime as time column for csv files
@@ -129,22 +132,28 @@ UPDATE HISTORY:
 from __future__ import print_function
 
 import sys
+import os
 import logging
 import pathlib
 import argparse
+import traceback
 import numpy as np
 import scipy.interpolate
-import pyTMD
+import pyTMD.utilities
+import timescale.time
 
 # attempt imports
-try:
-    import pandas as pd
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pandas not available")
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pd = pyTMD.utilities.import_dependency('pandas')
+pyproj = pyTMD.utilities.import_dependency('pyproj')
+
+# PURPOSE: keep track of threads
+def info(args):
+    logging.debug(pathlib.Path(sys.argv[0]).name)
+    logging.debug(args)
+    logging.debug(f'module name: {__name__}')
+    if hasattr(os, 'getppid'):
+        logging.debug(f'parent process: {os.getppid():d}')
+    logging.debug(f'process id: {os.getpid():d}')
 
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
@@ -181,12 +190,7 @@ def compute_OPT_displacements(input_file, output_file,
     CONVENTION='2018',
     METHOD='spline',
     FILL_VALUE=-9999.0,
-    VERBOSE=False,
     MODE=0o775):
-
-    # create logger for verbosity level
-    loglevel = logging.INFO if VERBOSE else logging.CRITICAL
-    logging.basicConfig(level=loglevel)
 
     # read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
@@ -235,26 +239,26 @@ def compute_OPT_displacements(input_file, output_file,
     # extract time units from netCDF4 and HDF5 attributes or from TIME_UNITS
     try:
         time_string = attributes['time']['units']
-        epoch1, to_secs = pyTMD.time.parse_date_string(time_string)
+        epoch1, to_secs = timescale.time.parse_date_string(time_string)
     except (TypeError, KeyError, ValueError):
-        epoch1, to_secs = pyTMD.time.parse_date_string(TIME_UNITS)
+        epoch1, to_secs = timescale.time.parse_date_string(TIME_UNITS)
 
     # convert delta times or datetimes objects to timescale
     if (TIME_STANDARD.lower() == 'datetime'):
-        timescale = pyTMD.time.timescale().from_datetime(
+        ts = timescale.time.Timescale().from_datetime(
             np.ravel(dinput['time']))
     else:
         # convert time to seconds
         delta_time = to_secs*np.ravel(dinput['time'])
-        timescale = pyTMD.time.timescale().from_deltatime(delta_time,
+        ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=epoch1, standard=TIME_STANDARD)
 
     # convert dynamic time to Modified Julian Days (MJD)
-    MJD = timescale.tt - 2400000.5
+    MJD = ts.tt - 2400000.5
     # convert Julian days to calendar dates
-    Y,M,D,h,m,s = pyTMD.time.convert_julian(timescale.tt, format='tuple')
+    Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
     # calculate time in year-decimal format
-    time_decimal = pyTMD.time.convert_calendar_decimal(Y,M,day=D,
+    time_decimal = timescale.time.convert_calendar_decimal(Y,M,day=D,
         hour=h,minute=m,second=s)
     # number of time points
     nt = len(time_decimal)
@@ -286,9 +290,10 @@ def compute_OPT_displacements(input_file, output_file,
     K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
 
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = pyTMD.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
+        convention=CONVENTION)
     # read and interpolate IERS daily polar motion values
-    px, py = pyTMD.eop.iers_polar_motion(MJD, k=3, s=0)
+    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
     mx = px - mpx
     my = -(py - mpy)
@@ -316,22 +321,28 @@ def compute_OPT_displacements(input_file, output_file,
         Urad = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         Urad.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
-            URAD = K*atr*np.real((mx[i]*gamma.real + my[i]*gamma.imag)*UR.real +
-                (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag)
+            URAD = K*atr*np.real(
+                (mx[i]*gamma.real + my[i]*gamma.imag)*UR.real +
+                (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag
+            )
             # reform grid
             Urad.data[:,:,i] = np.reshape(URAD, (ny,nx))
             Urad.mask[:,:,i] = np.isnan(Urad.data[:,:,i])
     elif (TYPE == 'drift'):
         Urad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Urad.data[:] = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
-            (my*gamma.real - mx*gamma.imag)*UR.imag)
+        Urad.data[:] = K*atr*np.real(
+            (mx*gamma.real + my*gamma.imag)*UR.real +
+            (my*gamma.real - mx*gamma.imag)*UR.imag
+        )
         Urad.mask = np.isnan(Urad.data)
     elif (TYPE == 'time series'):
         Urad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         Urad.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
-            URAD = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real[s] +
-                (my*gamma.real - mx*gamma.imag)*UR.imag[s])
+            URAD = K*atr*np.real(
+                (mx*gamma.real + my*gamma.imag)*UR.real[s] +
+                (my*gamma.real - mx*gamma.imag)*UR.imag[s]
+            )
             Urad.data[s,:] = np.copy(URAD)
             Urad.mask[s,:] = np.isnan(Urad.data[s,:])
     # replace invalid data with fill values
@@ -365,10 +376,10 @@ def compute_OPT_displacements(input_file, output_file,
     # output data dictionary
     output = {'lon':lon, 'lat':lat, 'tide_oc_pole':Urad}
     if (FORMAT == 'csv') and (TIME_STANDARD.lower() == 'datetime'):
-        output['time'] = timescale.to_string()
+        output['time'] = ts.to_string()
     else:
         attrib['time']['units'] = 'days since 1992-01-01T00:00:00'
-        output['time'] = timescale.tide
+        output['time'] = ts.tide
 
     # output to file
     if (FORMAT == 'csv'):
@@ -457,7 +468,7 @@ def arguments():
         help='Ellipsoid for calculating load pole tide parameters')
     # Earth orientation parameters
     parser.add_argument('--convention','-c',
-        type=str, choices=pyTMD.eop._conventions, default='2018',
+        type=str, choices=timescale.eop._conventions, default='2018',
         help='IERS mean or secular pole convention')
     # interpolation method
     parser.add_argument('--interpolate','-I',
@@ -469,10 +480,10 @@ def arguments():
         type=float, default=-9999.0,
         help='Invalid value for spatial fields')
     # verbose output of processing run
-    # print information about each input and output file
+    # print information about processing run
     parser.add_argument('--verbose','-V',
-        default=False, action='store_true',
-        help='Verbose output of run')
+        action='count', default=0,
+        help='Verbose output of processing run')
     # permissions mode of the local files (number in octal)
     parser.add_argument('--mode','-M',
         type=lambda x: int(x,base=8), default=0o775,
@@ -486,28 +497,39 @@ def main():
     parser = arguments()
     args,_ = parser.parse_known_args()
 
+    # create logger
+    loglevels = [logging.CRITICAL, logging.INFO, logging.DEBUG]
+    logging.basicConfig(level=loglevels[args.verbose])
+
     # set output file from input filename if not entered
     if not args.outfile:
         vars = (args.infile.stem,'ocean_pole_tide',args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}'.format(*vars))
 
-    # run ocean pole tide program for input file
-    compute_OPT_displacements(args.infile, args.outfile,
-        FORMAT=args.format,
-        VARIABLES=args.variables,
-        HEADER=args.header,
-        DELIMITER=args.delimiter,
-        TYPE=args.type,
-        TIME_UNITS=args.epoch,
-        TIME=args.deltatime,
-        TIME_STANDARD=args.standard,
-        PROJECTION=args.projection,
-        ELLIPSOID=args.ellipsoid,
-        CONVENTION=args.convention,
-        METHOD=args.interpolate,
-        FILL_VALUE=args.fill_value,
-        VERBOSE=args.verbose,
-        MODE=args.mode)
+    # try to run ocean pole tide program for input file
+    try:
+        info(args)
+        compute_OPT_displacements(args.infile, args.outfile,
+            FORMAT=args.format,
+            VARIABLES=args.variables,
+            HEADER=args.header,
+            DELIMITER=args.delimiter,
+            TYPE=args.type,
+            TIME_UNITS=args.epoch,
+            TIME=args.deltatime,
+            TIME_STANDARD=args.standard,
+            PROJECTION=args.projection,
+            ELLIPSOID=args.ellipsoid,
+            CONVENTION=args.convention,
+            METHOD=args.interpolate,
+            FILL_VALUE=args.fill_value,
+            MODE=args.mode)
+    except Exception as exc:
+        # if there has been an error exception
+        # print the type, value, and stack trace of the
+        # current exception being handled
+        logging.critical(f'process id {os.getpid():d} failed')
+        logging.error(traceback.format_exc())
 
 # run main program
 if __name__ == '__main__':
