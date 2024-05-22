@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 forward.py
-Written by Tyler Sutterley (03/2024)
+Written by Tyler Sutterley (05/2024)
 Class for estimating non-linear parameters with a finite difference model
 using a Crank-Nicolson scheme
 
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for files
 
 UPDATE HISTORY:
+    Updated 05/2024: make subscriptable and allow item assignment
     Written 03/2024
 """
 from __future__ import annotations
@@ -493,3 +494,9 @@ class forward(model):
         # add to counter
         self.__index__ += 1
         return self
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)

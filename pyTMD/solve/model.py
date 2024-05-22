@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (05/2024)
 Base class for estimating tidal constituents using hydrodynamic modeling
 
 REFERENCES:
@@ -25,6 +25,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for files
 
 UPDATE HISTORY:
+    Updated 05/2024: make subscriptable and allow item assignment
     Written 02/2024
 """
 from __future__ import annotations
@@ -260,3 +261,9 @@ class model:
         shape = ', '.join(map(str, self.shape))
         properties.append(f"    shape: {shape}")
         return '\n'.join(properties)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (05/2024)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: append v-components of velocity only to netcdf format
     Updated 11/2023: revert TPXO9-atlas currents changes to separate dicts
     Updated 09/2023: fix scale values for TPXO9-atlas currents
@@ -1609,3 +1610,9 @@ class model:
         properties = ['pyTMD.io.model']
         properties.append(f"    name: {self.name}")
         return '\n'.join(properties)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)

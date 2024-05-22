@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 crs.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (05/2024)
 Coordinates Reference System (CRS) routines
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 12/2023: converted conversion functions to class
@@ -352,6 +353,12 @@ class crs:
         properties.append(f"    name: {self.name}")
         properties.append(f"    direction: {self.direction.name}")
         return '\n'.join(properties)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
 
 _ellipsoids = ['CLK66', 'GRS67', 'GRS80', 'WGS72', 'WGS84', 'ATS77',
     'NAD27', 'NAD83', 'INTER', 'KRASS', 'MAIRY', 'HGH80', 'TOPEX',
@@ -727,3 +734,9 @@ class datum:
         properties.append(f"    name: {self.name}")
         properties.append(f"    units: {self.units}")
         return '\n'.join(properties)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
