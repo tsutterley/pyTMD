@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (05/2024)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -96,6 +96,8 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 05/2024: use function to reading parquet files to allow
+        reading and parsing of geometry column from geopandas datasets
     Updated 04/2024: use timescale for temporal operations
         add debug mode printing input arguments and additional information
         use wrapper to importlib for optional dependencies
@@ -238,12 +240,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         dinput = pyTMD.spatial.from_geotiff(input_file)
         attributes = dinput['attributes']
     elif (FORMAT == 'parquet'):
-        logging.info(str(input_file))
-        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
-        remap = pyTMD.spatial.inverse_mapping(field_mapping)
-        dinput = pd.read_parquet(input_file, columns=VARIABLES)
-        dinput.rename(columns=remap, inplace=True)
-        attributes = {}
+        dinput = pyTMD.spatial.from_parquet(input_file, columns=VARIABLES)
+        attributes = dinput.attrs
     # update time variable if entered as argument
     if TIME is not None:
         dinput['time'] = np.copy(TIME)

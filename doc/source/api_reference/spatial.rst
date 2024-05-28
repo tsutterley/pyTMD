@@ -4,9 +4,6 @@ spatial
 
 Utilities for reading, writing and operating on spatial data
 
- - Can read ascii, netCDF4, HDF5 or geotiff files
- - Can output to ascii, netCDF4, HDF5 or geotiff files
-
 Calling Sequence
 ----------------
 
@@ -43,6 +40,8 @@ General Methods
 .. autofunction:: pyTMD.spatial.from_netCDF4
 
 .. autofunction:: pyTMD.spatial.from_HDF5
+
+.. autofunction:: pyTMD.spatial.from_parquet
 
 .. autofunction:: pyTMD.spatial.from_geotiff
 

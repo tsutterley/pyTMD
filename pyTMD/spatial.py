@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (05/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -15,8 +15,14 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
         https://pypi.python.org/pypi/GDAL
+    pandas: Python Data Analysis Library
+        https://pandas.pydata.org/
+    PyArrow: Apache Arrow Python bindings
+        https://arrow.apache.org/docs/python/
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
+    shapely: PostGIS-ish operations outside a database context for Python
+        http://toblerity.org/shapely/index.html
     timescale: Python tools for time and astronomical calculations
         https://pypi.org/project/timescale/
 
@@ -24,6 +30,8 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 05/2024: added function to read from parquet files
+        allowing for decoding of the geometry column from WKB
     Updated 04/2024: use timescale for temporal operations
         use wrapper to importlib for optional dependencies
     Updated 03/2024: can calculate polar stereographic distortion for distances
@@ -80,6 +88,7 @@ import re
 import io
 import copy
 import gzip
+import json
 import uuid
 import logging
 import pathlib
@@ -97,6 +106,9 @@ osr = import_dependency('osgeo.osr')
 gdalconst = import_dependency('osgeo.gdalconst')
 h5py = import_dependency('h5py')
 netCDF4 = import_dependency('netCDF4')
+pd = import_dependency('pandas')
+parquet = import_dependency('pyarrow.parquet')
+shapely = import_dependency('shapely')
 yaml = import_dependency('yaml')
 
 def case_insensitive_filename(filename: str | pathlib.Path):
@@ -512,6 +524,46 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
     # Closing the HDF5 file
     fileID.close()
     # return the spatial variables
+    return dinput
+
+def from_parquet(filename: str, **kwargs):
+    """
+    Read data from a parquet file
+
+    Parameters
+    ----------
+    filename: str
+        full path of input ascii file
+    columns: list or None, default None
+        column names of parquet file
+    """
+    # set default keyword arguments
+    kwargs.setdefault('columns', None)
+    filename = case_insensitive_filename(filename)
+    # read input parquet file and reset index
+    dinput = pd.read_parquet(filename).reset_index()
+    # decode geometry from WKB and extract x and y coordinates
+    if 'geometry' in dinput.columns:
+        geometry = dinput['geometry'].apply(shapely.from_wkb)
+        dinput['x'] = geometry.apply(lambda d: d.x)
+        dinput['y'] = geometry.apply(lambda d: d.y)
+    # remap columns to default names
+    if kwargs['columns'] is not None:
+        field_mapping = default_field_mapping(kwargs['columns'])
+        remap = inverse_mapping(field_mapping)
+        dinput.rename(columns=remap, inplace=True)
+    # get parquet file metadata
+    metadata = parquet.read_metadata(filename).metadata
+    attributes = {}
+    # decode parquet metadata from JSON
+    for att_name, val in metadata.items():
+        try:
+            att_val = json.loads(val.decode('utf-8'))
+            attributes[att_name.decode('utf-8')] = att_val
+        except Exception as exc:
+            pass
+    # return the data and attributes
+    dinput.attrs = copy.copy(attributes)
     return dinput
 
 def from_geotiff(filename: str, **kwargs):
