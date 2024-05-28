@@ -16,7 +16,7 @@ INPUTS:
 COMMAND LINE OPTIONS:
     -F X, --format X: input and output data format
         csv (default)
-        netCDF44
+        netCDF4
         HDF5
         parquet
         geotiff
