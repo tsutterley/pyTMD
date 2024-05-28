@@ -540,8 +540,11 @@ def from_parquet(filename: str, **kwargs):
     # set default keyword arguments
     kwargs.setdefault('columns', None)
     filename = case_insensitive_filename(filename)
-    # read input parquet file and reset index
-    dinput = pd.read_parquet(filename).reset_index()
+    # read input parquet file
+    dinput = pd.read_parquet(filename)
+    # reset the dataframe index if not a range index
+    if not isinstance(dinput.index, pd.RangeIndex):
+        dinput.reset_index()
     # decode geometry from WKB and extract x and y coordinates
     if 'geometry' in dinput.columns:
         geometry = dinput['geometry'].apply(shapely.from_wkb)
