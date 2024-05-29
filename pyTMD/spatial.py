@@ -574,15 +574,15 @@ def from_parquet(filename: str, **kwargs):
         crs_metadata = attr['geo']['columns']['geometry']['crs']
         EPSG = crs_metadata['id']['code']
     except Exception as exc:
-        # default to WGS84 (OGC:CRS84)
-        EPSG = 4326
-    # create spatial reference object from EPSG code
-    osr.UseExceptions()
-    srs = osr.SpatialReference()
-    srs.ImportFromEPSG(EPSG)
-    # add projection information to attributes
-    attr['projection'] = srs.ExportToProj4()
-    attr['wkt'] = srs.ExportToWkt()
+        pass
+    else:
+        # create spatial reference object from EPSG code
+        osr.UseExceptions()
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(EPSG)
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
     # return the data and attributes
     dinput.attrs = copy.copy(attr)
     return dinput
