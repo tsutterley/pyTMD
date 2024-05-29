@@ -32,6 +32,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 05/2024: added function to read from parquet files
         allowing for decoding of the geometry column from WKB
+        deprecation update to use exceptions with osgeo osr
     Updated 04/2024: use timescale for temporal operations
         use wrapper to importlib for optional dependencies
     Updated 03/2024: can calculate polar stereographic distortion for distances
@@ -403,6 +404,7 @@ def from_netCDF4(filename: str, **kwargs):
                 group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
+        osr.UseExceptions()
         srs = osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
@@ -513,6 +515,7 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
+        osr.UseExceptions()
         srs = osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
@@ -557,16 +560,31 @@ def from_parquet(filename: str, **kwargs):
         dinput.rename(columns=remap, inplace=True)
     # get parquet file metadata
     metadata = parquet.read_metadata(filename).metadata
-    attributes = {}
+    attr = {}
     # decode parquet metadata from JSON
     for att_name, val in metadata.items():
         try:
             att_val = json.loads(val.decode('utf-8'))
-            attributes[att_name.decode('utf-8')] = att_val
+            attr[att_name.decode('utf-8')] = att_val
         except Exception as exc:
             pass
+    # get the spatial projection reference information
+    # if the geometry column has a crs attribute
+    try:
+        crs_metadata = attr['geo']['columns']['geometry']['crs']
+        EPSG = crs_metadata['id']['code']
+    except Exception as exc:
+        # default to WGS84 (OGC:CRS84)
+        EPSG = 4326
+    # create spatial reference object from EPSG code
+    osr.UseExceptions()
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(EPSG)
+    # add projection information to attributes
+    attr['projection'] = srs.ExportToProj4()
+    attr['wkt'] = srs.ExportToWkt()
     # return the data and attributes
-    dinput.attrs = copy.copy(attributes)
+    dinput.attrs = copy.copy(attr)
     return dinput
 
 def from_geotiff(filename: str, **kwargs):
@@ -1030,6 +1048,7 @@ def to_geotiff(
     dx, dy = attributes['spacing']
     ds.SetGeoTransform([xmin, dx, 0, ymax, 0, dy])
     # set the spatial projection reference information
+    osr.UseExceptions()
     srs = osr.SpatialReference()
     srs.ImportFromWkt(attributes['wkt'])
     # export
