@@ -120,9 +120,10 @@ def import_dependency(
     # check if the module name is a string
     msg = f"Invalid module name: '{name}'; must be a string"
     assert isinstance(name, str), msg
-    # try to import the module
+    # default error if module cannot be imported
     err = f"Missing optional dependency '{name}'. {extra}"
-    module = None
+    module = type('module', (), {})
+    # try to import the module
     try:
         module = importlib.import_module(name)
     except (ImportError, ModuleNotFoundError) as exc:
