@@ -41,9 +41,11 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.from_HDF5
 
+.. autofunction:: pyTMD.spatial.from_geotiff
+
 .. autofunction:: pyTMD.spatial.from_parquet
 
-.. autofunction:: pyTMD.spatial.from_geotiff
+.. autofunction:: pyTMD.spatial.to_file
 
 .. autofunction:: pyTMD.spatial.to_ascii
 

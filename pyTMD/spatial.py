@@ -195,6 +195,8 @@ def from_file(filename: str, format: str, **kwargs):
         dinput = from_HDF5(filename, **kwargs)
     elif (format == 'geotiff'):
         dinput = from_geotiff(filename, **kwargs)
+    elif (format == 'parquet'):
+        dinput = from_parquet(filename, **kwargs)
     else:
         raise ValueError(f'Invalid format {format}')
     return dinput
@@ -533,66 +535,6 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
     # return the spatial variables
     return dinput
 
-def from_parquet(filename: str, **kwargs):
-    """
-    Read data from a parquet file
-
-    Parameters
-    ----------
-    filename: str
-        full path of input ascii file
-    columns: list or None, default None
-        column names of parquet file
-    """
-    # set default keyword arguments
-    kwargs.setdefault('columns', None)
-    filename = case_insensitive_filename(filename)
-    # read input parquet file
-    dinput = pd.read_parquet(filename)
-    # output parquet file information
-    attr = dict(geoparquet=False)
-    # reset the dataframe index if not a range index
-    if not isinstance(dinput.index, pd.RangeIndex):
-        dinput.reset_index()
-    # decode geometry from WKB and extract x and y coordinates
-    if 'geometry' in dinput.columns:
-        attr['geoparquet'] = True
-        geometry = dinput['geometry'].apply(shapely.from_wkb)
-        dinput['x'] = geometry.apply(lambda d: d.x)
-        dinput['y'] = geometry.apply(lambda d: d.y)
-    # remap columns to default names
-    if kwargs['columns'] is not None:
-        field_mapping = default_field_mapping(kwargs['columns'])
-        remap = inverse_mapping(field_mapping)
-        dinput.rename(columns=remap, inplace=True)
-    # get parquet file metadata
-    metadata = pyarrow.parquet.read_metadata(filename).metadata
-    # decode parquet metadata from JSON
-    for att_name, val in metadata.items():
-        try:
-            att_val = json.loads(val.decode('utf-8'))
-            attr[att_name.decode('utf-8')] = att_val
-        except Exception as exc:
-            pass
-    # get the spatial projection reference information
-    # if the geometry column has a crs attribute
-    try:
-        crs_metadata = attr['geo']['columns']['geometry']['crs']
-        EPSG = crs_metadata['id']['code']
-    except Exception as exc:
-        pass
-    else:
-        # create spatial reference object from EPSG code
-        osgeo.osr.UseExceptions()
-        srs = osgeo.osr.SpatialReference()
-        srs.ImportFromEPSG(EPSG)
-        # add projection information to attributes
-        attr['projection'] = srs.ExportToProj4()
-        attr['wkt'] = srs.ExportToWkt()
-    # return the data and attributes
-    dinput.attrs = copy.copy(attr)
-    return dinput
-
 def from_geotiff(filename: str, **kwargs):
     """
     Read data from a geotiff file
@@ -693,7 +635,109 @@ def from_geotiff(filename: str, **kwargs):
     # return the spatial variables
     return dinput
 
-def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
+def from_parquet(filename: str, **kwargs):
+    """
+    Read data from a parquet file
+
+    Parameters
+    ----------
+    filename: str
+        full path of input ascii file
+    columns: list or None, default None
+        column names of parquet file
+    """
+    # set default keyword arguments
+    kwargs.setdefault('columns', None)
+    filename = case_insensitive_filename(filename)
+    # read input parquet file
+    dinput = pd.read_parquet(filename)
+    # output parquet file information
+    attr = dict(geoparquet=False)
+    # reset the dataframe index if not a range index
+    if not isinstance(dinput.index, pd.RangeIndex):
+        dinput.reset_index()
+    # decode geometry from WKB and extract x and y coordinates
+    if 'geometry' in dinput.columns:
+        attr['geoparquet'] = True
+        geometry = dinput['geometry'].apply(shapely.from_wkb)
+        dinput['x'] = geometry.apply(lambda d: d.x)
+        dinput['y'] = geometry.apply(lambda d: d.y)
+    # remap columns to default names
+    if kwargs['columns'] is not None:
+        field_mapping = default_field_mapping(kwargs['columns'])
+        remap = inverse_mapping(field_mapping)
+        dinput.rename(columns=remap, inplace=True)
+    # get parquet file metadata
+    metadata = pyarrow.parquet.read_metadata(filename).metadata
+    # decode parquet metadata from JSON
+    for att_name, val in metadata.items():
+        try:
+            att_val = json.loads(val.decode('utf-8'))
+            attr[att_name.decode('utf-8')] = att_val
+        except Exception as exc:
+            pass
+    # get the spatial projection reference information
+    # if the geometry column has a crs attribute
+    try:
+        crs_metadata = attr['geo']['columns']['geometry']['crs']
+        EPSG = crs_metadata['id']['code']
+    except Exception as exc:
+        pass
+    else:
+        # create spatial reference object from EPSG code
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.ImportFromEPSG(EPSG)
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
+    # return the data and attributes
+    dinput.attrs = copy.copy(attr)
+    return dinput
+
+def to_file(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        format: str,
+        **kwargs
+    ):
+    """
+    Wrapper function for writing data to an output format
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str or pathlib.Path,
+        full path of output file
+    format: str
+        format of output file
+    **kwargs: dict
+        Keyword arguments for file writer
+    """
+    # read input file to extract spatial coordinates and data
+    if (format == 'ascii'):
+        to_ascii(output, attributes, filename, **kwargs)
+    elif (format == 'netCDF4'):
+        to_netCDF4(output, attributes, filename, **kwargs)
+    elif (format == 'HDF5'):
+        to_HDF5(output, attributes, filename, **kwargs)
+    elif (format == 'geotiff'):
+        to_geotiff(output, attributes, filename, **kwargs)
+    elif (format == 'parquet'):
+        to_parquet(output, attributes, filename, **kwargs)
+    else:
+        raise ValueError(f'Invalid format {format}')
+
+def to_ascii(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        **kwargs
+    ):
     """
     Write data to an ascii file
 
@@ -703,7 +747,7 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output ascii file
     delimiter: str, default ','
         delimiter for output spatial file
@@ -775,7 +819,7 @@ def to_netCDF4(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output netCDF4 file
     mode: str, default 'w'
         NetCDF file mode
@@ -950,7 +994,7 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
 def to_HDF5(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -962,7 +1006,7 @@ def to_HDF5(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output HDF5 file
     mode: str, default 'w'
         HDF5 file mode
@@ -1010,7 +1054,7 @@ def to_HDF5(
 def to_geotiff(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -1022,7 +1066,7 @@ def to_geotiff(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output geotiff file
     varname: str, default 'data'
         output variable name
@@ -1079,7 +1123,7 @@ def to_geotiff(
 def to_parquet(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -1091,7 +1135,7 @@ def to_parquet(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path,
         full path of output HDF5 file
     index: bool, default None
         write index to parquet file
