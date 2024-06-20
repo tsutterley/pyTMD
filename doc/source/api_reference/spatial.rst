@@ -59,6 +59,8 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.to_geotiff
 
+.. autofunction:: pyTMD.spatial.to_parquet
+
 .. autofunction:: pyTMD.spatial.expand_dims
 
 .. autofunction:: pyTMD.spatial.default_field_mapping
