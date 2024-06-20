@@ -1127,7 +1127,7 @@ def to_parquet(
         **kwargs
     ):
     """
-    Write data to a HDF5 file
+    Write data to a (geo)parquet file
 
     Parameters
     ----------
@@ -1136,7 +1136,7 @@ def to_parquet(
     attributes: dict
         python dictionary of output attributes
     filename: str or pathlib.Path,
-        full path of output HDF5 file
+        full path of output parquet file
     index: bool, default None
         write index to parquet file
     compression: str, default 'snappy'
