@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (05/2024)
+Written by Tyler Sutterley (06/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 06/2024: added function to write parquet files with metadata
     Updated 05/2024: added function to read from parquet files
         allowing for decoding of the geometry column from WKB
         deprecation update to use exceptions with osgeo osr
@@ -102,14 +103,17 @@ import pyTMD.version
 import timescale.time
 
 # attempt imports
-gdal = import_dependency('osgeo.gdal')
-osr = import_dependency('osgeo.osr')
-gdalconst = import_dependency('osgeo.gdalconst')
+osgeo = import_dependency('osgeo')
+osgeo.gdal = import_dependency('osgeo.gdal')
+osgeo.osr = import_dependency('osgeo.osr')
+osgeo.gdalconst = import_dependency('osgeo.gdalconst')
 h5py = import_dependency('h5py')
 netCDF4 = import_dependency('netCDF4')
 pd = import_dependency('pandas')
-parquet = import_dependency('pyarrow.parquet')
+pyarrow = import_dependency('pyarrow')
+pyarrow.parquet = import_dependency('pyarrow.parquet')
 shapely = import_dependency('shapely')
+shapely.geometry = import_dependency('shapely.geometry')
 yaml = import_dependency('yaml')
 
 def case_insensitive_filename(filename: str | pathlib.Path):
@@ -404,8 +408,8 @@ def from_netCDF4(filename: str, **kwargs):
                 group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
-        osr.UseExceptions()
-        srs = osr.SpatialReference()
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
@@ -515,8 +519,8 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
-        osr.UseExceptions()
-        srs = osr.SpatialReference()
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
@@ -545,11 +549,14 @@ def from_parquet(filename: str, **kwargs):
     filename = case_insensitive_filename(filename)
     # read input parquet file
     dinput = pd.read_parquet(filename)
+    # output parquet file information
+    attr = dict(geoparquet=False)
     # reset the dataframe index if not a range index
     if not isinstance(dinput.index, pd.RangeIndex):
         dinput.reset_index()
     # decode geometry from WKB and extract x and y coordinates
     if 'geometry' in dinput.columns:
+        attr['geoparquet'] = True
         geometry = dinput['geometry'].apply(shapely.from_wkb)
         dinput['x'] = geometry.apply(lambda d: d.x)
         dinput['y'] = geometry.apply(lambda d: d.y)
@@ -559,8 +566,7 @@ def from_parquet(filename: str, **kwargs):
         remap = inverse_mapping(field_mapping)
         dinput.rename(columns=remap, inplace=True)
     # get parquet file metadata
-    metadata = parquet.read_metadata(filename).metadata
-    attr = {}
+    metadata = pyarrow.parquet.read_metadata(filename).metadata
     # decode parquet metadata from JSON
     for att_name, val in metadata.items():
         try:
@@ -577,8 +583,8 @@ def from_parquet(filename: str, **kwargs):
         pass
     else:
         # create spatial reference object from EPSG code
-        osr.UseExceptions()
-        srs = osr.SpatialReference()
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
         srs.ImportFromEPSG(EPSG)
         # add projection information to attributes
         attr['projection'] = srs.ExportToProj4()
@@ -607,16 +613,16 @@ def from_geotiff(filename: str, **kwargs):
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
         mmap_name = f"/vsigzip/{str(case_insensitive_filename(filename))}"
-        ds = gdal.Open(mmap_name)
+        ds = osgeo.gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         # read as GDAL memory-mapped (diskless) geotiff dataset
         mmap_name = f"/vsimem/{uuid.uuid4().hex}"
-        gdal.FileFromMemBuffer(mmap_name, filename.read())
-        ds = gdal.Open(mmap_name)
+        osgeo.gdal.FileFromMemBuffer(mmap_name, filename.read())
+        ds = osgeo.gdal.Open(mmap_name)
     else:
         # read geotiff dataset
-        ds = gdal.Open(str(case_insensitive_filename(filename)),
-            gdalconst.GA_ReadOnly)
+        ds = osgeo.gdal.Open(str(case_insensitive_filename(filename)),
+            osgeo.gdalconst.GA_ReadOnly)
     # print geotiff file if verbose
     logging.info(str(filename))
     # create python dictionary for output variables and attributes
@@ -771,6 +777,8 @@ def to_netCDF4(
         python dictionary of output attributes
     filename: str
         full path of output netCDF4 file
+    mode: str, default 'w'
+        NetCDF file mode
     data_type: str, default 'drift'
         Input data type
 
@@ -857,7 +865,7 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     attributes: dict
         python dictionary of output attributes
     """
-    # input data fields
+    # output data fields
     dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
@@ -907,7 +915,7 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     attributes: dict
         python dictionary of output attributes
     """
-    # input data fields
+    # output data fields
     dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
@@ -956,6 +964,8 @@ def to_HDF5(
         python dictionary of output attributes
     filename: str
         full path of output HDF5 file
+    mode: str, default 'w'
+        HDF5 file mode
     """
     # set default keyword arguments
     kwargs.setdefault('mode', 'w')
@@ -1029,7 +1039,7 @@ def to_geotiff(
     # set default keyword arguments
     kwargs.setdefault('varname', 'data')
     kwargs.setdefault('driver', 'cog')
-    kwargs.setdefault('dtype', gdal.GDT_Float64)
+    kwargs.setdefault('dtype', osgeo.gdal.GDT_Float64)
     kwargs.setdefault('options', ['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
     # verify grid dimensions to be iterable
@@ -1037,7 +1047,7 @@ def to_geotiff(
     # grid shape
     ny, nx, nband = np.shape(output[varname])
     # output as geotiff or specified driver
-    driver = gdal.GetDriverByName(kwargs['driver'])
+    driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     # set up the dataset with creation options
     filename = pathlib.Path(filename).expanduser().absolute()
     ds = driver.Create(str(filename), nx, ny, nband,
@@ -1048,8 +1058,8 @@ def to_geotiff(
     dx, dy = attributes['spacing']
     ds.SetGeoTransform([xmin, dx, 0, ymax, 0, dy])
     # set the spatial projection reference information
-    osr.UseExceptions()
-    srs = osr.SpatialReference()
+    osgeo.osr.UseExceptions()
+    srs = osgeo.osr.SpatialReference()
     srs.ImportFromWkt(attributes['wkt'])
     # export
     ds.SetProjection( srs.ExportToWkt() )
@@ -1065,6 +1075,67 @@ def to_geotiff(
     logging.info(str(filename))
     # close dataset
     ds.FlushCache()
+
+def to_parquet(
+        output: dict,
+        attributes: dict,
+        filename: str,
+        **kwargs
+    ):
+    """
+    Write data to a HDF5 file
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str
+        full path of output HDF5 file
+    index: bool, default None
+        write index to parquet file
+    compression: str, default 'snappy'
+        file compression type
+    geoparquet: bool, default False
+        write geoparquet file
+    """
+    # set default keyword arguments
+    kwargs.setdefault('index', None)
+    kwargs.setdefault('compression', 'snappy')
+    kwargs.setdefault('geoparquet', False)
+    # convert to pandas dataframe
+    df = pd.DataFrame(output)
+    # convert spatial coordinates to WKB encoded geometry 
+    if kwargs['geoparquet']:
+        # get geometry columns
+        geometries = ['lon', 'x', 'lat', 'y']
+        geom_vars = [v for v in geometries if v in output.keys()]
+        # convert to shapely geometry
+        points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
+        df.drop(columns=geom_vars, inplace=True)
+        df['geometry'] = shapely.to_wkb(points)
+    # add attribute for date created
+    attributes['date_created'] = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    attributes['software_reference'] = pyTMD.version.project_name
+    attributes['software_version'] = pyTMD.version.full_version
+    # dump the attributes to encoded JSON-format
+    attr_metadata = json.dumps(attributes).encode('utf-8') 
+    # convert dataframe to arrow table
+    table = pyarrow.Table.from_pandas(df,
+        preserve_index=kwargs['index'])
+    # store sliderule specific file-level metadata
+    metadata = table.schema.metadata
+    metadata.update({b"pyTMD": attr_metadata})
+    # replace schema metadata with updated
+    table = table.replace_schema_metadata(metadata)
+    # write arrow table to (geo)parquet file
+    filename = pathlib.Path(filename).expanduser().absolute()
+    logging.info(str(filename))
+    pyarrow.parquet.write_table(table, filename,
+        compression=kwargs['compression']
+    )
 
 def expand_dims(obj: dict, varname: str = 'data'):
     """

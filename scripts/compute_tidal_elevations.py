@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (05/2024)
+Written by Tyler Sutterley (06/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -99,6 +99,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
     Updated 04/2024: use timescale for temporal operations
@@ -164,7 +165,6 @@ import pyTMD.utilities
 import timescale.time
 
 # attempt imports
-pd = pyTMD.utilities.import_dependency('pandas')
 pyproj = pyTMD.utilities.import_dependency('pyproj')
 
 # PURPOSE: keep track of threads
@@ -399,23 +399,27 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 
     # output to file
     if (FORMAT == 'csv'):
+        # write columnar data to ascii
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
             columns=['time','lat','lon',output_variable])
     elif (FORMAT == 'netCDF4'):
+        # write to netCDF4 for data type
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, data_type=TYPE)
     elif (FORMAT == 'HDF5'):
+        # write to HDF5
         pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
+        # write raster data to geotiff
         # copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = attributes[att_name]
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname=output_variable)
     elif (FORMAT == 'parquet'):
-        # write to parquet file
-        logging.info(str(output_file))
-        pd.DataFrame(output).to_parquet(output_file)
+        # write to (geo)parquet
+        pyTMD.spatial.to_parquet(output, attrib, output_file,
+            geoparquet=attributes['geoparquet'])
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
 

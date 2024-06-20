@@ -53,7 +53,6 @@ from __future__ import annotations
 import logging
 import warnings
 import numpy as np
-import scipy.interpolate
 import timescale.time
 
 # conversion factors between time units and seconds
