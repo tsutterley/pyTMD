@@ -91,6 +91,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 06/2024: include attributes in output parquet files
+        use np.clongdouble instead of np.longcomplex
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
     Updated 04/2024: use timescale for EOP and temporal operations
@@ -305,7 +306,7 @@ def compute_OPT_displacements(input_file, output_file,
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((len(latitude_geocentric)),dtype=np.longcomplex)
+        UR = np.zeros((len(latitude_geocentric)),dtype=np.clongdouble)
         UR.real = f1.ev(np.ravel(lon), latitude_geocentric)
         UR.imag = f2.ev(np.ravel(lon), latitude_geocentric)
     else:

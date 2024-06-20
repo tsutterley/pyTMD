@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 u"""
 test_ocean_pole_tide.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (06/2024)
 
 UPDATE HISTORY:
+    Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 04/2023: using pathlib to define and expand paths
     Updated 12/2022: single implicit import of pyTMD
@@ -101,7 +102,7 @@ def test_ocean_pole_tide(METHOD):
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((file_lines),dtype=np.longcomplex)
+        UR = np.zeros((file_lines),dtype=np.clongdouble)
         UR.real = f1.ev(test_header['longitude'], test_header['latitude'])
         UR.imag = f2.ev(test_header['longitude'], test_header['latitude'])
     else:

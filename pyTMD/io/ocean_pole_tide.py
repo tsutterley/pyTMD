@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ocean_pole_tide.py
-Written by Tyler Sutterley (05/2023)
+Written by Tyler Sutterley (06/2024)
 
 Reads ocean pole load tide coefficients provided by IERS
 http://maia.usno.navy.mil/conventions/2010/2010_official/chapter7/tn36_c7.pdf
@@ -31,6 +31,7 @@ REFERENCES:
         doi: 10.1007/s00190-015-0848-7
 
 UPDATE HISTORY:
+    Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 05/2023: add default for ocean pole tide file
     Updated 04/2023: using pathlib to define and expand paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -116,9 +117,9 @@ def ocean_pole_tide(input_file: str | pathlib.Path = _ocean_pole_tide_file):
     nlon = len(glon)
     nlat = len(glat)
     # allocate for output grid maps
-    ur = np.zeros((nlon,nlat),dtype=np.longcomplex)
-    un = np.zeros((nlon,nlat),dtype=np.longcomplex)
-    ue = np.zeros((nlon,nlat),dtype=np.longcomplex)
+    ur = np.zeros((nlon,nlat),dtype=np.clongdouble)
+    un = np.zeros((nlon,nlat),dtype=np.clongdouble)
+    ue = np.zeros((nlon,nlat),dtype=np.clongdouble)
     # read lines of file and add to output variables
     for i,line in enumerate(file_contents[count:]):
         ln,lt,urr,uri,unr,uni,uer,uei = np.array(line.split(), dtype='f8')
