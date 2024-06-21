@@ -655,13 +655,13 @@ def from_parquet(filename: str, **kwargs):
     # read input parquet file
     dinput = pd.read_parquet(filename)
     # output parquet file information
-    attr = dict(geoparquet=False)
+    attr = {}
     # reset the dataframe index if not a range index
     if not isinstance(dinput.index, pd.RangeIndex):
         dinput.reset_index(inplace=True, names=kwargs['index'])
     # decode geometry from WKB and extract x and y coordinates
     if 'geometry' in dinput.columns:
-        attr['geoparquet'] = True
+        attr['geoparquet'] = 'WKB'
         geometry = dinput['geometry'].apply(shapely.from_wkb)
         dinput['x'] = geometry.apply(lambda d: d.x)
         dinput['y'] = geometry.apply(lambda d: d.y)
@@ -1146,18 +1146,18 @@ def to_parquet(
         write index to parquet file
     compression: str, default 'snappy'
         file compression type
-    geoparquet: bool, default False
-        write geoparquet file
+    geoparquet: string or None, default None
+        encoding for geoparquet
     """
     # set default keyword arguments
     kwargs.setdefault('crs', None)
     kwargs.setdefault('index', None)
     kwargs.setdefault('compression', 'snappy')
-    kwargs.setdefault('geoparquet', False)
+    kwargs.setdefault('geoparquet', None)
     # convert to pandas dataframe
     df = pd.DataFrame(output)
     # convert spatial coordinates to WKB encoded geometry 
-    if kwargs['geoparquet']:
+    if (kwargs['geoparquet'] == 'WKB'):
         # get geometry columns
         geometries = ['lon', 'x', 'lat', 'y']
         geom_vars = [v for v in geometries if v in output.keys()]

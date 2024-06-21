@@ -284,7 +284,7 @@ def compute_LPET_elevations(input_file, output_file,
             varname='tide_lpe')
     elif (FORMAT == 'parquet'):
         # write to (geo)parquet
-        geoparquet = attributes.get('geoparquet', False)
+        geoparquet = attributes.get('geoparquet', None)
         pyTMD.spatial.to_parquet(output, attrib, output_file,
             geoparquet=geoparquet, crs=4326)
     # change the permissions level to MODE
