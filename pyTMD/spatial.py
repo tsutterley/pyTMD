@@ -642,11 +642,14 @@ def from_parquet(filename: str, **kwargs):
     Parameters
     ----------
     filename: str
-        full path of input ascii file
+        full path of input parquet file
+    index: str, default 'time'
+        name of index column
     columns: list or None, default None
         column names of parquet file
     """
     # set default keyword arguments
+    kwargs.setdefault('index', 'time')
     kwargs.setdefault('columns', None)
     filename = case_insensitive_filename(filename)
     # read input parquet file
@@ -655,7 +658,7 @@ def from_parquet(filename: str, **kwargs):
     attr = dict(geoparquet=False)
     # reset the dataframe index if not a range index
     if not isinstance(dinput.index, pd.RangeIndex):
-        dinput.reset_index()
+        dinput.reset_index(inplace=True, names=kwargs['index'])
     # decode geometry from WKB and extract x and y coordinates
     if 'geometry' in dinput.columns:
         attr['geoparquet'] = True
@@ -1137,6 +1140,8 @@ def to_parquet(
         python dictionary of output attributes
     filename: str or pathlib.Path,
         full path of output parquet file
+    crs: int, default None
+        coordinate reference system EPSG code
     index: bool, default None
         write index to parquet file
     compression: str, default 'snappy'
@@ -1145,6 +1150,7 @@ def to_parquet(
         write geoparquet file
     """
     # set default keyword arguments
+    kwargs.setdefault('crs', None)
     kwargs.setdefault('index', None)
     kwargs.setdefault('compression', 'snappy')
     kwargs.setdefault('geoparquet', False)
@@ -1159,6 +1165,19 @@ def to_parquet(
         points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
         df.drop(columns=geom_vars, inplace=True)
         df['geometry'] = shapely.to_wkb(points)
+        # drop attributes for geometry columns
+        [attributes.pop(v) for v in geom_vars]
+        # add attributes for geoparquet
+        attributes['encoding'] = 'WKB'
+        attributes['bbox'] = shapely.MultiPoint(points).bounds
+    # add coordinate reference system to attributes
+    if kwargs['crs']:
+        # create spatial reference object from EPSG code
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.ImportFromEPSG(kwargs['crs'])
+        # add projection information to attributes
+        attributes['crs'] = json.loads(srs.ExportToPROJJSON())
     # add attribute for date created
     attributes['date_created'] = datetime.datetime.now().isoformat()
     # add attributes for software information

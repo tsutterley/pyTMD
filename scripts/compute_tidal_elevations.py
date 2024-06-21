@@ -420,7 +420,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         # write to (geo)parquet
         geoparquet = attributes.get('geoparquet', False)
         pyTMD.spatial.to_parquet(output, attrib, output_file,
-            geoparquet=geoparquet)
+            geoparquet=geoparquet, crs=4326)
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
 
