@@ -608,7 +608,8 @@ def read_ascii_file(
     # calculate complex form of constituent oscillation
     mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
     hc = np.ma.array(amp*np.exp(-1j*ph*np.pi/180.0), mask=mask,
-        fill_value=np.ma.default_fill_value(np.dtype(complex)))
+        fill_value=np.ma.default_fill_value(np.dtype(complex)),
+        dtype=np.complex128)
     # return output variables
     return (hc, lon, lat)
 

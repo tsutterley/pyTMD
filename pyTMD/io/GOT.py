@@ -532,8 +532,8 @@ def read_ascii_file(
     # create output variables
     lat = np.linspace(ilat[0],ilat[1],nlat)
     lon = np.linspace(ilon[0],ilon[1],nlon)
-    amp = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float32)
-    ph = np.ma.zeros((nlat,nlon),fill_value=fill_value[0],dtype=np.float32)
+    amp = np.ma.zeros((nlat,nlon), fill_value=fill_value[0], dtype=np.float32)
+    ph = np.ma.zeros((nlat,nlon), fill_value=fill_value[0], dtype=np.float32)
     # create masks for output variables (0=valid)
     amp.mask = np.zeros((nlat,nlon),dtype=bool)
     ph.mask = np.zeros((nlat,nlon),dtype=bool)
@@ -544,20 +544,26 @@ def read_ascii_file(
     for i in range(nlat):
         for j in range(nlon//11):
             j1 = j*11
-            amp.data[i,j1:j1+11] = np.array(file_contents[l1].split(),dtype='f')
-            ph.data[i,j1:j1+11] = np.array(file_contents[l2].split(),dtype='f')
+            amplitude_data = file_contents[l1].split()
+            amp.data[i,j1:j1+11] = np.array(amplitude_data, dtype=np.float32)
+            phase_data = file_contents[l2].split()
+            ph.data[i,j1:j1+11] = np.array(phase_data, dtype=np.float32)
             l1 += 1
             l2 += 1
         # add last tidal variables
         j1 = (j+1)*11; j2 = nlon % 11
-        amp.data[i,j1:j1+j2] = np.array(file_contents[l1].split(),dtype='f')
-        ph.data[i,j1:j1+j2] = np.array(file_contents[l2].split(),dtype='f')
+        amplitude_data = file_contents[l1].split()
+        amp.data[i,j1:j1+j2] = np.array(amplitude_data, dtype=np.float32)
+        phase_data = file_contents[l2].split()
+        ph.data[i,j1:j1+j2] = np.array(phase_data, dtype=np.float32)
         l1 += 1
         l2 += 1
-    # calculate complex form of constituent oscillation
-    hc = amp*np.exp(-1j*ph*np.pi/180.0)
     # set masks
-    hc.mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
+    mask = (amp.data == amp.fill_value) | (ph.data == ph.fill_value)
+    # calculate complex form of constituent oscillation
+    hc = np.ma.array(amp*np.exp(-1j*ph*np.pi/180.0), mask=mask,
+        fill_value=np.ma.default_fill_value(np.dtype(complex)),
+        dtype=np.complex128)
     # return output variables
     return (hc, lon, lat, cons)
 

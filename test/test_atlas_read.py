@@ -336,8 +336,8 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
         val['longitude'][i] = np.float64(line_contents[1])
         val['height'][i] = np.float64(line_contents[4])
         # extract dates
-        MM,DD,YY = np.array(line_contents[2].split('.'),dtype='f')
-        hh,mm,ss = np.array(line_contents[3].split(':'),dtype='f')
+        MM,DD,YY = np.array(line_contents[2].split('.'), dtype='f8')
+        hh,mm,ss = np.array(line_contents[3].split(':'), dtype='f8')
         # convert from calendar dates into days since 1992-01-01T00:00:00
         val['time'][i] = timescale.time.convert_calendar_dates(YY, MM, DD,
             hour=hh, minute=mm, second=ss, epoch=timescale.time._tide_epoch)
