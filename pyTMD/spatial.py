@@ -96,6 +96,7 @@ import logging
 import pathlib
 import warnings
 import datetime
+import collections
 import numpy as np
 from pyTMD.crs import datum
 from pyTMD.utilities import import_dependency
@@ -647,29 +648,24 @@ def from_parquet(filename: str, **kwargs):
         name of index column
     columns: list or None, default None
         column names of parquet file
+    primary_column: str, default 'geometry'
+        default geometry column in geoparquet files
+    geometry_encoding: str, default 'WKB'
+        default encoding for geoparquet files
     """
     # set default keyword arguments
     kwargs.setdefault('index', 'time')
     kwargs.setdefault('columns', None)
+    kwargs.setdefault('primary_column', 'geometry')
+    kwargs.setdefault('geometry_encoding', 'WKB')
     filename = case_insensitive_filename(filename)
     # read input parquet file
     dinput = pd.read_parquet(filename)
-    # output parquet file information
-    attr = {}
     # reset the dataframe index if not a range index
     if not isinstance(dinput.index, pd.RangeIndex):
         dinput.reset_index(inplace=True, names=kwargs['index'])
-    # decode geometry from WKB and extract x and y coordinates
-    if 'geometry' in dinput.columns:
-        attr['geoparquet'] = 'WKB'
-        geometry = dinput['geometry'].apply(shapely.from_wkb)
-        dinput['x'] = geometry.apply(lambda d: d.x)
-        dinput['y'] = geometry.apply(lambda d: d.y)
-    # remap columns to default names
-    if kwargs['columns'] is not None:
-        field_mapping = default_field_mapping(kwargs['columns'])
-        remap = inverse_mapping(field_mapping)
-        dinput.rename(columns=remap, inplace=True)
+    # output parquet file information
+    attr = {}
     # get parquet file metadata
     metadata = pyarrow.parquet.read_metadata(filename).metadata
     # decode parquet metadata from JSON
@@ -679,21 +675,36 @@ def from_parquet(filename: str, **kwargs):
             attr[att_name.decode('utf-8')] = att_val
         except Exception as exc:
             pass
-    # get the spatial projection reference information
-    # if the geometry column has a crs attribute
-    try:
-        crs_metadata = attr['geo']['columns']['geometry']['crs']
-        EPSG = crs_metadata['id']['code']
-    except Exception as exc:
-        pass
-    else:
-        # create spatial reference object from EPSG code
+    # check if parquet file contains geometry metadata
+    attr['geoparquet'] = False
+    primary_column = kwargs['primary_column']
+    encoding = kwargs['geometry_encoding']
+    if 'geo' in attr.keys():
+        # extract crs and encoding from geoparquet metadata
+        primary_column = attr['geo']['primary_column']
+        crs_metadata = attr['geo']['columns'][primary_column]['crs']
+        encoding = attr['geo']['columns'][primary_column]['encoding']
+        attr['geometry_encoding'] = encoding
+        # create spatial reference object from PROJJSON
         osgeo.osr.UseExceptions()
         srs = osgeo.osr.SpatialReference()
-        srs.ImportFromEPSG(EPSG)
+        srs.SetFromUserInput(json.dumps(crs_metadata))
         # add projection information to attributes
         attr['projection'] = srs.ExportToProj4()
         attr['wkt'] = srs.ExportToWkt()
+    # extract x and y coordinates
+    if (encoding == 'WKB') and (primary_column in dinput.keys()):
+        # set as geoparquet file
+        attr['geoparquet'] = True
+        # decode geometry column from WKB
+        geometry = dinput[primary_column].apply(shapely.from_wkb)
+        dinput['x'] = geometry.apply(lambda d: d.x)
+        dinput['y'] = geometry.apply(lambda d: d.y)
+    # remap columns to default names
+    if kwargs['columns'] is not None:   
+        field_mapping = default_field_mapping(kwargs['columns'])
+        remap = inverse_mapping(field_mapping)
+        dinput.rename(columns=remap, inplace=True)
     # return the data and attributes
     dinput.attrs = copy.copy(attr)
     return dinput
@@ -1146,51 +1157,86 @@ def to_parquet(
         write index to parquet file
     compression: str, default 'snappy'
         file compression type
-    geoparquet: string or None, default None
-        encoding for geoparquet
+    geoparquet: bool, default False
+        write geoparquet file
+    geometry_encoding: str, default 'WKB'
+        default encoding for geoparquet geometry
+    primary_column: str, default 'geometry'
+        default column name for geoparquet geometry
     """
     # set default keyword arguments
     kwargs.setdefault('crs', None)
     kwargs.setdefault('index', None)
     kwargs.setdefault('compression', 'snappy')
-    kwargs.setdefault('geoparquet', None)
+    kwargs.setdefault('schema_version', '1.1.0')
+    kwargs.setdefault('geoparquet', False)
+    kwargs.setdefault('geometry_encoding', 'WKB')
+    kwargs.setdefault('primary_column', 'geometry')
     # convert to pandas dataframe
     df = pd.DataFrame(output)
-    # convert spatial coordinates to WKB encoded geometry 
-    if (kwargs['geoparquet'] == 'WKB'):
-        # get geometry columns
-        geometries = ['lon', 'x', 'lat', 'y']
-        geom_vars = [v for v in geometries if v in output.keys()]
-        # convert to shapely geometry
-        points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
-        df.drop(columns=geom_vars, inplace=True)
-        df['geometry'] = shapely.to_wkb(points)
-        # drop attributes for geometry columns
-        [attributes.pop(v) for v in geom_vars]
-        # add attributes for geoparquet
-        attributes['encoding'] = 'WKB'
-        attributes['bbox'] = shapely.MultiPoint(points).bounds
+    attrs = df.attrs.copy()
     # add coordinate reference system to attributes
-    if kwargs['crs']:
+    if kwargs['crs'] and isinstance(kwargs['crs'], int):
         # create spatial reference object from EPSG code
         osgeo.osr.UseExceptions()
         srs = osgeo.osr.SpatialReference()
         srs.ImportFromEPSG(kwargs['crs'])
         # add projection information to attributes
         attributes['crs'] = json.loads(srs.ExportToPROJJSON())
+    elif kwargs['crs'] and isinstance(kwargs['crs'], dict):
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(kwargs['crs']))
+        # add projection information to attributes
+        attributes['crs'] = copy.copy(kwargs['crs'])
+    # convert spatial coordinates to WKB encoded geometry 
+    if kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'WKB'):
+        # get geometry columns
+        primary_column = kwargs['primary_column']
+        geometries = ['lon', 'x', 'lat', 'y']
+        geom_vars = [v for v in geometries if v in output.keys()]
+        # convert to shapely geometry
+        points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
+        df.drop(columns=geom_vars, inplace=True)
+        df[primary_column] = shapely.to_wkb(points)
+        # get bounding box
+        bbox = shapely.MultiPoint(points).bounds
+        # drop attributes for geometry columns
+        [attributes.pop(v) for v in geom_vars if v in attributes]
+        # add attributes for geoparquet
+        attrs[b"geo"] = attrs.get(b"geo", {})
+        attrs[b"geo"]["version"] = kwargs['schema_version']
+        attrs[b"geo"]["primary_column"] = primary_column
+        attrs[b"geo"]["columns"] = {primary_column: {
+                "encoding": 'WKB',
+                "crs": json.loads(srs.ExportToPROJJSON()),
+                "bbox": bbox,
+                "covering": {
+                    "bbox": collections.OrderedDict(
+                        xmin=[bbox[0], "xmin"],
+                        ymin=[bbox[1], "ymin"],
+                        xmax=[bbox[2], "xmax"],
+                        ymax=[bbox[3], "ymax"]
+                    )
+                }
+            }
+        }
     # add attribute for date created
     attributes['date_created'] = datetime.datetime.now().isoformat()
     # add attributes for software information
     attributes['software_reference'] = pyTMD.version.project_name
     attributes['software_version'] = pyTMD.version.full_version
     # dump the attributes to encoded JSON-format
-    attr_metadata = json.dumps(attributes).encode('utf-8') 
+    attr_metadata = {b"pyTMD": json.dumps(attributes).encode('utf-8')}
+    for att_name, att_val in attrs.items():
+        attr_metadata[att_name] = json.dumps(att_val).encode('utf-8')
     # convert dataframe to arrow table
     table = pyarrow.Table.from_pandas(df,
         preserve_index=kwargs['index'])
     # store sliderule specific file-level metadata
     metadata = table.schema.metadata
-    metadata.update({b"pyTMD": attr_metadata})
+    metadata.update(attr_metadata)
     # replace schema metadata with updated
     table = table.replace_schema_metadata(metadata)
     # write arrow table to (geo)parquet file
