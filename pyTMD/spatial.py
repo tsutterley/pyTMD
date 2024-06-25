@@ -697,9 +697,9 @@ def from_parquet(filename: str, **kwargs):
         # set as geoparquet file
         attr['geoparquet'] = True
         # decode geometry column from WKB
-        geometry = dinput[primary_column].apply(shapely.from_wkb)
-        dinput['x'] = geometry.apply(lambda d: d.x)
-        dinput['y'] = geometry.apply(lambda d: d.y)
+        geometry = shapely.from_wkb(dinput[primary_column].values)
+        dinput['x'] = shapely.get_x(geometry)
+        dinput['y'] = shapely.get_y(geometry)
     # remap columns to default names
     if kwargs['columns'] is not None:   
         field_mapping = default_field_mapping(kwargs['columns'])

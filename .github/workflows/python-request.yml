@@ -42,6 +42,7 @@ jobs:
           pytest
           pytest-cov
           cython
+          geopandas
           jplephem
           octave
           oct2py
