@@ -1200,7 +1200,7 @@ def to_parquet(
         points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
         df.drop(columns=geom_vars, inplace=True)
         df[primary_column] = shapely.to_wkb(points)
-        # get bounding box
+        # get bounding box of total set of points
         bbox = shapely.MultiPoint(points).bounds
         # drop attributes for geometry columns
         [attributes.pop(v) for v in geom_vars if v in attributes]
@@ -1234,7 +1234,7 @@ def to_parquet(
     # convert dataframe to arrow table
     table = pyarrow.Table.from_pandas(df,
         preserve_index=kwargs['index'])
-    # store sliderule specific file-level metadata
+    # update parquet metadata
     metadata = table.schema.metadata
     metadata.update(attr_metadata)
     # replace schema metadata with updated
