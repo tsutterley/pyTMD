@@ -692,6 +692,16 @@ def from_parquet(filename: str, **kwargs):
         # add projection information to attributes
         attr['projection'] = srs.ExportToProj4()
         attr['wkt'] = srs.ExportToWkt()
+    elif 'pyTMD' in attr.keys():
+        # extract crs from pyTMD metadata
+        crs_metadata = attr['pyTMD']['crs']
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(crs_metadata))
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
     # extract x and y coordinates
     if (encoding == 'WKB') and (primary_column in dinput.keys()):
         # set as geoparquet file
