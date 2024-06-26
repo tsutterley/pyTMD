@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (06/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 06/2024: change int32 to int to prevent overflows with numpy 2.0
     Updated 02/2024: don't overwrite hu and hv in _interpolate_zeta
         changed variable for setting global grid flag to is_global
     Updated 01/2024: construct currents masks differently if not global
@@ -1098,7 +1099,7 @@ def read_otis_elevation(
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     # skip records to constituent
-    nskip = ic*(nx*ny*8+8) + 8 + ll - 28
+    nskip = ic*(int(nx)*int(ny)*8 + 8) + 8 + int(ll) - 28
     fid.seek(nskip,1)
     # real and imaginary components of elevation
     h = np.ma.zeros((ny, nx), dtype=np.complex64)
@@ -1155,7 +1156,7 @@ def read_atlas_elevation(
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     # skip records to constituent
-    nskip = 8 + nc*4 + ic*(nx*ny*8 + 8)
+    nskip = 8 + int(nc)*4 + int(ic)*(int(nx)*int(ny)*8 + 8)
     fid.seek(nskip,1)
     # real and imaginary components of elevation
     h = np.ma.zeros((ny, nx), dtype=np.complex64)
@@ -1165,7 +1166,7 @@ def read_atlas_elevation(
         h.data.real[i,:] = temp[0:2*nx-1:2]
         h.data.imag[i,:] = temp[1:2*nx:2]
     # skip records after constituent
-    nskip = (nc-ic-1)*(nx*ny*8 + 8) + 4
+    nskip = (int(nc) - int(ic) - 1)*(int(nx)*int(ny)*8 + 8) + 4
     fid.seek(nskip,1)
     # read local models to find constituent
     nmod = 0
@@ -1194,7 +1195,7 @@ def read_atlas_elevation(
             iz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nz)
             jz = np.fromfile(fid, dtype=np.dtype('>i4'), count=nz)
             # skip records to constituent
-            nskip = 8 + ic1*(8*nz + 8)
+            nskip = 8 + int(ic1)*(8*int(nz) + 8)
             fid.seek(nskip,1)
             # real and imaginary components of elevation
             h1 = np.ma.zeros((ny1,nx1), fill_value=np.nan, dtype=np.complex64)
@@ -1206,11 +1207,11 @@ def read_atlas_elevation(
             # save constituent to dictionary
             local[name] = dict(lon=ln1,lat=lt1,z=h1)
             # skip records after constituent
-            nskip = (nc1-ic1-1)*(8*nz + 8) + 4
+            nskip = (int(nc1) - int(ic1) - 1)*(8*int(nz) + 8) + 4
             fid.seek(nskip,1)
         else:
             # skip records for local model if constituent not in list
-            nskip = 40 + 16*nz + (nc1-1)*(8*nz + 8)
+            nskip = 40 + 16*int(nz) + (int(nc1) - 1)*(8*int(nz) + 8)
             fid.seek(nskip,1)
     # close the file
     fid.close()
@@ -1249,7 +1250,7 @@ def read_otis_transport(
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     # skip records to constituent
-    nskip = ic*(nx*ny*16+8) + 8 + ll - 28
+    nskip = ic*(int(nx)*int(ny)*16 + 8) + 8 + int(ll) - 28
     fid.seek(nskip,1)
     # real and imaginary components of transport
     u = np.ma.zeros((ny, nx), dtype=np.complex64)
@@ -1315,7 +1316,7 @@ def read_atlas_transport(
     ylim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     xlim = np.fromfile(fid, dtype=np.dtype('>f4'), count=2)
     # skip records to constituent
-    nskip = 8 + nc*4 + ic*(nx*ny*16 + 8)
+    nskip = 8 + int(nc)*4 + ic*(int(nx)*int(ny)*16 + 8)
     fid.seek(nskip,1)
     # real and imaginary components of transport
     u = np.ma.zeros((ny, nx), dtype=np.complex64)
@@ -1329,7 +1330,7 @@ def read_atlas_transport(
         v.data.real[i,:] = temp[2:4*nx-1:4]
         v.data.imag[i,:] = temp[3:4*nx:4]
     # skip records after constituent
-    nskip = (nc-ic-1)*(nx*ny*16 + 8) + 4
+    nskip = (int(nc) - int(ic) - 1)*(int(nx)*int(ny)*16 + 8) + 4
     fid.seek(nskip,1)
     # read local models to find constituent
     nmod = 0
@@ -1362,7 +1363,7 @@ def read_atlas_transport(
             iv = np.fromfile(fid, dtype=np.dtype('>i4'), count=nv)
             jv = np.fromfile(fid, dtype=np.dtype('>i4'), count=nv)
             # skip records to constituent
-            nskip = 8 + ic1*(8*nu + 8*nv + 16)
+            nskip = 8 + int(ic1)*(8*int(nu) + 8*int(nv) + 16)
             fid.seek(nskip,1)
             # real and imaginary components of u transport
             u1 = np.ma.zeros((ny1,nx1), fill_value=np.nan, dtype=np.complex64)
@@ -1382,11 +1383,12 @@ def read_atlas_transport(
             # save constituent to dictionary
             local[name] = dict(lon=ln1,lat=lt1,u=u1,v=v1)
             # skip records after constituent
-            nskip = (nc1-ic1-1)*(8*nu + 8*nv + 16) + 4
+            nskip = (int(nc1) - int(ic1) - 1)*(8*int(nu) + 8*int(nv) + 16) + 4
             fid.seek(nskip,1)
         else:
             # skip records for local model if constituent not in list
-            nskip = 56 + 16*nu + 16*nv + (nc1-1)*(8*nu + 8*nv + 16)
+            nskip = 56 + 16*int(nu) + 16*int(nv) + \
+                (int(nc1) - 1)*(8*int(nu) + 8*int(nv) + 16)
             fid.seek(nskip,1)
     # close the file
     fid.close()

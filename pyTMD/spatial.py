@@ -1232,6 +1232,8 @@ def to_parquet(
                 }
             }
         }
+    elif kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'point'):
+        raise ValueError('geoarrow encodings are currently unsupported')
     # add attribute for date created
     attributes['date_created'] = datetime.datetime.now().isoformat()
     # add attributes for software information
