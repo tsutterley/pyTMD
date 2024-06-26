@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (06/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: made the inferrence of minor constituents an option
@@ -1054,7 +1055,7 @@ def OPT_displacements(
             iur[:,::-1].real, kx=1, ky=1)
         f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
             iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((len(latitude_geocentric)), dtype=np.longcomplex)
+        UR = np.zeros((len(latitude_geocentric)), dtype=np.clongdouble)
         UR.real = f1.ev(lon.flatten(), latitude_geocentric)
         UR.imag = f2.ev(lon.flatten(), latitude_geocentric)
     else:

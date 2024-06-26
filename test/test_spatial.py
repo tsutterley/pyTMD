@@ -83,7 +83,7 @@ def test_ascii():
     attrib['x'] = {}
     attrib['x']['long_name'] = 'Longitude'
     attrib['x']['units'] = 'Degrees_East'
-    # long-period equilibrium tides
+    # data
     attrib['data'] = {}
     attrib['data']['long_name'] = 'Height_above_WGS84_ellipsoid'
     attrib['data']['units'] = 'meters'
@@ -151,7 +151,7 @@ def test_netCDF4(TYPE):
     attrib['x'] = {}
     attrib['x']['long_name'] = 'Longitude'
     attrib['x']['units'] = 'Degrees_East'
-    # long-period equilibrium tides
+    # data
     attrib['data'] = {}
     attrib['data']['long_name'] = 'Height_above_WGS84_ellipsoid'
     attrib['data']['units'] = 'meters'
@@ -219,7 +219,7 @@ def test_HDF5(TYPE):
     attrib['x'] = {}
     attrib['x']['long_name'] = 'Longitude'
     attrib['x']['units'] = 'Degrees_East'
-    # long-period equilibrium tides
+    # data
     attrib['data'] = {}
     attrib['data']['long_name'] = 'Height_above_WGS84_ellipsoid'
     attrib['data']['units'] = 'meters'

@@ -42,9 +42,11 @@ jobs:
           pytest
           pytest-cov
           cython
+          geopandas
           jplephem
           octave
           oct2py
+          pyarrow
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

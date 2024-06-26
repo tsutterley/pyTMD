@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (06/2024)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -96,6 +96,9 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 06/2024: include attributes in output parquet files
+    Updated 05/2024: use function to reading parquet files to allow
+        reading and parsing of geometry column from geopandas datasets
     Updated 04/2024: use timescale for temporal operations
         add debug mode printing input arguments and additional information
         use wrapper to importlib for optional dependencies
@@ -157,7 +160,6 @@ import pyTMD.utilities
 import timescale.time
 
 # attempt imports
-pd = pyTMD.utilities.import_dependency('pandas')
 pyproj = pyTMD.utilities.import_dependency('pyproj')
 
 # PURPOSE: keep track of threads
@@ -238,12 +240,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         dinput = pyTMD.spatial.from_geotiff(input_file)
         attributes = dinput['attributes']
     elif (FORMAT == 'parquet'):
-        logging.info(str(input_file))
-        field_mapping = pyTMD.spatial.default_field_mapping(VARIABLES)
-        remap = pyTMD.spatial.inverse_mapping(field_mapping)
-        dinput = pd.read_parquet(input_file, columns=VARIABLES)
-        dinput.rename(columns=remap, inplace=True)
-        attributes = {}
+        dinput = pyTMD.spatial.from_parquet(input_file, columns=VARIABLES)
+        attributes = dinput.attrs
     # update time variable if entered as argument
     if TIME is not None:
         dinput['time'] = np.copy(TIME)
@@ -402,14 +400,18 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
 
     # output to file
     if (FORMAT == 'csv'):
+        # write columnar data to ascii
         pyTMD.spatial.to_ascii(output, attrib, output_file,
             delimiter=DELIMITER, header=False,
             columns=['time','lat','lon','u','v'])
     elif (FORMAT == 'netCDF4'):
+        # write to netCDF4 for data type
         pyTMD.spatial.to_netCDF4(output, attrib, output_file, data_type=TYPE)
     elif (FORMAT == 'HDF5'):
+        # write to HDF5
         pyTMD.spatial.to_HDF5(output, attrib, output_file)
     elif (FORMAT == 'geotiff'):
+        # write raster data to geotiff
         # copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = attributes[att_name]
@@ -419,9 +421,11 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
             varname='data')
     elif (FORMAT == 'parquet'):
-        # write to parquet file
-        logging.info(str(output_file))
-        pd.DataFrame(output).to_parquet(output_file)
+        # write to (geo)parquet
+        geoparquet = attributes.get('geoparquet', False)
+        geometry_encoding = attributes.get('geometry_encoding', None)
+        pyTMD.spatial.to_parquet(output, attrib, output_file,
+            geoparquet=geoparquet, geometry_encoding=geometry_encoding, crs=4326)
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
 

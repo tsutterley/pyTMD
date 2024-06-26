@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (06/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -15,8 +15,14 @@ PYTHON DEPENDENCIES:
         https://www.h5py.org/
     gdal: Pythonic interface to the Geospatial Data Abstraction Library (GDAL)
         https://pypi.python.org/pypi/GDAL
+    pandas: Python Data Analysis Library
+        https://pandas.pydata.org/
+    PyArrow: Apache Arrow Python bindings
+        https://arrow.apache.org/docs/python/
     PyYAML: YAML parser and emitter for Python
         https://github.com/yaml/pyyaml
+    shapely: PostGIS-ish operations outside a database context for Python
+        http://toblerity.org/shapely/index.html
     timescale: Python tools for time and astronomical calculations
         https://pypi.org/project/timescale/
 
@@ -24,6 +30,10 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 06/2024: added function to write parquet files with metadata
+    Updated 05/2024: added function to read from parquet files
+        allowing for decoding of the geometry column from WKB
+        deprecation update to use exceptions with osgeo osr
     Updated 04/2024: use timescale for temporal operations
         use wrapper to importlib for optional dependencies
     Updated 03/2024: can calculate polar stereographic distortion for distances
@@ -80,11 +90,13 @@ import re
 import io
 import copy
 import gzip
+import json
 import uuid
 import logging
 import pathlib
 import warnings
 import datetime
+import collections
 import numpy as np
 from pyTMD.crs import datum
 from pyTMD.utilities import import_dependency
@@ -92,11 +104,17 @@ import pyTMD.version
 import timescale.time
 
 # attempt imports
-gdal = import_dependency('osgeo.gdal')
-osr = import_dependency('osgeo.osr')
-gdalconst = import_dependency('osgeo.gdalconst')
+osgeo = import_dependency('osgeo')
+osgeo.gdal = import_dependency('osgeo.gdal')
+osgeo.osr = import_dependency('osgeo.osr')
+osgeo.gdalconst = import_dependency('osgeo.gdalconst')
 h5py = import_dependency('h5py')
 netCDF4 = import_dependency('netCDF4')
+pd = import_dependency('pandas')
+pyarrow = import_dependency('pyarrow')
+pyarrow.parquet = import_dependency('pyarrow.parquet')
+shapely = import_dependency('shapely')
+shapely.geometry = import_dependency('shapely.geometry')
 yaml = import_dependency('yaml')
 
 def case_insensitive_filename(filename: str | pathlib.Path):
@@ -178,6 +196,8 @@ def from_file(filename: str, format: str, **kwargs):
         dinput = from_HDF5(filename, **kwargs)
     elif (format == 'geotiff'):
         dinput = from_geotiff(filename, **kwargs)
+    elif (format == 'parquet'):
+        dinput = from_parquet(filename, **kwargs)
     else:
         raise ValueError(f'Invalid format {format}')
     return dinput
@@ -391,7 +411,8 @@ def from_netCDF4(filename: str, **kwargs):
                 group.variables[grid_mapping].getncattr(att_name)
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
-        srs = osr.SpatialReference()
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
@@ -501,7 +522,8 @@ def from_HDF5(filename: str | pathlib.Path, **kwargs):
             dinput['attributes']['crs'][att_name] = att_val
         # get the spatial projection reference information from wkt
         # and overwrite the file-level projection attribute (if existing)
-        srs = osr.SpatialReference()
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
         srs.ImportFromWkt(dinput['attributes']['crs']['crs_wkt'])
         dinput['attributes']['projection'] = srs.ExportToProj4()
     # convert to masked array if fill values
@@ -534,16 +556,16 @@ def from_geotiff(filename: str, **kwargs):
     if (kwargs['compression'] == 'gzip'):
         # read as GDAL gzip virtual geotiff dataset
         mmap_name = f"/vsigzip/{str(case_insensitive_filename(filename))}"
-        ds = gdal.Open(mmap_name)
+        ds = osgeo.gdal.Open(mmap_name)
     elif (kwargs['compression'] == 'bytes'):
         # read as GDAL memory-mapped (diskless) geotiff dataset
         mmap_name = f"/vsimem/{uuid.uuid4().hex}"
-        gdal.FileFromMemBuffer(mmap_name, filename.read())
-        ds = gdal.Open(mmap_name)
+        osgeo.gdal.FileFromMemBuffer(mmap_name, filename.read())
+        ds = osgeo.gdal.Open(mmap_name)
     else:
         # read geotiff dataset
-        ds = gdal.Open(str(case_insensitive_filename(filename)),
-            gdalconst.GA_ReadOnly)
+        ds = osgeo.gdal.Open(str(case_insensitive_filename(filename)),
+            osgeo.gdalconst.GA_ReadOnly)
     # print geotiff file if verbose
     logging.info(str(filename))
     # create python dictionary for output variables and attributes
@@ -614,7 +636,132 @@ def from_geotiff(filename: str, **kwargs):
     # return the spatial variables
     return dinput
 
-def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
+def from_parquet(filename: str, **kwargs):
+    """
+    Read data from a parquet file
+
+    Parameters
+    ----------
+    filename: str
+        full path of input parquet file
+    index: str, default 'time'
+        name of index column
+    columns: list or None, default None
+        column names of parquet file
+    primary_column: str, default 'geometry'
+        default geometry column in geoparquet files
+    geometry_encoding: str, default 'WKB'
+        default encoding for geoparquet files
+    """
+    # set default keyword arguments
+    kwargs.setdefault('index', 'time')
+    kwargs.setdefault('columns', None)
+    kwargs.setdefault('primary_column', 'geometry')
+    kwargs.setdefault('geometry_encoding', 'WKB')
+    filename = case_insensitive_filename(filename)
+    # read input parquet file
+    dinput = pd.read_parquet(filename)
+    # reset the dataframe index if not a range index
+    if not isinstance(dinput.index, pd.RangeIndex):
+        dinput.reset_index(inplace=True, names=kwargs['index'])
+    # output parquet file information
+    attr = {}
+    # get parquet file metadata
+    metadata = pyarrow.parquet.read_metadata(filename).metadata
+    # decode parquet metadata from JSON
+    for att_name, val in metadata.items():
+        try:
+            att_val = json.loads(val.decode('utf-8'))
+            attr[att_name.decode('utf-8')] = att_val
+        except Exception as exc:
+            pass
+    # check if parquet file contains geometry metadata
+    attr['geoparquet'] = False
+    primary_column = kwargs['primary_column']
+    encoding = kwargs['geometry_encoding']
+    if 'geo' in attr.keys():
+        # extract crs and encoding from geoparquet metadata
+        primary_column = attr['geo']['primary_column']
+        crs_metadata = attr['geo']['columns'][primary_column]['crs']
+        encoding = attr['geo']['columns'][primary_column]['encoding']
+        attr['geometry_encoding'] = encoding
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(crs_metadata))
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
+    elif 'pyTMD' in attr.keys():
+        # extract crs from pyTMD metadata
+        crs_metadata = attr['pyTMD']['crs']
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(crs_metadata))
+        # add projection information to attributes
+        attr['projection'] = srs.ExportToProj4()
+        attr['wkt'] = srs.ExportToWkt()
+    # extract x and y coordinates
+    if (encoding == 'WKB') and (primary_column in dinput.keys()):
+        # set as geoparquet file
+        attr['geoparquet'] = True
+        # decode geometry column from WKB
+        geometry = shapely.from_wkb(dinput[primary_column].values)
+        dinput['x'] = shapely.get_x(geometry)
+        dinput['y'] = shapely.get_y(geometry)
+    # remap columns to default names
+    if kwargs['columns'] is not None:   
+        field_mapping = default_field_mapping(kwargs['columns'])
+        remap = inverse_mapping(field_mapping)
+        dinput.rename(columns=remap, inplace=True)
+    # return the data and attributes
+    dinput.attrs = copy.copy(attr)
+    return dinput
+
+def to_file(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        format: str,
+        **kwargs
+    ):
+    """
+    Wrapper function for writing data to an output format
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str or pathlib.Path,
+        full path of output file
+    format: str
+        format of output file
+    **kwargs: dict
+        Keyword arguments for file writer
+    """
+    # read input file to extract spatial coordinates and data
+    if (format == 'ascii'):
+        to_ascii(output, attributes, filename, **kwargs)
+    elif (format == 'netCDF4'):
+        to_netCDF4(output, attributes, filename, **kwargs)
+    elif (format == 'HDF5'):
+        to_HDF5(output, attributes, filename, **kwargs)
+    elif (format == 'geotiff'):
+        to_geotiff(output, attributes, filename, **kwargs)
+    elif (format == 'parquet'):
+        to_parquet(output, attributes, filename, **kwargs)
+    else:
+        raise ValueError(f'Invalid format {format}')
+
+def to_ascii(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        **kwargs
+    ):
     """
     Write data to an ascii file
 
@@ -624,7 +771,7 @@ def to_ascii(output: dict, attributes: dict, filename: str, **kwargs):
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output ascii file
     delimiter: str, default ','
         delimiter for output spatial file
@@ -696,8 +843,10 @@ def to_netCDF4(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output netCDF4 file
+    mode: str, default 'w'
+        NetCDF file mode
     data_type: str, default 'drift'
         Input data type
 
@@ -784,7 +933,7 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     attributes: dict
         python dictionary of output attributes
     """
-    # input data fields
+    # output data fields
     dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
@@ -834,7 +983,7 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
     attributes: dict
         python dictionary of output attributes
     """
-    # input data fields
+    # output data fields
     dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
@@ -869,7 +1018,7 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
 def to_HDF5(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -881,8 +1030,10 @@ def to_HDF5(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output HDF5 file
+    mode: str, default 'w'
+        HDF5 file mode
     """
     # set default keyword arguments
     kwargs.setdefault('mode', 'w')
@@ -927,7 +1078,7 @@ def to_HDF5(
 def to_geotiff(
         output: dict,
         attributes: dict,
-        filename: str,
+        filename: str | pathlib.Path,
         **kwargs
     ):
     """
@@ -939,7 +1090,7 @@ def to_geotiff(
         python dictionary of output data
     attributes: dict
         python dictionary of output attributes
-    filename: str
+    filename: str or pathlib.Path
         full path of output geotiff file
     varname: str, default 'data'
         output variable name
@@ -956,7 +1107,7 @@ def to_geotiff(
     # set default keyword arguments
     kwargs.setdefault('varname', 'data')
     kwargs.setdefault('driver', 'cog')
-    kwargs.setdefault('dtype', gdal.GDT_Float64)
+    kwargs.setdefault('dtype', osgeo.gdal.GDT_Float64)
     kwargs.setdefault('options', ['COMPRESS=LZW'])
     varname = copy.copy(kwargs['varname'])
     # verify grid dimensions to be iterable
@@ -964,7 +1115,7 @@ def to_geotiff(
     # grid shape
     ny, nx, nband = np.shape(output[varname])
     # output as geotiff or specified driver
-    driver = gdal.GetDriverByName(kwargs['driver'])
+    driver = osgeo.gdal.GetDriverByName(kwargs['driver'])
     # set up the dataset with creation options
     filename = pathlib.Path(filename).expanduser().absolute()
     ds = driver.Create(str(filename), nx, ny, nband,
@@ -975,7 +1126,8 @@ def to_geotiff(
     dx, dy = attributes['spacing']
     ds.SetGeoTransform([xmin, dx, 0, ymax, 0, dy])
     # set the spatial projection reference information
-    srs = osr.SpatialReference()
+    osgeo.osr.UseExceptions()
+    srs = osgeo.osr.SpatialReference()
     srs.ImportFromWkt(attributes['wkt'])
     # export
     ds.SetProjection( srs.ExportToWkt() )
@@ -991,6 +1143,118 @@ def to_geotiff(
     logging.info(str(filename))
     # close dataset
     ds.FlushCache()
+
+def to_parquet(
+        output: dict,
+        attributes: dict,
+        filename: str | pathlib.Path,
+        **kwargs
+    ):
+    """
+    Write data to a (geo)parquet file
+
+    Parameters
+    ----------
+    output: dict
+        python dictionary of output data
+    attributes: dict
+        python dictionary of output attributes
+    filename: str or pathlib.Path,
+        full path of output parquet file
+    crs: int, default None
+        coordinate reference system EPSG code
+    index: bool, default None
+        write index to parquet file
+    compression: str, default 'snappy'
+        file compression type
+    geoparquet: bool, default False
+        write geoparquet file
+    geometry_encoding: str, default 'WKB'
+        default encoding for geoparquet geometry
+    primary_column: str, default 'geometry'
+        default column name for geoparquet geometry
+    """
+    # set default keyword arguments
+    kwargs.setdefault('crs', None)
+    kwargs.setdefault('index', None)
+    kwargs.setdefault('compression', 'snappy')
+    kwargs.setdefault('schema_version', '1.1.0')
+    kwargs.setdefault('geoparquet', False)
+    kwargs.setdefault('geometry_encoding', 'WKB')
+    kwargs.setdefault('primary_column', 'geometry')
+    # convert to pandas dataframe
+    df = pd.DataFrame(output)
+    attrs = df.attrs.copy()
+    # add coordinate reference system to attributes
+    if kwargs['crs'] and isinstance(kwargs['crs'], int):
+        # create spatial reference object from EPSG code
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.ImportFromEPSG(kwargs['crs'])
+        # add projection information to attributes
+        attributes['crs'] = json.loads(srs.ExportToPROJJSON())
+    elif kwargs['crs'] and isinstance(kwargs['crs'], dict):
+        # create spatial reference object from PROJJSON
+        osgeo.osr.UseExceptions()
+        srs = osgeo.osr.SpatialReference()
+        srs.SetFromUserInput(json.dumps(kwargs['crs']))
+        # add projection information to attributes
+        attributes['crs'] = copy.copy(kwargs['crs'])
+    # convert spatial coordinates to WKB encoded geometry 
+    if kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'WKB'):
+        # get geometry columns
+        primary_column = kwargs['primary_column']
+        geometries = ['lon', 'x', 'lat', 'y']
+        geom_vars = [v for v in geometries if v in output.keys()]
+        # convert to shapely geometry
+        points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])
+        df.drop(columns=geom_vars, inplace=True)
+        df[primary_column] = shapely.to_wkb(points)
+        # get bounding box of total set of points
+        bbox = shapely.MultiPoint(points).bounds
+        # drop attributes for geometry columns
+        [attributes.pop(v) for v in geom_vars if v in attributes]
+        # add attributes for geoparquet
+        attrs[b"geo"] = attrs.get(b"geo", {})
+        attrs[b"geo"]["version"] = kwargs['schema_version']
+        attrs[b"geo"]["primary_column"] = primary_column
+        attrs[b"geo"]["columns"] = {primary_column: {
+                "encoding": 'WKB',
+                "crs": json.loads(srs.ExportToPROJJSON()),
+                "bbox": bbox,
+                "covering": {
+                    "bbox": collections.OrderedDict(
+                        xmin=[bbox[0], "xmin"],
+                        ymin=[bbox[1], "ymin"],
+                        xmax=[bbox[2], "xmax"],
+                        ymax=[bbox[3], "ymax"]
+                    )
+                }
+            }
+        }
+    # add attribute for date created
+    attributes['date_created'] = datetime.datetime.now().isoformat()
+    # add attributes for software information
+    attributes['software_reference'] = pyTMD.version.project_name
+    attributes['software_version'] = pyTMD.version.full_version
+    # dump the attributes to encoded JSON-format
+    attr_metadata = {b"pyTMD": json.dumps(attributes).encode('utf-8')}
+    for att_name, att_val in attrs.items():
+        attr_metadata[att_name] = json.dumps(att_val).encode('utf-8')
+    # convert dataframe to arrow table
+    table = pyarrow.Table.from_pandas(df,
+        preserve_index=kwargs['index'])
+    # update parquet metadata
+    metadata = table.schema.metadata
+    metadata.update(attr_metadata)
+    # replace schema metadata with updated
+    table = table.replace_schema_metadata(metadata)
+    # write arrow table to (geo)parquet file
+    filename = pathlib.Path(filename).expanduser().absolute()
+    logging.info(str(filename))
+    pyarrow.parquet.write_table(table, filename,
+        compression=kwargs['compression']
+    )
 
 def expand_dims(obj: dict, varname: str = 'data'):
     """
