@@ -1,5 +1,5 @@
 """
-test_solid_earth.py (04/2024)
+test_solid_earth.py (07/2024)
 Tests the steps for calculating the solid earth tides
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/timescale/
 
 UPDATE HISTORY:
+    Updated 07/2024: use normalize_angle from pyTMD astro module
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: phase_angles function renamed to doodson_arguments
@@ -345,7 +346,8 @@ def test_greenwich():
     # create timescale from modified Julian dates
     ts = timescale.time.Timescale(MJD=55414.0)
     # Meeus approximation
-    GHA = np.mod(280.46061837504 + 360.9856473662862*(ts.T*36525.0), 360.0)
+    hour_angle = 280.46061837504 + 360.9856473662862*(ts.T*36525.0)
+    GHA = pyTMD.astro.normalize_angle(hour_angle)
     # compare with pyTMD calculation
     assert np.isclose(GHA, ts.gha)
 

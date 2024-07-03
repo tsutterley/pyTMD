@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (07/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 07/2024: use normalize_angle from pyTMD astro module
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: moved minor arguments calculation into new function
         moved constituent parameters function from predict to arguments
@@ -427,7 +428,7 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     for N in range(4):
         # convert time from days relative to 1992-01-01 to 1987-01-01
         ANGLE = PHC[N] + (t + 1826.0)*DPD[N]
-        SHPN[N,:] = np.pi*np.mod(ANGLE, 360.0)/180.0
+        SHPN[N,:] = np.pi*pyTMD.astro.normalize_angle(ANGLE)/180.0
 
     # assemble long-period tide potential from 15 CTE terms greater than 1 mm
     # nodal term is included but not the constant term.
