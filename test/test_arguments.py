@@ -221,3 +221,15 @@ def test_doodson():
         # check values when entered as Doodson
         coefficients = _from_doodson_number(val)
         assert np.all(cartwright[key] == coefficients)
+
+def test_normalize_angle():
+    """
+    Tests the normalization of angles to between 0 and 360 degrees
+    """
+    # test angles
+    angles = np.array([-180, -90, 0, 90, 180, 270, 360, 450])
+    # expected values
+    exp = np.array([180, 270, 0, 90, 180, 270, 0, 90])
+    # test normalization of angles
+    test = pyTMD.astro.normalize_angle(angles)
+    assert np.all(exp == test)

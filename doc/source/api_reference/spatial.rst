@@ -75,6 +75,10 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.wrap_longitudes
 
+.. autofunction:: pyTMD.spatial.to_dms
+
+.. autofunction:: pyTMD.spatial.to_degrees
+
 .. autofunction:: pyTMD.spatial.to_cartesian
 
 .. autofunction:: pyTMD.spatial.to_sphere

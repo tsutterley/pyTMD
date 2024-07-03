@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (06/2024)
+Written by Tyler Sutterley (07/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 07/2024: added functions to convert to and from DMS
     Updated 06/2024: added function to write parquet files with metadata
     Updated 05/2024: added function to read from parquet files
         allowing for decoding of the geometry column from WKB
@@ -866,7 +867,7 @@ def to_netCDF4(
     elif kwargs['data_type'] in ('grid',):
         kwargs.pop('data_type')
         _grid_netCDF4(fileID, output, attributes, **kwargs)
-    elif  kwargs['data_type'] in ('time series',):
+    elif kwargs['data_type'] in ('time series',):
         kwargs.pop('data_type')
         _time_series_netCDF4(fileID, output, attributes, **kwargs)
     # add attribute for date created
@@ -1536,6 +1537,55 @@ def wrap_longitudes(lon: float | np.ndarray):
     phi = np.arctan2(np.sin(lon*np.pi/180.0), np.cos(lon*np.pi/180.0))
     # convert phi from radians to degrees
     return phi*180.0/np.pi
+
+def to_dms(d: np.ndarray):
+    """
+    Convert decimal degrees to degrees, minutes and seconds
+
+    Parameters
+    ----------
+    d: np.ndarray
+        decimal degrees
+
+    Returns
+    -------
+    degree: np.ndarray
+        degrees
+    minute: np.ndarray
+        minutes (arcminutes)
+    second: np.ndarray
+        seconds (arcseconds)
+    """
+    sign = np.sign(d)
+    minute, second = np.divmod(np.abs(d)*3600.0, 60.0)
+    degree, minute = np.divmod(minute, 60.0)
+    return (sign*degree, minute, second)
+
+def to_degrees(
+        degree: np.ndarray,
+        minute: np.ndarray,
+        second: np.ndarray
+    ):
+    """
+    Convert degrees, minutes and seconds to decimal degrees
+
+    Parameters
+    ----------
+    degree: np.ndarray
+        degrees
+    minute: np.ndarray
+        minutes (arcminutes)
+    second: np.ndarray
+        seconds (arcseconds)
+
+    Returns
+    -------
+    d: np.ndarray
+        decimal degrees
+    """
+    sign = np.sign(degree)
+    d = np.abs(degree) + minute/60.0 + second/3600.0
+    return sign*d
 
 # get WGS84 parameters
 _wgs84 = datum(ellipsoid='WGS84', units='MKS')

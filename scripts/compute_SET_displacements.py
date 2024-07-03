@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_SET_displacements.py
-Written by Tyler Sutterley (06/2024)
+Written by Tyler Sutterley (07/2024)
 Calculates radial solid earth tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -98,6 +98,7 @@ REFERENCES:
         doi: 10.1111/j.1365-246X.1981.tb02690.x
 
 UPDATE HISTORY:
+    Updated 07/2024: assert that data type is a known value
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
@@ -204,6 +205,7 @@ def compute_SET_displacements(input_file, output_file,
     crs1 = get_projection(attributes, PROJECTION)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     if (TYPE == 'grid'):
         ny, nx = (len(dinput['y']), len(dinput['x']))
         gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])

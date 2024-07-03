@@ -73,11 +73,13 @@ Credits
 #######
 
 The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman, Lana Erofeeva and Susan Howard.
+An updated version of the TMD Matlab Toolbox (TMD3) was developed by Chad Greene.
 The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by
 Lana Erofeeva and Gary Egbert (`copyright OSU <http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf>`_,
 licensed for non-commercial use).
 The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by
 Richard Ray and Remko Scharroo.
+An updated and more versatile version of the NASA GSFC tidal prediction software (PERTH5) was developed by Richard Ray.
 
 Disclaimer
 ##########

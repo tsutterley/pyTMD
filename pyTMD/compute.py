@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (06/2024)
+Written by Tyler Sutterley (07/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 07/2024: assert that data type is a known value
     Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -284,6 +285,7 @@ def tide_elevations(
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     # reform coordinate dimensions for input grids
     # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
@@ -507,6 +509,7 @@ def tide_currents(
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     # reform coordinate dimensions for input grids
     # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
@@ -673,6 +676,7 @@ def LPET_elevations(
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     # reform coordinate dimensions for input grids
     # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
@@ -795,6 +799,7 @@ def LPT_displacements(
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     # reform coordinate dimensions for input grids
     # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
@@ -974,6 +979,7 @@ def OPT_displacements(
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     # reform coordinate dimensions for input grids
     # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
@@ -1167,6 +1173,7 @@ def SET_displacements(
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     # reform coordinate dimensions for input grids
     # or verify coordinate dimension shapes
     if (TYPE.lower() == 'grid') and (np.size(x) != np.size(y)):
