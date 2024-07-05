@@ -84,15 +84,15 @@ Download
 | A zip archive of the latest version is available directly at:
 | https://github.com/tsutterley/pyTMD/archive/main.zip
 
-Software
-########
+Alternative Software
+####################
 
+| perth5 from NASA Goddard Space Flight Center is available at:
+| https://codeberg.org/rray/perth5
 | Matlab Tide Model Driver from Earth & Space Research is available at:
 | https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
 | Fortran OSU Tidal Prediction Software OTPS is available at:
 | https://www.tpxo.net/otps
-| Incorporated into the NASA Cryosphere Altimetry Processing Toolkit at:
-| https://github.com/fspaolo/captoolkit
 
 Disclaimer
 ##########
@@ -107,8 +107,10 @@ Credits
 
 This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
 The Tidal Model Driver (TMD) Matlab Toolbox was developed by Laurie Padman, Lana Erofeeva and Susan Howard.
+An updated version of the TMD Matlab Toolbox (TMD3) was developed by Chad Greene.
 The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (OTPS) were developed by Lana Erofeeva and Gary Egbert (`copyright OSU <http://volkov.oce.orst.edu/tides/COPYRIGHT.pdf>`_, licensed for non-commercial use).
 The NASA Goddard Space Flight Center (GSFC) PREdict Tidal Heights (PERTH3) software was developed by Richard Ray and Remko Scharroo.
+An updated and more versatile version of the NASA GSFC tidal prediction software (PERTH5) was developed by Richard Ray.
 
 License
 #######

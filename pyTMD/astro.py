@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 astro.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (07/2024)
 Astronomical and nutation routines
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ REFERENCES:
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
+    Updated 07/2024: made a wrapper function for normalizing angles
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: refactored phase_angles function to doodson_arguments
@@ -65,7 +66,7 @@ _default_kernel = get_data_path(['data','de440s.bsp'])
 # PURPOSE: calculate the sum of a polynomial function of time
 def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
     """
-    Calculates the sum of a polynomial function of time
+    Calculates the sum of a polynomial function using Horner's method
 
     Parameters
     ----------
@@ -77,6 +78,19 @@ def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
     # convert time to array if importing a single value
     t = np.atleast_1d(t)
     return np.sum([c * (t ** i) for i, c in enumerate(coefficients)], axis=0)
+
+def normalize_angle(theta: float | np.ndarray, circle: float = 360.0):
+    """
+    Normalize an angle to a single rotation
+
+    Parameters
+    ----------
+    theta: float or np.ndarray
+        Angle to normalize
+    circle: float, default 360.0
+        Circle of the angle
+    """
+    return np.mod(theta, circle)
 
 def rotate(theta: float | np.ndarray, axis: str = 'x'):
     """
@@ -163,7 +177,6 @@ def mean_longitudes(
 
     .. |eacute|    unicode:: U+00E9 .. LATIN SMALL LETTER E WITH ACUTE
     """
-    circle = 360.0
     if MEEUS:
         # convert from MJD to days relative to 2000-01-01T12:00:00
         T = MJD - 51544.5
@@ -221,10 +234,10 @@ def mean_longitudes(
         # solar perigee at epoch 2000
         PP = np.full_like(T, 282.8)
     # take the modulus of each
-    S = np.mod(S, circle)
-    H = np.mod(H, circle)
-    P = np.mod(P, circle)
-    N = np.mod(N, circle)
+    S = normalize_angle(S)
+    H = normalize_angle(H)
+    P = normalize_angle(P)
+    N = normalize_angle(N)
     # return as tuple
     return (S, H, P, N, PP)
 
@@ -287,8 +300,6 @@ def doodson_arguments(
     dtr = np.pi/180.0
     # convert from MJD to centuries relative to 2000-01-01T12:00:00
     T = (MJD - 51544.5)/36525.0
-    # 360 degrees
-    circle = 360.0
     # hour of the day
     hour = np.mod(MJD, 1)*24.0
     # calculate Doodson phase angles
@@ -324,12 +335,12 @@ def doodson_arguments(
     Ps = polynomial_sum(np.array([282.93734098, 1.71945766667,
         4.5688889e-4, -1.778e-8, -3.34e-9]), T)
     # take the modulus of each and convert to radians
-    S = dtr*np.mod(S, circle)
-    H = dtr*np.mod(H, circle)
-    P = dtr*np.mod(P, circle)
-    TAU = dtr*np.mod(TAU, circle)
-    Np = dtr*np.mod(Np, circle)
-    Ps = dtr*np.mod(Ps, circle)
+    S = dtr*normalize_angle(S)
+    H = dtr*normalize_angle(H)
+    P = dtr*normalize_angle(P)
+    TAU = dtr*normalize_angle(TAU)
+    Np = dtr*normalize_angle(Np)
+    Ps = dtr*normalize_angle(Ps)
     # return as tuple
     return (TAU, S, H, P, Np, Ps)
 
@@ -392,11 +403,11 @@ def delaunay_arguments(MJD: np.ndarray):
     N = polynomial_sum(np.array([450160.398036, -6962890.5431,
         7.4722, 7.702e-3, -5.939e-05]), T)
     # take the modulus of each and convert to radians
-    l = atr*np.mod(l, circle)
-    lp = atr*np.mod(lp, circle)
-    F = atr*np.mod(F, circle)
-    D = atr*np.mod(D, circle)
-    N = atr*np.mod(N, circle)
+    l = atr*normalize_angle(l, circle=circle)
+    lp = atr*normalize_angle(lp, circle=circle)
+    F = atr*normalize_angle(F, circle=circle)
+    D = atr*normalize_angle(D, circle=circle)
+    N = atr*normalize_angle(N, circle=circle)
     # return as tuple
     return (l, lp, F, D, N)
 

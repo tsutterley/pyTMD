@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (06/2024)
+Written by Tyler Sutterley (07/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Ohio State University and ESR
@@ -99,6 +99,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 07/2024: assert that data type is a known value
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
@@ -319,6 +320,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     hc = amp*np.exp(cph)
 
     # predict tidal elevations at time
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     if (TYPE == 'grid'):
         tide = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)

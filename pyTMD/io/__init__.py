@@ -1,3 +1,6 @@
+"""
+Input/output functions for reading and writing tidal data
+"""
 from .ATLAS import *
 from .FES import *
 from .GOT import *

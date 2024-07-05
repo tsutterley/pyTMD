@@ -19,6 +19,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.astro.polynomial_sum
 
+.. autofunction:: pyTMD.astro.normalize_angle
+
 .. autofunction:: pyTMD.astro.rotate
 
 .. autofunction:: pyTMD.astro.mean_longitudes

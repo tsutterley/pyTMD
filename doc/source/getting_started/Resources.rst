@@ -27,6 +27,7 @@ Pole Tide Resources
 Software
 ########
 
+- `perth5 Tidal Prediction Software <https://codeberg.org/rray/perth5>`_
 - `ESR Tide Model Driver (TMD) Matlab Toolbox <https://www.esr.org/research/polar-tide-models/tmd-software/>`_
 - `TMD Matlab Toolbox Repository <https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5>`_
 - `TMD3 Matlab Toolbox Repository <https://github.com/chadagreene/Tide-Model-Driver>`_

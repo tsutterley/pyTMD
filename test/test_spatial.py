@@ -419,3 +419,25 @@ def test_wrap_longitudes():
     exp[:181] = np.arange(181)
     exp[181:] = np.arange(-179,0)
     assert np.isclose(obs,exp).all()
+
+# PURPOSE: test the conversion of degrees to DMS
+def test_degrees_to_DMS():
+    # test a range of angles
+    d = np.array([180.0, -180.0, 180.75, -180.75, 180.755, -180.755])
+    deg, min, sec = pyTMD.spatial.to_dms(d)
+    expdeg = np.array([180, -180, 180, -180, 180, -180])
+    expmin = np.array([0, 0, 45, 45, 45, 45])
+    expsec = np.array([0, 0, 0, 0, 18, 18])
+    assert np.all(deg == expdeg)
+    assert np.all(min == expmin)
+    assert np.all(sec == expsec)
+
+# PURPOSE: test the conversion of DMS to degrees
+def test_DMS_to_degrees():
+    # test a range of angles
+    deg = np.array([180, -180, 180, -180, 180, -180])
+    min = np.array([0, 0, 45, 45, 45, 45])
+    sec = np.array([0, 0, 0, 0, 18, 18])
+    d = pyTMD.spatial.to_degrees(deg, min, sec)
+    expd = np.array([180.0, -180.0, 180.75, -180.75, 180.755, -180.755])
+    assert np.all(d == expd)
