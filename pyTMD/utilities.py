@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (06/2024)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 06/2024: make default case for an import exception be a class
     Updated 04/2024: add wrapper to importlib for optional dependencies
     Updated 11/2023: updated ssl context to fix deprecation error
     Updated 06/2023: add functions to retrieve and revoke Earthdata tokens

@@ -352,6 +352,8 @@ def test_greenwich():
     assert np.isclose(GHA, ts.gha)
 
 def test_sidereal():
+    """Test that the sidereal time matches expected outputs
+    """
     # create timescale from modified Julian dates
     ts = timescale.time.Timescale(MJD=55414.0)
     # expected side real time in hours
