@@ -17,7 +17,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 07/2024: made a wrapper function for normalizing angles
-        make number of days to convert JD to MJD a variable
+        make number of days to convert days since an epoch to MJD variables
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: refactored phase_angles function to doodson_arguments
@@ -66,6 +66,10 @@ _default_kernel = get_data_path(['data','de440s.bsp'])
 
 # number of days between the Julian day epoch and MJD
 _jd_mjd = 2400000.5
+# number of days between MJD and the J2000 epoch
+_mjd_j2000 = 51544.5
+# Julian century
+_century = 36525.0
 
 # PURPOSE: calculate the sum of a polynomial function of time
 def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
@@ -183,7 +187,7 @@ def mean_longitudes(
     """
     if MEEUS:
         # convert from MJD to days relative to 2000-01-01T12:00:00
-        T = MJD - 51544.5
+        T = MJD - _mjd_j2000
         # mean longitude of moon
         lunar_longitude = np.array([218.3164591, 13.17639647754579,
             -9.9454632e-13, 3.8086292e-20, -8.6184958e-27])
@@ -201,10 +205,10 @@ def mean_longitudes(
             1.55628359e-12, 4.390675353e-20, -9.26940435e-27])
         N = polynomial_sum(lunar_node, T)
         # mean longitude of solar perigee (Simon et al., 1994)
-        PP = 282.94 + 1.7192 * T / 36525.0
+        PP = 282.94 + (1.7192 * T)/_century
     elif ASTRO5:
         # convert from MJD to centuries relative to 2000-01-01T12:00:00
-        T = (MJD - 51544.5)/36525.0
+        T = (MJD - _mjd_j2000)/_century
         # mean longitude of moon (p. 338)
         lunar_longitude = np.array([218.3164477, 481267.88123421, -1.5786e-3,
              1.855835e-6, -1.53388e-8])
@@ -303,7 +307,7 @@ def doodson_arguments(
     # degrees to radians
     dtr = np.pi/180.0
     # convert from MJD to centuries relative to 2000-01-01T12:00:00
-    T = (MJD - 51544.5)/36525.0
+    T = (MJD - _mjd_j2000)/_century
     # hour of the day
     hour = np.mod(MJD, 1)*24.0
     # calculate Doodson phase angles
@@ -387,7 +391,7 @@ def delaunay_arguments(MJD: np.ndarray):
     # arcseconds to radians
     atr = np.pi/648000.0
     # convert from MJD to centuries relative to 2000-01-01T12:00:00
-    T = (MJD - 51544.5)/36525.0
+    T = (MJD - _mjd_j2000)/_century
     # 360 degrees
     circle = 1296000
     # mean anomaly of the moon (arcseconds)
@@ -440,7 +444,7 @@ def mean_obliquity(MJD: np.ndarray):
     # arcseconds to radians
     atr = np.pi/648000.0
     # convert from MJD to centuries relative to 2000-01-01T12:00:00
-    T = (MJD - 51544.5)/36525.0
+    T = (MJD - _mjd_j2000)/_century
     # mean obliquity of the ecliptic (arcseconds)
     epsilon0 = np.array([84381.406, -46.836769, -1.831e-4,
         2.00340e-4, -5.76e-07, -4.34e-08])
@@ -798,7 +802,7 @@ def gast(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - _jd_mjd
     # estimate the mean obliquity
@@ -842,7 +846,7 @@ def itrs(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - _jd_mjd
     # estimate the mean obliquity
@@ -896,7 +900,7 @@ def _eqeq_complement(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
     # get the fundamental arguments in radians
     fa = np.zeros((14, len(ts)))
     # mean anomaly of the moon (arcseconds)
@@ -992,7 +996,7 @@ def _nutation_angles(T: float | np.ndarray):
         <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
-    ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
+    ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
     # convert dynamical time to modified Julian days
     MJD = ts.tt - _jd_mjd
     # get the fundamental arguments in radians
@@ -1068,7 +1072,7 @@ def _polar_motion_matrix(T: float | np.ndarray):
     # arcseconds to radians
     atr = np.pi/648000.0
     # convert to MJD from centuries relative to 2000-01-01T12:00:00
-    MJD = T*36525.0 + 51544.5
+    MJD = T*_century + _mjd_j2000
     sprime = -4.7e-5*T
     px, py = timescale.eop.iers_polar_motion(MJD)
     # calculate the rotation matrices
