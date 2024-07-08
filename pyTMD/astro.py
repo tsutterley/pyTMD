@@ -17,6 +17,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 07/2024: made a wrapper function for normalizing angles
+        make number of days to convert JD to MJD a variable
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 01/2024: refactored lunisolar ephemerides functions
     Updated 12/2023: refactored phase_angles function to doodson_arguments
@@ -62,6 +63,9 @@ jplephem_spk = import_dependency('jplephem.spk')
 
 # default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])
+
+# number of days between the Julian day epoch and MJD
+_jd_mjd = 2400000.5
 
 # PURPOSE: calculate the sum of a polynomial function of time
 def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
@@ -796,7 +800,7 @@ def gast(T: float | np.ndarray):
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
-    MJD = ts.tt - 2400000.5
+    MJD = ts.tt - _jd_mjd
     # estimate the mean obliquity
     epsilon = mean_obliquity(MJD)
     # estimate the nutation in longitude and obliquity
@@ -840,7 +844,7 @@ def itrs(T: float | np.ndarray):
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
-    MJD = ts.tt - 2400000.5
+    MJD = ts.tt - _jd_mjd
     # estimate the mean obliquity
     epsilon = mean_obliquity(MJD)
     # estimate the nutation in longitude and obliquity
@@ -990,7 +994,7 @@ def _nutation_angles(T: float | np.ndarray):
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*36525.0 + 51544.5)
     # convert dynamical time to modified Julian days
-    MJD = ts.tt - 2400000.5
+    MJD = ts.tt - _jd_mjd
     # get the fundamental arguments in radians
     l, lp, F, D, Om = delaunay_arguments(MJD)
     # non-polynomial terms in the equation of the equinoxes

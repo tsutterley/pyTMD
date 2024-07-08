@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: use normalize_angle from pyTMD astro module
+        make number of days to convert tide time to MJD a variable
     Updated 02/2024: changed class name for ellipsoid parameters to datum
     Updated 01/2024: moved minor arguments calculation into new function
         moved constituent parameters function from predict to arguments
@@ -51,6 +52,9 @@ import numpy as np
 import pyTMD.arguments
 import pyTMD.astro
 from pyTMD.crs import datum
+
+# number of days between MJD and the tide epoch (1992-01-01T00:00:00)
+_mjd_tide = 48622.0
 
 # PURPOSE: Predict tides at single times
 def map(t: float | np.ndarray,
@@ -93,7 +97,7 @@ def map(t: float | np.ndarray,
     npts, nc = np.shape(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+    pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
         constituents,
         deltat=deltat,
         corrections=corrections
@@ -159,7 +163,7 @@ def drift(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+    pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
         constituents,
         deltat=deltat,
         corrections=corrections
@@ -225,7 +229,7 @@ def time_series(t: float | np.ndarray,
     nt = len(t)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = pyTMD.arguments.arguments(t + 48622.0,
+    pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
         constituents,
         deltat=deltat,
         corrections=corrections
@@ -369,7 +373,7 @@ def infer_minor(
 
     # load the nodal corrections for minor constituents
     # convert time to Modified Julian Days (MJD)
-    pu, pf, G = pyTMD.arguments.minor_arguments(t + 48622.0,
+    pu, pf, G = pyTMD.arguments.minor_arguments(t + _mjd_tide,
         deltat=kwargs['deltat'],
         corrections=kwargs['corrections']
     )
@@ -535,7 +539,7 @@ def solid_earth_tide(
     # number of input coordinates
     nt = len(np.atleast_1d(t))
     # convert time to Modified Julian Days (MJD)
-    MJD = t + 48622.0
+    MJD = t + _mjd_tide
     # scalar product of input coordinates with sun/moon vectors
     radius = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2 + XYZ[:,2]**2)
     solar_radius = np.sqrt(SXYZ[:,0]**2 + SXYZ[:,1]**2 + SXYZ[:,2]**2)
