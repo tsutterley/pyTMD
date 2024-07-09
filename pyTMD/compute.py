@@ -61,6 +61,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: assert that data type is a known value
+        make number of days to convert JD to MJD a variable
     Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -124,6 +125,9 @@ import timescale.eop
 import timescale.time
 # attempt imports
 pyproj = pyTMD.utilities.import_dependency('pyproj')
+
+# number of days between the Julian day epoch and MJD
+_jd_mjd = 2400000.5
 
 # PURPOSE: wrapper function for computing values
 def corrections(
@@ -828,7 +832,7 @@ def LPT_displacements(
             epoch=EPOCH, standard=TIME)
 
     # convert dynamic time to Modified Julian Days (MJD)
-    MJD = ts.tt - 2400000.5
+    MJD = ts.tt - _jd_mjd
     # convert Julian days to calendar dates
     Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
     # calculate time in year-decimal format
@@ -1008,7 +1012,7 @@ def OPT_displacements(
             epoch=EPOCH, standard=TIME)
 
     # convert dynamic time to Modified Julian Days (MJD)
-    MJD = ts.tt - 2400000.5
+    MJD = ts.tt - _jd_mjd
     # convert Julian days to calendar dates
     Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
     # calculate time in year-decimal format

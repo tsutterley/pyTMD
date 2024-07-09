@@ -96,6 +96,8 @@ def test_frequency_dependence_diurnal():
     T = (MJD - 51544.5)/36525.0
     T_expected = 0.1059411362080767
     assert np.isclose(T_expected, T)
+    T_test = (MJD - pyTMD.astro._mjd_j2000)/pyTMD.astro._century
+    assert np.isclose(T_expected, T_test)
     # expected results
     dx_expected = 0.4193085327321284701e-2
     dy_expected = 0.1456681241014607395e-2
@@ -116,6 +118,8 @@ def test_frequency_dependence_long_period():
     T = (MJD - 51544.5)/36525.0
     T_expected = 0.1059411362080767
     assert np.isclose(T_expected, T)
+    T_test = (MJD - pyTMD.astro._mjd_j2000)/pyTMD.astro._century
+    assert np.isclose(T_expected, T_test)
     # expected results
     dx_expected = -0.9780962849562107762e-4
     dy_expected = -0.2236349699932734273e-4
@@ -148,6 +152,8 @@ def test_fundamental_arguments():
     # convert to MJD from centuries relative to 2000-01-01T12:00:00
     MJD = T*36525.0 + 51544.5
     assert np.isclose(MJD, 54465)
+    MJD_test = T*pyTMD.astro._century + pyTMD.astro._mjd_j2000
+    assert np.isclose(MJD, MJD_test)
     L_expected = 2.291187512612069099
     LP_expected = 6.212931111003726414
     F_expected = 3.658025792050572989
