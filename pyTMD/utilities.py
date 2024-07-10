@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (06/2024)
+Written by Tyler Sutterley (07/2024)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 07/2024: added function to parse JSON responses from https
     Updated 06/2024: make default case for an import exception be a class
     Updated 04/2024: add wrapper to importlib for optional dependencies
     Updated 11/2023: updated ssl context to fix deprecation error
@@ -861,6 +862,44 @@ def from_http(
         # return the bytesIO object
         remote_buffer.seek(0)
         return remote_buffer
+
+# PURPOSE: load a JSON response from a http host
+def from_json(
+        HOST: str | list,
+        timeout: int | None = None,
+        context: ssl.SSLContext = _default_ssl_context
+    ) -> dict:
+    """
+    Load a JSON response from a http host
+
+    Parameters
+    ----------
+    HOST: str or list
+        remote http host path split as list
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    context: obj, default pyTMD.utilities._default_ssl_context
+        SSL context for ``urllib`` opener object
+    """
+    # verify inputs for remote http host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
+    # try loading JSON from http
+    try:
+        # Create and submit request for JSON response
+        request = urllib2.Request(posixpath.join(*HOST))
+        request.add_header('Accept', 'application/json')
+        response = urllib2.urlopen(request, timeout=timeout, context=context)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        msg = 'Load error from {0}'.format(posixpath.join(*HOST))
+        raise Exception(msg) from exc
+    else:
+        # load JSON response
+        return json.loads(response.read())        
 
 # PURPOSE: attempt to build an opener with netrc
 def attempt_login(

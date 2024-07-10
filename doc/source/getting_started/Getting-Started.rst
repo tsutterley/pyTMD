@@ -66,6 +66,8 @@ Presently, the following models and their directories parameterized within ``pyT
 
     * `FES2014 <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/ocean_tide/``
     * `FES2014_load <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/load_tide/``
+    * `FES2022 <https://doi.org/10.24400/527896/A01-2024.004>`_: ``<path_to_tide_models>/fes2022b/ocean_tide/``
+    * `FES2022_load <https://doi.org/10.24400/527896/A01-2024.004>`_: ``<path_to_tide_models>/fes2022b/load_tide/``
 
 - Empirical Ocean Tide models [HartDavis2020]_
 

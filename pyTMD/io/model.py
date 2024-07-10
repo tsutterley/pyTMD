@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (05/2024)
+Written by Tyler Sutterley (07/2024)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 07/2024: added new FES2022 and FES2022_load to list of models
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: append v-components of velocity only to netcdf format
     Updated 11/2023: revert TPXO9-atlas currents changes to separate dicts
@@ -584,10 +585,7 @@ class model:
                 'q1.nc','r2.nc','s1.nc','s2.nc','s4.nc','sa.nc',
                 'ssa.nc','t2.nc']
             self.model_file = self.pathfinder(model_files)
-            self.constituents = ['2n2','eps2','j1','k1','k2','l2',
-                'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
-                'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
-                'o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0/100.0
             self.version = 'FES2014'
             # model description and references
@@ -607,16 +605,59 @@ class model:
                 'q1.nc','r2.nc','s1.nc','s2.nc','s4.nc','sa.nc',
                 'ssa.nc','t2.nc']
             self.model_file = self.pathfinder(model_files)
-            self.constituents = ['2n2','eps2','j1','k1','k2','l2',
-                'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
-                'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
-                'o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0/100.0
             self.version = 'FES2014'
             # model description and references
             self.reference = ('https://www.aviso.altimetry.fr/'
                 'en/data/products/auxiliary-products/'
                 'global-tide-fes.html')
+            self.variable = 'tide_load'
+        elif (m == 'FES2022'):
+            self.format = 'FES'
+            self.model_directory = self.directory.joinpath(
+                'fes2022b','ocean_tide')
+            model_files = ['2n2_fes2022.nc','eps2_fes2022.nc',
+                'j1_fes2022.nc','k1_fes2022.nc','k2_fes2022.nc',
+                'l2_fes2022.nc','lambda2_fes2022.nc','m2_fes2022.nc',
+                'm3_fes2022.nc','m4_fes2022.nc','m6_fes2022.nc',
+                'm8_fes2022.nc','mf_fes2022.nc','mks2_fes2022.nc',
+                'mm_fes2022.nc','mn4_fes2022.nc','ms4_fes2022.nc',
+                'msf_fes2022.nc','msqm_fes2022.nc','mtm_fes2022.nc',
+                'mu2_fes2022.nc','n2_fes2022.nc','n4_fes2022.nc',
+                'nu2_fes2022.nc','o1_fes2022.nc','p1_fes2022.nc',
+                'q1_fes2022.nc','r2_fes2022.nc','s1_fes2022.nc',
+                's2_fes2022.nc','s4_fes2022.nc','sa_fes2022.nc',
+                'ssa_fes2022.nc','t2_fes2022.nc']
+            self.model_file = self.pathfinder(model_files)
+            self.constituents = [self.parse_file(f) for f in model_files]
+            self.scale = 1.0/100.0
+            self.version = 'FES2022'
+            # model description and references
+            self.reference = 'https://doi.org/10.24400/527896/A01-2024.004'
+            self.variable = 'tide_ocean'
+        elif (m == 'FES2022_load'):
+            self.format = 'FES'
+            self.model_directory = self.directory.joinpath(
+                'fes2022b','load_tide')
+            model_files = ['2n2_fes2022.nc','eps2_fes2022.nc',
+                'j1_fes2022.nc','k1_fes2022.nc','k2_fes2022.nc',
+                'l2_fes2022.nc','lambda2_fes2022.nc','m2_fes2022.nc',
+                'm3_fes2022.nc','m4_fes2022.nc','m6_fes2022.nc',
+                'm8_fes2022.nc','mf_fes2022.nc','mks2_fes2022.nc',
+                'mm_fes2022.nc','mn4_fes2022.nc','ms4_fes2022.nc',
+                'msf_fes2022.nc','msqm_fes2022.nc','mtm_fes2022.nc',
+                'mu2_fes2022.nc','n2_fes2022.nc','n4_fes2022.nc',
+                'nu2_fes2022.nc','o1_fes2022.nc','p1_fes2022.nc',
+                'q1_fes2022.nc','r2_fes2022.nc','s1_fes2022.nc',
+                's2_fes2022.nc','s4_fes2022.nc','sa_fes2022.nc',
+                'ssa_fes2022.nc','t2_fes2022.nc']
+            self.model_file = self.pathfinder(model_files)
+            self.constituents = [self.parse_file(f) for f in model_files]
+            self.scale = 1.0/100.0
+            self.version = 'FES2022'
+            # model description and references
+            self.reference = 'https://doi.org/10.24400/527896/A01-2024.004'
             self.variable = 'tide_load'
         elif (m == 'EOT20'):
             self.format = 'FES'
@@ -632,9 +673,7 @@ class model:
                 'SA_ocean_eot20.nc','SSA_ocean_eot20.nc',
                 'T2_ocean_eot20.nc']
             self.model_file = self.pathfinder(model_files)
-            self.constituents = ['2n2','j1','k1','k2','m2','m4',
-                'mf','mm','n2','o1','p1','q1','s1','s2','sa',
-                'ssa','t2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0/100.0
             self.version = 'EOT20'
             # model description and references
@@ -654,9 +693,7 @@ class model:
                 'SA_load_eot20.nc','SSA_load_eot20.nc',
                 'T2_load_eot20.nc']
             self.model_file = self.pathfinder(model_files)
-            self.constituents = ['2n2','j1','k1','k2','m2','m4',
-                'mf','mm','n2','o1','p1','q1','s1','s2','sa',
-                'ssa','t2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0/100.0
             self.version = 'EOT20'
             # model description and references
@@ -669,7 +706,7 @@ class model:
                 'm2.hamtide11a.nc','n2.hamtide11a.nc','o1.hamtide11a.nc',
                 'p1.hamtide11a.nc','q1.hamtide11a.nc','s2.hamtide11a.nc']
             self.model_file = self.pathfinder(model_files)
-            self.constituents = ['2n2','k1','k2','m2','n2','o1','p1','q1','s2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0/100.0
             self.version = 'HAMTIDE11'
             # model description and references
@@ -972,10 +1009,7 @@ class model:
             for key, val in model_directory.items():
                 self.model_directory = copy.copy(val)
                 self.model_file[key] = self.pathfinder(model_files)
-            self.constituents = ['2n2','eps2','j1','k1','k2','l2','lambda2',
-                'm2','m3','m4','m6','m8','mf','mks2','mm','mn4','ms4','msf',
-                'msqm','mtm','mu2','n2','n4','nu2','o1','p1','q1','r2','s1',
-                's2','s4','sa','ssa','t2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0
             self.version = 'FES2014'
             # model description and references
@@ -995,7 +1029,7 @@ class model:
             for key, val in model_directory.items():
                 self.model_directory = copy.copy(val)
                 self.model_file[key] = self.pathfinder(model_files)
-            self.constituents = ['2n2','k1','k2','m2','n2','o1','p1','q1','s2']
+            self.constituents = [self.parse_file(f) for f in model_files]
             self.scale = 1.0
             self.version = 'HAMTIDE11'
             # model description and references
@@ -1133,8 +1167,8 @@ class model:
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
             'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas',
-            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20',
-            'HAMTIDE11']
+            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','FES2022',
+            'EOT20','HAMTIDE11']
 
     @staticmethod
     def global_load() -> list:
@@ -1142,7 +1176,7 @@ class model:
         Returns list of global load tide elevation models
         """
         return ['TPXO7.2_load','GOT4.7_load','GOT4.8_load',
-            'GOT4.10_load','FES2014_load','EOT20_load']
+            'GOT4.10_load','FES2014_load','FES2022_load','EOT20_load']
 
     @staticmethod
     def global_current() -> list:
@@ -1206,8 +1240,8 @@ class model:
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
-            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','EOT20',
-            'HAMTIDE11']
+            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','FES2022',
+            'EOT20','HAMTIDE11']
 
     @staticmethod
     def load_elevation() -> list:
@@ -1215,7 +1249,8 @@ class model:
         Returns list of load tide elevation models
         """
         return ['CATS2008_load','TPXO7.2_load','GOT4.7_load',
-            'GOT4.8_load','GOT4.10_load','FES2014_load','EOT20_load']
+            'GOT4.8_load','GOT4.10_load','FES2014_load','FES2022_load',
+            'EOT20_load']
 
     @staticmethod
     def ocean_current() -> list:
@@ -1272,7 +1307,8 @@ class model:
         """
         Returns list of FES format models
         """
-        return ['FES2014','FES2014_load','EOT20','EOT20_load','HAMTIDE11']
+        return ['FES2014','FES2014_load','FES2022','FES2022_load',
+            'EOT20','EOT20_load','HAMTIDE11']
 
     def pathfinder(self, model_file: str | pathlib.Path | list):
         """
