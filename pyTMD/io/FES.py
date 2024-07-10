@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (07/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -27,6 +27,7 @@ OPTIONS:
         FES2004
         FES2012
         FES2014
+        FES2022
         EOT20
         HAMTIDE11
     method: interpolation method
@@ -56,6 +57,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 07/2024: added new FES2022 to available known model versions
     Updated 01/2024: attempt to extract constituent IDs from filenames
     Updated 06/2023: extract ocean tide model variables for FES2012
     Updated 04/2023: added global HAMTIDE11 model
@@ -108,6 +110,10 @@ from pyTMD.utilities import import_dependency
 # attempt imports
 netCDF4 = import_dependency('netCDF4')
 
+# versions of FES models
+_ascii_versions = ('FES1999','FES2004')
+_netcdf_versions = ('FES2012','FES2014','FES2022','EOT20','HAMTIDE11')
+
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(
         ilon: np.ndarray,
@@ -143,6 +149,7 @@ def extract_constants(
             - ``'FES2004'``
             - ``'FES2012'``
             - ``'FES2014'``
+            - ``'FES2022'``
             - ``'EOT20'``
             - ``'HAMTIDE11'``
     method: str, default 'spline'
@@ -213,10 +220,10 @@ def extract_constants(
         if not model_file.exists():
             raise FileNotFoundError(str(model_file))
         # read constituent from elevation file
-        if kwargs['version'] in ('FES1999','FES2004'):
+        if kwargs['version'] in _ascii_versions:
             # FES ascii constituent files
             hc, lon, lat = read_ascii_file(model_file, **kwargs)
-        elif kwargs['version'] in ('FES2012','FES2014','EOT20','HAMTIDE11'):
+        elif kwargs['version'] in _netcdf_versions:
             # FES netCDF4 constituent files
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
         # adjust longitudinal convention of input latitude and longitude
@@ -324,6 +331,7 @@ def read_constants(
             - ``'FES2004'``
             - ``'FES2012'``
             - ``'FES2014'``
+            - ``'FES2022'``
             - ``'EOT20'``
             - ``'HAMTIDE11'``
     compressed: bool, default False
@@ -358,10 +366,10 @@ def read_constants(
         except ValueError as exc:
             cons = str(i)
         # read constituent from elevation file
-        if kwargs['version'] in ('FES1999','FES2004'):
+        if kwargs['version'] in _ascii_versions:
             # FES ascii constituent files
             hc, lon, lat = read_ascii_file(model_file, **kwargs)
-        elif kwargs['version'] in ('FES2012','FES2014','EOT20','HAMTIDE11'):
+        elif kwargs['version'] in _netcdf_versions:
             # FES netCDF4 constituent files
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
         # grid step size of tide model
@@ -636,6 +644,7 @@ def read_netcdf_file(
 
             - ``'FES2012'``
             - ``'FES2014'``
+            - ``'FES2022'``
             - ``'EOT20'``
             - ``'HAMTIDE11'``
     compressed: bool, default False
@@ -670,7 +679,7 @@ def read_netcdf_file(
         lat = fileID.variables['lat'][:]
         amp_key = dict(z='Ha', u='Ua', v='Va')[kwargs['type']]
         phase_key = dict(z='Hg', u='Ug', v='Vg')[kwargs['type']]
-    elif kwargs['version'] in ('FES2014','EOT20'):
+    elif kwargs['version'] in ('FES2014','FES2022','EOT20'):
         lon = fileID.variables['lon'][:]
         lat = fileID.variables['lat'][:]
         amp_key = dict(z='amplitude', u='Ua', v='Va')[kwargs['type']]
@@ -695,7 +704,7 @@ def read_netcdf_file(
     # return output variables
     return (hc, lon, lat)
 
-# PURPOSE: output tidal constituent file in FES2014 format
+# PURPOSE: output tidal constituent file in FES2014/2022 format
 def output_netcdf_file(
         FILE: str | pathlib.Path,
         hc: np.ndarray,
@@ -705,7 +714,7 @@ def output_netcdf_file(
         **kwargs
     ):
     """
-    Writes tidal constituents to netCDF4 files in FES2014 format
+    Writes tidal constituents to netCDF4 files in FES2014/2022 format
 
     Parameters
     ----------
@@ -765,6 +774,8 @@ def output_netcdf_file(
         ('lat','lon',), fill_value=amp.fill_value, zlib=True)
     nc[phase_key] = fileID.createVariable(phase_key, ph.dtype,
         ('lat','lon',), fill_value=ph.fill_value, zlib=True)
+    # create projection variable
+    nc['crs'] = fileID.createVariable('crs', np.byte, ())
     # filling the NetCDF variables
     nc['lon'][:] = lon[:]
     nc['lat'][:] = lat[:]
@@ -777,13 +788,19 @@ def output_netcdf_file(
     nc['lat'].setncattr('axis', 'Y')
     nc['lat'].setncattr('units', 'degrees_north')
     nc['lat'].setncattr('long_name', 'latitude')
+    # add projection attributes
+    nc['crs'].setncattr('grid_mapping_name', 'latitude_longitude')
+    nc['crs'].setncattr('semi_major_axis', 6378136.3)
+    nc['crs'].setncattr('inverse_flattening', 298.257)
     # set variable attributes
     nc[amp_key].setncattr('units', units)
     long_name = f'Tide amplitude at {constituent} frequency'
     nc[amp_key].setncattr('long_name', long_name)
+    nc[amp_key].setncattr('grid_mapping', 'crs')
     nc[phase_key].setncattr('units', 'degrees')
     long_name = f'Tide phase at {constituent} frequency'
     nc[phase_key].setncattr('long_name', long_name)
+    nc[phase_key].setncattr('grid_mapping', 'crs')
     # define and fill constituent ID
     nc['con'] = fileID.createVariable('con', 'S1', ('nct',))
     con = [char.encode('utf8') for char in constituent.ljust(4)]

@@ -64,6 +64,8 @@ General Methods
 
 .. autofunction:: pyTMD.utilities.from_http
 
+.. autofunction:: pyTMD.utilities.from_json
+
 .. autofunction:: pyTMD.utilities.attempt_login
 
 .. autofunction:: pyTMD.utilities.build_opener
