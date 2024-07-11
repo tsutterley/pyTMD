@@ -6,8 +6,8 @@ pyTMD Overview
 It was developed with the goal of supporting science applications for
 airborne and satellite altimetry originally as part of a
 NASA Postdoctoral Program (NPP) Fellowship.
-``pyTMD`` provides data access utilities for ascii, netCDF4, HDF5, and geotiff
-formats.
+``pyTMD`` provides data access utilities for ascii, netCDF4, HDF5, parquet,
+and geotiff formats.
 High-level plotting programs are also provided through the
 use of `Jupyter Notebooks <../user_guide/Examples.html>`_.
 
