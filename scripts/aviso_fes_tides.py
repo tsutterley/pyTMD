@@ -40,6 +40,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: added list and download for FES2022 tide model
+        compare modification times with remote to not overwrite files
     Updated 05/2023: added option to change connection timeout
     Updated 04/2023: using pathlib to define and expand paths
         added option to include AVISO FTP password as argument
@@ -116,7 +117,6 @@ def aviso_fes_tides(MODEL: str,
             LOAD=LOAD,
             CURRENTS=CURRENTS,
             GZIP=GZIP,
-            LOG=LOG,
             MODE=MODE)
     elif MODEL in ('FES2022',):
         aviso_fes_list(MODEL, f, logger,
@@ -284,6 +284,8 @@ def ftp_download(logger, ftp, remote_path, local_dir,
     ):
     # remote and local directory for data product
     remote_file = posixpath.join('auxiliary','tide_model',*remote_path)
+    # if compressing the output file
+    opener = gzip.open if GZIP else open
 
     # Printing files transferred
     remote_ftp_url = posixpath.join('ftp://', ftp.host, remote_file)
@@ -299,73 +301,85 @@ def ftp_download(logger, ftp, remote_path, local_dir,
         member_files = [m for m in tar.getmembers() if tarfile.TarInfo.isfile(m)]
         for m in member_files:
             member = posixpath.basename(m.name) if FLATTEN else m.name
-            fileBasename, fileExtension = posixpath.splitext(m.name)
+            base, sfx = posixpath.splitext(m.name)
             # extract file contents to new file
-            if fileExtension in ('.asc','.nc') and GZIP:
-                local_file = local_dir.joinpath(*posixpath.split(f'{member}.gz'))
-                logger.info(f'\t{str(local_file)}')
-                # recursively create output directory if non-existent
-                local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
-                # extract file to compressed gzip format in local directory
-                with tar.extractfile(m) as fi,gzip.open(local_file, 'wb') as fo:
-                    shutil.copyfileobj(fi, fo)
-            else:
-                local_file = local_dir.joinpath(*posixpath.split(member))
-                logger.info(f'\t{str(local_file)}')
-                # recursively create output directory if non-existent
-                local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
-                # extract file to local directory
-                with tar.extractfile(m) as fi,open(local_file, 'wb') as fo:
-                    shutil.copyfileobj(fi, fo)
+            output = f'{member}.gz' if sfx in ('.asc','.nc') and GZIP else member
+            local_file = local_dir.joinpath(*posixpath.split(output))
+            # check if the local file exists
+            if local_file.exists() and newer(m.mtime, local_file.stat().st_mtime):
+                # check the modification time of the local file
+                # if remote file is newer: overwrite the local file
+                continue
+            # print the file being transferred
+            logger.info(f'\t{str(local_file)}')
+            # recursively create output directory if non-existent
+            local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
+            # extract file to local directory
+            with tar.extractfile(m) as fi,opener(local_file, 'wb') as fo:
+                shutil.copyfileobj(fi, fo)
             # get last modified date of remote file within tar file
             # keep remote modification time of file and local access time
             pathlib.os.utime(local_file, (local_file.stat().st_atime, m.mtime))
             local_file.chmod(mode=MODE)
     elif LZMA:
+        # get last modified date of remote file and convert into unix time
+        mdtm = ftp.sendcmd(f'MDTM {remote_file}')
+        mtime = calendar.timegm(time.strptime(mdtm[4:],"%Y%m%d%H%M%S"))
+        # output file name for compressed and uncompressed cases
+        stem = posixpath.basename(posixpath.splitext(remote_file)[0])
+        base, sfx = posixpath.splitext(stem)
+        # extract file contents to new file
+        output = f'{stem}.gz' if sfx in ('.asc','.nc') and GZIP else stem
+        local_file = local_dir.joinpath(output)
+        # check if the local file exists
+        if local_file.exists() and newer(mtime,local_file.stat().st_mtime):
+            # check the modification time of the local file
+            # if remote file is newer: overwrite the local file
+            return
+        # print the file being transferred
+        logger.info(f'\t{str(local_file)}')
+        # recursively create output directory if non-existent
+        local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
         # copy remote file contents to bytesIO object
         fileobj = io.BytesIO()
         ftp.retrbinary(f'RETR {remote_file}', fileobj.write, blocksize=CHUNK)
         fileobj.seek(0)
-        # decompress lzma file
-        stem = posixpath.basename(posixpath.splitext(remote_file)[0])
-        fileBasename, fileExtension = posixpath.splitext(stem)
-        # extract file contents to new file
-        if fileExtension in ('.asc','.nc') and GZIP:
-            local_file = local_dir.joinpath(f'{stem}.gz')
-            logger.info(f'\t{str(local_file)}')
-            # recursively create output directory if non-existent
-            local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
-            # extract file to compressed gzip format in local directory
-            with lzma.open(fileobj) as fi,gzip.open(local_file, 'wb') as fo:
-                shutil.copyfileobj(fi, fo)
-        else:
-            local_file = local_dir.joinpath(stem)
-            logger.info(f'\t{str(local_file)}')
-            # recursively create output directory if non-existent
-            local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
-            # extract file to local directory
-            with lzma.open(fileobj) as fi,open(local_file, 'wb') as fo:
-                shutil.copyfileobj(fi, fo)
-        # get last modified date of remote file and convert into unix time
-        mdtm = ftp.sendcmd(f'MDTM {remote_file}')
-        mtime = calendar.timegm(time.strptime(mdtm[4:],"%Y%m%d%H%M%S"))
+        # decompress lzma file and extract contents to local directory
+        with lzma.open(fileobj) as fi,opener(local_file, 'wb') as fo:
+            shutil.copyfileobj(fi, fo)
         # get last modified date of remote file within tar file
         # keep remote modification time of file and local access time
         pathlib.os.utime(local_file, (local_file.stat().st_atime, mtime))
         local_file.chmod(mode=MODE)
     else:
         # copy readme and uncompressed files directly
-        local_file = local_dir.joinpath(local_dir,remote_path[-1])
-        logger.info(f'\t{str(local_file)}\n')
-        # copy remote file contents to local file
-        with local_file.open('wb') as f:
-            ftp.retrbinary(f'RETR {remote_file}', f.write, blocksize=CHUNK)
+        stem = posixpath.basename(remote_file)
+        base, sfx = posixpath.splitext(stem)
+        # output file name for compressed and uncompressed cases
+        output = f'{stem}.gz' if sfx in ('.asc','.nc') and GZIP else stem
+        local_file = local_dir.joinpath(output)
         # get last modified date of remote file and convert into unix time
         mdtm = ftp.sendcmd(f'MDTM {remote_file}')
         mtime = calendar.timegm(time.strptime(mdtm[4:],"%Y%m%d%H%M%S"))
+        # check if the local file exists
+        if local_file.exists() and newer(mtime, local_file.stat().st_mtime):
+            # check the modification time of the local file
+            # if remote file is newer: overwrite the local file
+            return
+        # print the file being transferred
+        logger.info(f'\t{str(local_file)}\n')
+        # recursively create output directory if non-existent
+        local_file.parent.mkdir(mode=MODE, parents=True, exist_ok=True)
+        # copy remote file contents to local file
+        with opener(local_file, 'wb') as f:
+            ftp.retrbinary(f'RETR {remote_file}', f.write, blocksize=CHUNK)
         # keep remote modification time of file and local access time
         pathlib.os.utime(local_file, (local_file.stat().st_atime, mtime))
         local_file.chmod(mode=MODE)
+
+# PURPOSE: compare the modification time of two files
+def newer(t1: int, t2: int) -> bool:
+    return (pyTMD.utilities.even(t1) <= pyTMD.utilities.even(t2))
 
 # PURPOSE: create argument parser
 def arguments():

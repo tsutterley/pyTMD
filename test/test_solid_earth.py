@@ -365,3 +365,16 @@ def test_sidereal():
     # expected side real time in hours
     expected = 20.96154017401333
     assert np.isclose(expected, 24.0*ts.st).all()
+
+def test_epochs():
+    """Test that the epoch conversions match expected outputs
+    """
+    # Modified Julian Day (MJD)
+    assert np.isclose(pyTMD.astro._jd_mjd, 2400000.5) 
+    # J2000 time
+    mjd_j2000 = timescale.time.convert_calendar_dates(
+        *timescale.time._j2000_epoch,
+        epoch=timescale.time._mjd_epoch)
+    assert np.isclose(mjd_j2000, pyTMD.astro._mjd_j2000)
+    assert np.isclose(pyTMD.astro._mjd_j2000, 51544.5) 
+    assert np.isclose(pyTMD.astro._jd_j2000, 2451545.0)

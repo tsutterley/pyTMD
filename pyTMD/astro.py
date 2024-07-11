@@ -68,6 +68,8 @@ _default_kernel = get_data_path(['data','de440s.bsp'])
 _jd_mjd = 2400000.5
 # number of days between MJD and the J2000 epoch
 _mjd_j2000 = 51544.5
+# number of days between the Julian day epoch and J2000 epoch
+_jd_j2000 = _jd_mjd + _mjd_j2000
 # Julian century
 _century = 36525.0
 
@@ -589,8 +591,7 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     x, y, z = 1e3*(SSB_to_Sun.compute(ts.tt) - SSB_to_EMB.compute(ts.tt) -
         EMB_to_Earth.compute(ts.tt))
     # rotate to cartesian (ECEF) coordinates
-    # use UT1 time as input to itrs rotation function
-    rot_z = itrs((ts.ut1 - 2451545.0)/ts.century)
+    rot_z = itrs((ts.ut1 - _jd_j2000)/ts.century)
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
     Y = rot_z[1,0,:]*x + rot_z[1,1,:]*y + rot_z[1,2,:]*z
     Z = rot_z[2,0,:]*x + rot_z[2,1,:]*y + rot_z[2,2,:]*z
@@ -768,7 +769,7 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     x, y, z = 1e3*(EMB_to_Moon.compute(ts.tt) - EMB_to_Earth.compute(ts.tt))
     # rotate to cartesian (ECEF) coordinates
     # use UT1 time as input to itrs rotation function
-    rot_z = itrs((ts.ut1 - 2451545.0)/ts.century)
+    rot_z = itrs((ts.ut1 - _jd_j2000)/ts.century)
     X = rot_z[0,0,:]*x + rot_z[0,1,:]*y + rot_z[0,2,:]*z
     Y = rot_z[1,0,:]*x + rot_z[1,1,:]*y + rot_z[1,2,:]*z
     Z = rot_z[2,0,:]*x + rot_z[2,1,:]*y + rot_z[2,2,:]*z
