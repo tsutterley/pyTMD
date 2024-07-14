@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: added new FES2022 to available known model versions
+        FES2022 have masked longitudes, only extract longitude data
     Updated 01/2024: attempt to extract constituent IDs from filenames
     Updated 06/2023: extract ocean tide model variables for FES2012
     Updated 04/2023: added global HAMTIDE11 model
@@ -675,18 +676,18 @@ def read_netcdf_file(
     # variable dimensions for each model
     # amplitude and phase components for each type
     if kwargs['version'] in ('FES2012',):
-        lon = fileID.variables['lon'][:]
-        lat = fileID.variables['lat'][:]
+        lon = fileID.variables['lon'][:].data
+        lat = fileID.variables['lat'][:].data
         amp_key = dict(z='Ha', u='Ua', v='Va')[kwargs['type']]
         phase_key = dict(z='Hg', u='Ug', v='Vg')[kwargs['type']]
     elif kwargs['version'] in ('FES2014','FES2022','EOT20'):
-        lon = fileID.variables['lon'][:]
-        lat = fileID.variables['lat'][:]
+        lon = fileID.variables['lon'][:].data
+        lat = fileID.variables['lat'][:].data
         amp_key = dict(z='amplitude', u='Ua', v='Va')[kwargs['type']]
         phase_key = dict(z='phase', u='Ug', v='Vg')[kwargs['type']]
     elif kwargs['version'] in ('HAMTIDE11',):
-        lon = fileID.variables['LON'][:]
-        lat = fileID.variables['LAT'][:]
+        lon = fileID.variables['LON'][:].data
+        lat = fileID.variables['LAT'][:].data
         amp_key = dict(z='AMPL', u='UAMP', v='VAMP')[kwargs['type']]
         phase_key = dict(z='PHAS', u='UPHA', v='VPHA')[kwargs['type']]
     # get amplitude and phase components
