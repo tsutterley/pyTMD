@@ -1,11 +1,1 @@
-{
-    "format": "FES",
-    "name": "FES2012",
-    "model_file": "fes2012/*_FES2012_SLEV.nc.gz",
-    "type": "z",
-    "version": "FES2012",
-    "variable": "tide_ocean",
-    "scale": 0.01,
-    "compressed": true,
-    "reference": "https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html"
-}
+{"format": "FES", "name": "FES2012", "model_file": "fes2012/*_FES2012_SLEV.nc.gz", "type": "z", "version": "FES2012", "variable": "tide_ocean", "scale": 0.01, "compressed": true, "reference": "https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html"}

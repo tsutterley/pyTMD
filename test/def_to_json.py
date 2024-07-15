@@ -29,6 +29,9 @@ def arguments():
     parser.add_argument('infile',
         type=pathlib.Path, nargs='+',
         help='Definition file to convert')
+    parser.add_argument('--pretty', '-p',
+        action='store_true',
+        help='Pretty print the json file')
     parser.add_argument('--verbose', '-v',
         action='store_true',
         help='Verbose output')
@@ -68,7 +71,8 @@ def main():
         json_file = definition_file.with_suffix('.json')
         print(f'\t{json_file}') if args.verbose else None
         with open(json_file, 'w') as fid:
-            json.dump(parameters, fid, indent=4)
+            indent = 4 if args.pretty else None
+            json.dump(parameters, fid, indent=indent)
         # Removing the definition file
         if args.cleanup:
             definition_file.unlink()
