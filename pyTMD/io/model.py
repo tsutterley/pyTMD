@@ -7,6 +7,7 @@ Retrieves tide model parameters for named tide models and
 
 UPDATE HISTORY:
     Updated 07/2024: added new FES2022 and FES2022_load to list of models
+        added JSON format for model definition files
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: append v-components of velocity only to netcdf format
     Updated 11/2023: revert TPXO9-atlas currents changes to separate dicts
@@ -44,6 +45,7 @@ from __future__ import annotations
 import re
 import io
 import copy
+import json
 import pathlib
 
 class model:
@@ -1337,7 +1339,10 @@ class model:
         # return the complete output path
         return output_file
 
-    def from_file(self, definition_file: str | pathlib.Path | io.IOBase):
+    def from_file(self,
+            definition_file: str | pathlib.Path | io.IOBase,
+            format: str = 'ascii'
+        ):
         """
         Create a model object from an input definition file
 
@@ -1345,23 +1350,45 @@ class model:
         ----------
         definition_file: str, pathlib.Path or io.IOBase
             model definition file for creating model object
+        format: str
+            format of the input definition file
+
+                - ``'ascii'`` for tab-delimited definition file
+                - ``'json'`` for JSON formatted definition file
         """
-        # variable with parameter definitions
-        parameters = {}
         # Opening definition file and assigning file ID number
         if isinstance(definition_file, io.IOBase):
             fid = copy.copy(definition_file)
         else:
             definition_file = pathlib.Path(definition_file).expanduser()
             fid = definition_file.open(mode="r", encoding='utf8')
+        # load and parse definition file type
+        if (format.lower() == 'ascii'):
+            self.from_ascii(fid)
+        elif (format.lower() == 'json'):
+            self.from_json(fid)
+        # close the definition file
+        fid.close()
+        # return the model object
+        return self
+
+    def from_ascii(self, fid: io.IOBase):
+        """
+        Load and parse tab-delimited definition file
+
+        Parameters
+        ----------
+        fid: io.IOBase
+            open definition file object
+        """
+        # variable with parameter definitions
+        parameters = {}
         # for each line in the file will extract the parameter (name and value)
         for fileline in fid:
             # Splitting the input line between parameter name and value
             part = fileline.rstrip().split(maxsplit=1)
             # filling the parameter definition variable
             parameters[part[0]] = part[1]
-        # close the parameter file
-        fid.close()
         # convert from dictionary to model variable
         temp = self.from_dict(parameters)
         # verify model name, format and type
@@ -1536,6 +1563,167 @@ class model:
         # convert boolean strings
         if isinstance(temp.compressed, str):
             temp.compressed = self.to_bool(temp.compressed)
+        # return the model parameters
+        return temp
+
+    def from_json(self, fid: io.IOBase):
+        """
+        Load and parse JSON definition file
+
+        Parameters
+        ----------
+        fid: io.IOBase
+            open definition file object
+        """
+        # load JSON file
+        parameters = json.load(fid)
+        # convert from dictionary to model variable
+        temp = self.from_dict(parameters)
+        # verify model name, format and type
+        assert temp.name
+        assert temp.format in ('OTIS','ATLAS','TMD3','netcdf','GOT','FES')
+        assert temp.type
+        assert temp.model_file
+        # split model file into list if an ATLAS, GOT or FES file
+        # model files can be comma, tab or space delimited
+        # extract full path to tide model files
+        # extract full path to tide grid file
+        if temp.format in ('OTIS','ATLAS','TMD3'):
+            assert temp.grid_file
+            # check if grid file is relative
+            if (temp.directory is not None):
+                temp.grid_file = temp.directory.joinpath(temp.grid_file).resolve()
+            else:
+                temp.grid_file = pathlib.Path(temp.grid_file).expanduser()
+            # extract model files
+            if (temp.type == ['u','v']) and (temp.directory is not None):
+                # use glob strings to find files in directory
+                for key, glob_string in temp.model_file.items():
+                    temp.model_file[key] = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file['u'][0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
+            elif (temp.type == 'z') and (temp.directory is not None):
+                # use glob strings to find files in directory
+                glob_string = copy.copy(temp.model_file)
+
+                temp.model_file = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file[0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
+            elif (temp.type == ['u','v']) and isinstance(temp.model_file, dict):
+                # resolve paths to model files for each direction
+                for key, model_file in temp.model_file.items():
+                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in 
+                        model_file]
+                # copy directory dictionaries
+                temp.model_directory = temp.model_file['u'][0].parent
+            elif (temp.type == 'z') and isinstance(temp.model_file, list):
+                # resolve paths to model files
+                temp.model_file = [pathlib.Path(f).expanduser() for f in
+                    temp.model_file]
+                temp.model_directory = temp.model_file[0].parent
+            else:
+                # fully defined single file case
+                temp.model_file = pathlib.Path(temp.model_file).expanduser()
+                temp.model_directory = temp.model_file.parent
+        elif temp.format in ('netcdf',):
+            assert temp.grid_file
+            # check if grid file is relative
+            if (temp.directory is not None):
+                temp.grid_file = temp.directory.joinpath(temp.grid_file).resolve()
+            else:
+                temp.grid_file = pathlib.Path(temp.grid_file).expanduser()
+            # extract model files
+            if (temp.type == ['u','v']) and (temp.directory is not None):
+                # use glob strings to find files in directory
+                for key, glob_string in temp.model_file.items():
+                    temp.model_file[key] = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file['u'][0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
+            elif (temp.type == 'z') and (temp.directory is not None):
+                # use glob strings to find files in directory
+                glob_string = copy.copy(temp.model_file)
+                temp.model_file = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file[0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+                    raise FileNotFoundError(message) from exc
+            elif (temp.type == ['u','v']):
+                # resolve paths to model files for each direction
+                for key, model_file in temp.model_file.items():
+                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in 
+                        model_file]
+                # copy to directory dictionaries
+                temp.model_directory = temp.model_file['u'][0].parent
+            elif (temp.type == 'z'):
+                # resolve paths to model files
+                temp.model_file = [pathlib.Path(f).expanduser() for f in
+                    temp.model_file]
+                temp.model_directory = temp.model_file[0].parent
+        elif temp.format in ('FES','GOT'):
+            # extract model files
+            if (temp.type == ['u','v']) and (temp.directory is not None):
+                # use glob strings to find files in directory
+                for key, glob_string in temp.model_file.items():
+                    temp.model_file[key] = list(temp.directory.glob(glob_string))
+                # build model directory dictionaries
+                temp.model_directory = {}
+                for key, val in temp.model_file.items():
+                    # attempt to extract model directory
+                    try:
+                        temp.model_directory[key] = val[0].parent
+                    except (IndexError, AttributeError) as exc:
+                        message = f'No model files found with {glob_string[key]}'
+                        raise FileNotFoundError(message) from exc
+            elif (temp.type == 'z') and (temp.directory is not None):
+                # use glob strings to find files in directory
+                glob_string = copy.copy(temp.model_file)
+
+                temp.model_file = list(temp.directory.glob(glob_string))
+                # attempt to extract model directory
+                try:
+                    temp.model_directory = temp.model_file[0].parent
+                except (IndexError, AttributeError) as exc:
+                    message = f'No model files found with {glob_string}'
+            elif (temp.type == ['u','v']):
+                # resolve paths to model files for each direction
+                for key, model_file in temp.model_file.items():
+                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in 
+                        model_file]
+                # build model directory dictionaries
+                temp.model_directory = {}
+                for key, val in temp.model_file.items():
+                    temp.model_directory[key] = val[0].parent
+            elif (temp.type == 'z'):
+                # resolve paths to model files
+                temp.model_file = [pathlib.Path(f).expanduser() for f in
+                    temp.model_file]
+                temp.model_directory = temp.model_file[0].parent
+        # verify that projection attribute exists for projected models
+        if temp.format in ('OTIS','ATLAS','TMD3'):
+            assert temp.projection
+        # convert scale from string to float
+        if temp.format in ('netcdf','GOT','FES'):
+            assert temp.scale
+        # assert that FES model has a version
+        # get model constituents from constituent files
+        if temp.format in ('FES',):
+            assert temp.version
+            if (temp.constituents is None):
+                temp.parse_constituents()
         # return the model parameters
         return temp
 
