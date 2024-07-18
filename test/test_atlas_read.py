@@ -232,7 +232,7 @@ def test_compare_TPXO9_v2(METHOD, CROP):
 @pytest.mark.parametrize("CROP", [False, True])
 @pytest.mark.skip(reason='Need to validate over grounded point')
 # PURPOSE: Tests that interpolated results are comparable to OTPS2 program
-def test_verify_TPXO8(METHOD, EXTRAPOLATE):
+def test_verify_TPXO8(METHOD, EXTRAPOLATE, CROP):
     # model parameters for TPXO8-atlas
     model = pyTMD.io.model(filepath,compressed=False).elevation('TPXO8-atlas')
     # constituents for test
