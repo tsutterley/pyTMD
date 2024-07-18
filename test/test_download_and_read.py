@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (04/2024)
+test_download_and_read.py (07/2024)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
@@ -291,8 +292,8 @@ class Test_CATS2008:
 
         # extract amplitude and phase from tide model
         amp,ph,D,cons = pyTMD.io.OTIS.extract_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, type=TYPE, method='spline',
-            grid=GRID)
+            station_lat, grid_file, model_file, EPSG, type=TYPE,
+            method='spline', grid=GRID)
         # reorder constituents of model and convert amplitudes to cm
         model_amp = np.ma.zeros((antarctic_stations,len(constituents)))
         model_ph = np.ma.zeros((antarctic_stations,len(constituents)))

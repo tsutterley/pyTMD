@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 crs.py
-Written by Tyler Sutterley (05/2024)
+Written by Tyler Sutterley (07/2024)
 Coordinates Reference System (CRS) routines
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 07/2024: added function to get the CRS transform
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -106,6 +107,34 @@ class crs:
         o2: np.ndarray
             Output transformed y-coordinates
         """
+        # name of the projection
+        self.name = PROJ
+        # set the transform and transform direction
+        self.get(PROJ, EPSG=EPSG)
+        self._direction = BF[0].upper()
+        # run conversion program and return values
+        return self.transform(i1, i2)
+
+    # PURPOSE: try to get the projection information
+    def get(self, PROJ: str, EPSG: int | str = 4326):
+        """
+        Tries to get the CRS transformer for given values
+
+        Parameters
+        ----------
+        PROJ: str
+            Spatial reference system code for coordinate transformations
+        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
+            input (``'F'``) or output (``'B'``) coordinate system
+
+        Returns
+        -------
+        o1: np.ndarray
+            Output transformed x-coordinates
+        o2: np.ndarray
+            Output transformed y-coordinates
+        """
+        # name of the projection
         self.name = PROJ
         # python dictionary with named conversion functions
         transforms = {}
@@ -115,8 +144,6 @@ class crs:
         transforms['3976'] = self._EPSG3976
         transforms['PSNorth'] = self._PSNorth
         transforms['4326'] = self._EPSG4326
-        # set the direction of the transform
-        self._direction = BF.upper()
         # check that PROJ for conversion was entered correctly
         # run named conversion program and return values
         try:
@@ -125,7 +152,7 @@ class crs:
             pass
         else:
             # return the output variables
-            return self.transform(i1, i2)
+            return self
         # try changing the projection using a custom projection
         # run custom conversion program and return values
         try:
@@ -133,11 +160,14 @@ class crs:
         except Exception as exc:
             pass
         else:
-            return self.transform(i1, i2)
+            return self
         # projection not found or available
         raise Exception(f'PROJ: {PROJ} conversion function not found')
 
-    def transform(self, i1: np.ndarray, i2: np.ndarray):
+    def transform(self,
+            i1: np.ndarray,
+            i2: np.ndarray,
+            **kwargs):
         """
         Performs Coordinates Reference System (CRS) transformations
 
@@ -147,6 +177,8 @@ class crs:
             Input x-coordinates
         i2: np.ndarray
             Input y-coordinates
+        kwargs: dict
+            Keyword arguments for the transformation
 
         Returns
         -------
@@ -155,10 +187,11 @@ class crs:
         o2: np.ndarray
             Output transformed y-coordinates
         """
+        # set the direction of the transformation
+        kwargs.setdefault('direction', self.direction)
         if (self.name == 'PSNorth') and (self.direction.name == 'FORWARD'):
             # convert input coordinate reference system to lat/lon
-            lon, lat = self.transformer.transform(i1, i2,
-                direction=self.direction)
+            lon, lat = self.transformer.transform(i1, i2, **kwargs)
             # convert lat/lon to (idealized) Polar-Stereographic x/y
             o1 = (90.0 - lat)*111.7*np.cos(lon/180.0*np.pi)
             o2 = (90.0 - lat)*111.7*np.sin(lon/180.0*np.pi)
@@ -170,12 +203,10 @@ class crs:
             ii, = np.nonzero(lon < 0)
             lon[ii] += 360.0
             # convert to output coordinate reference system
-            o1, o2 = self.transformer.transform(lon, lat,
-                direction=self.direction)
+            o1, o2 = self.transformer.transform(lon, lat, **kwargs)
         else:
             # convert coordinate reference system
-            o1, o2 = self.transformer.transform(i1, i2,
-                direction=self.direction)
+            o1, o2 = self.transformer.transform(i1, i2, **kwargs)
         # return the transformed coordinates
         return (o1, o2)
 
@@ -340,11 +371,21 @@ class crs:
         ``pyproj`` direction of the coordinate transform
         """
         # convert from input coordinates to model coordinates
-        if (self._direction.upper() == 'F'):
+        if (self._direction is None) or (self._direction.upper() == 'F'):
             return pyproj.enums.TransformDirection.FORWARD
         # convert from model coordinates to coordinates
         elif (self._direction.upper() == 'B'):
             return pyproj.enums.TransformDirection.INVERSE
+
+    @property
+    def is_geographic(self):
+        """
+        Check if the coordinate reference system is geographic
+        """
+        if (self.name == 'PSNorth'):
+            return False
+        else:
+            return self.transformer.target_crs.is_geographic
 
     def __str__(self):
         """String representation of the ``crs`` object

@@ -65,6 +65,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.io.OTIS._extend_matrix
 
+.. autofunction:: pyTMD.io.OTIS._crop
+
+.. autofunction:: pyTMD.io.OTIS._shift
+
 .. autofunction:: pyTMD.io.OTIS._mask_nodes
 
 .. autofunction:: pyTMD.io.OTIS._interpolate_mask
