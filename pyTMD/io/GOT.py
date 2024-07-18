@@ -216,6 +216,10 @@ def extract_constants(
         constituents.append(cons)
         # grid step size of tide model
         dlon = np.abs(lon[1] - lon[0])
+        # replace original values with extend arrays/matrices
+        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+            lon = _extend_array(lon, dlon)
+            hc = _extend_matrix(hc)
         # crop tide model data to (buffered) bounds
         # or adjust longitudinal convention to fit tide model
         if kwargs['crop'] and np.any(kwargs['bounds']):
@@ -231,10 +235,7 @@ def extract_constants(
             # input points convention (0:360)
             # tide model convention (-180:180)
             ilon[ilon>180.0] -= 360.0
-        # replace original values with extend arrays/matrices
-        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
-            lon = _extend_array(lon, dlon)
-            hc = _extend_matrix(hc)
+
         # interpolate amplitude and phase of the constituent
         if (kwargs['method'] == 'bilinear'):
             # replace invalid values with nan
@@ -342,17 +343,17 @@ def read_constants(
         elif (kwargs['grid'] == 'netcdf'):
             hc, lon, lat, cons = read_netcdf_file(model_file,
                 compressed=kwargs['compressed'])
-        # crop tide model data to (buffered) bounds
-        if kwargs['crop'] and np.any(kwargs['bounds']):
-            hc, lon, lat = _crop(hc, lon, lat,
-                bounds=kwargs['bounds'],
-            )
         # grid step size of tide model
         dlon = np.abs(lon[1] - lon[0])
         # replace original values with extend arrays/matrices
         if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
             lon = _extend_array(lon, dlon)
             hc = _extend_matrix(hc)
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, lon, lat = _crop(hc, lon, lat,
+                bounds=kwargs['bounds'],
+            )
         # append extended constituent
         constituents.append(cons, hc)
         # set model coordinates
