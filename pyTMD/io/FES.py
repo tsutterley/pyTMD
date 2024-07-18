@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 07/2024: added new FES2022 to available known model versions
         FES2022 have masked longitudes, only extract longitude data
+        added crop and bounds keywords for trimming model data
     Updated 01/2024: attempt to extract constituent IDs from filenames
     Updated 06/2023: extract ocean tide model variables for FES2012
     Updated 04/2023: added global HAMTIDE11 model
@@ -153,6 +154,12 @@ def extract_constants(
             - ``'FES2022'``
             - ``'EOT20'``
             - ``'HAMTIDE11'``
+    compressed: bool, default False
+        Input files are gzip compressed
+    crop: bool, default False
+        Crop tide model data to (buffered) bounds
+    bounds: list or NoneType, default None
+        Boundaries for cropping tide model data
     method: str, default 'spline'
         Interpolation method
 
@@ -165,8 +172,6 @@ def extract_constants(
         Extrapolation cutoff in kilometers
 
         Set to ``np.inf`` to extrapolate for all points
-    compressed: bool, default False
-        Input files are gzip compressed
     scale: float, default 1.0
         Scaling factor for converting to output units
 
@@ -180,10 +185,11 @@ def extract_constants(
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('version', None)
+    kwargs.setdefault('compressed', False)
+    kwargs.setdefault('crop', False)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
-    kwargs.setdefault('compressed', False)
     kwargs.setdefault('scale', 1.0)
     # raise warnings for deprecated keyword arguments
     deprecated_keywords = dict(TYPE='type',VERSION='version',
@@ -204,6 +210,10 @@ def extract_constants(
     # adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
+    # set default bounds if cropping
+    xmin, xmax = np.min(ilon), np.max(ilon)
+    ymin, ymax = np.min(ilat), np.max(ilat)
+    kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
     # number of points
     npts = len(ilon)
     # number of constituents
@@ -227,9 +237,16 @@ def extract_constants(
         elif kwargs['version'] in _netcdf_versions:
             # FES netCDF4 constituent files
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
-        # adjust longitudinal convention of input latitude and longitude
-        # to fit tide model convention
-        if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+        # grid step size of tide model
+        dlon = lon[1] - lon[0]
+        # crop tide model data to (buffered) bounds
+        # or adjust longitudinal convention to fit tide model
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, lon, lat = _crop(hc, lon, lat,
+                bounds=kwargs['bounds'],
+                buffer=4*dlon
+            )
+        elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
             # input points convention (-180:180)
             # tide model convention (0:360)
             ilon[ilon<0.0] += 360.0
@@ -238,8 +255,6 @@ def extract_constants(
             # tide model convention (-180:180)
             ilon[ilon>180.0] -= 360.0
 
-        # grid step size of tide model
-        dlon = lon[1] - lon[0]
         # replace original values with extend arrays/matrices
         if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
             lon = _extend_array(lon, dlon)
@@ -337,6 +352,10 @@ def read_constants(
             - ``'HAMTIDE11'``
     compressed: bool, default False
         Input files are gzip compressed
+    crop: bool, default False
+        Crop tide model data to (buffered) bounds
+    bounds: list or NoneType, default None
+        Boundaries for cropping tide model data
 
     Returns
     -------
@@ -347,6 +366,8 @@ def read_constants(
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('version', None)
     kwargs.setdefault('compressed', False)
+    kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
 
     # raise warning if model files are entered as a string or path
     if isinstance(model_files, (str, pathlib.Path)):
@@ -373,6 +394,11 @@ def read_constants(
         elif kwargs['version'] in _netcdf_versions:
             # FES netCDF4 constituent files
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, lon, lat = _crop(hc, lon, lat,
+                bounds=kwargs['bounds'],
+            )
         # grid step size of tide model
         dlon = lon[1] - lon[0]
         # replace original values with extend arrays/matrices
@@ -867,3 +893,118 @@ def _extend_matrix(input_matrix: np.ndarray):
     temp[:,1:-1] = input_matrix[:,:]
     temp[:,-1] = input_matrix[:,0]
     return temp
+
+# PURPOSE: crop tide model data to bounds
+def _crop(
+        input_matrix: np.ndarray,
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        bounds: list | tuple,
+        buffer: int | float = 0
+    ):
+    """
+    Crop tide model data to bounds
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to crop
+    ilon: np.ndarray
+        longitude of tidal model
+    ilat: np.ndarray
+        latitude of tidal model
+    bounds: list, tuple
+        bounding box: ``[xmin, xmax, ymin, ymax]``
+    buffer: int or float, default 0
+        buffer to add to bounds for cropping
+
+    Returns
+    -------
+    temp: np.ndarray
+        cropped matrix
+    lon: np.ndarray
+        cropped longitude
+    lat: np.ndarray
+        cropped latitude
+    """
+    # adjust longitudinal convention of tide model
+    if (np.min(bounds[:2]) < 0.0) & (np.max(ilon) > 180.0):
+        input_matrix, ilon = _shift(input_matrix, ilon,
+            lon0=180.0, cyclic=360.0, direction='west')
+    elif (np.max(bounds[:2]) > 180.0) & (np.min(ilon) < 0.0):
+        input_matrix, ilon = _shift(input_matrix, ilon,
+            lon0=0.0, cyclic=360.0, direction='east')
+    # unpack bounds and buffer
+    xmin = bounds[0] - buffer
+    xmax = bounds[1] + buffer
+    ymin = bounds[2] - buffer
+    ymax = bounds[3] + buffer
+    # find indices for cropping
+    yind = np.flatnonzero((ilat >= ymin) & (ilat <= ymax))
+    xind = np.flatnonzero((ilon >= xmin) & (ilon <= xmax))
+    # slices for cropping axes
+    rows = slice(yind[0], yind[-1]+1)
+    cols = slice(xind[0], xind[-1]+1)
+    # crop matrix
+    temp = input_matrix[rows, cols]
+    lon = ilon[cols]
+    lat = ilat[rows]
+    # return cropped data
+    return (temp, lon, lat)
+
+# PURPOSE: shift a grid east or west
+def _shift(
+        input_matrix: np.ndarray,
+        ilon: np.ndarray,
+        lon0: int | float = 180,
+        cyclic: int | float = 360,
+        direction: str = 'west'
+    ):
+    """
+    Shift global grid east or west to a new base longitude
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        input matrix to shift
+    ilon: np.ndarray
+        longitude of tidal model
+    lon0: int or float, default 180
+        Starting longitude for shifted grid
+    cyclic: int or float, default 360
+        width of periodic domain
+    direction: str, default 'west'
+        Direction to shift grid
+
+            - ``'west'``
+            - ``'east'``
+
+    Returns
+    -------
+    temp: np.ndarray
+        shifted matrix
+    lon: np.ndarray
+        shifted longitude
+    """
+    # find the starting index if cyclic
+    offset = 0 if (np.fabs(ilon[-1]-ilon[0]-cyclic) > 1e-4) else 1
+    i0 = np.argmin(np.fabs(ilon - lon0))
+    # shift longitudinal values
+    lon = np.zeros(ilon.shape, ilon.dtype)
+    lon[0:-i0] = ilon[i0:]
+    lon[-i0:] = ilon[offset: i0+offset]
+    # add or remove the cyclic
+    if (direction == 'east'):
+        lon[-i0:] += cyclic
+    elif (direction == 'west'):
+        lon[0:-i0] -= cyclic
+    # allocate for shifted data
+    if np.ma.isMA(input_matrix):
+        temp = np.ma.zeros(input_matrix.shape,input_matrix.dtype)
+    else:
+        temp = np.zeros(input_matrix.shape, input_matrix.dtype)
+    # shift data values
+    temp[:,:-i0] = input_matrix[:,i0:]
+    temp[:,-i0:] = input_matrix[:,offset: i0+offset]
+    # return the shifted values
+    return (temp, lon)

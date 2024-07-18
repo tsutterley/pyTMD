@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (02/2024)
+Written by Tyler Sutterley (07/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 07/2024: added crop and bounds keywords for trimming model data
     Updated 02/2024: changed variable for setting global grid flag to is_global
     Updated 10/2023: add generic wrapper function for reading constituents
     Updated 04/2023: using pathlib to define and expand tide model paths
@@ -141,6 +142,10 @@ def extract_constants(
             - ``'U'``: horizontal depth-averaged transport
             - ``'v'``: vertical transport velocities
             - ``'V'``: vertical depth-averaged transport
+    crop: bool, default False
+        Crop tide model data to (buffered) bounds
+    bounds: list or NoneType, default None
+        Boundaries for cropping tide model data
     method: str, default 'spline'
         Interpolation method
 
@@ -171,6 +176,7 @@ def extract_constants(
     """
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
+    kwargs.setdefault('crop', False)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
@@ -204,9 +210,20 @@ def extract_constants(
     # adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
-    # adjust longitudinal convention of input latitude and longitude
-    # to fit tide model convention
-    if (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
+    # set default bounds if cropping
+    xmin, xmax = np.min(ilon), np.max(ilon)
+    ymin, ymax = np.min(ilat), np.max(ilat)
+    kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
+
+    # crop bathymetry data to (buffered) bounds
+    # or adjust longitudinal convention to fit tide model
+    if kwargs['crop'] and np.any(kwargs['bounds']):
+        mlon, mlat = np.copy(lon), np.copy(lat)
+        bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
+            bounds=kwargs['bounds'],
+            buffer=5
+        )
+    elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
         # input points convention (-180:180)
         # tide model convention (0:360)
         ilon[ilon < 0.0] += 360.0
@@ -278,6 +295,12 @@ def extract_constants(
         # read constituent from netCDF4 file
         hc, cons = read_netcdf_file(model_file, kwargs['type'],
             compressed=kwargs['compressed'])
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, lon, lat = _crop(hc, mlon, mlat,
+                bounds=kwargs['bounds'],
+                buffer=4*dlon
+            )
         # append constituent to list
         constituents.append(cons)
         # replace original values with extend matrices
@@ -366,6 +389,10 @@ def read_constants(
             - ``'V'``: vertical depth-averaged transport
     compressed: bool, default False
         Input files are gzip compressed
+    crop: bool, default False
+        Crop tide model data to (buffered) bounds
+    bounds: list or NoneType, default None
+        Boundaries for cropping tide model data
 
     Returns
     -------
@@ -375,6 +402,8 @@ def read_constants(
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('compressed', True)
+    kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
 
     # raise warning if model files are entered as a string or path
     if isinstance(model_files, (str, pathlib.Path)):
@@ -390,11 +419,18 @@ def read_constants(
     lon, lat, bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
         compressed=kwargs['compressed'])
 
+    # crop bathymetry data to (buffered) bounds
+    if kwargs['crop'] and np.any(kwargs['bounds']):
+        mlon, mlat = np.copy(lon), np.copy(lat)
+        bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
+            bounds=kwargs['bounds'],
+        )
     # grid step size of tide model
     dlon = lon[1] - lon[0]
     # replace original values with extend arrays/matrices
-    lon = _extend_array(lon, dlon)
-    bathymetry = _extend_matrix(bathymetry)
+    if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+        lon = _extend_array(lon, dlon)
+        bathymetry = _extend_matrix(bathymetry)
     # save output constituents
     constituents = pyTMD.io.constituents(
         longitude=lon,
@@ -412,8 +448,15 @@ def read_constants(
         # read constituent from netCDF4 file
         hc, cons = read_netcdf_file(model_file, kwargs['type'],
             compressed=kwargs['compressed'])
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, lon, lat = _crop(hc, mlon, mlat,
+                bounds=kwargs['bounds'],
+            )
         # replace original values with extend matrices
-        hc = _extend_matrix(hc)
+        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+            hc = _extend_matrix(hc)
+        # set constituent masks
         hc.mask[:] |= bathymetry.mask[:]
         # append extended constituent
         constituents.append(cons,  hc)
@@ -1176,3 +1219,118 @@ def _extend_matrix(input_matrix: np.ndarray):
     temp[:,1:-1] = input_matrix[:,:]
     temp[:,-1] = input_matrix[:,0]
     return temp
+
+# PURPOSE: crop tide model data to bounds
+def _crop(
+        input_matrix: np.ndarray,
+        ilon: np.ndarray,
+        ilat: np.ndarray,
+        bounds: list | tuple,
+        buffer: int | float = 0
+    ):
+    """
+    Crop tide model data to bounds
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to crop
+    ilon: np.ndarray
+        longitude of tidal model
+    ilat: np.ndarray
+        latitude of tidal model
+    bounds: list, tuple
+        bounding box: ``[xmin, xmax, ymin, ymax]``
+    buffer: int or float, default 0
+        buffer to add to bounds for cropping
+
+    Returns
+    -------
+    temp: np.ndarray
+        cropped matrix
+    lon: np.ndarray
+        cropped longitude
+    lat: np.ndarray
+        cropped latitude
+    """
+    # adjust longitudinal convention of tide model
+    if (np.min(bounds[:2]) < 0.0) & (np.max(ilon) > 180.0):
+        input_matrix, ilon = _shift(input_matrix, ilon,
+            lon0=180.0, cyclic=360.0, direction='west')
+    elif (np.max(bounds[:2]) > 180.0) & (np.min(ilon) < 0.0):
+        input_matrix, ilon = _shift(input_matrix, ilon,
+            lon0=0.0, cyclic=360.0, direction='east')
+    # unpack bounds and buffer
+    xmin = bounds[0] - buffer
+    xmax = bounds[1] + buffer
+    ymin = bounds[2] - buffer
+    ymax = bounds[3] + buffer
+    # find indices for cropping
+    yind = np.flatnonzero((ilat >= ymin) & (ilat <= ymax))
+    xind = np.flatnonzero((ilon >= xmin) & (ilon <= xmax))
+    # slices for cropping axes
+    rows = slice(yind[0], yind[-1]+1)
+    cols = slice(xind[0], xind[-1]+1)
+    # crop matrix
+    temp = input_matrix[rows, cols]
+    lon = ilon[cols]
+    lat = ilat[rows]
+    # return cropped data
+    return (temp, lon, lat)
+
+# PURPOSE: shift a grid east or west
+def _shift(
+        input_matrix: np.ndarray,
+        ilon: np.ndarray,
+        lon0: int | float = 180,
+        cyclic: int | float = 360,
+        direction: str = 'west'
+    ):
+    """
+    Shift global grid east or west to a new base longitude
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        input matrix to shift
+    ilon: np.ndarray
+        longitude of tidal model
+    lon0: int or float, default 180
+        Starting longitude for shifted grid
+    cyclic: int or float, default 360
+        width of periodic domain
+    direction: str, default 'west'
+        Direction to shift grid
+
+            - ``'west'``
+            - ``'east'``
+
+    Returns
+    -------
+    temp: np.ndarray
+        shifted matrix
+    lon: np.ndarray
+        shifted longitude
+    """
+    # find the starting index if cyclic
+    offset = 0 if (np.fabs(ilon[-1]-ilon[0]-cyclic) > 1e-4) else 1
+    i0 = np.argmin(np.fabs(ilon - lon0))
+    # shift longitudinal values
+    lon = np.zeros(ilon.shape, ilon.dtype)
+    lon[0:-i0] = ilon[i0:]
+    lon[-i0:] = ilon[offset: i0+offset]
+    # add or remove the cyclic
+    if (direction == 'east'):
+        lon[-i0:] += cyclic
+    elif (direction == 'west'):
+        lon[0:-i0] -= cyclic
+    # allocate for shifted data
+    if np.ma.isMA(input_matrix):
+        temp = np.ma.zeros(input_matrix.shape,input_matrix.dtype)
+    else:
+        temp = np.zeros(input_matrix.shape, input_matrix.dtype)
+    # shift data values
+    temp[:,:-i0] = input_matrix[:,i0:]
+    temp[:,-i0:] = input_matrix[:,offset: i0+offset]
+    # return the shifted values
+    return (temp, lon)

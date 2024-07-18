@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (04/2024)
+test_perth3_read.py (07/2024)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
     Updated 04/2023: using pathlib to define and expand paths
@@ -82,8 +83,9 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
+@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable to PERTH3 program
-def test_verify_GOT47(METHOD):
+def test_verify_GOT47(METHOD, CROP):
     # model parameters for GOT4.7
     model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
     # perth3 test program infers m4 tidal constituent
@@ -100,15 +102,15 @@ def test_verify_GOT47(METHOD):
         file_contents = fid.read().decode('ISO-8859-1').splitlines()
     # extract latitude, longitude, time (Modified Julian Days) and tide data
     npts = len(file_contents) - 2
-    latitude = np.zeros((npts))
-    longitude = np.zeros((npts))
+    lat = np.zeros((npts))
+    lon = np.zeros((npts))
     MJD = np.zeros((npts))
     validation = np.ma.zeros((npts))
     validation.mask = np.ones((npts),dtype=bool)
     for i in range(npts):
         line_contents = file_contents[i+2].split()
-        latitude[i] = np.float64(line_contents[0])
-        longitude[i] = np.float64(line_contents[1])
+        lat[i] = np.float64(line_contents[0])
+        lon[i] = np.float64(line_contents[1])
         MJD[i] = np.float64(line_contents[2])
         if (len(line_contents) == 5):
             validation.data[i] = np.float64(line_contents[3])
@@ -118,8 +120,8 @@ def test_verify_GOT47(METHOD):
     tide_time = MJD - 48622.0
 
     # extract amplitude and phase from tide model
-    amp,ph,cons = pyTMD.io.GOT.extract_constants(longitude, latitude,
-        model_file, method=METHOD, compressed=GZIP, scale=SCALE)
+    amp,ph,cons = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
+        method=METHOD, compressed=GZIP, scale=SCALE, crop=CROP)
     assert all(c in constituents for c in cons)
     # interpolate delta times from calendar dates to tide time
     deltat = timescale.time.interpolate_delta_time(
@@ -151,8 +153,9 @@ def test_verify_GOT47(METHOD):
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
+@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable
-def test_compare_GOT47(METHOD):
+def test_compare_GOT47(METHOD, CROP):
     # model parameters for GOT4.7
     model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
     # perth3 test program infers m4 tidal constituent
@@ -167,22 +170,22 @@ def test_compare_GOT47(METHOD):
         file_contents = fid.read().decode('ISO-8859-1').splitlines()
     # extract latitude, longitude, time (Modified Julian Days) and tide data
     npts = len(file_contents) - 2
-    latitude = np.zeros((npts))
-    longitude = np.zeros((npts))
+    lat = np.zeros((npts))
+    lon = np.zeros((npts))
     for i in range(npts):
         line_contents = file_contents[i+2].split()
-        latitude[i] = np.float64(line_contents[0])
-        longitude[i] = np.float64(line_contents[1])
+        lat[i] = np.float64(line_contents[0])
+        lon[i] = np.float64(line_contents[1])
 
     # extract amplitude and phase from tide model
-    amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(longitude, latitude,
-        model_file, method=METHOD, compressed=GZIP, scale=SCALE)
+    amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
+        method=METHOD, compressed=GZIP, scale=SCALE, crop=CROP)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
     # read and interpolate constituents from tide model
     constituents = pyTMD.io.GOT.read_constants(model_file, compressed=GZIP)
-    amp2, ph2 = pyTMD.io.GOT.interpolate_constants(longitude, latitude,
+    amp2, ph2 = pyTMD.io.GOT.interpolate_constants(lon, lat,
         constituents, method=METHOD, scale=SCALE)
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)

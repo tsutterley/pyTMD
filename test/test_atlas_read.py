@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (04/2024)
+test_atlas_read.py (07/2024)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: test doodson and cartwright numbers of each constituent
         refactored compute functions into compute.py
@@ -119,8 +120,9 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
+@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable to OTPSnc program
-def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
+def test_read_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
     # model parameters for TPXO9-atlas-v2
     model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
@@ -145,7 +147,7 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
     amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(
         val['Lon'], val['Lat'], grid_file, model_file, type=TYPE,
         method=METHOD, extrapolate=EXTRAPOLATE, scale=SCALE,
-        compressed=GZIP)
+        compressed=GZIP, crop=CROP)
     # convert phase from 0:360 to -180:180
     ph[ph > 180] -= 360.0
 
@@ -164,8 +166,9 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE):
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline'])
+@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable
-def test_compare_TPXO9_v2(METHOD):
+def test_compare_TPXO9_v2(METHOD, CROP):
     # model parameters for TPXO9-atlas-v2
     model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
@@ -188,7 +191,7 @@ def test_compare_TPXO9_v2(METHOD):
     # extract amplitude and phase from tide model
     amp1, ph1, D1, c1 = pyTMD.io.ATLAS.extract_constants(
         val['Lon'], val['Lat'], grid_file, model_file, type=TYPE,
-        method=METHOD, scale=SCALE, compressed=GZIP)
+        method=METHOD, scale=SCALE, compressed=GZIP, crop=CROP)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
@@ -226,6 +229,7 @@ def test_compare_TPXO9_v2(METHOD):
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['bilinear'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
+@pytest.mark.parametrize("CROP", [False, True])
 @pytest.mark.skip(reason='Need to validate over grounded point')
 # PURPOSE: Tests that interpolated results are comparable to OTPS2 program
 def test_verify_TPXO8(METHOD, EXTRAPOLATE):
@@ -301,8 +305,9 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE):
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
+@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable to OTPSnc program
-def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
+def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
     # model parameters for TPXO9-atlas-v2
     model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
@@ -346,7 +351,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE):
     amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(
         val['longitude'], val['latitude'], grid_file, model_file,
         type=TYPE, method=METHOD, extrapolate=EXTRAPOLATE,
-        scale=SCALE, compressed=GZIP)
+        scale=SCALE, compressed=GZIP, crop=CROP)
     # delta time
     deltat = np.zeros_like(val['time'])
     # verify constituents

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_fes_predict.py (04/2024)
+test_fes_predict.py (07/2024)
 Tests that FES2014 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to FES2014 program
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: test doodson and cartwright numbers of each constituent
     Updated 04/2023: using pathlib to define and expand paths
@@ -90,7 +91,9 @@ def test_check_FES2014():
     assert np.all(obs == exp)
 
 # PURPOSE: Tests that interpolated results are comparable to FES program
-def test_verify_FES2014():
+@pytest.mark.parametrize("METHOD", ['spline'])
+@pytest.mark.parametrize("CROP", [False, True])
+def test_verify_FES2014(METHOD, CROP):
     # model parameters for FES2014
     model_directory = filepath.joinpath('fes2014','ocean_tide')
     # constituent files included in test
@@ -123,9 +126,9 @@ def test_verify_FES2014():
     tide_time = file_contents['CNES'] - 15340.0
 
     # extract amplitude and phase from tide model
-    amp,ph = pyTMD.io.FES.extract_constants(longitude,
-        latitude, model_file, type=TYPE, version=VERSION,
-        method='spline', compressed=True, scale=SCALE)
+    amp,ph = pyTMD.io.FES.extract_constants(longitude, latitude, model_file,
+        type=TYPE, version=VERSION, method=METHOD, compressed=True,
+        scale=SCALE, crop=CROP)
     # interpolate delta times from calendar dates to tide time
     deltat = timescale.time.interpolate_delta_time(
         timescale.time._delta_file, tide_time)
@@ -155,8 +158,9 @@ def test_verify_FES2014():
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline'])
+@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable
-def test_compare_FES2014(METHOD):
+def test_compare_FES2014(METHOD, CROP):
     # model parameters for FES2014
     model_directory = filepath.joinpath('fes2014','ocean_tide')
     # constituent files included in test
@@ -181,9 +185,9 @@ def test_compare_FES2014(METHOD):
     latitude = file_contents['Latitude']
 
     # extract amplitude and phase from tide model
-    amp1, ph1 = pyTMD.io.FES.extract_constants(longitude,
-        latitude, model_file, type=TYPE, version=VERSION,
-        method=METHOD, compressed=True, scale=SCALE)
+    amp1, ph1 = pyTMD.io.FES.extract_constants(longitude, latitude, model_file,
+        type=TYPE, version=VERSION, method=METHOD, compressed=True,
+        scale=SCALE, crop=CROP)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 

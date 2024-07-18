@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 interpolate.py
-Written by Tyler Sutterley (12/2022)
+Written by Tyler Sutterley (07/2024)
 Interpolators for spatial data
 
 PYTHON DEPENDENCIES:
@@ -12,6 +12,7 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 07/2024: changed projection flag in extrapolation to is_geographic
     Written 12/2022
 """
 from __future__ import annotations
@@ -275,7 +276,7 @@ def extrapolate(
         fill_value: float = None,
         dtype: str | np.dtype = np.float64,
         cutoff: int | float = np.inf,
-        EPSG: str | int = '4326',
+        is_geographic: bool = True,
         **kwargs
     ):
     """
@@ -303,14 +304,17 @@ def extrapolate(
         return only neighbors within distance [km]
 
         Set to ``np.inf`` to extrapolate for all points
-    EPSG: str, default '4326'
-        projection of tide model data
+    is_geographic: bool, default True
+        input grid is in geographic coordinates
 
     Returns
     -------
     DATA: np.ndarray
         interpolated data
     """
+    # set geographic flag if using old EPSG projection keyword
+    if hasattr(kwargs, 'EPSG') and (kwargs['EPSG'] == '4326'):
+        is_geographic = True
     # verify output dimensions
     lon = np.atleast_1d(lon)
     lat = np.atleast_1d(lat)
@@ -332,7 +336,7 @@ def extrapolate(
     valid_bounds = np.ones_like(idata.mask, dtype=bool)
 
     # calculate coordinates for nearest-neighbors
-    if (EPSG == '4326'):
+    if is_geographic:
         # global or regional equirectangular model
         # calculate meshgrid of model coordinates
         gridlon, gridlat = np.meshgrid(ilon, ilat)

@@ -33,3 +33,7 @@ Calling Sequence
 .. autofunction:: pyTMD.io.GOT._extend_array
 
 .. autofunction:: pyTMD.io.GOT._extend_matrix
+
+.. autofunction:: pyTMD.io.GOT._crop
+
+.. autofunction:: pyTMD.io.GOT._shift

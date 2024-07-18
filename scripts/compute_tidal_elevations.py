@@ -24,6 +24,7 @@ COMMAND LINE OPTIONS:
     --atlas-format X: ATLAS tide model format (OTIS, netcdf)
     --gzip, -G: Tide model files are gzip compressed
     --definition-file X: Model definition file for use as correction
+    -C, --crop: Crop tide model to (buffered) bounds of data
     --format X: input and output data format
         csv (default)
         netCDF4
@@ -100,6 +101,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: assert that data type is a known value
+        added option to crop to the domain of the input data
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
@@ -202,6 +204,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     ATLAS_FORMAT='netcdf',
     GZIP=True,
     DEFINITION_FILE=None,
+    CROP=False,
     FORMAT='csv',
     VARIABLES=[],
     HEADER=0,
@@ -289,25 +292,25 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     if model.format in ('OTIS','ATLAS','TMD3'):
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(np.ravel(lon), np.ravel(lat),
             model.grid_file, model.model_file, model.projection,
-            type=model.type, method=METHOD, extrapolate=EXTRAPOLATE,
+            type=model.type, crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         deltat = np.zeros((nt))
     elif (model.format == 'netcdf'):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(np.ravel(lon), np.ravel(lat),
             model.grid_file, model.model_file, type=model.type,
-            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         deltat = np.zeros((nt))
     elif (model.format == 'GOT'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(np.ravel(lon), np.ravel(lat),
-            model.model_file, method=METHOD, extrapolate=EXTRAPOLATE,
+            model.model_file, crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE,
             cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         # delta time (TT - UT1)
         deltat = ts.tt_ut1
     elif (model.format == 'FES'):
         amp,ph = pyTMD.io.FES.extract_constants(np.ravel(lon), np.ravel(lat),
             model.model_file, type=model.type, version=model.version,
-            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         # available model constituents
         c = model.constituents
@@ -464,6 +467,10 @@ def arguments():
     group.add_argument('--definition-file',
         type=pathlib.Path,
         help='Tide model definition file')
+    # crop tide model to (buffered) bounds of data
+    parser.add_argument('-C', '--crop',
+        default=False, action='store_true',
+        help='Crop tide model to bounds of data')
     # input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv',
@@ -568,6 +575,7 @@ def main():
             ATLAS_FORMAT=args.atlas_format,
             GZIP=args.gzip,
             DEFINITION_FILE=args.definition_file,
+            CROP=args.crop,
             FORMAT=args.format,
             VARIABLES=args.variables,
             HEADER=args.header,

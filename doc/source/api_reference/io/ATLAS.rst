@@ -42,3 +42,7 @@ Calling Sequence
 .. autofunction:: pyTMD.io.ATLAS._extend_array
 
 .. autofunction:: pyTMD.io.ATLAS._extend_matrix
+
+.. autofunction:: pyTMD.io.ATLAS._crop
+
+.. autofunction:: pyTMD.io.ATLAS._shift

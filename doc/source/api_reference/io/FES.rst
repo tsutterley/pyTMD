@@ -40,3 +40,7 @@ Calling Sequence
 .. autofunction:: pyTMD.io.FES._extend_array
 
 .. autofunction:: pyTMD.io.FES._extend_matrix
+
+.. autofunction:: pyTMD.io.FES._crop
+
+.. autofunction:: pyTMD.io.FES._shift

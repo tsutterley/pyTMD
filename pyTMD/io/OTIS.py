@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (06/2024)
+Written by Tyler Sutterley (07/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 07/2024: added crop and bounds keywords for trimming model data
     Updated 06/2024: change int32 to int to prevent overflows with numpy 2.0
     Updated 02/2024: don't overwrite hu and hv in _interpolate_zeta
         changed variable for setting global grid flag to is_global
@@ -170,6 +171,16 @@ def extract_constants(
             - ``'U'``: horizontal depth-averaged transport
             - ``'v'``: vertical transport velocities
             - ``'V'``: vertical depth-averaged transport
+    grid: str, default 'OTIS'
+        Tide model file type to read
+
+            - ``'ATLAS'``: reading a global solution with localized solutions
+            - ``'OTIS'``: combined global or local solution
+            - ``'TMD3'``: combined global or local netCDF4 solution
+    crop: bool, default False
+        Crop tide model data to (buffered) bounds
+    bounds: list or NoneType, default None
+        Boundaries for cropping tide model data
     method: str, default 'spline'
         Interpolation method
 
@@ -182,12 +193,6 @@ def extract_constants(
         Extrapolation cutoff in kilometers
 
         Set to ``np.inf`` to extrapolate for all points
-    grid: str, default 'OTIS'
-        Tide model file type to read
-
-            - ``'ATLAS'``: reading a global solution with localized solutions
-            - ``'OTIS'``: combined global or local solution
-            - ``'TMD3'``: combined global or local netCDF4 solution
     apply_flexure: bool, default False
         Apply ice flexure scaling factor to height values
 
@@ -204,10 +209,11 @@ def extract_constants(
     """
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
+    kwargs.setdefault('grid', 'OTIS')
+    kwargs.setdefault('crop', False)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
-    kwargs.setdefault('grid', 'OTIS')
     kwargs.setdefault('apply_flexure', False)
     # raise warnings for deprecated keyword arguments
     deprecated_keywords = dict(TYPE='type',METHOD='method',
@@ -243,25 +249,42 @@ def extract_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = pyTMD.crs().convert(ilon, ilat, EPSG, 'F')
+    transformer = pyTMD.crs().get(EPSG)
+    x,y = transformer.transform(ilon, ilat, direction='FORWARD')
+    is_geographic = transformer.is_geographic
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
+    # set default bounds if cropping data
+    xmin, xmax = np.min(x), np.max(x)
+    ymin, ymax = np.min(y), np.max(y)
+    kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
+
+    # crop mask and bathymetry data to (buffered) bounds
+    # or adjust longitudinal convention to fit tide model
+    if kwargs['crop'] and np.any(kwargs['bounds']):
+        mx, my = np.copy(xi), np.copy(yi)
+        mz, xi, yi = _crop(mz, mx, my, bounds=kwargs['bounds'],
+            buffer=4*dx, is_geographic=is_geographic)
+        hz, xi, yi = _crop(hz, mx, my, bounds=kwargs['bounds'],
+            buffer=4*dx, is_geographic=is_geographic)
+    elif (np.min(x) < np.min(xi)) & is_geographic:
+        # input points convention (-180:180)
+        # tide model convention (0:360)
+        x[x < 0] += 360.0
+    if (np.max(x) > np.max(xi)) & is_geographic:
+        # input points convention (0:360)
+        # tide model convention (-180:180)
+        x[x > 180] -= 360.0
 
     # if global: extend limits
     is_global = False
     # replace original values with extend arrays/matrices
-    if np.isclose(xi[-1] - xi[0], 360.0 - dx) & (EPSG == '4326'):
+    if np.isclose(xi[-1] - xi[0], 360.0 - dx) & is_geographic:
         xi = _extend_array(xi, dx)
         # set global grid flag
         is_global = True
 
-    # adjust longitudinal convention of input latitude and longitude
-    # to fit tide model convention
-    if (np.min(x) < np.min(xi)) & (EPSG == '4326'):
-        x[x < 0] += 360.0
-    if (np.max(x) > np.max(xi)) & (EPSG == '4326'):
-        x[x > 180] -= 360.0
     # determine if any input points are outside of the model bounds
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
 
@@ -387,6 +410,11 @@ def extract_constants(
             else:
                 u,hc = read_otis_transport(model_file, i)
 
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, xi, yi = _crop(hc, mx, my,
+                bounds=kwargs['bounds'], buffer=4*dx,
+                is_geographic=is_geographic)
         # replace original values with extend matrices
         if is_global:
             hc = _extend_matrix(hc)
@@ -433,7 +461,7 @@ def extract_constants(
             hci[inv] = pyTMD.interpolate.extrapolate(xi, yi, hc,
                 x[inv], y[inv], dtype=hc.dtype,
                 cutoff=kwargs['cutoff'],
-                EPSG=EPSG)
+                is_geographic=is_geographic)
         # convert units
         # amplitude and phase of the constituent
         amplitude.data[:,i] = np.abs(hci.data)/unit_conv
@@ -485,6 +513,10 @@ def read_constants(
             - ``'ATLAS'``: reading a global solution with localized solutions
             - ``'OTIS'``: combined global or local solution
             - ``'TMD3'``: combined global or local netCDF4 solution
+    crop: bool, default False
+        Crop tide model data to (buffered) bounds
+    bounds: list or NoneType, default None
+        Boundaries for cropping tide model data
     apply_flexure: bool, default False
         Apply ice flexure scaling factor to height values
 
@@ -496,6 +528,8 @@ def read_constants(
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('grid', 'OTIS')
+    kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
     kwargs.setdefault('apply_flexure', False)
 
     # check that grid file is accessible
@@ -521,10 +555,23 @@ def read_constants(
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
 
+    # run wrapper function to convert coordinate systems of input lat/lon
+    transformer = pyTMD.crs().get(EPSG)
     # if global: extend limits
+    is_geographic = transformer.is_geographic
     is_global = False
+
+    # crop mask and bathymetry data to (buffered) bounds
+    # or adjust longitudinal convention to fit tide model
+    if kwargs['crop'] and np.any(kwargs['bounds']):
+        mx, my = np.copy(xi), np.copy(yi)
+        mz, xi, yi = _crop(mz, mx, my, bounds=kwargs['bounds'],
+            is_geographic=is_geographic)
+        hz, xi, yi = _crop(hz, mx, my, bounds=kwargs['bounds'],
+            is_geographic=is_geographic)
+
     # replace original values with extend arrays/matrices
-    if ((xi[-1] - xi[0]) == (360.0 - dx)) & (EPSG == '4326'):
+    if ((xi[-1] - xi[0]) == (360.0 - dx)) & is_geographic:
         xi = _extend_array(xi, dx)
         # set global grid flag
         is_global = True
@@ -621,6 +668,11 @@ def read_constants(
             else:
                 u,hc = read_otis_transport(model_file, i)
 
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, xi, yi = _crop(hc, mx, my,
+                bounds=kwargs['bounds'],
+                is_geographic=is_geographic)
         # replace original values with extend matrices
         if is_global:
             hc = _extend_matrix(hc)
@@ -700,12 +752,14 @@ def interpolate_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    x,y = pyTMD.crs().convert(ilon, ilat, EPSG, 'F')
+    transformer = pyTMD.crs().get(EPSG)
+    x,y = transformer.transform(ilon, ilat, direction='FORWARD')
+    is_geographic = transformer.is_geographic
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
-    if (np.min(x) < np.min(xi)) & (EPSG == '4326'):
+    if (np.min(x) < np.min(xi)) & is_geographic:
         x[x < 0] += 360.0
-    if (np.max(x) > np.max(xi)) & (EPSG == '4326'):
+    if (np.max(x) > np.max(xi)) & is_geographic:
         x[x > 180] -= 360.0
     # determine if any input points are outside of the model bounds
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
@@ -791,7 +845,7 @@ def interpolate_constants(
             hci[inv] = pyTMD.interpolate.extrapolate(xi, yi, hc,
                 x[inv], y[inv], dtype=hc.dtype,
                 cutoff=kwargs['cutoff'],
-                EPSG=EPSG)
+                is_geographic=is_geographic)
         # convert units
         # amplitude and phase of the constituent
         amplitude.data[:,i] = np.abs(hci.data)/unit_conv
@@ -1868,6 +1922,120 @@ def _extend_matrix(input_matrix: np.ndarray):
     temp[:,1:-1] = input_matrix[:,:]
     temp[:,-1] = input_matrix[:,0]
     return temp
+
+# PURPOSE: crop data to bounds
+def _crop(
+        input_matrix: np.ndarray,
+        ix: np.ndarray,
+        iy: np.ndarray,
+        bounds: list | tuple,
+        buffer: int | float = 0,
+        is_geographic: bool = True,
+    ):
+    """
+    Crop tide model data to bounds
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to crop
+    ix: np.ndarray
+        x-coordinates of input grid
+    iy: np.ndarray
+        y-coordinates of input grid
+    bounds: list, tuple
+        bounding box: ``[xmin, xmax, ymin, ymax]``
+    buffer: int or float, default 0
+        buffer to add to bounds for cropping
+    is_geographic: bool, default True
+        input grid is in geographic coordinates
+
+    Returns
+    -------
+    temp: np.ndarray
+        cropped matrix
+    x: np.ndarray
+        cropped x-coordinates
+    y: np.ndarray
+        cropped y-coordinates
+    """
+    # adjust longitudinal convention of tide model
+    if is_geographic & (np.min(bounds[:2]) < 0.0) & (np.max(ix) > 180.0):
+        input_matrix, ix, = _shift(input_matrix, ix,
+            x0=180.0, cyclic=360.0, direction='west')
+    elif is_geographic & (np.max(bounds[:2]) > 180.0) & (np.min(ix) < 0.0):
+        input_matrix, ix, = _shift(input_matrix, ix,
+            x0=0.0, cyclic=360.0, direction='east')
+    # unpack bounds and buffer
+    xmin = bounds[0] - buffer
+    xmax = bounds[1] + buffer
+    ymin = bounds[2] - buffer
+    ymax = bounds[3] + buffer
+    # find indices for cropping
+    yind = np.flatnonzero((ilat >= ymin) & (ilat <= ymax))
+    xind = np.flatnonzero((ilon >= xmin) & (ilon <= xmax))
+    # slices for cropping axes
+    rows = slice(yind[0], yind[-1]+1)
+    cols = slice(xind[0], xind[-1]+1)
+    # crop matrix
+    temp = input_matrix[rows, cols]
+    x = ix[cols]
+    y = iy[rows]
+    # return cropped data
+    return (temp, x, y)
+
+# PURPOSE: shift a grid east or west
+def _shift(
+        input_matrix: np.ndarray,
+        ix: np.ndarray,
+        x0: int | float = 180,
+        cyclic: int | float = 360,
+        direction: str = 'west'
+    ):
+    """
+    Shift global grid east or west to a new base longitude
+
+    Parameters
+    ----------
+    input_matrix: np.ndarray
+        matrix to crop
+    ix: np.ndarray
+        x-coordinates of input grid
+    lon0: int or float, default 180
+        Starting longitude for shifted grid
+    cyclic: int or float, default 360
+        width of periodic domain
+    direction: str, default 'west'
+        Direction to shift grid
+
+            - ``'west'``
+            - ``'east'``
+
+    Returns
+    -------
+    temp: np.ndarray
+        shifted matrix
+    x: np.ndarray
+        shifted x-coordinates
+    """
+    # find the starting index if cyclic
+    offset = 0 if (np.fabs(ix[-1]-ix[0]-cyclic) > 1e-4) else 1
+    i0 = np.argmin(np.fabs(ix - x0))
+    # shift longitudinal values
+    x = np.zeros(ix.shape, ix.dtype)
+    x[0:-i0] = ix[i0:]
+    x[-i0:] = ix[offset: i0+offset]
+    # add or remove the cyclic
+    if (direction == 'east'):
+        x[-i0:] += cyclic
+    elif (direction == 'west'):
+        x[0:-i0] -= cyclic
+    # shift data values
+    temp = np.zeros(input_matrix.shape, input_matrix.dtype)
+    temp[:,:-i0] = input_matrix[:,i0:]
+    temp[:,-i0:] = input_matrix[:,offset: i0+offset]
+    # return the shifted values
+    return (temp, x)
 
 # PURPOSE: construct masks for u and v nodes
 def _mask_nodes(hz: np.ndarray, is_global: bool = True):
