@@ -214,6 +214,10 @@ def extract_constants(
     xmin, xmax = np.min(ilon), np.max(ilon)
     ymin, ymax = np.min(ilat), np.max(ilat)
     kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
+    # grid step size of tide model
+    dlon = lon[1] - lon[0]
+    # if global: extend limits
+    is_global = False
 
     # crop bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
@@ -221,7 +225,7 @@ def extract_constants(
         mlon, mlat = np.copy(lon), np.copy(lat)
         bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
             bounds=kwargs['bounds'],
-            buffer=5
+            buffer=4.0*dlon
         )
     elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
         # input points convention (-180:180)
@@ -232,10 +236,6 @@ def extract_constants(
         # tide model convention (-180:180)
         ilon[ilon > 180.0] -= 360.0
 
-    # grid step size of tide model
-    dlon = lon[1] - lon[0]
-    # if global: extend limits
-    is_global = False
     # replace original values with extend arrays/matrices
     if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
         lon = _extend_array(lon, dlon)

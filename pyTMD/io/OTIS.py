@@ -753,7 +753,7 @@ def interpolate_constants(
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
     transformer = pyTMD.crs().get(EPSG)
-    x,y = transformer.transform(ilon, ilat, direction='FORWARD')
+    x,y = transformer.transform(ilon, ilat)
     is_geographic = transformer.is_geographic
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
@@ -1972,8 +1972,8 @@ def _crop(
     ymin = bounds[2] - buffer
     ymax = bounds[3] + buffer
     # find indices for cropping
-    yind = np.flatnonzero((ilat >= ymin) & (ilat <= ymax))
-    xind = np.flatnonzero((ilon >= xmin) & (ilon <= xmax))
+    yind = np.flatnonzero((iy >= ymin) & (iy <= ymax))
+    xind = np.flatnonzero((ix >= xmin) & (ix <= xmax))
     # slices for cropping axes
     rows = slice(yind[0], yind[-1]+1)
     cols = slice(xind[0], xind[-1]+1)

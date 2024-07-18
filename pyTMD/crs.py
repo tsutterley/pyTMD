@@ -371,9 +371,7 @@ class crs:
         ``pyproj`` direction of the coordinate transform
         """
         # convert from input coordinates to model coordinates
-        if self._direction is None:
-            return None
-        elif (self._direction.upper() == 'F'):
+        if (self._direction is None) or (self._direction.upper() == 'F'):
             return pyproj.enums.TransformDirection.FORWARD
         # convert from model coordinates to coordinates
         elif (self._direction.upper() == 'B'):
