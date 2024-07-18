@@ -166,9 +166,8 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline'])
-@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable
-def test_compare_TPXO9_v2(METHOD, CROP):
+def test_compare_TPXO9_v2(METHOD):
     # model parameters for TPXO9-atlas-v2
     model_directory = filepath.joinpath('TPXO9_atlas_v2')
     # model grid file
@@ -191,7 +190,7 @@ def test_compare_TPXO9_v2(METHOD, CROP):
     # extract amplitude and phase from tide model
     amp1, ph1, D1, c1 = pyTMD.io.ATLAS.extract_constants(
         val['Lon'], val['Lat'], grid_file, model_file, type=TYPE,
-        method=METHOD, scale=SCALE, compressed=GZIP, crop=CROP)
+        method=METHOD, scale=SCALE, compressed=GZIP)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 

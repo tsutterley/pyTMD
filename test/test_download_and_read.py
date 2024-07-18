@@ -239,8 +239,7 @@ class Test_CATS2008:
         assert np.all(obs == exp)
 
     # PURPOSE: Tests that interpolated results are comparable to AntTG database
-    @pytest.mark.parametrize("CROP", [False, True])
-    def test_compare_CATS2008(self, CROP):
+    def test_compare_CATS2008(self):
         # model parameters for CATS2008
         modelpath = filepath.joinpath('CATS2008')
         grid_file = modelpath.joinpath('grid_CATS2008')
@@ -294,7 +293,7 @@ class Test_CATS2008:
         # extract amplitude and phase from tide model
         amp,ph,D,cons = pyTMD.io.OTIS.extract_constants(station_lon,
             station_lat, grid_file, model_file, EPSG, type=TYPE,
-            method='spline', grid=GRID, crop=CROP)
+            method='spline', grid=GRID)
         # reorder constituents of model and convert amplitudes to cm
         model_amp = np.ma.zeros((antarctic_stations,len(constituents)))
         model_ph = np.ma.zeros((antarctic_stations,len(constituents)))

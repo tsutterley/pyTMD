@@ -260,14 +260,6 @@ def extract_constants(
     ymin, ymax = np.min(y), np.max(y)
     kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
 
-    # if global: extend limits
-    is_global = False
-    # replace original values with extend arrays/matrices
-    if np.isclose(xi[-1] - xi[0], 360.0 - dx) & is_geographic:
-        xi = _extend_array(xi, dx)
-        # set global grid flag
-        is_global = True
-
     # crop mask and bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
     if kwargs['crop'] and np.any(kwargs['bounds']):
@@ -284,6 +276,14 @@ def extract_constants(
         # input points convention (0:360)
         # tide model convention (-180:180)
         x[x > 180] -= 360.0
+
+    # if global: extend limits
+    is_global = False
+    # replace original values with extend arrays/matrices
+    if np.isclose(xi[-1] - xi[0], 360.0 - dx) & is_geographic:
+        xi = _extend_array(xi, dx)
+        # set global grid flag
+        is_global = True
 
     # determine if any input points are outside of the model bounds
     invalid = (x < xi.min()) | (x > xi.max()) | (y < yi.min()) | (y > yi.max())
@@ -410,14 +410,14 @@ def extract_constants(
             else:
                 u,hc = read_otis_transport(model_file, i)
 
-        # replace original values with extend matrices
-        if is_global:
-            hc = _extend_matrix(hc)
         # crop tide model data to (buffered) bounds
         if kwargs['crop'] and np.any(kwargs['bounds']):
             hc, _, _ = _crop(hc, mx, my,
                 bounds=kwargs['bounds'], buffer=4*dx,
                 is_geographic=is_geographic)
+        # replace original values with extend matrices
+        if is_global:
+            hc = _extend_matrix(hc)
         # copy mask to constituent
         hc.mask |= bathymetry.mask
 

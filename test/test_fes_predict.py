@@ -158,9 +158,8 @@ def test_verify_FES2014(METHOD, CROP):
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline'])
-@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable
-def test_compare_FES2014(METHOD, CROP):
+def test_compare_FES2014(METHOD):
     # model parameters for FES2014
     model_directory = filepath.joinpath('fes2014','ocean_tide')
     # constituent files included in test
@@ -187,7 +186,7 @@ def test_compare_FES2014(METHOD, CROP):
     # extract amplitude and phase from tide model
     amp1, ph1 = pyTMD.io.FES.extract_constants(longitude, latitude, model_file,
         type=TYPE, version=VERSION, method=METHOD, compressed=True,
-        scale=SCALE, crop=CROP)
+        scale=SCALE)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 

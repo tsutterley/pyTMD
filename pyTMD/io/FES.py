@@ -239,10 +239,6 @@ def extract_constants(
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
         # grid step size of tide model
         dlon = lon[1] - lon[0]
-        # replace original values with extend arrays/matrices
-        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
-            lon = _extend_array(lon, dlon)
-            hc = _extend_matrix(hc)
         # crop tide model data to (buffered) bounds
         # or adjust longitudinal convention to fit tide model
         if kwargs['crop'] and np.any(kwargs['bounds']):
@@ -259,6 +255,10 @@ def extract_constants(
             # tide model convention (-180:180)
             ilon[ilon>180.0] -= 360.0
 
+        # replace original values with extend arrays/matrices
+        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+            lon = _extend_array(lon, dlon)
+            hc = _extend_matrix(hc)
         # determine if any input points are outside of the model bounds
         invalid = (ilon < lon.min()) | (ilon > lon.max()) | \
                   (ilat < lat.min()) | (ilat > lat.max())
@@ -394,17 +394,17 @@ def read_constants(
         elif kwargs['version'] in _netcdf_versions:
             # FES netCDF4 constituent files
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
+        # crop tide model data to (buffered) bounds
+        if kwargs['crop'] and np.any(kwargs['bounds']):
+            hc, lon, lat = _crop(hc, lon, lat,
+                bounds=kwargs['bounds'],
+            )
         # grid step size of tide model
         dlon = lon[1] - lon[0]
         # replace original values with extend arrays/matrices
         if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
             lon = _extend_array(lon, dlon)
             hc = _extend_matrix(hc)
-        # crop tide model data to (buffered) bounds
-        if kwargs['crop'] and np.any(kwargs['bounds']):
-            hc, lon, lat = _crop(hc, lon, lat,
-                bounds=kwargs['bounds'],
-            )
         # append extended constituent
         constituents.append(cons, hc)
         # set model coordinates

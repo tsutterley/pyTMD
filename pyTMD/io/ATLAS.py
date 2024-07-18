@@ -218,12 +218,6 @@ def extract_constants(
     dlon = lon[1] - lon[0]
     # if global: extend limits
     is_global = False
-    # replace original values with extend arrays/matrices
-    if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
-        lon = _extend_array(lon, dlon)
-        bathymetry = _extend_matrix(bathymetry)
-        # set global grid flag
-        is_global = True
 
     # crop bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
@@ -242,6 +236,12 @@ def extract_constants(
         # tide model convention (-180:180)
         ilon[ilon > 180.0] -= 360.0
 
+    # replace original values with extend arrays/matrices
+    if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+        lon = _extend_array(lon, dlon)
+        bathymetry = _extend_matrix(bathymetry)
+        # set global grid flag
+        is_global = True
     # create masks
     bathymetry.mask = (bathymetry.data == 0)
     # determine if any input points are outside of the model bounds
@@ -297,15 +297,15 @@ def extract_constants(
             compressed=kwargs['compressed'])
         # append constituent to list
         constituents.append(cons)
-        # replace original values with extend matrices
-        if is_global:
-            hc = _extend_matrix(hc)
         # crop tide model data to (buffered) bounds
         if kwargs['crop'] and np.any(kwargs['bounds']):
             hc, _, _ = _crop(hc, mlon, mlat,
                 bounds=kwargs['bounds'],
                 buffer=4*dlon
             )
+        # replace original values with extend matrices
+        if is_global:
+            hc = _extend_matrix(hc)
         # update constituent mask with bathymetry mask
         hc.mask[:] |= bathymetry.mask[:]
         # interpolate amplitude and phase of the constituent
@@ -418,6 +418,7 @@ def read_constants(
     # read the tide grid file for bathymetry and spatial coordinates
     lon, lat, bathymetry = read_netcdf_grid(grid_file, kwargs['type'],
         compressed=kwargs['compressed'])
+    is_global = False
 
     # crop bathymetry data to (buffered) bounds
     if kwargs['crop'] and np.any(kwargs['bounds']):
@@ -431,6 +432,7 @@ def read_constants(
     if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
         lon = _extend_array(lon, dlon)
         bathymetry = _extend_matrix(bathymetry)
+        is_global = True
     # save output constituents
     constituents = pyTMD.io.constituents(
         longitude=lon,
@@ -454,7 +456,7 @@ def read_constants(
                 bounds=kwargs['bounds'],
             )
         # replace original values with extend matrices
-        if np.isclose(lon[-1] - lon[0], 360.0 - dlon):
+        if is_global:
             hc = _extend_matrix(hc)
         # set constituent masks
         hc.mask[:] |= bathymetry.mask[:]

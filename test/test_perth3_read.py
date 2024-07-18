@@ -153,9 +153,8 @@ def test_verify_GOT47(METHOD, CROP):
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
-@pytest.mark.parametrize("CROP", [False, True])
 # PURPOSE: Tests that interpolated results are comparable
-def test_compare_GOT47(METHOD, CROP):
+def test_compare_GOT47(METHOD):
     # model parameters for GOT4.7
     model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
     # perth3 test program infers m4 tidal constituent
@@ -179,7 +178,7 @@ def test_compare_GOT47(METHOD, CROP):
 
     # extract amplitude and phase from tide model
     amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
-        method=METHOD, compressed=GZIP, scale=SCALE, crop=CROP)
+        method=METHOD, compressed=GZIP, scale=SCALE)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
