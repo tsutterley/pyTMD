@@ -225,7 +225,7 @@ def extract_constants(
         mlon, mlat = np.copy(lon), np.copy(lat)
         bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
             bounds=kwargs['bounds'],
-            buffer=4.0*dlon
+            buffer=4*dlon
         )
     elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
         # input points convention (-180:180)
