@@ -1216,7 +1216,12 @@ def _extend_matrix(input_matrix: np.ndarray):
         extended matrix
     """
     ny, nx = np.shape(input_matrix)
-    temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
+    # allocate for extended matrix
+    if np.ma.isMA(input_matrix):
+        temp = np.ma.zeros((ny,nx+2), dtype=input_matrix.dtype)
+    else:
+        temp = np.zeros((ny,nx+2), dtype=input_matrix.dtype)
+    # extend matrix
     temp[:,0] = input_matrix[:,-1]
     temp[:,1:-1] = input_matrix[:,:]
     temp[:,-1] = input_matrix[:,0]

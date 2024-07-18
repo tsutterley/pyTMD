@@ -468,7 +468,7 @@ def arguments():
         type=pathlib.Path,
         help='Tide model definition file')
     # crop tide model to (buffered) bounds of data
-    parser.add_argument('-C', '--crop',
+    parser.add_argument('--crop', '-C',
         default=False, action='store_true',
         help='Crop tide model to bounds of data')
     # input and output data format
