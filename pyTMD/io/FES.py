@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 07/2024: added new FES2022 to available known model versions
         FES2022 have masked longitudes, only extract longitude data
+        FES2022 extrapolated data have zeroed out inland water bodies
         added crop and bounds keywords for trimming model data
     Updated 01/2024: attempt to extract constituent IDs from filenames
     Updated 06/2023: extract ocean tide model variables for FES2012
@@ -725,6 +726,7 @@ def read_netcdf_file(
     # calculate complex form of constituent oscillation
     mask = (amp.data == amp.fill_value) | \
         (ph.data == ph.fill_value) | \
+        ((amp.data == 0) & (ph.data == 0)) | \
         np.isnan(amp.data) | np.isnan(ph.data)
     hc = np.ma.array(amp*np.exp(-1j*ph*np.pi/180.0), mask=mask,
         fill_value=np.ma.default_fill_value(np.dtype(complex)))
