@@ -1353,8 +1353,8 @@ class model:
         format: str
             format of the input definition file
 
-                - ``'ascii'`` for tab-delimited definition file
-                - ``'json'`` for JSON formatted definition file
+                - ``'ascii'``: tab-delimited definition file
+                - ``'json'``: JSON formatted definition file
         """
         # Opening definition file and assigning file ID number
         if isinstance(definition_file, io.IOBase):

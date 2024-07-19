@@ -99,6 +99,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 07/2024: assert that data type is a known value
         added option to crop to the domain of the input data
+        added option to use JSON format definition files
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
@@ -200,6 +201,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     ATLAS_FORMAT='netcdf',
     GZIP=True,
     DEFINITION_FILE=None,
+    DEFINITION_FORMAT='ascii',
     CROP=False,
     FORMAT='csv',
     VARIABLES=[],
@@ -219,7 +221,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE)
+        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE,
+            format=DEFINITION_FORMAT)
     else:
         model = pyTMD.io.model(tide_dir, format=ATLAS_FORMAT,
             compressed=GZIP).current(TIDE_MODEL)
@@ -471,6 +474,9 @@ def arguments():
     group.add_argument('--definition-file',
         type=pathlib.Path,
         help='Tide model definition file')
+    parser.add_argument('--definition-format',
+        type=str, default='ascii', choices=('ascii', 'json'),
+        help='Format for model definition file')
     # crop tide model to (buffered) bounds of data
     parser.add_argument('--crop', '-C',
         default=False, action='store_true',
@@ -574,6 +580,7 @@ def main():
             ATLAS_FORMAT=args.atlas_format,
             GZIP=args.gzip,
             DEFINITION_FILE=args.definition_file,
+            DEFINITION_FORMAT=args.definition_format,
             CROP=args.crop,
             FORMAT=args.format,
             VARIABLES=args.variables,

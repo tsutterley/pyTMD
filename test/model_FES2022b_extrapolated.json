@@ -1,0 +1,1 @@
+{"format": "FES", "name": "FES2022", "model_file": "fes2022b/ocean_tide_extrapolated/*fes2022.nc*", "type": "z", "version": "FES2022", "variable": "tide_ocean", "scale": 0.01, "compressed": true, "reference": "https://doi.org/10.24400/527896/A01-2024.004"}

@@ -62,6 +62,8 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 07/2024: assert that data type is a known value
         make number of days to convert JD to MJD a variable
+        added option to crop tide models to the domain of the input data
+        added option to use JSON format definition files
     Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -114,6 +116,7 @@ from __future__ import print_function, annotations
 import logging
 import pathlib
 import numpy as np
+from io import IOBase
 import scipy.interpolate
 import pyTMD.crs
 import pyTMD.io
@@ -183,7 +186,10 @@ def tide_elevations(
         MODEL: str | None = None,
         ATLAS_FORMAT: str = 'netcdf',
         GZIP: bool = False,
-        DEFINITION_FILE: str | pathlib.Path | None = None,
+        DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
+        DEFINITION_FORMAT: str = 'ascii',
+        CROP: bool = False,
+        BOUNDS: list | np.ndarray | None = None,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -219,8 +225,17 @@ def tide_elevations(
             - ``'netcdf'``
     GZIP: bool, default False
         Tide model files are gzip compressed
-    DEFINITION_FILE: str or NoneType, default None
+    DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
         Tide model definition file for use
+    DEFINITION_FORMAT: str, default 'ascii'
+        Format for model definition file
+
+            - ``'ascii'``: tab-delimited definition file
+            - ``'json'``: JSON formatted definition file
+    CROP: bool, default False
+        Crop tide model data to (buffered) bounds
+    BOUNDS: list, np.ndarray or NoneType, default None
+        Boundaries for cropping tide model data
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -280,8 +295,8 @@ def tide_elevations(
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(
-            pathlib.Path(DEFINITION_FILE).expanduser())
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE,
+            format=DEFINITION_FORMAT)
     else:
         model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).elevation(MODEL)
@@ -323,28 +338,28 @@ def tide_elevations(
     if model.format in ('OTIS', 'ATLAS', 'TMD3'):
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
             model.model_file, model.projection, type=model.type,
-            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            grid=model.format, apply_flexure=APPLY_FLEXURE)
+            crop=CROP, bounds=BOUNDS, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
         # use delta time at 2000.0 to match TMD outputs
         deltat = np.zeros((nt), dtype=np.float64)
     elif (model.format == 'netcdf'):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
-            model.model_file, type=model.type, method=METHOD,
-            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
-            compressed=model.compressed)
+            model.model_file, type=model.type, crop=CROP, bounds=BOUNDS, 
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         # use delta time at 2000.0 to match TMD outputs
         deltat = np.zeros((nt), dtype=np.float64)
     elif (model.format == 'GOT'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
-            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            scale=model.scale, compressed=model.compressed)
+            crop=CROP, bounds=BOUNDS, method=METHOD, extrapolate=EXTRAPOLATE,
+            cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
         # delta time (TT - UT1)
         deltat = ts.tt_ut1
     elif (model.format == 'FES'):
         amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
-            type=model.type, version=model.version, method=METHOD,
-            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
-            compressed=model.compressed)
+            type=model.type, version=model.version, crop=CROP, bounds=BOUNDS,
+            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+            scale=model.scale, compressed=model.compressed)
         # available model constituents
         c = model.constituents
         # delta time (TT - UT1)
@@ -412,7 +427,10 @@ def tide_currents(
         MODEL: str | None = None,
         ATLAS_FORMAT: str = 'netcdf',
         GZIP: bool = False,
-        DEFINITION_FILE: str | pathlib.Path | None = None,
+        DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
+        DEFINITION_FORMAT: str = 'ascii',
+        CROP: bool = False,
+        BOUNDS: list | np.ndarray | None = None,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -447,8 +465,17 @@ def tide_currents(
             - ``'netcdf'``
     GZIP: bool, default False
         Tide model files are gzip compressed
-    DEFINITION_FILE: str or NoneType, default None
+    DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
         Tide model definition file for use
+    DEFINITION_FORMAT: str, default 'ascii'
+        Format for model definition file
+
+            - ``'ascii'``: tab-delimited definition file
+            - ``'json'``: JSON formatted definition file
+    CROP: bool, default False
+        Crop tide model data to (buffered) bounds
+    BOUNDS: list, np.ndarray or NoneType, default None
+        Boundaries for cropping tide model data
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -504,8 +531,8 @@ def tide_currents(
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(
-            pathlib.Path(DEFINITION_FILE).expanduser())
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE,
+            format=DEFINITION_FORMAT)
     else:
         model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
             compressed=GZIP).current(MODEL)
@@ -551,22 +578,22 @@ def tide_currents(
         if model.format in ('OTIS', 'ATLAS', 'TMD3'):
             amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
                 model.model_file['u'], model.projection, type=t,
-                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-                grid=model.format)
+                crop=CROP, bounds=BOUNDS, method=METHOD, extrapolate=EXTRAPOLATE,
+                cutoff=CUTOFF, grid=model.format)
             # use delta time at 2000.0 to match TMD outputs
             deltat = np.zeros((nt), dtype=np.float64)
         elif (model.format == 'netcdf'):
             amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
-                model.model_file[t], type=t, method=METHOD,
-                extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
-                compressed=model.compressed)
+                model.model_file[t], type=t, crop=CROP, bounds=BOUNDS, 
+                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                scale=model.scale, compressed=model.compressed)
             # use delta time at 2000.0 to match TMD outputs
             deltat = np.zeros((nt), dtype=np.float64)
         elif (model.format == 'FES'):
             amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file[t],
-                type=t, version=model.version, method=METHOD,
-                extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
-                compressed=model.compressed)
+                type=t, version=model.version, crop=CROP, bounds=BOUNDS, 
+                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+                scale=model.scale, compressed=model.compressed)
             # available model constituents
             c = model.constituents
             # delta time (TT - UT1)
