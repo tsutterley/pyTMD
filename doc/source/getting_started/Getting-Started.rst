@@ -131,50 +131,57 @@ Definition Files
 ################
 
 For models not parameterized within ``pyTMD``, the parameters can be set with a model definition file.
-The definition files are read line by line to fill a python dictionary variable mapping specific parameter names with their values.
-The parameter names are the first column in the file and the parameter values are in the subsequent columns.
+There are two types of definition files currently supported by ``pyTMD`` (``ascii`` and ``json``).
+
+The tab-delimited text format (``ascii``) consists of two separate columns (parameter names and parameter values).
+These definition files are read line by line to fill a python dictionary mapping the names with their values.
 For parameters consisting of lists, the parameter values can be separated by spaces or commas.
-Each definition file should have a ``name``, ``format`` and ``type`` parameters.
-Each model format also requires specific sets of parameters.
 For FES-type models of currents, the two lists of model files (``u`` and ``v``) should be separated in the list with a semi-colon.
-For tide models with multiple constituent files, the files can be also found from a directory using a ``glob`` string.
+
+The JSON format (``json``) directly maps the parameter names with their values stored in the appropriate data type (strings, lists, numbers, booleans, etc).
+For FES-type models of currents, the two lists of model files (``u`` and ``v``) are stored in a name-value pair objects (similar to a python dictionary).
+While still human readable, the JSON format is both interoperable and more easily machine readable.
+
+Each definition file regardless of the format should have ``name``, ``format`` and ``type`` parameters.
+Each model type also requires specific sets of parameters for the model reader.
+For models with multiple constituent files, the files can be found using a ``glob`` string to search a directory.
 
 - ``OTIS``, ``ATLAS`` and ``TMD3``
 
-    * ``format``: ``'OTIS'``, ``'ATLAS'`` or ``TMD3``
-    * ``grid_file``: full path to model grid file
-    * ``model_file``: full path to model constituent file(s)
+    * ``format``: ``OTIS``, ``ATLAS`` or ``TMD3``
+    * ``grid_file``: path to model grid file
+    * ``model_file``: path to model constituent file(s) or a ``glob`` string
     * ``name``: tide model name
     * ``projection``: `model spatial projection <./Getting-Started.html#spatial-coordinates>`_.
-    * ``type``: ``'z'`` or ``'u,v'``
+    * ``type``: ``z`` or ``u,v``
 
 - ``netcdf``
 
     * ``compressed``: model files are gzip compressed
-    * ``format``: ``'netcdf'``
-    * ``grid_file``: full path to model grid file
-    * ``model_file``: full path to model constituent files
+    * ``format``: ``netcdf``
+    * ``grid_file``: path to model grid file
+    * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
     * ``scale``: scaling factor for converting to output units
-    * ``type``: ``'z'`` or ``'u,v'``
+    * ``type``: ``z`` or ``u,v``
 
 - ``GOT``
 
     * ``compressed``: model files are gzip compressed
-    * ``format``: ``'GOT'``
-    * ``model_file``: full path to model constituent files
+    * ``format``: ``GOT``
+    * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
     * ``scale``: scaling factor for converting to output units
-    * ``type``: ``'z'``
+    * ``type``: ``z``
 
 - ``FES``
 
     * ``compressed``: model files are gzip compressed
-    * ``format``: ``'FES'``
-    * ``model_file``: full path to model constituent files
+    * ``format``: ``FES``
+    * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
     * ``scale``: scaling factor for converting to output units
-    * ``type``: ``'z'`` or ``'u,v'``
+    * ``type``: ``z`` or ``u,v``
     * ``version``: tide model version
 
 Time
