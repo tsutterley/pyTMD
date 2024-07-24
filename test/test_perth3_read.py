@@ -93,7 +93,8 @@ def test_verify_GOT47(METHOD, CROP):
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
     model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
-    model_format = 'GOT'
+    model_format = 'GOT-ascii'
+    corrections, _, grid = model_format.partition('-')
     GZIP = True
     SCALE = 1.0
 
@@ -121,7 +122,7 @@ def test_verify_GOT47(METHOD, CROP):
 
     # extract amplitude and phase from tide model
     amp,ph,cons = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
-        method=METHOD, compressed=GZIP, scale=SCALE, crop=CROP)
+        grid=grid, method=METHOD, compressed=GZIP, scale=SCALE, crop=CROP)
     assert all(c in constituents for c in cons)
     # interpolate delta times from calendar dates to tide time
     deltat = timescale.time.interpolate_delta_time(
@@ -137,9 +138,9 @@ def test_verify_GOT47(METHOD, CROP):
     # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict.drift(tide_time, hc, cons,
-        deltat=deltat, corrections=model_format)
+        deltat=deltat, corrections=corrections)
     minor = pyTMD.predict.infer_minor(tide_time, hc, cons,
-        deltat=deltat, corrections=model_format)
+        deltat=deltat, corrections=corrections)
     tide.data[:] += minor.data[:]
 
     # will verify differences between model outputs are within tolerance
@@ -161,6 +162,8 @@ def test_compare_GOT47(METHOD):
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
     model_file = [model_directory.joinpath(m) for m in model_files]
+    model_format = 'GOT-ascii'
+    corrections, _, grid = model_format.partition('-')
     GZIP = True
     SCALE = 1.0
 
@@ -178,14 +181,14 @@ def test_compare_GOT47(METHOD):
 
     # extract amplitude and phase from tide model
     amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
-        method=METHOD, compressed=GZIP, scale=SCALE)
+        grid=grid, method=METHOD, compressed=GZIP, scale=SCALE)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
     # read and interpolate constituents from tide model
     constituents = pyTMD.io.GOT.read_constants(model_file, compressed=GZIP)
     amp2, ph2 = pyTMD.io.GOT.interpolate_constants(lon, lat,
-        constituents, method=METHOD, scale=SCALE)
+        constituents, grid=grid, method=METHOD, scale=SCALE)
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 

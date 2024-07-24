@@ -80,7 +80,7 @@ def test_definition_FES(file_format):
                 'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
                 'o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
     # test read variables
-    assert m.format == 'FES'
+    assert m.format == 'FES-netcdf'
     assert m.name == 'FES2014'
     # assert that all model files are in the model definition
     for f in model_files:
@@ -231,7 +231,7 @@ def test_definition_FES_currents(file_format):
                 'mn4','ms4','msf','msqm','mtm','mu2','n2','n4','nu2',
                 'o1','p1','q1','r2','s1','s2','s4','sa','ssa','t2']
     # test read variables
-    assert m.format == 'FES'
+    assert m.format == 'FES-netcdf'
     assert m.name == 'FES2014'
     # assert that all model files are in the model definition
     for t in ['u','v']:
@@ -367,7 +367,7 @@ def test_definition_GOT(file_format):
         'GOT4.10c/grids_loadtide/s1load.d.gz',
         'GOT4.10c/grids_loadtide/s2load.d.gz']
     # test read variables
-    assert m.format == 'GOT'
+    assert m.format == 'GOT-ascii'
     assert m.name == 'GOT4.10'
     # assert that all model files are in the model definition
     for f in model_files:
@@ -478,7 +478,7 @@ def test_definition_TPXO9(file_format):
         'TPXO9_atlas_v5/h_s2_tpxo9_atlas_30_v5.nc']
     grid_file = pathlib.Path('TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc')
     # test read variables
-    assert m.format == 'netcdf'
+    assert m.format == 'ATLAS-netcdf'
     assert m.name == 'TPXO9-atlas-v5'
     assert m.grid_file == grid_file
     # assert that all model files are in the model definition
@@ -537,7 +537,7 @@ def test_definition_TPXO9_glob(file_format):
     local = filepath.joinpath(grid_file)
     local.touch(exist_ok=True)
     # test read variables
-    assert m.format == 'netcdf'
+    assert m.format == 'ATLAS-netcdf'
     assert m.name == 'TPXO9-atlas-v5'
     # create model definition file
     fid = io.StringIO()
@@ -620,7 +620,7 @@ def test_definition_TPXO9_currents(file_format):
         'TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc']
     grid_file = pathlib.Path('TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc')
     # test read variables
-    assert m.format == 'netcdf'
+    assert m.format == 'ATLAS-netcdf'
     assert m.name == 'TPXO9-atlas-v5'
     assert m.grid_file == grid_file
     for t in ['u','v']:

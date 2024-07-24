@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (05/2024)
+Written by Tyler Sutterley (07/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 07/2024: add function to parse tidal constituents from strings
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 01/2024: added properties for Doodson and Cartwright numbers
     Updated 08/2023: added default for printing constituent class
@@ -19,6 +20,7 @@ UPDATE HISTORY:
 """
 from __future__ import division, annotations
 
+import re
 import copy
 import numpy as np
 import pyTMD.arguments
@@ -188,6 +190,43 @@ class constituents:
             cartwright_numbers.append(n)
         # return the list of Cartwright numbers
         return cartwright_numbers
+
+    @staticmethod
+    def parse(constituent: str) -> str:
+        """
+        Parses for tidal constituents using regular expressions and
+        remapping of known cases
+
+        Parameters
+        ----------
+        constituent: str
+            Unparsed tidal constituent name
+        """
+        # list of tidal constituents (not all are included in tidal program)
+        # include negative look-behind and look-ahead for complex cases
+        cindex = [r'(?<!s)sa','ssa','mm','msf',r'mt(?!m)(?!ide)','mf','alpha1',
+            '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)o1','tau1',
+            'm1','chi1','pi1','p1','s1','k1','psi1','phi1','theta1','j1',
+            'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
+            'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
+            'r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4','m4',
+            'ms4','mk4',r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2',
+            'msqm','mtm',r'(?<!m)n4','eps2','z0']
+        # compile regular expression
+        rx = re.compile(r'(' + '|'.join(cindex) + r')', re.IGNORECASE)
+        # check if tide model is a simple regex case
+        if rx.search(constituent):
+            return rx.findall(constituent)[0].lower()
+        # known remapped cases
+        mapping = [('2n','2n2'), ('e2','eps2'), ('la2','lambda2'),
+            ('sig1','sigma1')]
+        # iterate over known remapped cases
+        for m in mapping:
+            # check if tide model is a remapped case
+            if m[0] in constituent.lower():
+                return m[1]
+        # raise a value error if not found
+        raise ValueError(f'Constituent not found in {constituent}')
 
     def __str__(self):
         """String representation of the ``constituents`` object

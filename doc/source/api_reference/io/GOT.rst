@@ -3,6 +3,9 @@ GOT
 ===
 
 - Reads files for Richard Ray's Global Ocean Tide (GOT) models
+
+  * ascii format
+  * netcdf format
 - Spatially interpolates tidal constituents to input coordinates
 
 Calling Sequence

@@ -103,7 +103,8 @@ def test_verify_FES2014(METHOD, CROP):
     model_file = [model_directory.joinpath(m) for m in model_files]
     c = ['2n2','k1','k2','m2','m4','mf','mm','msqm','mtm','n2','o1',
         'p1','q1','s1','s2']
-    model_format = 'FES'
+    model_format = 'FES-netcdf'
+    corrections, _ , grid = model_format.partition('-')
     VERSION = 'FES2014'
     TYPE = 'z'
     SCALE = 1.0/100.0
@@ -142,9 +143,9 @@ def test_verify_FES2014(METHOD, CROP):
     # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict.drift(tide_time, hc, c,
-        deltat=deltat, corrections=model_format)
+        deltat=deltat, corrections=corrections)
     minor = pyTMD.predict.infer_minor(tide_time, hc, c,
-        deltat=deltat, corrections=model_format)
+        deltat=deltat, corrections=corrections)
     tide.data[:] += minor.data[:]
 
     # will verify differences between model outputs are within tolerance

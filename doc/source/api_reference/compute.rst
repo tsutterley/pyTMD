@@ -4,12 +4,12 @@ compute
 
 - Calculates tidal elevations at points and times
 
-  * Can use OTIS format tidal solutions provided by Ohio State University and ESR
+  * Can use OTIS format tidal solutions provided by Oregon State University and ESR
   * Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
   * Can use Finite Element Solution (FES) models provided by AVISO
 - Calculates tidal currents at points and times
 
-  * Can use OTIS format tidal solutions provided by Ohio State University and ESR
+  * Can use OTIS format tidal solutions provided by Oregon State University and ESR
   * Can use Finite Element Solution (FES) models provided by AVISO
 - Calculates long-period equilibrium tides (LPET) at points and times
 

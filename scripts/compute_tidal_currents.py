@@ -4,7 +4,7 @@ compute_tidal_currents.py
 Written by Tyler Sutterley (07/2024)
 Calculates zonal and meridional tidal currents for an input file
 
-Uses OTIS format tidal solutions provided by Ohio State University and ESR
+Uses OTIS format tidal solutions provided by Oregon State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/
@@ -20,7 +20,7 @@ INPUTS:
 COMMAND LINE OPTIONS:
     -D X, --directory X: Working data directory
     -T X, --tide X: Tide model to use in calculating currents
-    --atlas-format X: ATLAS tide model format (OTIS, netcdf)
+    --atlas-format X: ATLAS tide model format (OTIS, ATLAS-netcdf)
     --gzip, -G: Tide model files are gzip compressed
     --definition-file X: Model definition file for use in calculating currents
     -C, --crop: Crop tide model to (buffered) bounds of data
@@ -100,6 +100,10 @@ UPDATE HISTORY:
     Updated 07/2024: assert that data type is a known value
         added option to crop to the domain of the input data
         added option to use JSON format definition files
+        renamed format for ATLAS to ATLAS-compact
+        renamed format for netcdf to ATLAS-netcdf
+        renamed format for FES to FES-netcdf and added FES-ascii
+        renamed format for GOT to GOT-ascii and added GOT-netcdf
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
         reading and parsing of geometry column from geopandas datasets
@@ -198,7 +202,7 @@ def get_projection(attributes, PROJECTION):
 # compute tides at points and times using tidal model driver algorithms
 def compute_tidal_currents(tide_dir, input_file, output_file,
     TIDE_MODEL=None,
-    ATLAS_FORMAT='netcdf',
+    ATLAS_FORMAT='ATLAS-netcdf',
     GZIP=True,
     DEFINITION_FILE=None,
     DEFINITION_FORMAT='ascii',
@@ -292,19 +296,20 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     # iterate over u and v currents
     for t in model.type:
         # read tidal constants and interpolate to grid points
-        if model.format in ('OTIS','ATLAS','TMD3'):
+        corrections, _, grid = model.format.partition('-')
+        if model.format in ('OTIS','ATLAS-compact','TMD3'):
             amp,ph,D,c = pyTMD.io.OTIS.extract_constants(np.ravel(lon), np.ravel(lat),
                 model.grid_file, model.model_file['u'], model.projection,
-                type=t, crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE,
-                cutoff=CUTOFF, grid=model.format)
+                type=t, grid=corrections, crop=CROP, method=METHOD,
+                extrapolate=EXTRAPOLATE, cutoff=CUTOFF)
             deltat = np.zeros((nt))
-        elif (model.format == 'netcdf'):
+        elif (model.format == 'ATLAS-netcdf'):
             amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(np.ravel(lon), np.ravel(lat),
                 model.grid_file, model.model_file[t], type=t, crop=CROP, method=METHOD,
                 extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
                 compressed=model.compressed)
             deltat = np.zeros((nt))
-        elif (model.format == 'FES'):
+        elif (model.format == 'FES-netcdf'):
             amp,ph = pyTMD.io.FES.extract_constants(np.ravel(lon), np.ravel(lat),
                 model.model_file[t], type=t, version=model.version, crop=CROP,
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
@@ -325,11 +330,11 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             tide[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
                 TIDE = pyTMD.predict.map(ts.tide[i], hc, c,
-                    deltat=deltat[i], corrections=model.format)
+                    deltat=deltat[i], corrections=corrections)
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
-                        deltat=deltat[i], corrections=model.format)
+                        deltat=deltat[i], corrections=corrections)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components and reform grid
@@ -340,11 +345,11 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             tide[t] = np.ma.zeros((nt), fill_value=FILL_VALUE)
             tide[t].mask = np.any(hc.mask,axis=1)
             tide[t].data[:] = pyTMD.predict.drift(ts.tide, hc, c,
-                deltat=deltat, corrections=model.format)
+                deltat=deltat, corrections=corrections)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
-                    deltat=deltat, corrections=model.format)
+                    deltat=deltat, corrections=corrections)
                 tide[t].data[:] += minor.data[:]
         elif (TYPE == 'time series'):
             tide[t] = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
@@ -353,11 +358,11 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
                 # calculate constituent oscillation for station
                 HC = hc[s,None,:]
                 TIDE = pyTMD.predict.time_series(ts.tide, HC, c,
-                    deltat=deltat, corrections=model.format)
+                    deltat=deltat, corrections=corrections)
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
-                        deltat=deltat, corrections=model.format)
+                        deltat=deltat, corrections=corrections)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components
@@ -465,7 +470,8 @@ def arguments():
         type=str, choices=choices,
         help='Tide model to use in calculating currents')
     parser.add_argument('--atlas-format',
-        type=str, choices=('OTIS','netcdf'), default='netcdf',
+        type=str, choices=('OTIS','ATLAS-netcdf'),
+        default='ATLAS-netcdf',
         help='ATLAS tide model format')
     parser.add_argument('--gzip','-G',
         default=False, action='store_true',

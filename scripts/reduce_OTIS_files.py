@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (07/2024)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 07/2024: renamed format for ATLAS to ATLAS-compact
     Updated 04/2024: add debug mode printing input arguments
         use wrapper to importlib for optional dependencies
     Updated 12/2023: use new crs class for coordinate reprojection
@@ -89,7 +90,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL,
     new_model_file = {}
 
     # read the OTIS-format tide grid file
-    if (model.format == 'ATLAS'):
+    if (model.format == 'ATLAS-compact'):
         # if reading a global solution with localized solutions
         x0,y0,hz0,mz0,iob,dt,pmask,local = pyTMD.io.OTIS.read_atlas_grid(
             model.grid_file)
@@ -147,7 +148,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL,
         z1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         for i,c in enumerate(constituents):
             # read constituent from elevation file
-            if (model.format == 'ATLAS'):
+            if (model.format == 'ATLAS-compact'):
                 z0,zlocal = pyTMD.io.OTIS.read_atlas_elevation(
                     model_file['z'], i, c)
                 xi,yi,z=pyTMD.io.OTIS.combine_atlas_model(x0, y0, z0, pmask,
@@ -177,7 +178,7 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL,
         v1 = np.zeros((ny,nx,nc),dtype=np.complex64)
         for i,c in enumerate(constituents):
             # read constituent from transport file
-            if (model.format == 'ATLAS'):
+            if (model.format == 'ATLAS-compact'):
                 u0,v0,uvlocal = pyTMD.io.OTIS.read_atlas_transport(
                     model_file['u'], i, c)
                 xi,yi,u = pyTMD.io.OTIS.combine_atlas_model(x0, y0, u0, pmask,

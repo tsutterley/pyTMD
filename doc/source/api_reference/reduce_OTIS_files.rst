@@ -2,7 +2,7 @@
 reduce_OTIS_files.py
 ====================
 
-- Reduces OTIS-format tidal files provided by Ohio State University and ESR to a regional subset
+- Reduces OTIS-format tidal files provided by Oregon State University and ESR to a regional subset
 
 `Source code`__
 

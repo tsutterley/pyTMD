@@ -8,7 +8,7 @@ Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
 netCDF4 files can be been compressed using gzip
 
-Reads netCDF4 ATLAS tidal solutions provided by Ohio State University and ESR
+Reads netCDF4 ATLAS tidal solutions provided by Oregon State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/
