@@ -555,7 +555,7 @@ def read_constants(
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
 
-    # run wrapper function to convert coordinate systems of input lat/lon
+    # run wrapper function to convert coordinate systems
     transformer = pyTMD.crs().get(EPSG)
     # if global: extend limits
     is_geographic = transformer.is_geographic
@@ -564,10 +564,15 @@ def read_constants(
     # crop mask and bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
     if kwargs['crop'] and np.any(kwargs['bounds']):
+        # convert coordinate systems of input bounding box
+        xbox, ybox = np.meshgrid(kwargs['bounds'][:2], kwargs['bounds'][2:])
+        x, y = transformer.transform(xbox, ybox, direction='FORWARD')
+        bounds = np.array([x.min(), x.max(), y.min(), y.max()])
+        # crop tide model data
         mx, my = np.copy(xi), np.copy(yi)
-        mz, xi, yi = _crop(mz, mx, my, bounds=kwargs['bounds'],
+        mz, xi, yi = _crop(mz, mx, my, bounds=bounds,
             is_geographic=is_geographic)
-        hz, xi, yi = _crop(hz, mx, my, bounds=kwargs['bounds'],
+        hz, xi, yi = _crop(hz, mx, my, bounds=bounds,
             is_geographic=is_geographic)
 
     # replace original values with extend arrays/matrices
@@ -671,8 +676,7 @@ def read_constants(
         # crop tide model data to (buffered) bounds
         if kwargs['crop'] and np.any(kwargs['bounds']):
             hc, xi, yi = _crop(hc, mx, my,
-                bounds=kwargs['bounds'],
-                is_geographic=is_geographic)
+                bounds=bounds, is_geographic=is_geographic)
         # replace original values with extend matrices
         if is_global:
             hc = _extend_matrix(hc)
