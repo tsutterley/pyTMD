@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: added crop and bounds keywords for trimming model data
+        convert the crs of bounds when cropping model data
     Updated 06/2024: change int32 to int to prevent overflows with numpy 2.0
     Updated 02/2024: don't overwrite hu and hv in _interpolate_zeta
         changed variable for setting global grid flag to is_global
@@ -675,7 +676,7 @@ def read_constants(
 
         # crop tide model data to (buffered) bounds
         if kwargs['crop'] and np.any(kwargs['bounds']):
-            hc, xi, yi = _crop(hc, mx, my,
+            hc, _, _ = _crop(hc, mx, my,
                 bounds=bounds, is_geographic=is_geographic)
         # replace original values with extend matrices
         if is_global:
