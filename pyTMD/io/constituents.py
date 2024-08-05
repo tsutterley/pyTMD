@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 08/2024: add GOT prime nomenclature for 3rd degree constituents
     Updated 07/2024: add function to parse tidal constituents from strings
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 01/2024: added properties for Doodson and Cartwright numbers
@@ -213,10 +214,11 @@ class constituents:
             'ms4','mk4',r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2',
             'msqm','mtm',r'(?<!m)n4','eps2','z0']
         # compile regular expression
-        rx = re.compile(r'(' + '|'.join(cindex) + r')', re.IGNORECASE)
+        # adding GOT prime nomenclature for 3rd degree constituents
+        rx = re.compile(r'(' + '|'.join(cindex) + r')(\')?', re.IGNORECASE)
         # check if tide model is a simple regex case
         if rx.search(constituent):
-            return rx.findall(constituent)[0].lower()
+            return "".join(rx.findall(constituent)[0]).lower()
         # known remapped cases
         mapping = [('2n','2n2'), ('e2','eps2'), ('la2','lambda2'),
             ('sig1','sigma1')]

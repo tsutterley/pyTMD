@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 08/2024: revert change and assume crop bounds are projected
     Updated 07/2024: added crop and bounds keywords for trimming model data
         convert the crs of bounds when cropping model data
     Updated 06/2024: change int32 to int to prevent overflows with numpy 2.0
@@ -565,15 +566,11 @@ def read_constants(
     # crop mask and bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
     if kwargs['crop'] and np.any(kwargs['bounds']):
-        # convert coordinate systems of input bounding box
-        xbox, ybox = np.meshgrid(kwargs['bounds'][:2], kwargs['bounds'][2:])
-        x, y = transformer.transform(xbox, ybox, direction='FORWARD')
-        bounds = np.array([x.min(), x.max(), y.min(), y.max()])
         # crop tide model data
         mx, my = np.copy(xi), np.copy(yi)
-        mz, xi, yi = _crop(mz, mx, my, bounds=bounds,
+        mz, xi, yi = _crop(mz, mx, my, bounds=kwargs['bounds'],
             is_geographic=is_geographic)
-        hz, xi, yi = _crop(hz, mx, my, bounds=bounds,
+        hz, xi, yi = _crop(hz, mx, my, bounds=kwargs['bounds'],
             is_geographic=is_geographic)
 
     # replace original values with extend arrays/matrices
@@ -677,7 +674,8 @@ def read_constants(
         # crop tide model data to (buffered) bounds
         if kwargs['crop'] and np.any(kwargs['bounds']):
             hc, _, _ = _crop(hc, mx, my,
-                bounds=bounds, is_geographic=is_geographic)
+                bounds=kwargs['bounds'],
+                is_geographic=is_geographic)
         # replace original values with extend matrices
         if is_global:
             hc = _extend_matrix(hc)

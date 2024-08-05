@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 gsfc_got_tides.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Download GSFC Global Ocean Tide (GOT) models
 
 CALLING SEQUENCE:
@@ -31,6 +31,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 08/2024: keep prime nomenclature for 3rd degree tides
     Written 07/2024
 """
 from __future__ import print_function, annotations
@@ -90,8 +91,7 @@ def gsfc_got_tides(MODEL: str,
         elif re.match(r'^._', posixpath.basename(m.name)):
             continue
         # output file name
-        member = m.name.replace("'","")
-        output = f'{member}.gz' if sfx in ('.d','.nc') and GZIP else member
+        output = f'{m.name}.gz' if sfx in ('.d','.nc') and GZIP else m.name
         local_file = DIRECTORY.joinpath(*posixpath.split(output))
         # check if the local file exists
         if local_file.exists() and newer(m.mtime, local_file.stat().st_mtime):

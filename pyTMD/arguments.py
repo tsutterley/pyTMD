@@ -155,7 +155,7 @@ def arguments(
     fargs = np.c_[tau, s, h, p, n, pp, k]
     arg = np.dot(fargs, _arguments_table(**kwargs))
 
-    # determine nodal corrections f and u
+    # trigonometric factors for nodal corrections
     sinn = np.sin(n*dtr)
     cosn = np.cos(n*dtr)
     sin2n = np.sin(2.0*n*dtr)
