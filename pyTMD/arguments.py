@@ -18,7 +18,7 @@ OUTPUTS:
 
 OPTIONS:
     deltat: time correction for converting to Ephemeris Time (days)
-    corrections: use nodal corrections from OTIS/ATLAS or GOT models
+    corrections: use nodal corrections from OTIS, FES or GOT models
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -89,7 +89,7 @@ def arguments(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS, FES or GOT models
     M1: str, default 'perth5'
         coefficients to use for M1 tides
 
@@ -169,7 +169,7 @@ def minor_arguments(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS, FES or GOT models
 
     Returns
     -------
@@ -327,7 +327,7 @@ def coefficients_table(
     constituents: list, tuple, np.ndarray or str
         tidal constituent IDs
     corrections: str, default 'OTIS'
-        use coefficients from OTIS/ATLAS or GOT models
+        use coefficients from OTIS, FES or GOT models
 
     Returns
     -------
@@ -921,7 +921,7 @@ def doodson_number(
     constituents: str, list or np.ndarray
         tidal constituent ID(s)
     corrections: str, default 'OTIS'
-        use arguments from OTIS/ATLAS or GOT models
+        use arguments from OTIS, FES or GOT models
     formalism: str, default 'Doodson'
         constituent identifier formalism
 
@@ -991,26 +991,7 @@ def doodson_number(
     # return the Doodson or Cartwright number
     return numbers
 
-# compound tides supported by nodal arguments function
-_compound_tides = ['2(mn)8', '2(mn)S10', '2(mn)k9', '2(ms)8', '2(ms)o9', '2k2',
-    '2m2nk9', '2mk2', '2mk3', '2mk5', '2mk6', '2ml2', '2ml2s2', '2ml6', '2mls4',
-    '2mmu6', '2mn2', '2mn2s2', '2mn6', '2mn8', '2mnk7', '2mnk8', '2mnl8',
-    '2mnls6', '2mno7', '2mnu6', '2mo5', '2mp3', '2mp5', '2mq3', '2mr6', '2ms2',
-    '2ms2k2', '2ms3', '2ms6', '2ms8', '2msk7', '2msk8', '2msl8', '2msn8',
-    '2mso7', '2msp7', '2mt6', '2nk5', '2nm6', '2nmk7', '2nmls6', '2no3', '2no5',
-    '2ns2', '2ook1', '2oop1', '2oq1', '2po1', '2sm2', '2smk4', '2so3', '3km5',
-    '3m2s10', '3m2s2', '3mk7', '3mk8', '3ml8', '3mls6', '3mmu8', '3mn8',
-    '3mnk9', '3mnu8', '3mo7', '3mp5', '3mp7', '3ms4', '3ms5', '3ms8', '3msk7',
-    '3msk9', '3msl10', '3msn10', '3nk7', '3nmk9', '4m2s12', '4mk9', '4mn10',
-    '4mns12', '4ms10', '4msk11', '4msl12', '4msn12', '5mn12', '5ms12', '5msn14',
-    '6ms14', 'k3', 'kj2', 'kjq1', 'ko2', 'm10', 'm12', 'm14', 'm2(ks)2', 'm4',
-    'm6', 'm8', 'ma8', 'mfdw', 'mk3', 'mk4', 'mkn2', 'mko5', 'mks2', 'ml4',
-    'mmu4', 'mmun2', 'mmus2', 'mn4', 'mnk2', 'mnk5', 'mnk6', 'mnmu6', 'mnnu6',
-    'mno5', 'mns2', 'mns6', 'mnu4', 'mnus2', 'mo3', 'mq3', 'msk2', 'msk5',
-    'msk6', 'msko7', 'msl6', 'msmu6', 'msn2', 'msn6', 'msnk8', 'mso5', 'n4',
-    'nk3', 'nk4', 'nkm2', 'no1', 'no3', 'nq3', 'nsk5', 'nsm2', 'nso3', 'o3',
-    'opk1', 'oq2', 'skm2', 'snk6', 'snm2', 'so1', 'tk1']
-
+# PURPOSE: compute the nodal corrections
 def nodal(
         n: np.ndarray,
         p: np.ndarray,
@@ -1021,6 +1002,8 @@ def nodal(
     Calculates the nodal corrections for tidal constituents
     [1]_ [2]_ [3]_ [4]_
 
+    Calculates factors for compound tides using recursion
+
     Parameters
     ----------
     n: np.ndarray
@@ -1030,7 +1013,7 @@ def nodal(
     constituents: list, tuple, np.ndarray or str
         tidal constituent IDs
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS, FES or GOT models
     M1: str, default 'perth5'
         coefficients to use for M1 tides
 
@@ -1087,7 +1070,7 @@ def nodal(
         constituents = [constituents]
 
     # set nodal corrections
-    nt = np.maximum(len(n), len(p))
+    nt = len(np.atleast_1d(n))
     nc = len(constituents)
     # nodal factor correction
     f = np.zeros((nt, nc))
@@ -1161,6 +1144,9 @@ def nodal(
         elif c in ('o1','so3','op2') and OTIS_TYPE:
             term1 = 0.189*sinn - 0.0058*sin2n
             term2 = 1.0 + 0.189*cosn - 0.0058*cos2n
+            f[:,i] = np.sqrt(term1**2 + term2**2) # O1
+            u[:,i] = dtr*(10.8*sinn - 1.3*sin2n + 0.2*sin3n)
+            continue
         elif c in ('o1','so3','op2','2q1','q1','rho1','sigma1') and FES_TYPE:
             f[:,i] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 
             u[:,i] = (2.0*xi - nu)
@@ -1168,6 +1154,10 @@ def nodal(
         elif c in ('o1','so3','op2'):
             term1 = 0.1886*sinn - 0.0058*sin2n - 0.0065*sin2p
             term2 = 1.0 + 0.1886*cosn - 0.0058*cos2n - 0.0065*cos2p
+        elif c in ('2q1','q1','rho1','sigma1') and OTIS_TYPE:
+            f[:,i] = np.sqrt((1.0 + 0.188*cosn)**2 + (0.188*sinn)**2)
+            u[:,i] = np.arctan(0.189*sinn/(1.0 + 0.189*cosn))
+            continue        
         elif c in ('2q1','q1','rho1','sigma1'):
             term1 = 0.1886*sinn 
             term2 = 1.0 + 0.1886*cosn
@@ -1317,277 +1307,376 @@ def nodal(
             f[:,i] = 1.043 + 0.414*cosn
             u[:,i] = dtr*(-23.7*sinn + 2.7*sin2n - 0.4*sin3n)
             continue
+        elif c in ('so1','2so3','2po1'):
+            # compound tides calculated using recursion
+            parents = ['o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]
+            u[:,i] = -utmp[:,0]
+            continue
+        elif c in ('o3',):
+            # compound tides calculated using recursion
+            parents = ['o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3
+            u[:,i] = 3.0*utmp[:,0]
+            continue
+        elif c in ('2k2'):
+            # compound tides calculated using recursion
+            parents = ['k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 2.0*utmp[:,0]
+            continue
+        elif c in ('tk1'):
+            # compound tides calculated using recursion
+            parents = ['k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]
+            u[:,i] = -utmp[:,0]
+            continue
+        elif c in ('2oop1'):
+            # compound tides calculated using recursion
+            parents = ['oo1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 2.0*utmp[:,0]
+            continue
+        elif c in ('oq2'):
+            # compound tides calculated using recursion
+            parents = ['o1','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2oq1'):
+            # compound tides calculated using recursion
+            parents = ['o1','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('ko2'):
+            # compound tides calculated using recursion
+            parents = ['o1','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('opk1',):
+            # compound tides calculated using recursion
+            parents = ['o1','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2ook1',):
+            # compound tides calculated using recursion
+            parents = ['oo1','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('kj2',):
+            # compound tides calculated using recursion
+            parents = ['k1','j1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('kjq1'):
+            # compound tides calculated using recursion
+            parents = ['k1','j1','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1] * ftmp[:,2]
+            u[:,i] = utmp[:,0] + utmp[:,1] - utmp[:,2]
+            continue
+        elif c in ('k3',):
+            # compound tides calculated using recursion
+            parents = ['k1','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in('m4','mn4','mns2','2ms2','mnus2','mmus2','2ns2','n4','mnu4',
+                'mmu4','2mt6','2ms6','msn6','mns6','2mr6','msmu6','2mp3','2ms3',
+                '2mp5','2msp7','2(ms)8','2ms8'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 2.0*utmp[:,0]
+            continue
+        elif c in ('msn2','snm2','nsm2'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 0.0
+            continue
+        elif c in ('mmun2','2mn2'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3
+            u[:,i] = utmp[:,0]
+            continue
+        elif c in ('2sm2',):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]
+            u[:,i] = -utmp[:,0]
+            continue
+        elif c in ('m6','2mn6','2mnu6','2mmu6','2nm6','mnnu6','mnmu6','3ms8',
+                '3mp7','2msn8','3ms5','3mp5','3ms4','3m2s2','3m2s10','2mn2s2'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3
+            u[:,i] = 3.0*utmp[:,0]
+            continue
+        elif c in ('m8','ma8','3mn8','3mnu8','3mmu8','2mn8','2(mn):8','3msn10',
+                '4ms10','2(mn)S10','4m2s12'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**4
+            u[:,i] = 4.0*utmp[:,0]
+            continue
+        elif c in ('m10','4mn10','5ms12','4msn12','4mns12'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**5
+            u[:,i] = 5.0*utmp[:,0]
+            continue
+        elif c in ('m12','5mn12','6ms14','5msn14'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**6
+            u[:,i] = 6.0*utmp[:,0]
+            continue
+        elif c in ('m14',):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**7
+            u[:,i] = 7.0*utmp[:,0]
+            continue
+        elif c in ('mo3','no3','mso5'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('no1','nso3'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('mq3','nq3'):
+            # compound tides calculated using recursion
+            parents = ['m2','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2mq3',):
+            # compound tides calculated using recursion
+            parents = ['m2','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2no3',):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2mo5','2no5','mno5','2mso7','2(ms):o9'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2mno7','3mo7'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('mk3','nk3','msk5','nsk5'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('mnk5','2mk5','2nk5','2msk7'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2mk3',):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('3mk7','2mnk7','2nmk7','3nk7','3msk9'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('3msk7',):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('4mk9','3mnk9','2m2nk9','2(mn):k9','3nmk9','4msk11'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**4 * ftmp[:,1]
+            u[:,i] = 4.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('3km5',):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]**3
+            u[:,i] = utmp[:,0] + 3.0*utmp[:,1]
+            continue
+        elif c in ('mk4','nk4','mks2'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('msk2','2smk4','msk6','snk6'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('mnk6','2mk6','2msk8','msnk8'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('mnk2','2mk2'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('mkn2','nkm2'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = utmp[:,1]
+            continue
+        elif c in ('skm2',):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = -utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('3mk8','2mnk8'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('m2(ks):2',):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]**2
+            u[:,i] = utmp[:,0] + 2.0*utmp[:,1]
+            continue
+        elif c in ('2ms2k2',):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]**2
+            u[:,i] = 2.0*utmp[:,0] - 2.0*utmp[:,1]
+            continue
+        elif c in ('mko5','msko7'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1] * ftmp[:,2]
+            u[:,i] = utmp[:,0] + utmp[:,1] + utmp[:,2]
+            continue
+        elif c in ('ml4','msl6'):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2ml2',):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2ml6','2ml2s2','2mls4','2msl8'):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2nmls6','3mls6','2mnls6','3ml8','2mnl8','3msl10'):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('4msl12',):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**4 * ftmp[:,1]
+            u[:,i] = 4.0*utmp[:,0] + utmp[:,1]
+            continue
         else:
+            # default for linear tides
             term1 = 0.0
             term2 = 1.0
 
         # calculate factors for linear tides
         # and parent waves in compound tides
-        if c not in _compound_tides:
-            f[:,i] = np.sqrt(term1**2 + term2**2)
-            u[:,i] = np.arctan2(term1, term2)
-            continue
-
-        # calculate factors for compound tides using recursion
-        if c in ('so1','2so3','2po1'):
-            parents = ['o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]
-            u[:,i] = -utmp[:,0]
-        elif c in ('o3',):
-            parents = ['o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3
-            u[:,i] = 3.0*utmp[:,0]
-        elif c in ('2k2'):
-            parents = ['k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2
-            u[:,i] = 2.0*utmp[:,0]
-        elif c in ('tk1'):
-            parents = ['k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]
-            u[:,i] = -utmp[:,0]
-        elif c in ('2oop1'):
-            parents = ['oo1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2
-            u[:,i] = 2.0*utmp[:,0]
-        elif c in ('oq2'):
-            parents = ['o1','q1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('2oq1'):
-            parents = ['o1','q1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('ko2'):
-            parents = ['o1','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('opk1',):
-            parents = ['o1','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] - utmp[:,1]
-        elif c in ('2ook1',):
-            parents = ['oo1','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('kj2',):
-            parents = ['k1','j1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('kjq1'):
-            parents = ['k1','j1','q1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1] * ftmp[:,2]
-            u[:,i] = utmp[:,0] + utmp[:,1] - utmp[:,2]
-        elif c in ('k3',):
-            parents = ['k1','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in('m4','mn4','mns2','2ms2','mnus2','mmus2','2ns2','n4','mnu4',
-                'mmu4','2mt6','2ms6','msn6','mns6','2mr6','msmu6','2mp3','2ms3',
-                '2mp5','2msp7','2(ms)8','2ms8'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2
-            u[:,i] = 2.0*utmp[:,0]
-        elif c in ('msn2','snm2','nsm2'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2
-            u[:,i] = 0.0
-        elif c in ('mmun2','2mn2'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3
-            u[:,i] = utmp[:,0]
-        elif c in ('2sm2',):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]
-            u[:,i] = -utmp[:,0]
-        elif c in ('m6','2mn6','2mnu6','2mmu6','2nm6','mnnu6','mnmu6','3ms8',
-                '3mp7','2msn8','3ms5','3mp5','3ms4','3m2s2','3m2s10','2mn2s2'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3
-            u[:,i] = 3.0*utmp[:,0]
-        elif c in ('m8','ma8','3mn8','3mnu8','3mmu8','2mn8','2(mn):8','3msn10',
-                '4ms10','2(mn)S10','4m2s12'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**4
-            u[:,i] = 4.0*utmp[:,0]
-        elif c in ('m10','4mn10','5ms12','4msn12','4mns12'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**5
-            u[:,i] = 5.0*utmp[:,0]
-        elif c in ('m12','5mn12','6ms14','5msn14'):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**6
-            u[:,i] = 6.0*utmp[:,0]
-        elif c in ('m14',):
-            parents = ['m2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**7
-            u[:,i] = 7.0*utmp[:,0]
-        elif c in ('mo3','no3','mso5'):
-            parents = ['m2','o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('no1','nso3'):
-            parents = ['m2','o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] - utmp[:,1]
-        elif c in ('mq3','nq3'):
-            parents = ['m2','q1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('2mq3',):
-            parents = ['m2','q1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('2no3',):
-            parents = ['m2','o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('2mo5','2no5','mno5','2mso7','2(ms):o9'):
-            parents = ['m2','o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
-        elif c in ('2mno7','3mo7'):
-            parents = ['m2','o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
-            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
-        elif c in ('mk3','nk3','msk5','nsk5'):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('mnk5','2mk5','2nk5','2msk7'):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.*utmp[:,0] + utmp[:,1]
-        elif c in ('2mk3',):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('3mk7','2mnk7','2nmk7','3nk7','3msk9'):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
-            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
-        elif c in ('3msk7',):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
-            u[:,i] = 3.0*utmp[:,0] - utmp[:,1]
-        elif c in ('4mk9','3mnk9','2m2nk9','2(mn):k9','3nmk9','4msk11'):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**4 * ftmp[:,1]
-            u[:,i] = 4.0*utmp[:,0] + utmp[:,1]
-        elif c in ('3km5',):
-            parents = ['m2','k1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]**3
-            u[:,i] = utmp[:,0] + 3.0*utmp[:,1]
-        elif c in ('mk4','nk4','mks2'):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('msk2','2smk4','msk6','snk6'):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] - utmp[:,1]
-        elif c in ('mnk6','2mk6','2msk8','msnk8'):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
-        elif c in ('mnk2','2mk2'):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('mkn2','nkm2'):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = utmp[:,1]
-        elif c in ('skm2',):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = -utmp[:,0] + utmp[:,1]
-        elif c in ('3mk8','2mnk8'):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
-            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
-        elif c in ('m2(ks):2',):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]**2
-            u[:,i] = utmp[:,0] + 2.0*utmp[:,1]
-        elif c in ('2ms2k2',):
-            parents = ['m2','k2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]**2
-            u[:,i] = 2.0*utmp[:,0] - 2.0*utmp[:,1]
-        elif c in ('mko5','msko7'):
-            parents = ['m2','k2','o1']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1] * ftmp[:,2]
-            u[:,i] = utmp[:,0] + utmp[:,1] + utmp[:,2]
-        elif c in ('ml4','msl6'):
-            parents = ['m2','l2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0] * ftmp[:,1]
-            u[:,i] = utmp[:,0] + utmp[:,1]
-        elif c in ('2ml2',):
-            parents = ['m2','l2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
-        elif c in ('2ml6','2ml2s2','2mls4','2msl8'):
-            parents = ['m2','l2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
-            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
-        elif c in ('2nmls6','3mls6','2mnls6','3ml8','2mnl8','3msl10'):
-            parents = ['m2','l2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
-            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
-        elif c in ('4msl12',):
-            parents = ['m2','l2']
-            utmp, ftmp = nodal(n, p, parents)
-            f[:,i] = ftmp[:,0]**4 * ftmp[:,1]
-            u[:,i] = 4.0*utmp[:,0] + utmp[:,1]
+        f[:,i] = np.sqrt(term1**2 + term2**2)
+        u[:,i] = np.arctan2(term1, term2)
 
     # return corrections for constituents
     return (u, f)
@@ -1599,7 +1688,7 @@ def _arguments_table(**kwargs):
     Parameters
     ----------
     corrections: str, default 'OTIS'
-        use arguments from OTIS/ATLAS or GOT models
+        use arguments from OTIS, FES or GOT models
 
     Returns
     -------

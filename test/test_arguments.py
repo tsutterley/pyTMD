@@ -28,7 +28,7 @@ def test_arguments(corrections):
     Parameters
     ----------
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS, FES or GOT models
     """
     # use a random set of modified Julian days
     MJD = np.random.randint(58000, 61000, size=10)
