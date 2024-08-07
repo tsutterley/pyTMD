@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (07/2024)
+test_perth3_read.py (08/2024)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,8 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 08/2024: increased tolerance for comparing with GOT4.7 tests
+        as using nodal corrections from PERTH5
     Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
@@ -144,7 +146,8 @@ def test_verify_GOT47(METHOD, CROP):
     tide.data[:] += minor.data[:]
 
     # will verify differences between model outputs are within tolerance
-    eps = 0.01
+    # since using newer nodal corrections than PERTH3: 5cm tolerance
+    eps = 0.05
     # calculate differences between perth3 and python version
     difference = np.ma.zeros((npts))
     difference.data[:] = tide.data - validation
