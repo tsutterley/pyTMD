@@ -22,7 +22,11 @@ Calling Sequence
 
 .. autofunction:: pyTMD.arguments.minor_arguments
 
+.. autofunction:: pyTMD.arguments.coefficients_table
+
 .. autofunction:: pyTMD.arguments.doodson_number
+
+.. autofunction:: pyTMD.arguments.nodal
 
 .. autofunction:: pyTMD.arguments._arguments_table
 

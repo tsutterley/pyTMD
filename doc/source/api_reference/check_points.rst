@@ -3,7 +3,7 @@ check_points
 ============
 
 - Check if points are within a tide model domain
-- Can check OTIS format tidal solutions provided by Ohio State University and ESR
+- Can check OTIS format tidal solutions provided by Oregon State University and ESR
 - Can check Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
 - Can check Finite Element Solution (FES) models provided by AVISO
 

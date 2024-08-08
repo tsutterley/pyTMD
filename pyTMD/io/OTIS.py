@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
     given locations
 
-Reads OTIS format tidal solutions provided by Ohio State University and ESR
+Reads OTIS format tidal solutions provided by Oregon State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/
@@ -59,7 +59,9 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 08/2024: revert change and assume crop bounds are projected
     Updated 07/2024: added crop and bounds keywords for trimming model data
+        convert the crs of bounds when cropping model data
     Updated 06/2024: change int32 to int to prevent overflows with numpy 2.0
     Updated 02/2024: don't overwrite hu and hv in _interpolate_zeta
         changed variable for setting global grid flag to is_global
@@ -555,7 +557,7 @@ def read_constants(
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
 
-    # run wrapper function to convert coordinate systems of input lat/lon
+    # run wrapper function to convert coordinate systems
     transformer = pyTMD.crs().get(EPSG)
     # if global: extend limits
     is_geographic = transformer.is_geographic
@@ -564,6 +566,7 @@ def read_constants(
     # crop mask and bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
     if kwargs['crop'] and np.any(kwargs['bounds']):
+        # crop tide model data
         mx, my = np.copy(xi), np.copy(yi)
         mz, xi, yi = _crop(mz, mx, my, bounds=kwargs['bounds'],
             is_geographic=is_geographic)
@@ -670,7 +673,7 @@ def read_constants(
 
         # crop tide model data to (buffered) bounds
         if kwargs['crop'] and np.any(kwargs['bounds']):
-            hc, xi, yi = _crop(hc, mx, my,
+            hc, _, _ = _crop(hc, mx, my,
                 bounds=kwargs['bounds'],
                 is_geographic=is_geographic)
         # replace original values with extend matrices

@@ -2,7 +2,7 @@
 OTIS
 ====
 
-- Reads OTIS format tidal solutions provided by Ohio State University and ESR
+- Reads OTIS format tidal solutions provided by Oregon State University and ESR
 
   * multi-constituent binary
   * ATLAS-compact binary

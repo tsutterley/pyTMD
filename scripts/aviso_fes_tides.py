@@ -24,8 +24,9 @@ COMMAND LINE OPTIONS:
         FES2012
         FES2014
         FES2022
-    --load: download load tide model outputs (fes2014)
-    --currents: download tide model current outputs (fes2012 and fes2014)
+    --load: download load tide model outputs (FES2014)
+    --currents: download tide model current outputs (FES2012 and FES2014)
+    --extrapolated: Download extrapolated tide model outputs (FES2022)
     -G, --gzip: compress output ascii and netCDF4 tide files
     -t X, --timeout X: timeout in seconds for blocking operations
     --log: output log of files downloaded
@@ -295,7 +296,7 @@ def ftp_download(logger, ftp, remote_path, local_dir,
         fileobj = io.BytesIO()
         ftp.retrbinary(f'RETR {remote_file}', fileobj.write, blocksize=CHUNK)
         fileobj.seek(0)
-        # open the AOD1B monthly tar file
+        # open the tar file
         tar = tarfile.open(name=remote_path[-1], fileobj=fileobj, mode=TARMODE)
         # read tar file and extract all files
         member_files = [m for m in tar.getmembers() if tarfile.TarInfo.isfile(m)]

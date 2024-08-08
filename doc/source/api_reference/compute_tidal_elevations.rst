@@ -3,7 +3,7 @@ compute_tidal_elevations.py
 ===========================
 
 - Calculates tidal elevations for an input file following [Egbert2002]_
-- Can use OTIS format tidal solutions provided by Ohio State University and ESR
+- Can use OTIS format tidal solutions provided by Oregon State University and ESR
 - Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
 - Can use Finite Element Solution (FES) models provided by AVISO
 - Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats

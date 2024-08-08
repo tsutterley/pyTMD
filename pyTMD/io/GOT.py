@@ -43,6 +43,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 07/2024: added crop and bounds keywords for trimming model data
+        use parse function from constituents class to extract names
     Updated 04/2023: fix repeated longitudinal convention adjustment
         using pathlib to define and expand tide model paths
     Updated 03/2023: add basic variable typing to function inputs
@@ -547,9 +548,7 @@ def read_ascii_file(
         with open(input_file, mode="r", encoding='utf8') as f:
             file_contents = f.read().splitlines()
     # parse header text
-    constituent_list = ['Q1','O1','P1','K1','N2','M2','S2','K2','S1','M4']
-    regex = re.compile(r'|'.join(constituent_list), re.IGNORECASE)
-    cons = regex.findall(file_contents[0]).pop().lower()
+    cons = pyTMD.io.constituents.parse(file_contents[0])
     nlat,nlon = np.array(file_contents[2].split(), dtype=int)
     # longitude range
     ilat = np.array(file_contents[3].split(), dtype=np.float64)
@@ -639,7 +638,7 @@ def read_netcdf_file(
     amp = fileID.variables['amplitude'][:]
     ph = fileID.variables['phase'][:]
     # extract constituent from attribute
-    cons = fileID.Constituent.lower()
+    cons = pyTMD.io.constituents.parse(fileID.Constituent)
     # close the file
     fileID.close()
     f.close() if kwargs['compressed'] else None

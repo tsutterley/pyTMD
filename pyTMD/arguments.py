@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (08/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -18,7 +18,7 @@ OUTPUTS:
 
 OPTIONS:
     deltat: time correction for converting to Ephemeris Time (days)
-    corrections: use nodal corrections from OTIS/ATLAS or GOT models
+    corrections: use nodal corrections from OTIS, FES or GOT models
 
 PYTHON DEPENDENCIES:
     numpy: Scientific Computing Tools For Python
@@ -38,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 08/2024: add support for constituents in PERTH5 tables
     Updated 01/2024: add function to create arguments coefficients table
         add function to calculate the arguments for minor constituents
         include multiples of 90 degrees as variable following Ray 2017
@@ -88,12 +89,13 @@ def arguments(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
-    M1: str, default 'Ray'
+        use nodal corrections from OTIS, FES or GOT models
+    M1: str, default 'perth5'
         coefficients to use for M1 tides
 
                 - ``'Doodson'``
                 - ``'Ray'``
+                - ``'perth5'``
 
     Returns
     -------
@@ -124,15 +126,7 @@ def arguments(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
-    kwargs.setdefault('M1', 'Ray')
-
-    # constituents array (not all are included in tidal program)
-    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
-        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
-        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
-        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
-        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
-        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
+    kwargs.setdefault('M1', 'perth5')
 
     # set function for astronomical longitudes
     ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
@@ -148,374 +142,14 @@ def arguments(
     tau = 15.0*hour - s + h
     # variable for multiples of 90 degrees (Ray technical note 2017)
     k = 90.0 + np.zeros((nt))
-    # degrees to radians
-    dtr = np.pi/180.0
 
     # determine equilibrium arguments
     fargs = np.c_[tau, s, h, p, n, pp, k]
-    arg = np.dot(fargs, _arguments_table(**kwargs))
-
-    # determine nodal corrections f and u
-    sinn = np.sin(n*dtr)
-    cosn = np.cos(n*dtr)
-    sin2n = np.sin(2.0*n*dtr)
-    cos2n = np.cos(2.0*n*dtr)
-    sin3n = np.sin(3.0*n*dtr)
+    G = np.dot(fargs, coefficients_table(constituents, **kwargs))
 
     # set nodal corrections
-    # nodal factor correction
-    f = np.zeros((nt, 60))
-    # nodal angle correction
-    u = np.zeros((nt, 60))
     # determine nodal corrections f and u for each model type
-    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
-        # nodal factors
-        f[:,0] = 1.0 # Sa
-        f[:,1] = 1.0 # Ssa
-        f[:,2] = 1.0 - 0.130*cosn # Mm
-        f[:,3] = 1.0 # MSf
-        f[:,4] = 1.043 + 0.414*cosn # Mf
-        temp1 = (1.0 + 0.203*cosn + 0.040*cos2n)**2
-        temp2 = (0.203*sinn + 0.040*sin2n)**2
-        f[:,5] = np.sqrt(temp1 + temp2) # Mt
-        f[:,6] = 1.0 # alpha1
-        f[:,7] = np.sqrt((1.0 + 0.188*cosn)**2 + (0.188*sinn)**2) # 2Q1
-        f[:,8] = f[:,7] # sigma1
-        f[:,9] = f[:,7] # q1
-        f[:,10] = f[:,7] # rho1
-        temp1 = (1.0 + 0.189*cosn - 0.0058*cos2n)**2
-        temp2 = (0.189*sinn - 0.0058*sin2n)**2
-        f[:,11] = np.sqrt(temp1 + temp2) # O1
-        f[:,12] = 1.0 # tau1
-        if (kwargs['M1'] == 'Doodson'):
-            # A. T. Doodson's coefficients for M1 tides
-            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-n)*dtr)
-            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-n)*dtr)
-        elif (kwargs['M1'] == 'Ray'):
-            # R. Ray's coefficients for M1 tides
-            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-n)*dtr)
-            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-n)*dtr)
-        f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
-        f[:,14] = np.sqrt((1.0+0.221*cosn)**2+(0.221*sinn)**2) # chi1
-        f[:,15] = 1.0 # pi1
-        f[:,16] = 1.0 # P1
-        f[:,17] = 1.0 # S1
-        temp1 = (1.0 + 0.1158*cosn - 0.0029*cos2n)**2
-        temp2 = (0.1554*sinn - 0.0029*sin2n)**2
-        f[:,18] = np.sqrt(temp1 + temp2) # K1
-        f[:,19] = 1.0 # psi1
-        f[:,20] = 1.0 # phi1
-        f[:,21] = 1.0 # theta1
-        f[:,22] = np.sqrt((1.0+0.169*cosn)**2 + (0.227*sinn)**2) # J1
-        temp1 = (1.0 + 0.640*cosn + 0.134*cos2n)**2
-        temp2 = (0.640*sinn + 0.134*sin2n)**2
-        f[:,23] = np.sqrt(temp1 + temp2) # OO1
-        temp1 = (1.0 - 0.03731*cosn + 0.00052*cos2n)**2
-        temp2 = (0.03731*sinn - 0.00052*sin2n)**2
-        f[:,24] = np.sqrt(temp1 + temp2) # 2N2
-        f[:,25] = f[:,24] # mu2
-        f[:,26] = f[:,24] # N2
-        f[:,27] = f[:,24] # nu2
-        f[:,28] = 1.0 # M2a
-        f[:,29] = f[:,24] # M2
-        f[:,30] = 1.0 # M2b
-        f[:,31] = 1.0 # lambda2
-        Ltmp1 = 1.0 - 0.25*np.cos(2*p*dtr) - \
-            0.11*np.cos((2.0*p - n)*dtr) - 0.04*cosn
-        Ltmp2 = 0.25*np.sin(2*p*dtr) + \
-            0.11*np.sin((2.0*p - n)*dtr) + 0.04*sinn
-        f[:,32] = np.sqrt(Ltmp1**2 + Ltmp2**2) # L2
-        f[:,33] = 1.0 # T2
-        f[:,34] = 1.0 # S2
-        f[:,35] = 1.0 # R2
-        temp1 = (1.0 + 0.2852*cosn + 0.0324*cos2n)**2
-        temp2 = (0.3108*sinn + 0.0324*sin2n)**2
-        f[:,36] = np.sqrt(temp1 + temp2) # K2
-        f[:,37] = np.sqrt((1.0 + 0.436*cosn)**2 + (0.436*sinn)**2) # eta2
-        f[:,38] = f[:,29]**2 # MNS2
-        f[:,39] = f[:,29] # 2SM2
-        f[:,40] = 1.0 # M3 (wrong)
-        f[:,41] = f[:,18]*f[:,29] # MK3
-        f[:,42] = 1.0 # S3
-        f[:,43] = f[:,29]**2 # MN4
-        f[:,44] = f[:,43] # M4
-        f[:,45] = f[:,43] # MS4
-        f[:,46] = f[:,29]*f[:,36] # MK4
-        f[:,47] = 1.0 # S4
-        f[:,48] = 1.0 # S5
-        f[:,49] = f[:,29]**3 # M6
-        f[:,50] = 1.0 # S6
-        f[:,51] = 1.0 # S7
-        f[:,52] = 1.0 # S8
-        # shallow water constituents
-        f[:,53] = f[:,29]**4 # m8
-        f[:,54] = f[:,29]*f[:,36] # mks2
-        f[:,55] = f[:,4] # msqm
-        f[:,56] = f[:,4] # mtm
-        f[:,57] = f[:,29]**2 # n4
-        f[:,58] = f[:,29] # eps2
-        # mean sea level
-        f[:,59] = 1.0 # Z0
-
-        # nodal angles
-        u[:,0] = 0.0 # Sa
-        u[:,1] = 0.0 # Ssa
-        u[:,2] = 0.0 # Mm
-        u[:,3] = 0.0 # MSf
-        u[:,4] = -23.7*sinn + 2.7*sin2n - 0.4*sin3n # Mf
-        temp1 = -(0.203*sinn + 0.040*sin2n)
-        temp2 = (1.0 + 0.203*cosn + 0.040*cos2n)
-        u[:,5] = np.arctan(temp1/temp2)/dtr # Mt
-        u[:,6] = 0.0 # alpha1
-        u[:,7] = np.arctan(0.189*sinn/(1.0 + 0.189*cosn))/dtr # 2Q1
-        u[:,8] = u[:,7] # sigma1
-        u[:,9] = u[:,7] # q1
-        u[:,10] = u[:,7] # rho1
-        u[:,11] = 10.8*sinn - 1.3*sin2n + 0.2*sin3n # O1
-        u[:,12] = 0.0 # tau1
-        u[:,13] = np.arctan2(Mtmp2,Mtmp1)/dtr # M1
-        u[:,14] = np.arctan(-0.221*sinn/(1.0+0.221*cosn))/dtr # chi1
-        u[:,15] = 0.0 # pi1
-        u[:,16] = 0.0 # P1
-        u[:,17] = 0.0 # S1
-        temp1 = (-0.1554*sinn + 0.0029*sin2n)
-        temp2 = (1.0 + 0.1158*cosn - 0.0029*cos2n)
-        u[:,18] = np.arctan(temp1/temp2)/dtr # K1
-        u[:,19] = 0.0 # psi1
-        u[:,20] = 0.0 # phi1
-        u[:,21] = 0.0 # theta1
-        u[:,22] = np.arctan(-0.227*sinn/(1.0+0.169*cosn))/dtr # J1
-        temp1 = -(0.640*sinn + 0.134*sin2n)
-        temp2 = (1.0 + 0.640*cosn + 0.134*cos2n)
-        u[:,23] = np.arctan(temp1/temp2)/dtr # OO1
-        temp1 = (-0.03731*sinn + 0.00052*sin2n)
-        temp2 = (1.0 - 0.03731*cosn + 0.00052*cos2n)
-        u[:,24] = np.arctan(temp1/temp2)/dtr # 2N2
-        u[:,25] = u[:,24] # mu2
-        u[:,26] = u[:,24] # N2
-        u[:,27] = u[:,24] # nu2
-        u[:,28] = 0.0 # M2a
-        u[:,29] = u[:,24] # M2
-        u[:,30] = 0.0 # M2b
-        u[:,31] = 0.0 # lambda2
-        u[:,32] = np.arctan(-Ltmp2/Ltmp1)/dtr # L2
-        u[:,33] = 0.0 # T2
-        u[:,34] = 0.0 # S2
-        u[:,35] = 0.0 # R2
-        temp1 = -(0.3108*sinn+0.0324*sin2n)
-        temp2 = (1.0 + 0.2852*cosn + 0.0324*cos2n)
-        u[:,36] = np.arctan(temp1/temp2)/dtr # K2
-        u[:,37] = np.arctan(-0.436*sinn/(1.0 + 0.436*cosn))/dtr # eta2
-        u[:,38] = u[:,29]*2.0 # MNS2
-        u[:,39] = u[:,29] # 2SM2
-        u[:,40] = 1.50*u[:,29] # M3
-        u[:,41] = u[:,29] + u[:,18] # MK3
-        u[:,42] = 0.0 # S3
-        u[:,43] = 2.0*u[:,29] # MN4
-        u[:,44] = u[:,43] # M4
-        u[:,45] = u[:,29] # MS4
-        u[:,46] = u[:,29] + u[:,36] # MK4
-        u[:,47] = 0.0 # S4
-        u[:,48] = 0.0 # S5
-        u[:,49] = 3.0*u[:,29] # M6
-        u[:,50] = 0.0 # S6
-        u[:,51] = 0.0 # S7
-        u[:,52] = 0.0 # S8
-        # mean sea level
-        u[:,59] = 0.0 # Z0
-
-    elif kwargs['corrections'] in ('FES',):
-        # additional astronomical terms for FES models
-        II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
-        at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
-        at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
-        xi = -at1 - at2 + n*dtr
-        xi[xi > np.pi] -= 2.0*np.pi
-        nu = at1 - at2
-        I2 = np.tan(II/2.0)
-        Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
-        P2 = np.sin(2.0*(p - xi))
-        Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
-        R = np.arctan(P2/Q2)
-        P_prime = np.sin(2.0*II)*np.sin(nu)
-        Q_prime = np.sin(2.0*II)*np.cos(nu) + 0.3347
-        nu_prime = np.arctan(P_prime/Q_prime)
-        P_sec = (np.sin(II)**2)*np.sin(2.0*nu)
-        Q_sec = (np.sin(II)**2)*np.cos(2.0*nu) + 0.0727
-        nu_sec = 0.5*np.arctan(P_sec/Q_sec)
-
-        # nodal factors
-        f[:,0] = 1.0 # Sa
-        f[:,1] = 1.0 # Ssa
-        f[:,2] = (2.0/3.0 - np.power(np.sin(II),2.0))/0.5021 # Mm
-        f[:,3] = 1.0 # MSf
-        f[:,4] = np.power(np.sin(II),2.0)/0.1578  # Mf
-        f[:,7] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 # 2Q1
-        f[:,8] = f[:,7] # sigma1
-        f[:,9] = f[:,7] # q1
-        f[:,10] = f[:,7] # rho1
-        f[:,11] = f[:,7] # O1
-        if (kwargs['M1'] == 'Doodson'):
-            # A. T. Doodson's coefficients for M1 tides
-            Mtmp1 = 2.0*np.cos(p*dtr) + 0.4*np.cos((p-n)*dtr)
-            Mtmp2 = np.sin(p*dtr) + 0.2*np.sin((p-n)*dtr)
-        elif (kwargs['M1'] == 'Ray'):
-            # R. Ray's coefficients for M1 tides
-            Mtmp1 = 1.36*np.cos(p*dtr) + 0.267*np.cos((p-n)*dtr)
-            Mtmp2 = 0.64*np.sin(p*dtr) + 0.135*np.sin((p-n)*dtr)
-        f[:,13] = np.sqrt(Mtmp1**2 + Mtmp2**2) # M1
-        f[:,14] = np.sin(2.0*II) / 0.7214 # chi1
-        f[:,15] = 1.0 # pi1
-        f[:,16] = 1.0 # P1
-        f[:,17] = 1.0 # S1
-        temp1 = 0.8965*np.power(np.sin(2.0*II),2.0)
-        temp2 = 0.6001*np.sin(2.0*II)*np.cos(nu)
-        f[:,18] = np.sqrt(temp1 + temp2 + 0.1006) # K1
-        f[:,19] = 1.0 # psi1
-        f[:,20] = 1.0 # phi1
-        f[:,21] = f[:,14] # theta1
-        f[:,22] = f[:,14] # J1
-        f[:,23] = np.sin(II)*np.power(np.sin(II/2.0),2.0)/0.01640 # OO1
-        f[:,24] = np.power(np.cos(II/2.0),4.0)/0.9154 # 2N2
-        f[:,25] = f[:,24] # mu2
-        f[:,26] = f[:,24] # N2
-        f[:,27] = f[:,24] # nu2
-        f[:,28] = 1.0 # M2a
-        f[:,29] = f[:,24] # M2
-        f[:,30] = 1.0 # M2b
-        f[:,31] = f[:,29] # lambda2
-        f[:,32] = f[:,29]*Ra1 # L2
-        f[:,33] = 1.0 # T2
-        f[:,34] = 1.0 # S2
-        f[:,35] = 1.0 # R2
-        temp1 = 19.0444 * np.power(np.sin(II),4.0)
-        temp2 = 2.7702 * np.power(np.sin(II),2.0) * np.cos(2.0*nu)
-        f[:,36] = np.sqrt(temp1 + temp2 + 0.0981) # K2
-        f[:,37] = np.power(np.sin(II),2.0)/0.1565 # eta2
-        f[:,38] = f[:,29]**2 # MNS2
-        f[:,39] = f[:,29] # 2SM2
-        f[:,40] = np.power(np.cos(II/2.0), 6.0) / 0.8758 # M3
-        f[:,41] = f[:,18]*f[:,29] # MK3
-        f[:,42] = 1.0 # S3
-        f[:,43] = f[:,29]**2 # MN4
-        f[:,44] = f[:,43] # M4
-        f[:,45] = f[:,29] # MS4
-        f[:,46] = f[:,29]*f[:,36] # MK4
-        f[:,47] = 1.0 # S4
-        f[:,48] = 1.0 # S5
-        f[:,49] = f[:,29]**3 # M6
-        f[:,50] = 1.0 # S6
-        f[:,51] = 1.0 # S7
-        f[:,52] = 1.0 # S8
-        # shallow water constituents
-        f[:,53] = f[:,29]**4 # m8
-        f[:,54] = f[:,29]*f[:,36] # mks2
-        f[:,55] = f[:,4] # msqm
-        f[:,56] = f[:,4] # mtm
-        f[:,57] = f[:,29]**2 # n4
-        f[:,58] = f[:,29] # eps2
-        # mean sea level
-        f[:,59] = 1.0 # Z0
-
-        # nodal angles
-        u[:,0] = 0.0 # Sa
-        u[:,1] = 0.0 # Ssa
-        u[:,2] = 0.0 # Mm
-        u[:,3] = (2.0*xi - 2.0*nu)/dtr # MSf
-        u[:,4] = -2.0*xi/dtr # Mf
-        u[:,7] = (2.0*xi - nu)/dtr # 2Q1
-        u[:,8] = u[:,7] # sigma1
-        u[:,9] = u[:,7] # q1
-        u[:,10] = u[:,7] # rho1
-        u[:,11] = u[:,7] # O1
-        u[:,13] = np.arctan2(Mtmp2,Mtmp1)/dtr # M1
-        u[:,14] = -nu/dtr # chi1
-        u[:,15] = 0.0 # pi1
-        u[:,16] = 0.0 # P1
-        u[:,17] = 0.0 # S1
-        u[:,18] = -nu_prime/dtr # K1
-        u[:,19] = 0.0 # psi1
-        u[:,20] = 0.0 # phi1
-        u[:,21] = -nu/dtr # theta1
-        u[:,22] = u[:,21] # J1
-        u[:,23] = (-2.0*xi - nu)/dtr # OO1
-        u[:,24] = (2.0*xi - 2.0*nu)/dtr # 2N2
-        u[:,25] = u[:,24] # mu2
-        u[:,26] = u[:,24] # N2
-        u[:,27] = u[:,24] # nu2
-        u[:,29] = u[:,24] # M2
-        u[:,31] = (2.0*xi - 2.0*nu)/dtr # lambda2
-        u[:,32] = (2.0*xi - 2.0*nu - R)/dtr # L2
-        u[:,33] = 0.0 # T2
-        u[:,34] = 0.0 # S2
-        u[:,35] = 0.0 # R2
-        u[:,36] = -2.0*nu_sec/dtr # K2
-        u[:,37] = -2.0*nu/dtr # eta2
-        u[:,38] = (4.0*xi - 4.0*nu)/dtr # mns2
-        u[:,39] = (2.0*xi - 2.0*nu)/dtr # 2SM2
-        u[:,40] = (3.0*xi - 3.0*nu)/dtr # M3
-        u[:,41] = (2.0*xi - 2.0*nu - 2.0*nu_prime)/dtr # MK3
-        u[:,42] = 0.0 # S3
-        u[:,43] = (4.0*xi - 4.0*nu)/dtr # MN4
-        u[:,44] = (4.0*xi - 4.0*nu)/dtr # M4
-        u[:,45] = (2.0*xi - 2.0*nu)/dtr  # MS4
-        u[:,46] = (2.0*xi - 2.0*nu - 2.0*nu_sec)/dtr # MK4
-        u[:,47] = 0.0 # S4
-        u[:,48] = 0.0 # S5
-        u[:,49] = (6.0*xi - 6.0*nu)/dtr # M6
-        u[:,50] = 0.0 # S6
-        u[:,51] = 0.0 # S7
-        u[:,52] = 0.0 # S8
-        # shallow water constituents
-        u[:,53] = (8.0*xi - 8.0*nu)/dtr # m8
-        u[:,54] = (2.0*xi - 2.0*nu - 2.0*nu_sec)/dtr # mks2
-        u[:,55] = u[:,4] # msqm
-        u[:,56] = u[:,4] # mtm
-        u[:,57] = (4.0*xi - 4.0*nu)/dtr # n4
-        u[:,58] = u[:,29] # eps2
-        # mean sea level
-        u[:,59] = 0.0 # Z0
-
-    elif kwargs['corrections'] in ('GOT',):
-        # nodal factors
-        f[:,9] = 1.009 + 0.187*cosn - 0.015*cos2n# Q1
-        f[:,11] = f[:,9]# O1
-        f[:,16] = 1.0 # P1
-        f[:,17] = 1.0 # S1
-        f[:,18] = 1.006 + 0.115*cosn - 0.009*cos2n# K1
-        f[:,26] = 1.000 - 0.037*cosn# N2
-        f[:,29] = f[:,26]# M2
-        f[:,34] = 1.0 # S2
-        f[:,36] = 1.024 + 0.286*cosn + 0.008*cos2n# K2
-        f[:,44] = f[:,29]**2# M4
-
-        # nodal angles
-        u[:,9] = 10.8*sinn - 1.3*sin2n# Q1
-        u[:,11] = u[:,9]# O1
-        u[:,16] = 0.0 # P1
-        u[:,17] = 0.0 # S1
-        u[:,18] = -8.9*sinn + 0.7*sin2n# K1
-        u[:,26] = -2.1*sinn# N2
-        u[:,29] = u[:,26]# M2
-        u[:,34] = 0.0 # S2
-        u[:,36] = -17.7*sinn + 0.7*sin2n# K2
-        u[:,44] = -4.2*sinn# M4
-
-    # number of constituents of interest
-    nc = len(constituents)
-    # nodal factor corrections for given constituents
-    pu = np.zeros((nt,nc))
-    # nodal angle corrections for given constituents
-    pf = np.zeros((nt,nc))
-    # equilibrium arguments for given constituents
-    G = np.zeros((nt,nc))
-    for i,c in enumerate(constituents):
-        # map between given constituents and supported in tidal program
-        assert c.lower() in cindex, f'Unsupported constituent {c.lower()}'
-        j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
-        pu[:,i] = u[:,j]*dtr
-        pf[:,i] = f[:,j]
-        G[:,i] = arg[:,j]
+    pu, pf = nodal(n, p, constituents, **kwargs)
 
     # return values as tuple
     return (pu, pf, G)
@@ -535,7 +169,7 @@ def minor_arguments(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
-        use nodal corrections from OTIS/ATLAS or GOT models
+        use nodal corrections from OTIS, FES or GOT models
 
     Returns
     -------
@@ -615,20 +249,20 @@ def minor_arguments(
     # nodal angle corrections for minor constituents
     u = np.zeros((nt, 20))
     u[:,0] = np.arctan2(0.189*sinn - 0.0058*sin2n,
-        1.0 + 0.189*cosn - 0.0058*sin2n)/dtr# 2Q1
+        1.0 + 0.189*cosn - 0.0058*sin2n)# 2Q1
     u[:,1] = u[:,0]# sigma1
     u[:,2] = u[:,0]# rho1
-    u[:,3] = np.arctan2( 0.185*sinn, 1.0 + 0.185*cosn)/dtr# M12
-    u[:,4] = np.arctan2(-0.201*sinn, 1.0 + 0.201*cosn)/dtr# M11
-    u[:,5] = np.arctan2(-0.221*sinn, 1.0 + 0.221*cosn)/dtr# chi1
-    u[:,9] = np.arctan2(-0.198*sinn, 1.0 + 0.198*cosn)/dtr# J1
+    u[:,3] = np.arctan2( 0.185*sinn, 1.0 + 0.185*cosn)# M12
+    u[:,4] = np.arctan2(-0.201*sinn, 1.0 + 0.201*cosn)# M11
+    u[:,5] = np.arctan2(-0.221*sinn, 1.0 + 0.221*cosn)# chi1
+    u[:,9] = np.arctan2(-0.198*sinn, 1.0 + 0.198*cosn)# J1
     u[:,10] = np.arctan2(-0.640*sinn - 0.134*sin2n,
-        1.0 + 0.640*cosn + 0.134*cos2n)/dtr# OO1
-    u[:,11] = np.arctan2(-0.0373*sinn, 1.0 - 0.0373*cosn)/dtr# 2N2
+        1.0 + 0.640*cosn + 0.134*cos2n)# OO1
+    u[:,11] = np.arctan2(-0.0373*sinn, 1.0 - 0.0373*cosn)# 2N2
     u[:,12] = u[:,11]# mu2
     u[:,13] = u[:,11]# nu2
     u[:,15] = u[:,11]# L2
-    u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)/dtr# L2
+    u[:,16] = np.arctan2(-0.441*sinn, 1.0 + 0.441*cosn)# L2
 
     if kwargs['corrections'] in ('FES',):
         # additional astronomical terms for FES models
@@ -636,7 +270,7 @@ def minor_arguments(
         at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
         at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
         xi = -at1 - at2 + n*dtr
-        xi[xi > np.pi] -= 2.0*np.pi
+        xi = np.arctan2(np.sin(xi), np.cos(xi))
         nu = at1 - at2
         I2 = np.tan(II/2.0)
         Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
@@ -662,123 +296,38 @@ def minor_arguments(
         f[:,19] = np.power(np.sin(II),2.0)/0.1565 # eta2
 
         # nodal angle corrections for minor constituents
-        u[:,0] = (2.0*xi - nu)/dtr # 2Q1
+        u[:,0] = (2.0*xi - nu) # 2Q1
         u[:,1] = u[:,0] # sigma1
         u[:,2] = u[:,0] # rho1
         u[:,3] = u[:,0] # M12
-        u[:,4] = -nu/dtr # M11
+        u[:,4] = -nu # M11
         u[:,5] = u[:,4] # chi1
         u[:,9] = u[:,4] # J1
-        u[:,10] = (-2.0*xi - nu)/dtr # OO1
-        u[:,11] = (2.0*xi - 2.0*nu)/dtr # 2N2
+        u[:,10] = (-2.0*xi - nu) # OO1
+        u[:,11] = (2.0*xi - 2.0*nu) # 2N2
         u[:,12] = u[:,11] # mu2
         u[:,13] = u[:,11] # nu2
-        u[:,14] = (2.0*xi - 2.0*nu)/dtr # lambda2
-        u[:,15] = (2.0*xi - 2.0*nu - R)/dtr# L2
+        u[:,14] = (2.0*xi - 2.0*nu) # lambda2
+        u[:,15] = (2.0*xi - 2.0*nu - R)# L2
         u[:,18] = u[:,12] # eps2
-        u[:,19] = -2.0*nu/dtr # eta2
+        u[:,19] = -2.0*nu # eta2
 
     # return values as tuple
     return (u, f, arg)
 
-def doodson_number(
-        constituents: str | list | np.ndarray,
+def coefficients_table(
+        constituents: list | tuple | np.ndarray | str,
         **kwargs
     ):
     """
-    Calculates the Doodson or Cartwright number for
-    tidal constituents [1]_
+    Doodson table coefficients for tidal constituents [1]_ [2]_
 
     Parameters
     ----------
-    constituents: str, list or np.ndarray
-        tidal constituent ID(s)
+    constituents: list, tuple, np.ndarray or str
+        tidal constituent IDs
     corrections: str, default 'OTIS'
-        use arguments from OTIS/ATLAS or GOT models
-    formalism: str, default 'Doodson'
-        constituent identifier formalism
-
-            - ``'Cartwright'``
-            - ``'Doodson'``
-    raise_error: bool, default True
-        Raise exception if constituent is unsupported
-
-    Returns
-    -------
-    numbers: float, np.ndarray or dict
-        Doodson or Cartwright number for each constituent
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
-        the tide-generating potential", *Proceedings of the Royal Society
-        of London. Series A, Containing Papers of a Mathematical and
-        Physical Character*, 100(704), 305--329, (1921).
-        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
-    """
-    # set default keyword arguments
-    kwargs.setdefault('corrections', 'OTIS')
-    kwargs.setdefault('formalism', 'Doodson')
-    kwargs.setdefault('raise_error', True)
-    # validate inputs
-    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
-        f'Unknown formalism {kwargs["formalism"]}'
-
-    # constituents array (not all are included in tidal program)
-    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
-        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
-        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
-        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
-        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
-        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
-    # get the table of coefficients
-    coefficients = _arguments_table(**kwargs)
-    if isinstance(constituents, str):
-        # check that given constituents is supported in tidal program
-        if (constituents.lower() not in cindex) and kwargs['raise_error']:
-            raise ValueError(f'Unsupported constituent {constituents}')
-        elif (constituents.lower() not in cindex):
-            return None
-        # map between given constituents and supported in tidal program
-        j, = [j for j,val in enumerate(cindex) if (val == constituents.lower())]
-        # extract identifier in formalism
-        if (kwargs['formalism'] == 'Cartwright'):
-            # extract Cartwright number
-            numbers = np.array(coefficients[:6,j])
-        elif (kwargs['formalism'] == 'Doodson'):
-            # convert from coefficients to Doodson number
-            numbers = _to_doodson_number(coefficients[:,j], **kwargs)
-    else:
-        # output dictionary with Doodson numbers
-        numbers = {}
-        # for each input constituent
-        for i,c in enumerate(constituents):
-            # check that given constituents is supported in tidal program
-            if (c.lower() not in cindex) and kwargs['raise_error']:
-                raise ValueError(f'Unsupported constituent {c}')
-            elif (c.lower() not in cindex):
-                numbers[c] = None
-                continue
-            # map between given constituents and supported in tidal program
-            j, = [j for j,val in enumerate(cindex) if (val == c.lower())]
-            # convert from coefficients to Doodson number
-            if (kwargs['formalism'] == 'Cartwright'):
-                # extract Cartwright number
-                numbers[c] = np.array(coefficients[:6,j])
-            elif (kwargs['formalism'] == 'Doodson'):
-                # convert from coefficients to Doodson number
-                numbers[c] = _to_doodson_number(coefficients[:,j], **kwargs)
-    # return the Doodson or Cartwright number
-    return numbers
-
-def _arguments_table(**kwargs):
-    """
-    Arguments table for tidal constituents [1]_ [2]_
-
-    Parameters
-    ----------
-    corrections: str, default 'OTIS'
-        use arguments from OTIS/ATLAS or GOT models
+        use coefficients from OTIS, FES or GOT models
 
     Returns
     -------
@@ -807,72 +356,1375 @@ def _arguments_table(**kwargs):
     # n: mean longitude of ascending lunar node
     # pp: mean longitude of solar perigee
     # k: 90-degree phase
-    coef = np.zeros((7, 60))
-    coef[:,0] = [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0] # Sa
-    coef[:,1] = [0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0] # Ssa
-    coef[:,2] = [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0] # Mm
-    coef[:,3] = [0.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0] # MSf
-    coef[:,4] = [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Mf
-    coef[:,5] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0] # Mt
-    coef[:,6] = [1.0, -4.0, 2.0, 1.0, 0.0, 0.0, -1.0] # alpha1
-    coef[:,7] = [1.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0] # 2q1
-    coef[:,8] = [1.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0] # sigma1
-    coef[:,9] = [1.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]# q1
-    coef[:,10] = [1.0, -2.0, 2.0, -1.0, 0.0, 0.0, -1.0] # rho1
-    coef[:,11] = [1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0] # o1
-    coef[:,12] = [1.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0] # tau1
-    coef[:,13] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0] # m1
-    coef[:,14] = [1.0, 0.0, 2.0, -1.0, 0.0, 0.0, 1.0] # chi1
-    coef[:,15] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0] # pi1
-    coef[:,16] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0] # p1
-    if kwargs['corrections'] in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
-        coef[:,17] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0] # s1
+    coefficients = {}
+    coefficients['z0'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['node'] = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0]
+    coefficients['omega0'] = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0]
+    # With p'
+    coefficients['sa'] = [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0]
+    # # Without p'
+    # coefficients['sa'] = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['ssa'] = [0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    # With p'
+    coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, -1.0, 0.0] 
+    # # Without p'
+    # coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['st'] = [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['msm'] = [0.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mm'] = [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    # annual sideline
+    coefficients['msfa'] = [0.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['msf'] = [0.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    # annual sideline
+    coefficients['msfb'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['mfa'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mf-'] = [0.0, 2.0, 0.0, 0.0, -1.0, 0.0, 0.0]
+    coefficients['mf'] = [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # nodal line
+    coefficients['mf+'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0] 
+    # nodal line
+    coefficients['mfn'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+    coefficients['mfb'] = [0.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['sn0'] = [0.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mst'] = [0.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mt'] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mtm'] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['msqm'] = [0.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mq'] = [0.0, 4.0, 0.0, -2.0, 0.0, 0.0, 0.0]
+    coefficients['2smn0'] = [0.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['msp'] = [0.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mp'] = [0.0, 5.0, 0.0, -3.0, 0.0, 0.0, 0.0]
+    coefficients['2qj1'] = [1.0, -6.0, 0.0, 3.0, 0.0, 0.0, 1.0]
+    coefficients['2qk1'] = [1.0, -5.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['2qs1'] = [1.0, -5.0, 1.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['2qp1'] = [1.0, -5.0, 2.0, 2.0, 0.0, 0.0, -1.0]
+    coefficients['2oj1'] = [1.0, -4.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['alpha1'] = [1.0, -4.0, 2.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['2ok1'] = [1.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    # 3rd degree terms
+    coefficients["2q1'"] = [1.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['2q1'] = [1.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
+    coefficients['sigma1'] = [1.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0]
+    # 3rd degree terms
+    coefficients["q1'"] = [1.0, -2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['q1'] = [1.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['rho1'] = [1.0, -2.0, 2.0, -1.0, 0.0, 0.0, -1.0]
+    coefficients['np1'] = [1.0, -2.0, 2.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['opk1'] = [1.0, -1.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['oa1'] = [1.0, -1.0, -1.0, 0.0, 0.0, 0.0, -1.0]
+    # O1 nodal line
+    coefficients['o1n'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0] 
+    # O1 nodal line
+    coefficients['o1-'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0] 
+    coefficients['o1'] = [1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    # conjugate to nodal line
+    coefficients['o1+'] = [1.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0] 
+    # 3rd degree terms
+    coefficients["o1'"] = [1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['ob1'] = [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['ms1'] = [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['mp1'] = [1.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['tau1'] = [1.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['beta1'] = [1.0, 0.0, -2.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['pqo1'] = [1.0, 0.0, -2.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['2oq1'] = [1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
+    # 3rd degree terms
+    coefficients["m1'"] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['m1'] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['m1a'] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['m1b'] = [1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['no1'] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['chi1'] = [1.0, 0.0, 2.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['2pk1'] = [1.0, 1.0, -4.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['pi1'] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0]
+    coefficients['tk1'] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0]
+    coefficients['s1-1'] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['p1'] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['s1-'] = [1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0]
+    if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
+        coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0]
     elif kwargs['corrections'] in ('GOT', 'FES'):
-        coef[:,17] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0] # s1 (Doodson's phase)
-    coef[:,18] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0] # k1
-    coef[:,19] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, 1.0] # psi1
-    coef[:,20] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0] # phi1
-    coef[:,21] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0] # theta1
-    coef[:,22] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0] # j1
-    coef[:,23] = [1.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0] # oo1
-    coef[:,24] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0] # 2n2
-    coef[:,25] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0] # mu2
-    coef[:,26] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0] # n2
-    coef[:,27] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0] # nu2
-    coef[:,28] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0] # m2a
-    coef[:,29] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m2
-    coef[:,30] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0] # m2b
-    coef[:,31] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 2.0] # lambda2
-    coef[:,32] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0] # l2
-    coef[:,33] = [2.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0] # t2
-    coef[:,34] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0] # s2
-    coef[:,35] = [2.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0] # r2
-    coef[:,36] = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0] # k2
-    coef[:,37] = [2.0, 3.0, 0.0, 0.0, 0.0, -1.0, 0.0] # eta2
-    coef[:,38] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # mns2
-    coef[:,39] = [2.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0] # 2sm2
-    coef[:,40] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m3
-    coef[:,41] = coef[:,18] + coef[:,29] # mk3
-    coef[:,42] = [3.0, 3.0, -3.0, 0.0, 0.0, 0.0, 0.0] # s3
-    coef[:,43] = coef[:,26] + coef[:,29] # mn4
-    coef[:,44] = [4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m4
-    coef[:,45] = coef[:,29] + coef[:,34] # ms4
-    coef[:,46] = coef[:,29] + coef[:,36] # mk4
-    coef[:,47] = [4.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0] # s4
-    coef[:,48] = [5.0, 5.0, -5.0, 0.0, 0.0, 0.0, 0.0] # s5
-    coef[:,49] = [6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m6
-    coef[:,50] = [6.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0] # s6
-    coef[:,51] = [7.0, 7.0, -7.0, 0.0, 0.0, 0.0, 0.0] # s7
-    coef[:,52] = [8.0, 8.0, -8.0, 0.0, 0.0, 0.0, 0.0] # s8
-    # shallow water constituents
-    coef[:,53] = [8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # m8
-    coef[:,54] = coef[:,29] + coef[:,36] - coef[:,34] # mks2
-    coef[:,55] = [0.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0] # msqm
-    coef[:,56] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0] # mtm
-    coef[:,57] = [4.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0] # n4
-    coef[:,58] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
-    # mean sea level
-    coef[:,59] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # z0
+        # Doodson's phase
+        coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0] 
+    coefficients['s1+'] = [1.0, 1.0, -1.0, 0.0, 0.0, 1.0, 1.0]
+    coefficients['ojm1'] = [1.0, 1.0, 0.0, -2.0, 0.0, 0.0, -1.0]
+    # 3rd degree terms
+    coefficients["k1'"] = [1.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['k1-'] = [1.0, 1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
+    coefficients['k1'] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['s1+1'] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['k1+'] = [1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0]
+    coefficients['k1n'] = [1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0]
+    coefficients['k1++'] = [1.0, 1.0, 0.0, 0.0, 2.0, 0.0, -1.0]
+    coefficients['psi1'] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, 1.0]
+    coefficients['rp1'] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, -1.0]
+    coefficients['phi1'] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['kp1'] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['opq1'] = [1.0, 2.0, -2.0, -1.0, 0.0, 0.0, -1.0]
+    coefficients['the1'] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['theta1'] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['mq1'] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['j1'] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    # 3rd degree terms
+    coefficients["j1'"] = [1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['2po1'] = [1.0, 3.0, -4.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['so1'] = [1.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['oo1'] = [1.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['kpq1'] = [1.0, 4.0, -2.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['ups1'] = [1.0, 4.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['kq1'] = [1.0, 4.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['2jo1'] = [1.0, 5.0, 0.0, -2.0, 0.0, 0.0, -1.0]
+    coefficients['kjq1'] = [1.0, 5.0, 0.0, -2.0, 0.0, 0.0, -1.0]
+    coefficients['2ook1'] = [1.0, 5.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2oop1'] = [1.0, 5.0, 2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2jq1'] = [1.0, 6.0, 0.0, -3.0, 0.0, 0.0, -1.0]
+    coefficients['2mn2s2'] = [2.0, -5.0, 4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2nk2'] = [2.0, -4.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['3m(sk)2'] = [2.0, -4.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3mks2'] = [2.0, -4.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2ns2'] = [2.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['3m2s2'] = [2.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['oq2'] = [2.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mnk2'] = [2.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3n2'] = [2.0, -3.0, 0.0, 3.0, 0.0, 0.0, 0.0]
+    coefficients['eps2'] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mns2'] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    # coefficients['mns2'] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mnus2'] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2ml2s2'] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['mnk2s2'] = [2.0, -3.0, 4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2ms2k2'] = [2.0, -2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mk2'] = [2.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['o2'] = [2.0, -2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    # 3rd degree terms
+    coefficients["2n2'"] = [2.0, -2.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['2n2'] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['2nm2'] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['2ms2'] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mu2'] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mk2s2'] = [2.0, -2.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['omg2'] = [2.0, -2.0, 3.0, 0.0, 0.0, -1.0, 0.0]
+    coefficients['nsk2'] = [2.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['snk2'] = [2.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['na2'] = [2.0, -1.0, -1.0, 1.0, 0.0, 0.0, 0.0]
+    # 3rd degree terms
+    coefficients["n2'"] = [2.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['n2'] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2ml2'] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['nb2'] = [2.0, -1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['nu2'] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mmun2'] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['3m(sn)2'] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['nks2'] = [2.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['nkp2'] = [2.0, -1.0, 2.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['mkl2s2'] = [2.0, -1.0, 4.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['2kn2s2'] = [2.0, -1.0, 4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['msk2'] = [2.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['op2'] = [2.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m2-2'] = [2.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['gamma2'] = [2.0, 0.0, -2.0, 2.0, 0.0, 0.0, 2.0]
+    coefficients['gam2'] = [2.0, 0.0, -2.0, 2.0, 0.0, 0.0, 2.0]
+    coefficients['alp2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 2.0]
+    coefficients['alpha2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 2.0]
+    coefficients['m2a'] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0]
+    coefficients['m2-1'] = [2.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['ma2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    # M2 nodal line
+    coefficients['m2-'] = [2.0, 0.0, 0.0, 0.0, -1.0, 0.0, 2.0] 
+    coefficients['m2'] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['ko2'] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # conjugate to nodal
+    coefficients['m2+'] = [2.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0] 
+    # 3rd degree terms
+    coefficients["m2'"] = [2.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['mb2'] = [2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m2+1'] = [2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m2b'] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0]
+    coefficients['beta2'] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0]
+    coefficients['delta2'] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m2+2'] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mks2'] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m2(ks)2'] = [2.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2snmk2'] = [2.0, 1.0, -4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2sn(mk)2'] = [2.0, 1.0, -4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['snm2'] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['lambda2'] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['2mn2'] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['l2'] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['l2a'] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    # 3rd degree terms
+    coefficients["l2'"] = [2.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['nkm2'] = [2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['l2b'] = [2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['lb2'] = [2.0, 1.0, 1.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['2sk2'] = [2.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2t2'] = [2.0, 2.0, -4.0, 0.0, 0.0, 2.0, 0.0]
+    coefficients['s2-2'] = [2.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s2-1'] = [2.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['t2'] = [2.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
+    coefficients['kp2'] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s2r'] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s2'] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['r2'] = [2.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0]
+    coefficients['s2+1'] = [2.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s2+2'] = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['k2'] = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['kb2'] = [2.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2ks2'] = [2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2pmn2'] = [2.0, 3.0, -4.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['msnu2'] = [2.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['msn2'] = [2.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['zeta2'] = [2.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['eta2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mkn2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['kj2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['2kmsn2'] = [2.0, 3.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2km(sn)2'] = [2.0, 3.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2sm2'] = [2.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2ms2n2'] = [2.0, 4.0, -2.0, -2.0, 0.0, 0.0, 0.0] 
+    coefficients['skm2'] = [2.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2j2'] = [2.0, 4.0, 0.0, -2.0, 0.0, 0.0, 2.0]
+    coefficients['2k2'] = [2.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2snu2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['3(sm)n2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['2sn2'] = [2.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0] 
+    coefficients['skn2'] = [2.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0] 
+    coefficients['2kn2'] = [2.0, 5.0, 0.0, -1.0, 0.0, 0.0, 0.0] 
+    coefficients['3s2m2'] = [2.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2sk2m2'] = [2.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2oq3'] = [3.0, -4.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    # compound 3 O1
+    coefficients['o3'] = [3.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0] 
+    coefficients['nq3'] = [3.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
+    coefficients['muo3'] = [3.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['mq3'] = [3.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['no3'] = [3.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['mnp3'] = [3.0, -2.0, 2.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['2op3'] = [3.0, -1.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['2os3'] = [3.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    # Q1+M1+S1
+    coefficients['qms3'] = [3.0, -1.0, -1.0, 2.0, 0.0, 0.0, 2.0] 
+    coefficients['mo3-'] = [3.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
+    coefficients['mo3'] = [3.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['mo3+'] = [3.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0]
+    coefficients['2mk3'] = [3.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['e3n'] = [3.0, -1.0, 0.0, 1.0, -1.0, 0.0, 0.0]
+    # 3rd degree terms
+    coefficients['e3'] = [3.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['2no3'] = [3.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['2nkm3'] = [3.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['2ms3'] = [3.0, -1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['2mp3'] = [3.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['ns3'] = [3.0, 0.0, -1.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['2oj3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
+    # 2M2 - M1
+    coefficients['2mm3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0] 
+    coefficients['m3'] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
+    # 3rd degree terms
+    coefficients["m3'"] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['nk3'] = [3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mp3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['so3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0] 
+    # 3rd degree terms
+    coefficients['lambda3'] = [3.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['ms3'] = [3.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['pjrho3'] = [3.0, 1.0, 0.0, -2.0, 0.0, 0.0, -1.0]
+    # 3rd degree terms
+    coefficients['l3'] = [3.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mk3-'] = [3.0, 1.0, 0.0, 0.0, -1.0, 0.0, 1.0]
+    coefficients['mk3'] = [3.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['mk3+'] = [3.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0]
+    # 3rd degree terms
+    coefficients['l3b'] = [3.0, 1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['mks3'] = [3.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['mkp3'] = [3.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['nso3'] = [3.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['2mq3'] = [3.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    # 3rd degree terms
+    coefficients['f3'] = [3.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    # 3rd degree terms
+    coefficients['j3'] = [3.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    # s3 perturbation
+    coefficients['2t3'] = [3.0, 3.0, -5.0, 0.0, 0.0, 0.0, 2.0]
+    # s3 perturbation
+    coefficients['t3'] = [3.0, 3.0, -4.0, 0.0, 0.0, 0.0, 2.0]
+    # = 2SK3
+    coefficients['sp3'] = [3.0, 3.0, -4.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['s3'] = [3.0, 3.0, -3.0, 0.0, 0.0, 0.0, 0.0]
+    # 3rd degree terms
+    coefficients["s3'"] = [3.0, 3.0, -3.0, 0.0, 0.0, 0.0, 2.0]
+    # s3 perturbation
+    coefficients['r3'] = [3.0, 3.0, -2.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['sk3'] = [3.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    # s3 perturbation
+    coefficients['2r3'] = [3.0, 3.0, -1.0, 0.0, 0.0, 0.0, 2.0] 
+    coefficients['k3'] = [3.0, 3.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2so3'] = [3.0, 5.0, -4.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['2jp3'] = [3.0, 5.0, -2.0, -2.0, 0.0, 0.0, 1.0]
+    coefficients['kso3'] = [3.0, 5.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['2jk3'] = [3.0, 5.0, -1.0, -2.0, 0.0, 0.0, 0.0]
+    coefficients['2ko3'] = [3.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['2sq3'] = [3.0, 6.0, -4.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['o4'] = [4.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2qm4'] = [4.0, -4.0, 0.0, 2.0, 0.0, 0.0, 2.0]
+    coefficients['4ms4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['4m2s4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2mnk4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['moq4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0] 
+    coefficients['2mns4'] = [4.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['2mns4'] = [4.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2mnus4'] = [4.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['3mk4'] = [4.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2om4'] = [4.0, -2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['n4'] = [4.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['3ms4'] = [4.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['msnk4'] = [4.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mpq4'] = [4.0, -1.0, -2.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['mn4'] = [4.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mnu4'] = [4.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2mls4'] = [4.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['mnks4'] = [4.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2msk4'] = [4.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mop4'] = [4.0, 0.0, -2.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['ma4'] = [4.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m4'] = [4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mb4'] = [4.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mks4'] = [4.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['sn4'] = [4.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3mn4'] = [4.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['ml4'] = [4.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['nk4'] = [4.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2smk4'] = [4.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2pm4'] = [4.0, 2.0, -4.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['mt4'] = [4.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
+    coefficients['ms4'] = [4.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mr4'] = [4.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0]
+    coefficients['mk4'] = [4.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2snm4'] = [4.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2msn4'] = [4.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['sl4'] = [4.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['2mkn4'] = [4.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['mkj4'] = [4.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['2t4'] = [4.0, 4.0, -6.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['t4'] = [4.0, 4.0, -5.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['st4'] = [4.0, 4.0, -5.0, 0.0, 0.0, 1.0, 0.0]
+    coefficients['s4'] = [4.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['r4'] = [4.0, 4.0, -3.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2r4'] = [4.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['sk4'] = [4.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3ks4'] = [4.0, 4.0, -1.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['k4'] = [4.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3sm4'] = [4.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2(kj)4'] = [4.0, 6.0, 0.0, -2.0, 0.0, 0.0, 2.0]
+    coefficients['2no5'] = [5.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
+    coefficients['mno5'] = [5.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['2mq5'] = [5.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['2nkms5'] = [5.0, -2.0, 2.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['2mo5'] = [5.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['mnm5'] = [5.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['2nk5'] = [5.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['3ms5'] = [5.0, -1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['3mp5'] = [5.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['nso5'] = [5.0, 0.0, -2.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['m5'] = [5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['mnk5'] = [5.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['mb5'] = [5.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['mso5'] = [5.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2mp5'] = [5.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2ms5'] = [5.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['2mk5'] = [5.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    # N2 + K2 + S1
+    coefficients['nks5'] = [5.0, 2.0, -1.0, 1.0, 0.0, 0.0, 2.0] 
+    coefficients['nsk5'] = [5.0, 2.0, -2.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['msm5'] = [5.0, 2.0, -2.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['snk5'] = [5.0, 2.0, -2.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['3mq5'] = [5.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
+    coefficients['msp5'] = [5.0, 3.0, -4.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['msk5'] = [5.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['3km5'] = [5.0, 3.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2sp5'] = [5.0, 5.0, -6.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['t5'] = [5.0, 5.0, -6.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s5'] = [5.0, 5.0, -5.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['r5'] = [5.0, 5.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2sk5'] = [5.0, 5.0, -4.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['k5'] = [5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['o6'] = [6.0, -6.0, 0.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['2(mn)k6'] = [6.0, -4.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['5mks6'] = [6.0, -4.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2(mn)s6'] = [6.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['5m2s6'] = [6.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3mnk6'] = [6.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['n6'] = [6.0, -3.0, 0.0, 3.0, 0.0, 0.0, 0.0]
+    coefficients['3mns6'] = [6.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2nmls6'] = [6.0, -3.0, 2.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['3nks6'] = [6.0, -3.0, 2.0, 3.0, 0.0, 0.0, 0.0]
+    coefficients['3mnus6'] = [6.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['4mk6'] = [6.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2nm6'] = [6.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['m2n6'] = [6.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['4ms6'] = [6.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mlns6'] = [6.0, -2.0, 2.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['2nmks6'] = [6.0, -2.0, 2.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['2msnk6'] = [6.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2mn6'] = [6.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2mnu6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2mn6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['3mls6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['2mno6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2mnks6'] = [6.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3msk6'] = [6.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['ma6'] = [6.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m6'] = [6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2nk6'] = [6.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['mb6'] = [6.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3mks6'] = [6.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['msn6'] = [6.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['4mn6'] = [6.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2ml6'] = [6.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['mnk6'] = [6.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mkn6'] = [6.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mknu6'] = [6.0, 1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2(ms)k6'] = [6.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mt6'] = [6.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
+    coefficients['2ms6'] = [6.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mr6'] = [6.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0]
+    coefficients['2mk6'] = [6.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2sn6'] = [6.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3msn6'] = [6.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['msl6'] = [6.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['snk6'] = [6.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['mkl6'] = [6.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['3mkn6'] = [6.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2sm6'] = [6.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['msk6'] = [6.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2km6'] = [6.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2(ms)n6'] = [6.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2mskn6'] = [6.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2t6'] = [6.0, 6.0, -8.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['t6'] = [6.0, 6.0, -7.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s6'] = [6.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['r6'] = [6.0, 6.0, -5.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2r6'] = [6.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2sk6'] = [6.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['k6'] = [6.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4sm6'] = [6.0, 8.0, -8.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mno7'] = [7.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
+    coefficients['4mk7'] = [7.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['3mo7'] = [7.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2nmk7'] = [7.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    # = 2MNK7 = MNKO7
+    coefficients['m7'] = [7.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['3mp7'] = [7.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2mso7'] = [7.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['3mk7'] = [7.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    # = MSKO7 (noaa)
+    coefficients['2msk7'] = [7.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['msko7'] = [7.0, 3.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2t7'] = [7.0, 7.0, -9.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3sp7'] = [7.0, 7.0, -8.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['t7'] = [7.0, 7.0, -8.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s7'] = [7.0, 7.0, -7.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['r7'] = [7.0, 7.0, -6.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3sk7'] = [7.0, 7.0, -6.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['2r7'] = [7.0, 7.0, -5.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3r7'] = [7.0, 7.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4r7'] = [7.0, 7.0, -3.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['k7'] = [7.0, 7.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['3m2ns8'] = [8.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['4mns8'] = [8.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['5mk8'] = [8.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mn8'] = [8.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['2(mn)8'] = [8.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
+    coefficients['5ms8'] = [8.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3mn8'] = [8.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3mnu8'] = [8.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['3mn8'] = [8.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['4mls8'] = [8.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0]
+    coefficients['ma8'] = [8.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m8'] = [8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['mb8'] = [8.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2msn8'] = [8.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['3ml8'] = [8.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2mnk8'] = [8.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3mt8'] = [8.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
+    coefficients['3ms8'] = [8.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3mk8'] = [8.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2smn8'] = [8.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['2msl8'] = [8.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0] 
+    coefficients['msnk8'] = [8.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['4msn8'] = [8.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2(ms)8'] = [8.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2msk8'] = [8.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2(mk)8'] = [8.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s8'] = [8.0, 8.0, -8.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['k8'] = [8.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4mo9'] = [9.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['2(mn)k9'] = [9.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['2m2nk9'] = [9.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
+    coefficients['3mnk9'] = [9.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+    coefficients['4mp9'] = [9.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
+    coefficients['4ms9'] = [9.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
+    coefficients['4mk9'] = [9.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['3msk9'] = [9.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['s9'] = [9.0, 9.0, -9.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['k9'] = [9.0, 9.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    coefficients['4mn10'] = [10.0, -1, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['m10'] = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3msn10'] = [10.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
+    coefficients['4ms10'] = [10.0, 2.0, -2, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4mk10'] = [10.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3msl10'] = [10.0, 3.0, -2, -1.0, 0.0, 0.0, 2.0]
+    coefficients['3m2s10'] = [10.0, 4.0, -4, 0.0, 0.0, 0.0, 0.0]
+    coefficients['3msk10'] = [10.0, 4.0, -2, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s10'] = [10.0, 10.0, -10.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4msk11'] = [11.0, 3.0, -2, 0.0, 0.0, 0.0, 1.0]
+    coefficients['s11'] = [11.0, 11.0, -11.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['5mn12'] = [12.0, -1, 0.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['m12'] = [12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4msn12'] = [12.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
+    coefficients['4mns12'] = [12.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
+    coefficients['5ms12'] = [12.0, 2.0, -2, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4msl12'] = [12.0, 3.0, -2, -1.0, 0.0, 0.0, 2.0]
+    coefficients['4m2s12'] = [12.0, 4.0, -4, 0.0, 0.0, 0.0, 0.0]
+    coefficients['s12'] = [12.0, 12.0, -12.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['m14'] = [14.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['5msn14'] = [14.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['6ms14'] = [14.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['5m2s14'] = [14.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+
+    # set constituents to be iterable
+    if isinstance(constituents, str):
+        constituents = [constituents]
+    # allocate for output coefficients
+    nc = len(constituents)
+    coef = np.zeros((7, nc))
+    # for each constituent of interest
+    for i, c in enumerate(constituents):
+        try:
+            coef[:,i] = coefficients[c]
+        except KeyError:
+            raise ValueError(f'Unsupported constituent: {c}')
+
+    # return Doodson coefficients for constituents
+    return coef
+
+def doodson_number(
+        constituents: str | list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the Doodson or Cartwright number for
+    tidal constituents [1]_
+
+    Parameters
+    ----------
+    constituents: str, list or np.ndarray
+        tidal constituent ID(s)
+    corrections: str, default 'OTIS'
+        use arguments from OTIS, FES or GOT models
+    formalism: str, default 'Doodson'
+        constituent identifier formalism
+
+            - ``'Cartwright'``
+            - ``'Doodson'``
+    raise_error: bool, default True
+        Raise exception if constituent is unsupported
+
+    Returns
+    -------
+    numbers: float, np.ndarray or dict
+        Doodson or Cartwright number for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('formalism', 'Doodson')
+    kwargs.setdefault('raise_error', True)
+    # validate inputs
+    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
+        f'Unknown formalism {kwargs["formalism"]}'
+    # get the coefficients of coefficients
+    if isinstance(constituents, str):
+        # try to get the Doodson coefficients for constituent
+        try:
+            coefficients = coefficients_table(constituents.lower(), **kwargs)
+        except ValueError as exc:
+            if kwargs['raise_error']:
+                raise ValueError(f'Unsupported constituent {constituents}')
+            else:
+                return None
+        # extract identifier in formalism
+        if (kwargs['formalism'] == 'Cartwright'):
+            # extract Cartwright number
+            numbers = np.array(coefficients[:6,0])
+        elif (kwargs['formalism'] == 'Doodson'):
+            # convert from coefficients to Doodson number
+            numbers = _to_doodson_number(coefficients[:,0], **kwargs)
+    else:
+        # output dictionary with Doodson numbers
+        numbers = {}
+        # for each input constituent
+        for i,c in enumerate(constituents):
+            # try to get the Doodson coefficients for constituent
+            try:
+                coefficients = coefficients_table(c.lower(), **kwargs)
+            except ValueError as exc:
+                if kwargs['raise_error']:
+                    raise ValueError(f'Unsupported constituent {c}')
+                else:
+                    numbers[c] = None
+                    continue
+            # convert from coefficients to Doodson number
+            if (kwargs['formalism'] == 'Cartwright'):
+                # extract Cartwright number
+                numbers[c] = np.array(coefficients[:6,0])
+            elif (kwargs['formalism'] == 'Doodson'):
+                # convert from coefficients to Doodson number
+                numbers[c] = _to_doodson_number(coefficients[:,0], **kwargs)
+    # return the Doodson or Cartwright number
+    return numbers
+
+# PURPOSE: compute the nodal corrections
+def nodal(
+        n: np.ndarray,
+        p: np.ndarray,
+        constituents: list | tuple | np.ndarray | str,
+        **kwargs
+    ):
+    """
+    Calculates the nodal corrections for tidal constituents
+    [1]_ [2]_ [3]_ [4]_
+
+    Calculates factors for compound tides using recursion
+
+    Parameters
+    ----------
+    n: np.ndarray
+        mean longitude of ascending lunar node (degrees)
+    p: np.ndarray
+        mean longitude of lunar perigee (degrees)
+    constituents: list, tuple, np.ndarray or str
+        tidal constituent IDs
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS, FES or GOT models
+    M1: str, default 'perth5'
+        coefficients to use for M1 tides
+
+                - ``'Doodson'``
+                - ``'Ray'``
+                - ``'perth5'``
+
+    Returns
+    -------
+    f: np.ndarray
+        nodal factor correction
+    u: np.ndarray
+        nodal angle correction
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
+        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
+    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
+        model time series," *Advances in Water Resources*, 12(3), 109--120,
+        (1989). `doi: 10.1016/0309-1708(89)90017-1
+        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
+    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('M1', 'perth5')
+    # set correction type
+    OTIS_TYPE = kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf')
+    FES_TYPE = kwargs['corrections'] in ('FES',)
+
+    # degrees to radians
+    dtr = np.pi/180.0
+    # trigonometric factors for nodal corrections
+    sinn = np.sin(n*dtr)
+    cosn = np.cos(n*dtr)
+    sin2n = np.sin(2.0*n*dtr)
+    cos2n = np.cos(2.0*n*dtr)
+    sin3n = np.sin(3.0*n*dtr)
+    sinp  = np.sin(p*dtr)
+    cosp  = np.cos(p*dtr)
+    sin2p = np.sin(2.0*p*dtr)
+    cos2p = np.cos(2.0*p*dtr)
+
+    # set constituents to be iterable
+    if isinstance(constituents, str):
+        constituents = [constituents]
+
+    # set nodal corrections
+    nt = len(np.atleast_1d(n))
+    nc = len(constituents)
+    # nodal factor correction
+    f = np.zeros((nt, nc))
+    # nodal angle correction
+    u = np.zeros((nt, nc))
+
+    # additional astronomical terms for FES models
+    II = np.arccos(0.913694997 - 0.035692561*np.cos(n*dtr))
+    at1 = np.arctan(1.01883*np.tan(n*dtr/2.0))
+    at2 = np.arctan(0.64412*np.tan(n*dtr/2.0))
+    xi = -at1 - at2 + n*dtr
+    xi = np.arctan2(np.sin(xi), np.cos(xi))
+    nu = at1 - at2
+    I2 = np.tan(II/2.0)
+    Ra1 = np.sqrt(1.0 - 12.0*(I2**2)*np.cos(2.0*(p - xi)) + 36.0*(I2**4))
+    P2 = np.sin(2.0*(p - xi))
+    Q2 = 1.0/(6.0*(I2**2)) - np.cos(2.0*(p - xi))
+    R = np.arctan(P2/Q2)
+    P_prime = np.sin(2.0*II)*np.sin(nu)
+    Q_prime = np.sin(2.0*II)*np.cos(nu) + 0.3347
+    nu_prime = np.arctan(P_prime/Q_prime)
+    P_sec = (np.sin(II)**2)*np.sin(2.0*nu)
+    Q_sec = (np.sin(II)**2)*np.cos(2.0*nu) + 0.0727
+    nu_sec = 0.5*np.arctan(P_sec/Q_sec)
+
+    # compute standard nodal corrections f and u 
+    for i, c in enumerate(constituents):
+        if c in ('msf','tau1','p1','theta1','lambda2','s2') and OTIS_TYPE:
+            term1 = 0.0
+            term2 = 1.0
+        elif c in ('p1','s2') and FES_TYPE:
+            term1 = 0.0
+            term2 = 1.0
+        elif c in ('mm','msm') and OTIS_TYPE:
+            term1 = 0.0
+            term2 = 1.0 - 0.130*cosn
+        elif c in ('mm','msm') and FES_TYPE:
+            term1 = 0.0
+            term2 = (2.0/3.0 - np.power(np.sin(II),2.0))/0.5021
+        elif c in ('mm','msm'):
+            term1 = -0.0534*sin2p - 0.0219*np.sin((2.0*p-n)*dtr)
+            term2 = 1.0 - 0.1308*cosn - 0.0534*cos2p - 0.0219*np.cos((2.0*p-n)*dtr)
+        elif c in ('mf','msqm','msp','mq','mtm') and OTIS_TYPE:
+            f[:,i] = 1.043 + 0.414*cosn
+            u[:,i] = dtr*(-23.7*sinn + 2.7*sin2n - 0.4*sin3n)
+            continue
+        elif c in ('mf','msqm','msp','mq','mt','mtm') and FES_TYPE:
+            f[:,i] = np.power(np.sin(II),2.0)/0.1578
+            u[:,i] = -2.0*xi
+            continue
+        elif c in ('mf','msqm','msp','mq'):
+            term1 = -0.04324*sin2p - 0.41465*sinn - 0.03873*sin2n
+            term2 = 1.0 + 0.04324*cos2p + 0.41465*cosn + 0.03873*cos2n
+        elif c in ('mt',) and OTIS_TYPE:
+            term1 = -0.203*sinn - 0.040*sin2n
+            term2 = 1.0 + 0.203*cosn + 0.040*cos2n
+        elif c in ('mt','mtm',):
+            term1 = -0.018*sin2p - 0.4145*sinn - 0.040*sin2n
+            term2 = 1.0 + 0.018*cos2p + 0.4145*cosn + 0.040*cos2n
+        elif c in ('msf',) and FES_TYPE:
+            f[:,i] = 1.0
+            u[:,i] = (2.0*xi - 2.0*nu)
+            continue
+        elif c in ('msf',):
+            # linear tide and not compound
+            term1 = 0.137*sinn
+            term2 = 1.0
+        elif c in ('mst',):
+            term1 = -0.380*sin2p - 0.413*sinn - 0.037*sin2n
+            term2 = 1.0 + 0.380*cos2p + 0.413*cosn + 0.037*cos2n
+        elif c in ('o1','so3','op2') and OTIS_TYPE:
+            term1 = 0.189*sinn - 0.0058*sin2n
+            term2 = 1.0 + 0.189*cosn - 0.0058*cos2n
+            f[:,i] = np.sqrt(term1**2 + term2**2) # O1
+            u[:,i] = dtr*(10.8*sinn - 1.3*sin2n + 0.2*sin3n)
+            continue
+        elif c in ('o1','so3','op2','2q1','q1','rho1','sigma1') and FES_TYPE:
+            f[:,i] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 
+            u[:,i] = (2.0*xi - nu)
+            continue
+        elif c in ('o1','so3','op2'):
+            term1 = 0.1886*sinn - 0.0058*sin2n - 0.0065*sin2p
+            term2 = 1.0 + 0.1886*cosn - 0.0058*cos2n - 0.0065*cos2p
+        elif c in ('2q1','q1','rho1','sigma1') and OTIS_TYPE:
+            f[:,i] = np.sqrt((1.0 + 0.188*cosn)**2 + (0.188*sinn)**2)
+            u[:,i] = np.arctan(0.189*sinn/(1.0 + 0.189*cosn))
+            continue        
+        elif c in ('2q1','q1','rho1','sigma1'):
+            term1 = 0.1886*sinn 
+            term2 = 1.0 + 0.1886*cosn
+        elif c in ('tau1',):
+            term1 = 0.219*sinn 
+            term2 = 1.0 - 0.219*cosn 
+        elif c in ('beta1',):
+            term1 = 0.226*sinn 
+            term2 = 1.0 + 0.226*cosn 
+        elif c in ('m1',) and (kwargs['M1'] == 'Doodson'):
+            # A. T. Doodson's coefficients for M1 tides
+            term1 = sinp + 0.2*np.sin((p-n)*dtr)
+            term2 = 2.0*cosp + 0.4*np.cos((p-n)*dtr)
+        elif c in ('m1',) and (kwargs['M1'] == 'Ray'):
+            # R. Ray's coefficients for M1 tides (perth3)
+            term1 = 0.64*sinp + 0.135*np.sin((p-n)*dtr)
+            term2 = 1.36*cosp + 0.267*np.cos((p-n)*dtr)
+        elif c in ('m1',) and (kwargs['M1'] == 'perth5'):
+            # assumes M1 argument includes p
+            term1 = -0.2294*sinn - 0.3594*sin2p - 0.0664*np.sin((2.0*p-n)*dtr)
+            term2 = 1.0 + 0.1722*cosn + 0.3594*cos2p + 0.0664*np.cos((2.0*p-n)*dtr)
+        elif c in ('chi1',) and OTIS_TYPE:
+            term1 = -0.221*sinn
+            term2 = 1.0 + 0.221*cosn
+        elif c in ('chi1',) and FES_TYPE:
+            f[:,i] = np.sin(2.0*II) / 0.7214
+            u[:,i] = -nu
+            continue
+        elif c in ('chi1',):
+            term1 = -0.250*sinn 
+            term2 = 1.0 + 0.193*cosn 
+        elif c in ('p1',):
+            term1 = -0.0112*sinn 
+            term2 = 1.0 - 0.0112*cosn 
+        elif c in ('k1','sk3','2sk5') and OTIS_TYPE:
+            term1 = -0.1554*sinn + 0.0029*sin2n
+            term2 = 1.0 + 0.1158*cosn - 0.0029*cos2n
+        elif c in ('k1','sk3','2sk5') and FES_TYPE:
+            temp1 = 0.8965*np.power(np.sin(2.0*II),2.0)
+            temp2 = 0.6001*np.sin(2.0*II)*np.cos(nu)
+            f[:,i] = np.sqrt(temp1 + temp2 + 0.1006)
+            u[:,i] = -nu_prime
+            continue
+        elif c in ('k1','sk3','2sk5'):
+            term1 = -0.1554*sinn + 0.0031*sin2n
+            term2 = 1.0 + 0.1158*cosn - 0.0028*cos2n
+        elif c in ('j1','theta1'):
+            term1 = -0.227*sinn
+            term2 = 1.0 + 0.169*cosn
+        elif c in ('oo1','ups1') and OTIS_TYPE:
+            term1 = -0.640*sinn - 0.134*sin2n
+            term2 = 1.0 + 0.640*cosn + 0.134*cos2n
+        elif c in ('oo1','ups1') and FES_TYPE:
+            f[:,i] = np.sin(II)*np.power(np.sin(II/2.0),2.0)/0.01640
+            u[:,i] = -2.0*xi - nu
+            continue
+        elif c in ('oo1','ups1'):
+            term1 = -0.640*sinn - 0.134*sin2n - 0.150*sin2p
+            term2 = 1.0 + 0.640*cosn + 0.134*cos2n + 0.150*cos2p
+        elif c in ('m2','2n2','mu2','n2','nu2','lambda2','ms4','eps2','2sm6',
+                '2sn6','mp1','mp3','sn4') and FES_TYPE:
+            f[:,i] = np.power(np.cos(II/2.0),4.0)/0.9154
+            u[:,i] = 2.0*xi - 2.0*nu
+            continue
+        elif c in ('m2','2n2','mu2','n2','nu2','lambda2','ms4','eps2','2sm6',
+                '2sn6','mp1','mp3','sn4'):
+            term1 = -0.03731*sinn + 0.00052*sin2n
+            term2 = 1.0 - 0.03731*cosn + 0.00052*cos2n
+        elif c in ('l2','sl4') and OTIS_TYPE:
+            term1 = -0.25*sin2p - 0.11*np.sin((2.0*p-n)*dtr) - 0.04*sinn
+            term2 = 1.0 - 0.25*cos2p - 0.11*np.cos((2.0*p - n)*dtr) - 0.04*cosn
+        elif c in ('l2','sl4') and FES_TYPE:
+            f[:,i] = Ra1*np.power(np.cos(II/2.0),4.0)/0.9154
+            u[:,i] = 2.0*xi - 2.0*nu - R
+            continue
+        elif c in ('l2','sl4'):
+            term1 = -0.25*sin2p - 0.11*np.sin((2.0*p-n)*dtr) - 0.037*sinn
+            term2 = 1.0 - 0.25*cos2p - 0.11*np.cos((2.0*p-n)*dtr) - 0.037*cosn
+        elif c in ('l2b',):
+            # for when l2 is split into two constituents
+            term1 = 0.441*sinn
+            term2 = 1.0 + 0.441*cosn
+        elif c in ('k2','sk4','2sk6','kp1') and OTIS_TYPE:
+            term1 = -0.3108*sinn - 0.0324*sin2n
+            term2 = 1.0 + 0.2852*cosn + 0.0324*cos2n
+        elif c in ('k2','sk4','2sk6','kp1') and FES_TYPE:
+            term1 = 19.0444 * np.power(np.sin(II),4.0)
+            term2 = 2.7702 * np.power(np.sin(II),2.0) * np.cos(2.0*nu)
+            f[:,i] = np.sqrt(term1 + term2 + 0.0981)
+            u[:,i] = -2.0*nu_sec
+            continue
+        elif c in ('k2','sk4','2sk6','kp1'):
+            term1 = -0.3108*sinn - 0.0324*sin2n
+            term2 = 1.0 + 0.2853*cosn + 0.0324*cos2n
+        elif c in ('gamma2',):
+            term1 = 0.147*np.sin(2.0*(n-p)*dtr)
+            term2 = 1.0 + 0.147*np.cos(2.0*(n-p)*dtr)
+        elif c in ('delta2',):
+            term1 = 0.505*sin2p + 0.505*sinn - 0.165*sin2n
+            term2 = 1.0 - 0.505*cos2p - 0.505*cosn + 0.165*cos2n
+        elif c in ('eta2','zeta2') and FES_TYPE:
+            f[:,i] = np.power(np.sin(II),2.0)/0.1565
+            u[:,i] = -2.0*nu
+            continue
+        elif c in ('eta2','zeta2'):
+            term1 = -0.436*sinn
+            term2 = 1.0 + 0.436*cosn
+        elif c in ('s2',):
+            term1 = 0.00225*sinn
+            term2 = 1.0 + 0.00225*cosn
+        elif c in ("m1'",):
+            # Linear 3rd degree terms
+            term1 = -0.01815*sinn
+            term2 = 1.0 - 0.27837*cosn
+        elif c in ("q1'",):   
+            # Linear 3rd degree terms
+            term1 = 0.3915*sinn + 0.033*sin2n + 0.061*sin2p
+            term2 = 1.0 + 0.3915*cosn + 0.033*cos2n + 0.06*cos2p
+        elif c in ("j1'",):   
+            # Linear 3rd degree terms
+            term1 = -0.438*sinn - 0.033*sin2n
+            term2 = 1.0 + 0.372*cosn + 0.033*cos2n
+        elif c in ("2n2'",):
+            # Linear 3rd degree terms
+            term1 = 0.166*sinn
+            term2 = 1.0 + 0.166*cosn
+        elif c in ("n2'",):
+            # Linear 3rd degree terms
+            term1 = 0.1705*sinn - 0.0035*sin2n - 0.0176*sin2p
+            term2 = 1.0 + 0.1705*cosn - 0.0035*cos2n - 0.0176*cos2p
+        elif c in ("l2'"):
+            # Linear 3rd degree terms
+            term1 = -0.2495*sinn
+            term2 = 1.0 + 0.1315*cosn
+        elif c in ('m3','e3'):
+            # Linear 3rd degree terms
+            term1 = -0.05644*sinn
+            term2 = 1.0 - 0.05644*cosn
+        elif c in ('j3','f3'):
+            term1 = -0.464*sinn - 0.052*sin2n
+            term2 = 1.0 + 0.387*cosn + 0.052*cos2n
+        elif c in ('l3',):
+            term1 = -0.373*sin2p - 0.164*np.sin((2.0*p-n)*dtr)
+            term2 = 1.0 - 0.373*cos2p - 0.164*np.cos((2.0*p-n)*dtr)
+        elif c in ('mfdw',):
+            # special test of Doodson-Warburg formula
+            f[:,i] = 1.043 + 0.414*cosn
+            u[:,i] = dtr*(-23.7*sinn + 2.7*sin2n - 0.4*sin3n)
+            continue
+        elif c in ('so1','2so3','2po1'):
+            # compound tides calculated using recursion
+            parents = ['o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]
+            u[:,i] = -utmp[:,0]
+            continue
+        elif c in ('o3',):
+            # compound tides calculated using recursion
+            parents = ['o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3
+            u[:,i] = 3.0*utmp[:,0]
+            continue
+        elif c in ('2k2'):
+            # compound tides calculated using recursion
+            parents = ['k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 2.0*utmp[:,0]
+            continue
+        elif c in ('tk1'):
+            # compound tides calculated using recursion
+            parents = ['k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]
+            u[:,i] = -utmp[:,0]
+            continue
+        elif c in ('2oop1'):
+            # compound tides calculated using recursion
+            parents = ['oo1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 2.0*utmp[:,0]
+            continue
+        elif c in ('oq2'):
+            # compound tides calculated using recursion
+            parents = ['o1','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2oq1'):
+            # compound tides calculated using recursion
+            parents = ['o1','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('ko2'):
+            # compound tides calculated using recursion
+            parents = ['o1','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('opk1',):
+            # compound tides calculated using recursion
+            parents = ['o1','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2ook1',):
+            # compound tides calculated using recursion
+            parents = ['oo1','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('kj2',):
+            # compound tides calculated using recursion
+            parents = ['k1','j1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('kjq1'):
+            # compound tides calculated using recursion
+            parents = ['k1','j1','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1] * ftmp[:,2]
+            u[:,i] = utmp[:,0] + utmp[:,1] - utmp[:,2]
+            continue
+        elif c in ('k3',):
+            # compound tides calculated using recursion
+            parents = ['k1','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in('m4','mn4','mns2','2ms2','mnus2','mmus2','2ns2','n4','mnu4',
+                'mmu4','2mt6','2ms6','msn6','mns6','2mr6','msmu6','2mp3','2ms3',
+                '2mp5','2msp7','2(ms)8','2ms8'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 2.0*utmp[:,0]
+            continue
+        elif c in ('msn2','snm2','nsm2'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2
+            u[:,i] = 0.0
+            continue
+        elif c in ('mmun2','2mn2'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3
+            u[:,i] = utmp[:,0]
+            continue
+        elif c in ('2sm2',):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]
+            u[:,i] = -utmp[:,0]
+            continue
+        elif c in ('m6','2mn6','2mnu6','2mmu6','2nm6','mnnu6','mnmu6','3ms8',
+                '3mp7','2msn8','3ms5','3mp5','3ms4','3m2s2','3m2s10','2mn2s2'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3
+            u[:,i] = 3.0*utmp[:,0]
+            continue
+        elif c in ('m8','ma8','3mn8','3mnu8','3mmu8','2mn8','2(mn):8','3msn10',
+                '4ms10','2(mn)S10','4m2s12'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**4
+            u[:,i] = 4.0*utmp[:,0]
+            continue
+        elif c in ('m10','4mn10','5ms12','4msn12','4mns12'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**5
+            u[:,i] = 5.0*utmp[:,0]
+            continue
+        elif c in ('m12','5mn12','6ms14','5msn14'):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**6
+            u[:,i] = 6.0*utmp[:,0]
+            continue
+        elif c in ('m14',):
+            # compound tides calculated using recursion
+            parents = ['m2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**7
+            u[:,i] = 7.0*utmp[:,0]
+            continue
+        elif c in ('mo3','no3','mso5'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('no1','nso3'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('mq3','nq3'):
+            # compound tides calculated using recursion
+            parents = ['m2','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2mq3',):
+            # compound tides calculated using recursion
+            parents = ['m2','q1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2no3',):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2mo5','2no5','mno5','2mso7','2(ms):o9'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2mno7','3mo7'):
+            # compound tides calculated using recursion
+            parents = ['m2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('mk3','nk3','msk5','nsk5'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('mnk5','2mk5','2nk5','2msk7'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2mk3',):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('3mk7','2mnk7','2nmk7','3nk7','3msk9'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('3msk7',):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('4mk9','3mnk9','2m2nk9','2(mn):k9','3nmk9','4msk11'):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**4 * ftmp[:,1]
+            u[:,i] = 4.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('3km5',):
+            # compound tides calculated using recursion
+            parents = ['m2','k1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]**3
+            u[:,i] = utmp[:,0] + 3.0*utmp[:,1]
+            continue
+        elif c in ('mk4','nk4','mks2'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('msk2','2smk4','msk6','snk6'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('mnk6','2mk6','2msk8','msnk8'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('mnk2','2mk2'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('mkn2','nkm2'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = utmp[:,1]
+            continue
+        elif c in ('skm2',):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = -utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('3mk8','2mnk8'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('m2(ks):2',):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]**2
+            u[:,i] = utmp[:,0] + 2.0*utmp[:,1]
+            continue
+        elif c in ('2ms2k2',):
+            # compound tides calculated using recursion
+            parents = ['m2','k2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]**2
+            u[:,i] = 2.0*utmp[:,0] - 2.0*utmp[:,1]
+            continue
+        elif c in ('mko5','msko7'):
+            # compound tides calculated using recursion
+            parents = ['m2','k2','o1']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1] * ftmp[:,2]
+            u[:,i] = utmp[:,0] + utmp[:,1] + utmp[:,2]
+            continue
+        elif c in ('ml4','msl6'):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0] * ftmp[:,1]
+            u[:,i] = utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2ml2',):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] - utmp[:,1]
+            continue
+        elif c in ('2ml6','2ml2s2','2mls4','2msl8'):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**2 * ftmp[:,1]
+            u[:,i] = 2.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('2nmls6','3mls6','2mnls6','3ml8','2mnl8','3msl10'):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**3 * ftmp[:,1]
+            u[:,i] = 3.0*utmp[:,0] + utmp[:,1]
+            continue
+        elif c in ('4msl12',):
+            # compound tides calculated using recursion
+            parents = ['m2','l2']
+            utmp, ftmp = nodal(n, p, parents)
+            f[:,i] = ftmp[:,0]**4 * ftmp[:,1]
+            u[:,i] = 4.0*utmp[:,0] + utmp[:,1]
+            continue
+        else:
+            # default for linear tides
+            term1 = 0.0
+            term2 = 1.0
+
+        # calculate factors for linear tides
+        # and parent waves in compound tides
+        f[:,i] = np.sqrt(term1**2 + term2**2)
+        u[:,i] = np.arctan2(term1, term2)
+
+    # return corrections for constituents
+    return (u, f)
+
+def _arguments_table(**kwargs):
+    """
+    Arguments table for tidal constituents [1]_ [2]_
+
+    Parameters
+    ----------
+    corrections: str, default 'OTIS'
+        use arguments from OTIS, FES or GOT models
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for each constituent
+
+    References
+    ----------
+    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
+        the tide-generating potential", *Proceedings of the Royal Society
+        of London. Series A, Containing Papers of a Mathematical and
+        Physical Character*, 100(704), 305--329, (1921).
+        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
+    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
+        HMSO, London, (1941).
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+
+    # constituents array (not all are included in tidal program)
+    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
+        'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
+        'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 'm2a',
+        'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 'mns2',
+        '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 's5', 'm6',
+        's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
+    # modified Doodson coefficients for constituents
+    # using 7 index variables: tau, s, h, p, n, pp, k
+    # tau: mean lunar time
+    # s: mean longitude of moon
+    # h: mean longitude of sun
+    # p: mean longitude of lunar perigee
+    # n: mean longitude of ascending lunar node
+    # pp: mean longitude of solar perigee
+    # k: 90-degree phase
+    coef = coefficients_table(cindex, **kwargs)
     # return the coefficient table
     return coef
 
@@ -904,27 +1756,10 @@ def _minor_table(**kwargs):
     # n: mean longitude of ascending lunar node
     # pp: mean longitude of solar perigee
     # k: 90-degree phase
-    coef = np.zeros((7, 20))
-    coef[:,0] = [1.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0] # 2q1
-    coef[:,1] = [1.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0] # sigma1
-    coef[:,2] = [1.0, -2.0, 2.0, -1.0, 0.0, 0.0, -1.0] # rho1
-    coef[:,3] = [1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0] # m1
-    coef[:,4] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0] # m1
-    coef[:,5] = [1.0, 0.0, 2.0, -1.0, 0.0, 0.0, 1.0] # chi1
-    coef[:,6] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0] # pi1
-    coef[:,7] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0] # phi1
-    coef[:,8] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0] # theta1
-    coef[:,9] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0] # j1
-    coef[:,10] = [1.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0] # oo1
-    coef[:,11] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0] # 2n2
-    coef[:,12] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0] # mu2
-    coef[:,13] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0] # nu2
-    coef[:,14] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 2.0]# lambda2
-    coef[:,15] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0] # l2
-    coef[:,16] = [2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0] # l2
-    coef[:,17] = [2.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0] # t2
-    coef[:,18] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
-    coef[:,19] = [2.0, 3.0, 0.0, 0.0, 0.0, -1.0, 0.0] # eta2
+    minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1a', 'chi1', 'pi1',
+        'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+        'l2a', 'l2b', 't2', 'eps2', 'eta2']
+    coef = coefficients_table(minor, **kwargs)
     # return the coefficient table
     return coef
 

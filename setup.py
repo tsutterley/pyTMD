@@ -8,8 +8,8 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 log = logging.getLogger()
 
 # package description and keywords
-description = ('Tide Model Driver to read OTIS, GOT and FES formatted tidal '
-    'solutions and make tidal predictions')
+description = ('Tide Model Driver to read OTIS, ATLAS, GOT and FES '
+    'formatted tidal solutions and make tidal predictions')
 keywords = 'Ocean Tides, Load Tides, Pole Tides, Tidal Prediction, OTIS, GOT, FES'
 # get long_description from README.rst
 with open('README.rst', mode='r', encoding='utf8') as fh:

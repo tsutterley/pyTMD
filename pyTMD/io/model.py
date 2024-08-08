@@ -8,6 +8,11 @@ Retrieves tide model parameters for named tide models and
 UPDATE HISTORY:
     Updated 07/2024: added new FES2022 and FES2022_load to list of models
         added JSON format for model definition files
+        use parse function from constituents class to extract names
+        renamed format for ATLAS to ATLAS-compact
+        renamed format for netcdf to ATLAS-netcdf
+        renamed format for FES to FES-netcdf and added FES-ascii
+        renamed format for GOT to GOT-ascii and added GOT-netcdf
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: append v-components of velocity only to netcdf format
     Updated 11/2023: revert TPXO9-atlas currents changes to separate dicts
@@ -47,6 +52,7 @@ import io
 import copy
 import json
 import pathlib
+import pyTMD.io.constituents
 
 class model:
     """Retrieves tide model parameters for named models or
@@ -81,15 +87,17 @@ class model:
         Model format
 
             - ``OTIS``
-            - ``ATLAS``
+            - ``ATLAS-compact``
             - ``TMD3``
-            - ``netcdf``
-            - ``GOT``
-            - ``FES``
+            - ``ATLAS-netcdf``
+            - ``GOT-ascii``
+            - ``GOT-netcdf``
+            - ``FES-ascii``
+            - ``FES-netcdf``
     gla12: str
         HDF5 dataset string for output GLA12 tide heights
     grid_file: pathlib.Path
-        Model grid file for ``OTIS``, ``ATLAS`` and ``TMD3`` models
+        Model grid file for ``OTIS``, ``ATLAS-compact``, ``ATLAS-netcdf``, and ``TMD3`` models
     gzip: bool
         Suffix if model is compressed
     long_name: str
@@ -101,11 +109,11 @@ class model:
     name: str
         Model name
     projection: str
-        Model projection for ``OTIS``, ``ATLAS`` and ``TMD3`` models
+        Model projection for ``OTIS``, ``ATLAS-compact`` and ``TMD3`` models
     scale: float
         Model scaling factor for converting to output units
     suffix: str
-        Suffix if ATLAS model is ``'netcdf'`` format
+        Suffix if model is ``'ATLAS-netcdf'``, ``GOT-ascii``, or ``'GOT-netcdf'`` formats
     type: str
         Model type
 
@@ -120,7 +128,7 @@ class model:
     def __init__(self, directory: str | pathlib.Path | None = None, **kwargs):
         # set default keyword arguments
         kwargs.setdefault('compressed', False)
-        kwargs.setdefault('format', 'netcdf')
+        kwargs.setdefault('format', 'ATLAS-netcdf')
         kwargs.setdefault('verify', True)
         # set initial attributes
         self.compressed = copy.copy(kwargs['compressed'])
@@ -244,6 +252,7 @@ class model:
         else:
             raise ValueError(f"Unlisted tide model {m}")
         # return the model parameters
+        self.validate_format()
         return self
 
     def elevation(self, m: str):
@@ -401,7 +410,7 @@ class model:
                 'tides/global.html')
             self.variable = 'tide_ocean'
         elif (m == 'TPXO8-atlas'):
-            self.format = 'ATLAS'
+            self.format = 'ATLAS-compact'
             self.model_directory = self.directory.joinpath('tpxo8_atlas')
             self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
             self.model_file = self.pathfinder('hf.tpxo8_atlas_30_v1')
@@ -498,11 +507,10 @@ class model:
             self.reference = 'https://doi.org/10.1002/2016RG000546'
             self.variable = 'tide_ocean'
         elif (m == 'GOT4.7'):
-            self.format = 'GOT'
+            self.format = 'GOT-ascii'
             self.model_directory = self.directory.joinpath(
                 'GOT4.7','grids_oceantide')
-            model_files = ['q1.d','o1.d','p1.d','k1.d','n2.d',
-                'm2.d','s2.d','k2.d','s1.d','m4.d']
+            model_files = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
             self.version = '4.7'
@@ -510,13 +518,11 @@ class model:
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_ocean'
         elif (m == 'GOT4.7_load'):
-            self.format = 'GOT'
+            self.format = 'GOT-ascii'
             self.model_directory = self.directory.joinpath(
                 'GOT4.7','grids_loadtide')
-            model_files = ['q1load.d','o1load.d',
-                'p1load.d','k1load.d','n2load.d',
-                'm2load.d','s2load.d','k2load.d',
-                's1load.d','m4load.d']
+            model_files = ['q1load','o1load','p1load','k1load','n2load',
+                'm2load','s2load','k2load','s1load','m4load']
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
             self.version = '4.7'
@@ -524,11 +530,10 @@ class model:
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_load'
         elif (m == 'GOT4.8'):
-            self.format = 'GOT'
+            self.format = 'GOT-ascii'
             self.model_directory = self.directory.joinpath(
                 'got4.8','grids_oceantide')
-            model_files = ['q1.d','o1.d','p1.d','k1.d','n2.d',
-                'm2.d','s2.d','k2.d','s1.d','m4.d']
+            model_files = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
             self.version = '4.8'
@@ -536,13 +541,11 @@ class model:
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_ocean'
         elif (m == 'GOT4.8_load'):
-            self.format = 'GOT'
+            self.format = 'GOT-ascii'
             self.model_directory = self.directory.joinpath(
                 'got4.8','grids_loadtide')
-            model_files = ['q1load.d','o1load.d',
-                'p1load.d','k1load.d','n2load.d',
-                'm2load.d','s2load.d','k2load.d',
-                's1load.d','m4load.d']
+            model_files = ['q1load','o1load','p1load','k1load','n2load',
+                'm2load','s2load','k2load','s1load','m4load']
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
             self.version = '4.8'
@@ -550,11 +553,10 @@ class model:
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_load'
         elif (m == 'GOT4.10'):
-            self.format = 'GOT'
+            self.format = 'GOT-ascii'
             self.model_directory = self.directory.joinpath(
                 'GOT4.10c','grids_oceantide')
-            model_files = ['q1.d','o1.d','p1.d','k1.d','n2.d',
-                'm2.d','s2.d','k2.d','s1.d','m4.d']
+            model_files = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
             self.version = '4.10'
@@ -562,21 +564,44 @@ class model:
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_ocean'
         elif (m == 'GOT4.10_load'):
-            self.format = 'GOT'
+            self.format = 'GOT-ascii'
             self.model_directory = self.directory.joinpath(
                 'GOT4.10c','grids_loadtide')
-            model_files = ['q1load.d','o1load.d',
-                'p1load.d','k1load.d','n2load.d',
-                'm2load.d','s2load.d','k2load.d',
-                's1load.d','m4load.d']
+            model_files = ['q1load','o1load','p1load','k1load','n2load',
+                'm2load','s2load','k2load','s1load','m4load']
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
             self.version = '4.10'
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_load'
+        elif (m == 'GOT5.5'):
+            self.format = 'GOT-netcdf'
+            self.model_directory = self.directory.joinpath(
+                'GOT5.5','ocean_tides')
+            model_files = ['2n2','j1','k1','k2','m2','m4','ms4','mu2','n2',
+                'o1','oo1','p1','q1','s1','s2','sig1']
+            self.model_file = self.pathfinder(model_files)
+            self.scale = 1.0/100.0
+            self.version = '5.5'
+            # model description and references
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
+            self.variable = 'tide_ocean'
+        elif (m == 'GOT5.5_load'):
+            self.format = 'GOT-netcdf'
+            self.model_directory = self.directory.joinpath(
+                'GOT5.5','load_tides')
+            model_files = ['2n2load','k1load','m2load','ms4load','n2load',
+                'oo1load','q1load','s2load','j1load','k2load','m4load',
+                'mu2load','o1load','p1load','s1load','sig1load']
+            self.model_file = self.pathfinder(model_files)
+            self.scale = 1.0/1000.0
+            self.version = '5.5'
+            # model description and references
+            self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
+            self.variable = 'tide_load'
         elif (m == 'FES2014'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath(
                 'fes2014','ocean_tide')
             model_files = ['2n2.nc','eps2.nc','j1.nc','k1.nc',
@@ -596,7 +621,7 @@ class model:
                 'global-tide-fes.html')
             self.variable = 'tide_ocean'
         elif (m == 'FES2014_load'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath(
                 'fes2014','load_tide')
             model_files = ['2n2.nc','eps2.nc','j1.nc','k1.nc',
@@ -616,7 +641,7 @@ class model:
                 'global-tide-fes.html')
             self.variable = 'tide_load'
         elif (m == 'FES2022'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath(
                 'fes2022b','ocean_tide')
             model_files = ['2n2_fes2022.nc','eps2_fes2022.nc',
@@ -639,7 +664,7 @@ class model:
             self.reference = 'https://doi.org/10.24400/527896/A01-2024.004'
             self.variable = 'tide_ocean'
         elif (m == 'FES2022_load'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath(
                 'fes2022b','load_tide')
             model_files = ['2n2_fes2022.nc','eps2_fes2022.nc',
@@ -662,7 +687,7 @@ class model:
             self.reference = 'https://doi.org/10.24400/527896/A01-2024.004'
             self.variable = 'tide_load'
         elif (m == 'EOT20'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath(
                 'EOT20','ocean_tides')
             model_files = ['2N2_ocean_eot20.nc','J1_ocean_eot20.nc',
@@ -682,7 +707,7 @@ class model:
             self.reference = 'https://doi.org/10.17882/79489'
             self.variable = 'tide_ocean'
         elif (m == 'EOT20_load'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath(
                 'EOT20','load_tides')
             model_files = ['2N2_load_eot20.nc','J1_load_eot20.nc',
@@ -702,7 +727,7 @@ class model:
             self.reference = 'https://doi.org/10.17882/79489'
             self.variable = 'tide_load'
         elif (m == 'HAMTIDE11'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             self.model_directory = self.directory.joinpath('hamtide')
             model_files = ['2n.hamtide11a.nc','k1.hamtide11a.nc','k2.hamtide11a.nc',
                 'm2.hamtide11a.nc','n2.hamtide11a.nc','o1.hamtide11a.nc',
@@ -717,6 +742,7 @@ class model:
         else:
             raise ValueError(f"Unlisted tide model {m}")
         # return the model parameters
+        self.validate_format()
         return self
 
     def current(self, m: str):
@@ -768,7 +794,7 @@ class model:
                 'u_m4_tpxo9_atlas_30','u_ms4_tpxo9_atlas_30',
                 'u_mn4_tpxo9_atlas_30','u_2n2_tpxo9_atlas_30']
             # add v-component if format is netcdf
-            if (self.format == 'netcdf'):
+            if (self.format == 'ATLAS-netcdf'):
                 model_files['v'] = ['v_q1_tpxo9_atlas_30',
                     'v_o1_tpxo9_atlas_30','v_p1_tpxo9_atlas_30',
                     'v_k1_tpxo9_atlas_30','v_n2_tpxo9_atlas_30',
@@ -797,7 +823,7 @@ class model:
                 'u_m4_tpxo9_atlas_30_v2','u_ms4_tpxo9_atlas_30_v2',
                 'u_mn4_tpxo9_atlas_30_v2','u_2n2_tpxo9_atlas_30_v2']
             # add v-component if format is netcdf
-            if (self.format == 'netcdf'):
+            if (self.format == 'ATLAS-netcdf'):
                 model_files['v'] = ['v_q1_tpxo9_atlas_30_v2',
                     'v_o1_tpxo9_atlas_30_v2','v_p1_tpxo9_atlas_30_v2',
                     'v_k1_tpxo9_atlas_30_v2','v_n2_tpxo9_atlas_30_v2',
@@ -826,7 +852,7 @@ class model:
                 'u_mn4_tpxo9_atlas_30_v3','u_2n2_tpxo9_atlas_30_v3',
                 'u_mf_tpxo9_atlas_30_v3','u_mm_tpxo9_atlas_30_v3']
             # add v-component if format is netcdf
-            if (self.format == 'netcdf'):
+            if (self.format == 'ATLAS-netcdf'):
                 model_files['v'] = ['v_q1_tpxo9_atlas_30_v3',
                     'v_o1_tpxo9_atlas_30_v3','v_p1_tpxo9_atlas_30_v3',
                     'v_k1_tpxo9_atlas_30_v3','v_n2_tpxo9_atlas_30_v3',
@@ -856,7 +882,7 @@ class model:
                 'u_mn4_tpxo9_atlas_30_v4','u_2n2_tpxo9_atlas_30_v4',
                 'u_mf_tpxo9_atlas_30_v4','u_mm_tpxo9_atlas_30_v4']
             # add v-component if format is netcdf
-            if (self.format == 'netcdf'):
+            if (self.format == 'ATLAS-netcdf'):
                 model_files['v'] = ['v_q1_tpxo9_atlas_30_v4',
                     'v_o1_tpxo9_atlas_30_v4','v_p1_tpxo9_atlas_30_v4',
                     'v_k1_tpxo9_atlas_30_v4','v_n2_tpxo9_atlas_30_v4',
@@ -887,7 +913,7 @@ class model:
                 'u_2n2_tpxo9_atlas_30_v5','u_mf_tpxo9_atlas_30_v5',
                 'u_mm_tpxo9_atlas_30_v5']
             # add v-component if format is netcdf
-            if (self.format == 'netcdf'):
+            if (self.format == 'ATLAS-netcdf'):
                 model_files['v'] = ['u_q1_tpxo9_atlas_30_v5',
                     'u_o1_tpxo9_atlas_30_v5','u_p1_tpxo9_atlas_30_v5',
                     'u_k1_tpxo9_atlas_30_v5','u_n2_tpxo9_atlas_30_v5',
@@ -916,7 +942,7 @@ class model:
             self.reference = ('http://volkov.oce.orst.edu/tides/'
                 'global.html')
         elif (m == 'TPXO8-atlas'):
-            self.format = 'ATLAS'
+            self.format = 'ATLAS-compact'
             self.model_directory = self.directory.joinpath('tpxo8_atlas')
             self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
             self.model_file = dict(u=self.pathfinder('uv.tpxo8_atlas_30_v1'))
@@ -994,7 +1020,7 @@ class model:
             # model description and references
             self.reference = 'https://doi.org/10.1002/2016RG000546'
         elif (m == 'FES2014'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             model_directory = {}
             model_directory['u'] = self.directory.joinpath(
                 'fes2014','eastward_velocity')
@@ -1018,7 +1044,7 @@ class model:
             self.reference = ('https://www.aviso.altimetry.fr/en/data/products'
                 'auxiliary-products/global-tide-fes.html')
         elif (m == 'HAMTIDE11'):
-            self.format = 'FES'
+            self.format = 'FES-netcdf'
             model_directory = {}
             model_directory['u'] = self.directory.joinpath('hamtide')
             model_directory['v'] = self.directory.joinpath('hamtide')
@@ -1039,6 +1065,7 @@ class model:
         else:
             raise ValueError(f"Unlisted tide model {m}")
         # return the model parameters
+        self.validate_format()
         return self
 
     @property
@@ -1051,7 +1078,12 @@ class model:
     def suffix(self) -> str:
         """Returns format suffix for netCDF4 ATLAS files
         """
-        return '.nc' if (self.format == 'netcdf') else ''
+        if self.format in ('ATLAS-netcdf','GOT-netcdf'):
+            return '.nc'
+        elif self.format in ('GOT-ascii',):
+            return '.d'
+        else:
+            return ''
 
     @property
     def atl03(self) -> str:
@@ -1163,21 +1195,29 @@ class model:
             return None
 
     @staticmethod
+    def formats() -> list:
+        """
+        Returns list of known model formats
+        """
+        return ['OTIS','ATLAS-compact','TMD3','ATLAS-netcdf',
+            'GOT-ascii','GOT-netcdf','FES-ascii','FES-netcdf']
+
+    @staticmethod
     def global_ocean() -> list:
         """
         Returns list of global ocean tide elevation models
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
             'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas',
-            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','FES2014','FES2022',
-            'EOT20','HAMTIDE11']
+            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','GOT5.5',
+            'FES2014','FES2022','EOT20','HAMTIDE11']
 
     @staticmethod
     def global_load() -> list:
         """
         Returns list of global load tide elevation models
         """
-        return ['TPXO7.2_load','GOT4.7_load','GOT4.8_load',
+        return ['TPXO7.2_load','GOT4.7_load','GOT4.8_load','GOT5.5_load',
             'GOT4.10_load','FES2014_load','FES2022_load','EOT20_load']
 
     @staticmethod
@@ -1242,8 +1282,8 @@ class model:
             'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
             'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
-            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','FES2014','FES2022',
-            'EOT20','HAMTIDE11']
+            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','GOT5.5',
+            'FES2014','FES2022','EOT20','HAMTIDE11']
 
     @staticmethod
     def load_elevation() -> list:
@@ -1251,8 +1291,8 @@ class model:
         Returns list of load tide elevation models
         """
         return ['CATS2008_load','TPXO7.2_load','GOT4.7_load',
-            'GOT4.8_load','GOT4.10_load','FES2014_load','FES2022_load',
-            'EOT20_load']
+            'GOT4.8_load','GOT4.10_load','GOT5.5_load',
+            'FES2014_load','FES2022_load','EOT20_load']
 
     @staticmethod
     def ocean_current() -> list:
@@ -1302,7 +1342,7 @@ class model:
         Returns list of GOT format models
         """
         return ['GOT4.7','GOT4.7_load','GOT4.8','GOT4.8_load',
-            'GOT4.10','GOT4.10_load']
+            'GOT4.10','GOT4.10_load','GOT5.5','GOT5.5_load']
 
     @staticmethod
     def FES() -> list:
@@ -1326,8 +1366,7 @@ class model:
             self.directory = pathlib.Path().absolute()
         # complete model file paths
         if isinstance(model_file, list):
-            output_file = [self.model_directory.joinpath(
-                ''.join([f, self.suffix, self.gzip])) for f in model_file]
+            output_file = [self.pathfinder(f) for f in model_file]
             valid = all([f.exists() for f in output_file])
         elif isinstance(model_file, str):
             output_file = self.model_directory.joinpath(
@@ -1393,7 +1432,7 @@ class model:
         temp = self.from_dict(parameters)
         # verify model name, format and type
         assert temp.name
-        assert temp.format in ('OTIS','ATLAS','TMD3','netcdf','GOT','FES')
+        temp.validate_format()
         assert temp.type
         assert temp.model_file
         # split type into list if currents (u,v)
@@ -1407,7 +1446,7 @@ class model:
         # model files can be comma, tab or space delimited
         # extract full path to tide model files
         # extract full path to tide grid file
-        if temp.format in ('OTIS','ATLAS','TMD3'):
+        if temp.format in ('OTIS','ATLAS-compact','TMD3'):
             assert temp.grid_file
             # check if grid file is relative
             if (temp.directory is not None):
@@ -1453,7 +1492,7 @@ class model:
                 # fully defined single file case
                 temp.model_file = pathlib.Path(temp.model_file).expanduser()
                 temp.model_directory = temp.model_file.parent
-        elif temp.format in ('netcdf',):
+        elif temp.format in ('ATLAS-netcdf',):
             assert temp.grid_file
             # check if grid file is relative
             if (temp.directory is not None):
@@ -1500,7 +1539,7 @@ class model:
                 temp.model_file = [pathlib.Path(f).expanduser() for f in
                     re.split(r'[\s\,]+', temp.model_file)]
                 temp.model_directory = temp.model_file[0].parent
-        elif temp.format in ('FES','GOT'):
+        elif temp.format in ('FES-ascii','FES-netcdf','GOT-ascii','GOT-netcdf'):
             # extract model files
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # split model file string at semicolon
@@ -1548,15 +1587,15 @@ class model:
                     re.split(r'[\s\,]+', temp.model_file)]
                 temp.model_directory = temp.model_file[0].parent
         # verify that projection attribute exists for projected models
-        if temp.format in ('OTIS','ATLAS','TMD3'):
+        if temp.format in ('OTIS','ATLAS-compact','TMD3'):
             assert temp.projection
         # convert scale from string to float
-        if temp.format in ('netcdf','GOT','FES'):
+        if temp.format in ('ATLAS-netcdf','GOT-ascii','GOT-netcdf','FES-ascii','FES-netcdf'):
             assert temp.scale
             temp.scale = float(temp.scale)
         # assert that FES model has a version
         # get model constituents from constituent files
-        if temp.format in ('FES',):
+        if temp.format in ('FES-ascii','FES-netcdf',):
             assert temp.version
             if (temp.constituents is None):
                 temp.parse_constituents()
@@ -1581,14 +1620,14 @@ class model:
         temp = self.from_dict(parameters)
         # verify model name, format and type
         assert temp.name
-        assert temp.format in ('OTIS','ATLAS','TMD3','netcdf','GOT','FES')
+        temp.validate_format()
         assert temp.type
         assert temp.model_file
         # split model file into list if an ATLAS, GOT or FES file
         # model files can be comma, tab or space delimited
         # extract full path to tide model files
         # extract full path to tide grid file
-        if temp.format in ('OTIS','ATLAS','TMD3'):
+        if temp.format in ('OTIS','ATLAS-compact','TMD3'):
             assert temp.grid_file
             # check if grid file is relative
             if (temp.directory is not None):
@@ -1633,7 +1672,7 @@ class model:
                 # fully defined single file case
                 temp.model_file = pathlib.Path(temp.model_file).expanduser()
                 temp.model_directory = temp.model_file.parent
-        elif temp.format in ('netcdf',):
+        elif temp.format in ('ATLAS-netcdf',):
             assert temp.grid_file
             # check if grid file is relative
             if (temp.directory is not None):
@@ -1673,7 +1712,7 @@ class model:
                 temp.model_file = [pathlib.Path(f).expanduser() for f in
                     temp.model_file]
                 temp.model_directory = temp.model_file[0].parent
-        elif temp.format in ('FES','GOT'):
+        elif temp.format in ('FES-ascii','FES-netcdf','GOT-ascii','GOT-netcdf'):
             # extract model files
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
@@ -1713,19 +1752,46 @@ class model:
                     temp.model_file]
                 temp.model_directory = temp.model_file[0].parent
         # verify that projection attribute exists for projected models
-        if temp.format in ('OTIS','ATLAS','TMD3'):
+        if temp.format in ('OTIS','ATLAS-compact','TMD3'):
             assert temp.projection
         # convert scale from string to float
-        if temp.format in ('netcdf','GOT','FES'):
+        if temp.format in ('ATLAS-netcdf','GOT-ascii','GOT-netcdf','FES-ascii','FES-netcdf'):
             assert temp.scale
         # assert that FES model has a version
         # get model constituents from constituent files
-        if temp.format in ('FES',):
+        if temp.format in ('FES-ascii','FES-netcdf',):
             assert temp.version
             if (temp.constituents is None):
                 temp.parse_constituents()
         # return the model parameters
         return temp
+
+    def validate_format(self):
+        """Asserts that the model format is a known type"""
+        # known remapped cases
+        mapping = [('ATLAS','ATLAS-compact'), ('netcdf','ATLAS-netcdf'),
+            ('FES','FES-netcdf'), ('GOT','GOT-ascii')]
+        # iterate over known remapped cases
+        for m in mapping:
+            # check if tide model is a remapped case
+            if (self.format == m[0]):
+                self.format = m[1]
+        # assert that tide model is a known format
+        assert self.format in self.formats()
+        
+    def from_dict(self, d: dict):
+        """
+        Create a model object from a python dictionary
+
+        Parameters
+        ----------
+        d: dict
+            Python dictionary for creating model object
+        """
+        for key, val in d.items():
+            setattr(self, key, copy.copy(val))
+        # return the model parameters
+        return self
 
     def parse_constituents(self) -> list:
         """
@@ -1768,51 +1834,21 @@ class model:
         constituent: str or list
             constituent name
         """
-        # list of tidal constituents (not all are included in tidal program)
-        # include negative look-behind and look-ahead for complex cases
-        cindex = [r'(?<!s)sa','ssa','mm','msf',r'mt(?!m)(?!ide)','mf','alpha1',
-            '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)o1','tau1',
-            'm1','chi1','pi1','p1','s1','k1','psi1','phi1','theta1','j1',
-            'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
-            'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
-            'r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4','m4',
-            'ms4','mk4',r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2',
-            'msqm','mtm',r'(?<!m)n4','eps2','z0']
-        # compile regular expression
-        rx = re.compile(r'(' + '|'.join(cindex) + r')', re.IGNORECASE)
-        # known remapped cases
-        mapping = [('2n','2n2'), ('la2','lambda2'), ('e2','eps2')]
         # convert to pathlib.Path
         model_file = pathlib.Path(model_file)
-        # check if there is a possible constituent name in the file name
-        if rx.search(model_file.name):
-            return rx.findall(model_file.name)[0].lower()
-        # iterate over known remapped cases
-        for m in mapping:
-            # check if tide model is a remapped case
-            if m[0] in model_file.name.lower():
-                return m[1]
+        # try to parse the constituent name from the file name
+        try:
+            return pyTMD.io.constituents.parse(model_file.name)
+        except ValueError:
+            pass
         # if no constituent name is found
         if raise_error:
             raise ValueError(f'Constituent not found in file {model_file}')
         else:
             return None
-
-    def from_dict(self, d: dict):
-        """
-        Create a model object from a python dictionary
-
-        Parameters
-        ----------
-        d: dict
-            Python dictionary for creating model object
-        """
-        for key, val in d.items():
-            setattr(self, key, copy.copy(val))
-        # return the model parameters
-        return self
-
-    def to_bool(self, val: str) -> bool:
+    
+    @staticmethod
+    def to_bool(val: str) -> bool:
         """
         Converts strings of True/False to a boolean values
 

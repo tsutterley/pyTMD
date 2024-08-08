@@ -5,7 +5,7 @@ Written by Tyler Sutterley (01/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 
 Ocean and Load Tides
-Uses OTIS format tidal solutions provided by Ohio State University and ESR
+Uses OTIS format tidal solutions provided by Oregon State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/

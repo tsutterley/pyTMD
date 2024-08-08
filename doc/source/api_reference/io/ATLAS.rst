@@ -2,7 +2,7 @@
 ATLAS
 =====
 
-- Reads netCDF format tidal solutions provided by Ohio State University and ESR
+- Reads netCDF format tidal solutions provided by Oregon State University and ESR
 - Spatially interpolates tidal constituents to input coordinates
 
 Calling Sequence

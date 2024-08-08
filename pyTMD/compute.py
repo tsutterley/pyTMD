@@ -6,7 +6,7 @@ Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
 Ocean and Load Tides
-Uses OTIS format tidal solutions provided by Ohio State University and ESR
+Uses OTIS format tidal solutions provided by Oregon State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/
@@ -64,6 +64,10 @@ UPDATE HISTORY:
         make number of days to convert JD to MJD a variable
         added option to crop tide models to the domain of the input data
         added option to use JSON format definition files
+        renamed format for ATLAS to ATLAS-compact
+        renamed format for netcdf to ATLAS-netcdf
+        renamed format for FES to FES-netcdf and added FES-ascii
+        renamed format for GOT to GOT-ascii and added GOT-netcdf
     Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -184,7 +188,7 @@ def tide_elevations(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
-        ATLAS_FORMAT: str = 'netcdf',
+        ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
         DEFINITION_FORMAT: str = 'ascii',
@@ -218,11 +222,8 @@ def tide_elevations(
         working data directory for tide models
     MODEL: str or NoneType, default None
         Tide model to use in correction
-    ATLAS_FORMAT: str, default 'netcdf'
+    ATLAS_FORMAT: str, default 'ATLAS-netcdf'
         ATLAS tide model format
-
-            - ``'OTIS'``
-            - ``'netcdf'``
     GZIP: bool, default False
         Tide model files are gzip compressed
     DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
@@ -335,27 +336,29 @@ def tide_elevations(
     nt = len(ts)
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS', 'ATLAS', 'TMD3'):
+    corrections, _, grid = model.format.partition('-')
+    if model.format in ('OTIS', 'ATLAS-compact', 'TMD3'):
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
-            model.model_file, model.projection, type=model.type,
+            model.model_file, model.projection, type=model.type, grid=corrections,
             crop=CROP, bounds=BOUNDS, method=METHOD, extrapolate=EXTRAPOLATE,
-            cutoff=CUTOFF, grid=model.format, apply_flexure=APPLY_FLEXURE)
+            cutoff=CUTOFF, apply_flexure=APPLY_FLEXURE)
         # use delta time at 2000.0 to match TMD outputs
         deltat = np.zeros((nt), dtype=np.float64)
-    elif (model.format == 'netcdf'):
+    elif model.format in ('ATLAS-netcdf',):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
             model.model_file, type=model.type, crop=CROP, bounds=BOUNDS, 
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         # use delta time at 2000.0 to match TMD outputs
         deltat = np.zeros((nt), dtype=np.float64)
-    elif (model.format == 'GOT'):
+    elif model.format in ('GOT-ascii', 'GOT-netcdf'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
-            crop=CROP, bounds=BOUNDS, method=METHOD, extrapolate=EXTRAPOLATE,
-            cutoff=CUTOFF, scale=model.scale, compressed=model.compressed)
+            grid=grid, crop=CROP, bounds=BOUNDS, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
+            compressed=model.compressed)
         # delta time (TT - UT1)
         deltat = ts.tt_ut1
-    elif (model.format == 'FES'):
+    elif model.format in ('FES-ascii', 'FES-netcdf'):
         amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
             type=model.type, version=model.version, crop=CROP, bounds=BOUNDS,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
@@ -377,11 +380,11 @@ def tide_elevations(
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
         for i in range(nt):
             TIDE = pyTMD.predict.map(ts.tide[i], hc, c,
-                deltat=deltat[i], corrections=model.format)
+                deltat=deltat[i], corrections=corrections)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
-                    deltat=deltat[i], corrections=model.format)
+                    deltat=deltat[i], corrections=corrections)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components and reform grid
@@ -391,11 +394,11 @@ def tide_elevations(
         tide = np.ma.zeros((nt), fill_value=FILL_VALUE)
         tide.mask = np.any(hc.mask,axis=1)
         tide.data[:] = pyTMD.predict.drift(ts.tide, hc, c,
-            deltat=deltat, corrections=model.format)
+            deltat=deltat, corrections=corrections)
         # calculate values for minor constituents by inferrence
         if INFER_MINOR:
             minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
-                deltat=deltat, corrections=model.format)
+                deltat=deltat, corrections=corrections)
             tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
         nstation = len(x)
@@ -404,11 +407,11 @@ def tide_elevations(
         for s in range(nstation):
             HC = hc[s,None,:]
             TIDE = pyTMD.predict.time_series(ts.tide, HC, c,
-                deltat=deltat, corrections=model.format)
+                deltat=deltat, corrections=corrections)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
-                    deltat=deltat, corrections=model.format)
+                    deltat=deltat, corrections=corrections)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components
@@ -425,7 +428,7 @@ def tide_currents(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
-        ATLAS_FORMAT: str = 'netcdf',
+        ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
         DEFINITION_FORMAT: str = 'ascii',
@@ -458,11 +461,8 @@ def tide_currents(
         working data directory for tide models
     MODEL: str or NoneType, default None
         Tide model to use in correction
-    ATLAS_FORMAT: str, default 'netcdf'
+    ATLAS_FORMAT: str, default 'ATLAS-netcdf'
         ATLAS tide model format
-
-            - ``'OTIS'``
-            - ``'netcdf'``
     GZIP: bool, default False
         Tide model files are gzip compressed
     DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
@@ -575,21 +575,22 @@ def tide_currents(
     # iterate over u and v currents
     for t in model.type:
         # read tidal constants and interpolate to grid points
-        if model.format in ('OTIS', 'ATLAS', 'TMD3'):
+        corrections, _, grid = model.format.partition('-')
+        if model.format in ('OTIS', 'ATLAS-compact', 'TMD3'):
             amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
-                model.model_file['u'], model.projection, type=t,
+                model.model_file['u'], model.projection, type=t, grid=corrections,
                 crop=CROP, bounds=BOUNDS, method=METHOD, extrapolate=EXTRAPOLATE,
-                cutoff=CUTOFF, grid=model.format)
+                cutoff=CUTOFF)
             # use delta time at 2000.0 to match TMD outputs
             deltat = np.zeros((nt), dtype=np.float64)
-        elif (model.format == 'netcdf'):
+        elif model.format in ('ATLAS-netcdf',):
             amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
                 model.model_file[t], type=t, crop=CROP, bounds=BOUNDS, 
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
                 scale=model.scale, compressed=model.compressed)
             # use delta time at 2000.0 to match TMD outputs
             deltat = np.zeros((nt), dtype=np.float64)
-        elif (model.format == 'FES'):
+        elif model.format in ('FES-ascii', 'FES-netcdf'):
             amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file[t],
                 type=t, version=model.version, crop=CROP, bounds=BOUNDS, 
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
@@ -611,11 +612,11 @@ def tide_currents(
             tide[t].mask = np.zeros((ny,nx,nt),dtype=bool)
             for i in range(nt):
                 TIDE = pyTMD.predict.map(ts.tide[i], hc, c,
-                    deltat=deltat[i], corrections=model.format)
+                    deltat=deltat[i], corrections=corrections)
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
-                        deltat=deltat[i], corrections=model.format)
+                        deltat=deltat[i], corrections=corrections)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components and reform grid
@@ -625,11 +626,11 @@ def tide_currents(
             tide[t] = np.ma.zeros((nt), fill_value=FILL_VALUE)
             tide[t].mask = np.any(hc.mask,axis=1)
             tide[t].data[:] = pyTMD.predict.drift(ts.tide, hc, c,
-                deltat=deltat, corrections=model.format)
+                deltat=deltat, corrections=corrections)
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
-                    deltat=deltat, corrections=model.format)
+                    deltat=deltat, corrections=corrections)
                 tide[t].data[:] += minor.data[:]
         elif (TYPE.lower() == 'time series'):
             nstation = len(x)
@@ -638,11 +639,11 @@ def tide_currents(
             for s in range(nstation):
                 HC = hc[s,None,:]
                 TIDE = pyTMD.predict.time_series(ts.tide, HC, c,
-                    deltat=deltat, corrections=model.format)
+                    deltat=deltat, corrections=corrections)
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
-                        deltat=deltat, corrections=model.format)
+                        deltat=deltat, corrections=corrections)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components

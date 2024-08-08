@@ -146,38 +146,38 @@ Each definition file regardless of the format should have ``name``, ``format`` a
 Each model type also requires specific sets of parameters for the model reader.
 For models with multiple constituent files, the files can be found using a ``glob`` string to search a directory.
 
-- ``OTIS``, ``ATLAS`` and ``TMD3``
+- ``OTIS``, ``ATLAS-compact`` and ``TMD3``
 
-    * ``format``: ``OTIS``, ``ATLAS`` or ``TMD3``
+    * ``format``: ``OTIS``, ``ATLAS-compact`` or ``TMD3``
     * ``grid_file``: path to model grid file
     * ``model_file``: path to model constituent file(s) or a ``glob`` string
     * ``name``: tide model name
     * ``projection``: `model spatial projection <./Getting-Started.html#spatial-coordinates>`_.
     * ``type``: ``z`` or ``u,v``
 
-- ``netcdf``
+- ``ATLAS-netcdf``
 
     * ``compressed``: model files are gzip compressed
-    * ``format``: ``netcdf``
+    * ``format``: ``ATLAS-netcdf``
     * ``grid_file``: path to model grid file
     * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
     * ``scale``: scaling factor for converting to output units
     * ``type``: ``z`` or ``u,v``
 
-- ``GOT``
+- ``GOT-ascii`` and ``GOT-netcdf``
 
     * ``compressed``: model files are gzip compressed
-    * ``format``: ``GOT``
+    * ``format``: ``GOT-ascii`` or ``GOT-netcdf``
     * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
     * ``scale``: scaling factor for converting to output units
     * ``type``: ``z``
 
-- ``FES``
+- ``FES-ascii`` and ``FES-netcdf``
 
     * ``compressed``: model files are gzip compressed
-    * ``format``: ``FES``
+    * ``format``: ``FES-ascii`` or ``FES-netcdf``
     * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
     * ``scale``: scaling factor for converting to output units

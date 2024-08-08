@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (07/2024)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 07/2024: renamed format for netcdf to ATLAS-netcdf
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 12/2023: pass through VBox and HBox
     Updated 08/2023: place matplotlib within try/except statements
@@ -83,10 +84,10 @@ class widgets:
         )
 
         # dropdown menu for setting ATLAS format model
-        atlas_list = ['OTIS','netcdf']
+        atlas_list = ['OTIS','ATLAS-netcdf']
         self.atlas = ipywidgets.Dropdown(
             options=atlas_list,
-            value='netcdf',
+            value='ATLAS-netcdf',
             description='ATLAS:',
             disabled=False,
             style=self.style,

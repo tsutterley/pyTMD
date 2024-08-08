@@ -92,7 +92,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     # model parameters for TPXO9-atlas-v2
-    model = pyTMD.io.model(filepath,format='netcdf',compressed=True,
+    model = pyTMD.io.model(filepath,format='ATLAS-netcdf',compressed=True,
         verify=False).elevation('TPXO9-atlas-v2')
     # recursively create model directory
     model.model_directory.mkdir(parents=True, exist_ok=True)
@@ -234,6 +234,7 @@ def test_compare_TPXO9_v2(METHOD):
 def test_verify_TPXO8(METHOD, EXTRAPOLATE, CROP):
     # model parameters for TPXO8-atlas
     model = pyTMD.io.model(filepath,compressed=False).elevation('TPXO8-atlas')
+    corrections, _, grid = model.format.partition('-')
     # constituents for test
     constituents = ['m2','s2']
 
@@ -275,7 +276,7 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE, CROP):
     amp,ph,D,c = pyTMD.io.OTIS.extract_constants(
         val['longitude'], val['latitude'], model.grid_file,
         model.model_file, model.projection, type=model.type,
-        method=METHOD, extrapolate=EXTRAPOLATE, grid=model.format)
+        method=METHOD, extrapolate=EXTRAPOLATE, grid=corrections)
     # delta time
     deltat = np.zeros_like(val['time'])
     # calculate complex phase in radians for Euler's
@@ -290,7 +291,7 @@ def test_verify_TPXO8(METHOD, EXTRAPOLATE, CROP):
     # predict tidal elevations at time
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict.drift(val['time'], hc[:,i],
-        constituents, deltat=deltat, corrections=model.format)
+        constituents, deltat=deltat, corrections=corrections)
 
     # will verify differences between model outputs are within tolerance
     eps = 0.03
@@ -316,7 +317,8 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
         'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
     model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
-    model_format = 'netcdf'
+    model_format = 'ATLAS-netcdf'
+    corrections, _ , grid = model_format.partition('-')
     TYPE = 'z'
     SCALE = 1.0/1000.0
     GZIP = True
@@ -365,7 +367,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
     # predict tidal elevations at time
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict.drift(val['time'], hc, c,
-        deltat=deltat, corrections=model_format)
+        deltat=deltat, corrections=corrections)
 
     # will verify differences between model outputs are within tolerance
     eps = 0.05

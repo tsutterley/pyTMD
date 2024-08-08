@@ -56,9 +56,9 @@ jobs:
     - name: Checkout Matlab TMD Toolbox
       uses: actions/checkout@v4
       with:
-        repository: tsutterley/TMD_Matlab_Toolbox_v2.5
+        repository: EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         path: TMD_Matlab_Toolbox
-        ref: inferminor
+        ref: master
     - name: Test with pytest
       run: |
         pip install --no-deps .

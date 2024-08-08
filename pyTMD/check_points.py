@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 u"""
 check_points.py
-Written by Tyler Sutterley (04/2024)
+Written by Tyler Sutterley (07/2024)
 Check if points are within a tide model domain
 
-OTIS format tidal solutions provided by Ohio State University and ESR
+OTIS format tidal solutions provided by Oregon State University and ESR
     http://volkov.oce.orst.edu/tides/region.html
     https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/
     ftp://ftp.esr.org/pub/datasets/tmd/
@@ -18,7 +18,7 @@ INPUTS:
 OPTIONS:
     DIRECTORY: working data directory for tide models
     MODEL: Tide model to use
-    ATLAS_FORMAT: ATLAS tide model format (OTIS, netcdf)
+    ATLAS_FORMAT: ATLAS tide model format (OTIS, ATLAS-netcdf)
     GZIP: Tide model files are gzip compressed
     DEFINITION_FILE: Tide model definition file for use
     EPSG: input coordinate system
@@ -52,6 +52,10 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 07/2024: renamed format for ATLAS to ATLAS-compact
+        renamed format for netcdf to ATLAS-netcdf
+        renamed format for FES to FES-netcdf and added FES-ascii
+        renamed format for GOT to GOT-ascii and added GOT-netcdf
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 12/2023: use new crs class for coordinate reprojection
     Updated 08/2023: changed ESR netCDF4 format to TMD3 format
@@ -87,7 +91,7 @@ pyproj = pyTMD.utilities.import_dependency('pyproj')
 def check_points(x: np.ndarray, y: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
-        ATLAS_FORMAT: str = 'netcdf',
+        ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | None = None,
         EPSG: str | int = 3031,
@@ -106,11 +110,8 @@ def check_points(x: np.ndarray, y: np.ndarray,
         working data directory for tide models
     MODEL: str or NoneType, default None
         Tide model to use
-    ATLAS_FORMAT: str, default 'netcdf'
+    ATLAS_FORMAT: str, default 'ATLAS-netcdf'
         ATLAS tide model format
-
-            - ``'OTIS'``
-            - ``'netcdf'``
     GZIP: bool, default False
         Tide model files are gzip compressed
     DEFINITION_FILE: str or NoneType, default None
@@ -155,7 +156,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
     )
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS','TMD3'):
+    if model.format in ('OTIS','ATLAS-compact','TMD3'):
         # if reading a single OTIS solution
         xi, yi, hz, mz, iob, dt = pyTMD.io.OTIS.read_otis_grid(
             pathlib.Path(model.grid_file).expanduser())
@@ -164,7 +165,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
         # adjust dimensions of input coordinates to be iterable
         # run wrapper function to convert coordinate systems of input lat/lon
         X, Y = pyTMD.crs().convert(lon, lat, model.projection, 'F')
-    elif (model.format == 'netcdf'):
+    elif (model.format == 'ATLAS-netcdf'):
         # if reading a netCDF OTIS atlas solution
         xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(
             pathlib.Path(model.grid_file).expanduser(),
@@ -175,7 +176,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
         X,Y = np.copy([lon,lat]).astype(np.float64)
         lt0, = np.nonzero(X < 0)
         X[lt0] += 360.0
-    elif (model.format == 'GOT'):
+    elif model.format in ('GOT-ascii', 'GOT-netcdf'):
         # if reading a NASA GOT solution
         hc, xi, yi, c = pyTMD.io.GOT.read_ascii_file(
             pathlib.Path(model.model_file[0]).expanduser(),
@@ -186,7 +187,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
         X, Y = np.copy([lon,lat]).astype(np.float64)
         lt0, = np.nonzero(X < 0)
         X[lt0] += 360.0
-    elif (model.format == 'FES'):
+    elif (model.format == 'FES-netcdf'):
         # if reading a FES netCDF solution
         hc, xi, yi = pyTMD.io.FES.read_netcdf_file(
             pathlib.Path(model.model_file[0]).expanduser(),

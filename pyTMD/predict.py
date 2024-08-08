@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 08/2024: minor nodal angle corrections in radians to match arguments
     Updated 07/2024: use normalize_angle from pyTMD astro module
         make number of days to convert tide time to MJD a variable
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -304,8 +305,6 @@ def infer_minor(
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
 
-    # degrees to radians
-    dtr = np.pi/180.0
     # number of constituents
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
@@ -329,9 +328,9 @@ def infer_minor(
         raise Exception('Not enough constituents for inference')
 
     # list of minor constituents
-    minor = ['2q1', 'sigma1', 'rho1', 'm1', 'm1', 'chi1', 'pi1',
+    minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
         'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
-        'l2', 'l2', 't2', 'eps2', 'eta2']
+        'l2', 'l2b', 't2', 'eps2', 'eta2']
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
 
@@ -380,7 +379,7 @@ def infer_minor(
 
     # sum over the minor tidal constituents of interest
     for k in minor_indices:
-        th = (G[:,k] + pu[:,k])*dtr
+        th = G[:,k]*np.pi/180.0 + pu[:,k]
         dh += zmin.real[:,k]*pf[:,k]*np.cos(th) - \
             zmin.imag[:,k]*pf[:,k]*np.sin(th)
     # return the inferred values
