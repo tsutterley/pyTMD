@@ -369,22 +369,22 @@ def coefficients_table(
     # coefficients['sa'] = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['ssa'] = [0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
     # With p'
-    coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, -1.0, 0.0] 
+    coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, -1.0, 0.0]
     # # Without p'
     # coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['st'] = [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['msm'] = [0.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['mm'] = [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
     # annual sideline
-    coefficients['msfa'] = [0.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['msfa'] = [0.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['msf'] = [0.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
     # annual sideline
-    coefficients['msfb'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['msfb'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['mfa'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['mf-'] = [0.0, 2.0, 0.0, 0.0, -1.0, 0.0, 0.0]
     coefficients['mf'] = [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     # nodal line
-    coefficients['mf+'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0] 
+    coefficients['mf+'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0]
     # nodal line
     coefficients['mfn'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0]
     coefficients['mfb'] = [0.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0]
@@ -416,12 +416,12 @@ def coefficients_table(
     coefficients['opk1'] = [1.0, -1.0, -2.0, 0.0, 0.0, 0.0, 1.0]
     coefficients['oa1'] = [1.0, -1.0, -1.0, 0.0, 0.0, 0.0, -1.0]
     # O1 nodal line
-    coefficients['o1n'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0] 
+    coefficients['o1n'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
     # O1 nodal line
-    coefficients['o1-'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0] 
+    coefficients['o1-'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
     coefficients['o1'] = [1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
     # conjugate to nodal line
-    coefficients['o1+'] = [1.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0] 
+    coefficients['o1+'] = [1.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0]
     # 3rd degree terms
     coefficients["o1'"] = [1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
     coefficients['ob1'] = [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0]
@@ -448,7 +448,7 @@ def coefficients_table(
         coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0]
     else:
         # Doodson's phase
-        coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0] 
+        coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
     coefficients['s1+'] = [1.0, 1.0, -1.0, 0.0, 0.0, 1.0, 1.0]
     coefficients['ojm1'] = [1.0, 1.0, 0.0, -2.0, 0.0, 0.0, -1.0]
     # 3rd degree terms
@@ -533,11 +533,11 @@ def coefficients_table(
     coefficients['m2-1'] = [2.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['ma2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
     # M2 nodal line
-    coefficients['m2-'] = [2.0, 0.0, 0.0, 0.0, -1.0, 0.0, 2.0] 
+    coefficients['m2-'] = [2.0, 0.0, 0.0, 0.0, -1.0, 0.0, 2.0]
     coefficients['m2'] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['ko2'] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     # conjugate to nodal
-    coefficients['m2+'] = [2.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0] 
+    coefficients['m2+'] = [2.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0]
     # 3rd degree terms
     coefficients["m2'"] = [2.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0]
     coefficients['mb2'] = [2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
@@ -583,21 +583,21 @@ def coefficients_table(
     coefficients['kj2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
     coefficients['2kmsn2'] = [2.0, 3.0, 2.0, -1.0, 0.0, 0.0, 0.0]
     coefficients['2km(sn)2'] = [2.0, 3.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2sm2'] = [2.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0] 
-    coefficients['2ms2n2'] = [2.0, 4.0, -2.0, -2.0, 0.0, 0.0, 0.0] 
-    coefficients['skm2'] = [2.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2sm2'] = [2.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2ms2n2'] = [2.0, 4.0, -2.0, -2.0, 0.0, 0.0, 0.0]
+    coefficients['skm2'] = [2.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['2j2'] = [2.0, 4.0, 0.0, -2.0, 0.0, 0.0, 2.0]
     coefficients['2k2'] = [2.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2snu2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0] 
-    coefficients['3(sm)n2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0] 
-    coefficients['2sn2'] = [2.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0] 
-    coefficients['skn2'] = [2.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0] 
-    coefficients['2kn2'] = [2.0, 5.0, 0.0, -1.0, 0.0, 0.0, 0.0] 
-    coefficients['3s2m2'] = [2.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0] 
-    coefficients['2sk2m2'] = [2.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2snu2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['3(sm)n2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2sn2'] = [2.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['skn2'] = [2.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['2kn2'] = [2.0, 5.0, 0.0, -1.0, 0.0, 0.0, 0.0]
+    coefficients['3s2m2'] = [2.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2sk2m2'] = [2.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['2oq3'] = [3.0, -4.0, 0.0, 1.0, 0.0, 0.0, 1.0]
     # compound 3 O1
-    coefficients['o3'] = [3.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0] 
+    coefficients['o3'] = [3.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     coefficients['nq3'] = [3.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
     coefficients['muo3'] = [3.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0]
     coefficients['mq3'] = [3.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
@@ -606,7 +606,7 @@ def coefficients_table(
     coefficients['2op3'] = [3.0, -1.0, -2.0, 0.0, 0.0, 0.0, 1.0]
     coefficients['2os3'] = [3.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0]
     # Q1+M1+S1
-    coefficients['qms3'] = [3.0, -1.0, -1.0, 2.0, 0.0, 0.0, 2.0] 
+    coefficients['qms3'] = [3.0, -1.0, -1.0, 2.0, 0.0, 0.0, 2.0]
     coefficients['mo3-'] = [3.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
     coefficients['mo3'] = [3.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
     coefficients['mo3+'] = [3.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0]
@@ -621,13 +621,13 @@ def coefficients_table(
     coefficients['ns3'] = [3.0, 0.0, -1.0, 1.0, 0.0, 0.0, 2.0]
     coefficients['2oj3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
     # 2M2 - M1
-    coefficients['2mm3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0] 
-    coefficients['m3'] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
+    coefficients['2mm3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
+    coefficients['m3'] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     # 3rd degree terms
     coefficients["m3'"] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
     coefficients['nk3'] = [3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['mp3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['so3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0] 
+    coefficients['so3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
     # 3rd degree terms
     coefficients['lambda3'] = [3.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['ms3'] = [3.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
@@ -660,7 +660,7 @@ def coefficients_table(
     coefficients['r3'] = [3.0, 3.0, -2.0, 0.0, 0.0, 0.0, 2.0]
     coefficients['sk3'] = [3.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
     # s3 perturbation
-    coefficients['2r3'] = [3.0, 3.0, -1.0, 0.0, 0.0, 0.0, 2.0] 
+    coefficients['2r3'] = [3.0, 3.0, -1.0, 0.0, 0.0, 0.0, 2.0]
     coefficients['k3'] = [3.0, 3.0, 0.0, 0.0, 0.0, 0.0, -1.0]
     coefficients['2so3'] = [3.0, 5.0, -4.0, 0.0, 0.0, 0.0, 1.0]
     coefficients['2jp3'] = [3.0, 5.0, -2.0, -2.0, 0.0, 0.0, 1.0]
@@ -670,11 +670,11 @@ def coefficients_table(
     coefficients['2sq3'] = [3.0, 6.0, -4.0, -1.0, 0.0, 0.0, 1.0]
     coefficients['o4'] = [4.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['2qm4'] = [4.0, -4.0, 0.0, 2.0, 0.0, 0.0, 2.0]
-    coefficients['4ms4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] 
-    coefficients['4m2s4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0] 
-    coefficients['2mnk4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0] 
-    coefficients['moq4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0] 
-    coefficients['2mns4'] = [4.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['4ms4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['4m2s4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    coefficients['2mnk4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['moq4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0]
+    coefficients['2mns4'] = [4.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['2mns4'] = [4.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
     coefficients['2mnus4'] = [4.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
     coefficients['3mk4'] = [4.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -737,7 +737,7 @@ def coefficients_table(
     coefficients['2ms5'] = [5.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
     coefficients['2mk5'] = [5.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     # N2 + K2 + S1
-    coefficients['nks5'] = [5.0, 2.0, -1.0, 1.0, 0.0, 0.0, 2.0] 
+    coefficients['nks5'] = [5.0, 2.0, -1.0, 1.0, 0.0, 0.0, 2.0]
     coefficients['nsk5'] = [5.0, 2.0, -2.0, -1.0, 0.0, 0.0, 1.0]
     coefficients['msm5'] = [5.0, 2.0, -2.0, 0.0, 0.0, 0.0, 2.0]
     coefficients['snk5'] = [5.0, 2.0, -2.0, 1.0, 0.0, 0.0, -1.0]
@@ -846,14 +846,14 @@ def coefficients_table(
     coefficients['ma8'] = [8.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['m8'] = [8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['mb8'] = [8.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2msn8'] = [8.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['2msn8'] = [8.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['3ml8'] = [8.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
     coefficients['2mnk8'] = [8.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['3mt8'] = [8.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
     coefficients['3ms8'] = [8.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['3mk8'] = [8.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2smn8'] = [8.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0] 
-    coefficients['2msl8'] = [8.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0] 
+    coefficients['2smn8'] = [8.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
+    coefficients['2msl8'] = [8.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0]
     coefficients['msnk8'] = [8.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['4msn8'] = [8.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
     coefficients['2(ms)8'] = [8.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
@@ -882,7 +882,7 @@ def coefficients_table(
     coefficients['s10'] = [10.0, 10.0, -10.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['4msk11'] = [11.0, 3.0, -2, 0.0, 0.0, 0.0, 1.0]
     coefficients['s11'] = [11.0, 11.0, -11.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['5mn12'] = [12.0, -1, 0.0, 1.0, 0.0, 0.0, 0.0] 
+    coefficients['5mn12'] = [12.0, -1, 0.0, 1.0, 0.0, 0.0, 0.0]
     coefficients['m12'] = [12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     coefficients['4msn12'] = [12.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
     coefficients['4mns12'] = [12.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
@@ -1100,7 +1100,7 @@ def nodal(
     Q_sec = (np.sin(II)**2)*np.cos(2.0*nu) + 0.0727
     nu_sec = 0.5*np.arctan(P_sec/Q_sec)
 
-    # compute standard nodal corrections f and u 
+    # compute standard nodal corrections f and u
     for i, c in enumerate(constituents):
         if c in ('msf','tau1','p1','theta1','lambda2','s2') and OTIS_TYPE:
             term1 = 0.0
@@ -1152,29 +1152,29 @@ def nodal(
             u[:,i] = dtr*(10.8*sinn - 1.3*sin2n + 0.2*sin3n)
             continue
         elif c in ('o1','so3','op2','2q1','q1','rho1','sigma1') and FES_TYPE:
-            f[:,i] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 
+            f[:,i] = np.sin(II)*(np.cos(II/2.0)**2)/0.38
             u[:,i] = (2.0*xi - nu)
             continue
         elif c in ('q1','o1') and PERTH3_TYPE:
             f[:,i] = 1.009 + 0.187*cosn - 0.015*cos2n
             u[:,i] = dtr*(10.8*sinn - 1.3*sin2n)
-            continue 
+            continue
         elif c in ('o1','so3','op2'):
             term1 = 0.1886*sinn - 0.0058*sin2n - 0.0065*sin2p
             term2 = 1.0 + 0.1886*cosn - 0.0058*cos2n - 0.0065*cos2p
         elif c in ('2q1','q1','rho1','sigma1') and OTIS_TYPE:
             f[:,i] = np.sqrt((1.0 + 0.188*cosn)**2 + (0.188*sinn)**2)
             u[:,i] = np.arctan(0.189*sinn/(1.0 + 0.189*cosn))
-            continue      
+            continue
         elif c in ('2q1','q1','rho1','sigma1'):
-            term1 = 0.1886*sinn 
+            term1 = 0.1886*sinn
             term2 = 1.0 + 0.1886*cosn
         elif c in ('tau1',):
-            term1 = 0.219*sinn 
-            term2 = 1.0 - 0.219*cosn 
+            term1 = 0.219*sinn
+            term2 = 1.0 - 0.219*cosn
         elif c in ('beta1',):
-            term1 = 0.226*sinn 
-            term2 = 1.0 + 0.226*cosn 
+            term1 = 0.226*sinn
+            term2 = 1.0 + 0.226*cosn
         elif c in ('m1',) and (kwargs['M1'] == 'Doodson'):
             # A. T. Doodson's coefficients for M1 tides
             term1 = sinp + 0.2*np.sin((p-n)*dtr)
@@ -1195,11 +1195,11 @@ def nodal(
             u[:,i] = -nu
             continue
         elif c in ('chi1',):
-            term1 = -0.250*sinn 
-            term2 = 1.0 + 0.193*cosn 
+            term1 = -0.250*sinn
+            term2 = 1.0 + 0.193*cosn
         elif c in ('p1',):
-            term1 = -0.0112*sinn 
-            term2 = 1.0 - 0.0112*cosn 
+            term1 = -0.0112*sinn
+            term2 = 1.0 - 0.0112*cosn
         elif c in ('k1','sk3','2sk5') and OTIS_TYPE:
             term1 = -0.1554*sinn + 0.0029*sin2n
             term2 = 1.0 + 0.1158*cosn - 0.0029*cos2n
@@ -1241,7 +1241,7 @@ def nodal(
         elif c in ('m2','2n2','mu2','n2','nu2','lambda2','ms4','eps2','2sm6',
                 '2sn6','mp1','mp3','sn4'):
             term1 = -0.03731*sinn + 0.00052*sin2n
-            term2 = 1.0 - 0.03731*cosn + 0.00052*cos2n            
+            term2 = 1.0 - 0.03731*cosn + 0.00052*cos2n
         elif c in ('l2','sl4') and OTIS_TYPE:
             term1 = -0.25*sin2p - 0.11*np.sin((2.0*p-n)*dtr) - 0.04*sinn
             term2 = 1.0 - 0.25*cos2p - 0.11*np.cos((2.0*p - n)*dtr) - 0.04*cosn
@@ -1292,11 +1292,11 @@ def nodal(
             # Linear 3rd degree terms
             term1 = -0.01815*sinn
             term2 = 1.0 - 0.27837*cosn
-        elif c in ("q1'",):   
+        elif c in ("q1'",):
             # Linear 3rd degree terms
             term1 = 0.3915*sinn + 0.033*sin2n + 0.061*sin2p
             term2 = 1.0 + 0.3915*cosn + 0.033*cos2n + 0.06*cos2p
-        elif c in ("j1'",):   
+        elif c in ("j1'",):
             # Linear 3rd degree terms
             term1 = -0.438*sinn - 0.033*sin2n
             term2 = 1.0 + 0.372*cosn + 0.033*cos2n

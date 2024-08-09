@@ -102,7 +102,7 @@ def import_dependency(
     ):
     """
     Import an optional dependency
-    
+
     Adapted from ``pandas.compat._optional::import_optional_dependency``
 
     Parameters
@@ -899,7 +899,7 @@ def from_json(
         raise Exception(msg) from exc
     else:
         # load JSON response
-        return json.loads(response.read())        
+        return json.loads(response.read())
 
 # PURPOSE: attempt to build an opener with netrc
 def attempt_login(

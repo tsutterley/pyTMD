@@ -198,7 +198,7 @@ def convert_datetime(*args, **kwargs):
     warnings.warn("Deprecated. Please use timescale.time.convert_datetime",
         DeprecationWarning)
     return timescale.time.convert_datetime(*args, **kwargs)
-    
+
 # PURPOSE: convert times from seconds since epoch1 to time since epoch2
 def convert_delta_time(*args, **kwargs):
     """

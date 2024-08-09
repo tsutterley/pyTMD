@@ -195,7 +195,7 @@ def test_table(corrections):
     coef[:,58] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
     # mean sea level
     coef[:,59] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # z0
-    
+
     # get Doodson coefficients
     test = pyTMD.arguments._arguments_table(corrections=corrections)
     # validate arguments between methods

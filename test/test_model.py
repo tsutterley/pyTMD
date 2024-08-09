@@ -405,7 +405,7 @@ def test_definition_GOT_glob(file_format):
     definition_file['auto'] = 'model_GOT4.10.def'
     val = definition_file[file_format]
     # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)   
+    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
     # model files
     model_files = ['GOT4.10c/grids_loadtide/k1load.d.gz',
         'GOT4.10c/grids_loadtide/k2load.d.gz',
@@ -467,7 +467,7 @@ def test_definition_TPXO9(file_format):
     definition_file['auto'] = 'model_TPXO9-atlas-v5.json'
     val = definition_file[file_format]
     # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)   
+    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
     # model files
     model_files = ['TPXO9_atlas_v5/h_2n2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/h_k1_tpxo9_atlas_30_v5.nc',
@@ -519,7 +519,7 @@ def test_definition_TPXO9_glob(file_format):
     definition_file['auto'] = 'model_TPXO9-atlas-v5.def'
     val = definition_file[file_format]
     # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)   
+    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
     # model files
     model_files = ['TPXO9_atlas_v5/h_2n2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/h_k1_tpxo9_atlas_30_v5.nc',
@@ -595,7 +595,7 @@ def test_definition_TPXO9_currents(file_format):
     definition_file['auto'] = 'model_TPXO9-atlas-v5_currents.json'
     val = definition_file[file_format]
     # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)   
+    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
     # model files for each component
     model_files = {}
     model_files['u'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',

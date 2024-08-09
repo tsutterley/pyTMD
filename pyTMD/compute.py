@@ -351,7 +351,7 @@ def tide_elevations(
         deltat = np.zeros((nt), dtype=np.float64)
     elif model.format in ('ATLAS-netcdf',):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
-            model.model_file, type=model.type, crop=CROP, bounds=BOUNDS, 
+            model.model_file, type=model.type, crop=CROP, bounds=BOUNDS,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
         # use delta time at 2000.0 to match TMD outputs
@@ -598,14 +598,14 @@ def tide_currents(
             deltat = np.zeros((nt), dtype=np.float64)
         elif model.format in ('ATLAS-netcdf',):
             amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
-                model.model_file[t], type=t, crop=CROP, bounds=BOUNDS, 
+                model.model_file[t], type=t, crop=CROP, bounds=BOUNDS,
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
                 scale=model.scale, compressed=model.compressed)
             # use delta time at 2000.0 to match TMD outputs
             deltat = np.zeros((nt), dtype=np.float64)
         elif model.format in ('FES-ascii', 'FES-netcdf'):
             amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file[t],
-                type=t, version=model.version, crop=CROP, bounds=BOUNDS, 
+                type=t, version=model.version, crop=CROP, bounds=BOUNDS,
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
                 scale=model.scale, compressed=model.compressed)
             # available model constituents

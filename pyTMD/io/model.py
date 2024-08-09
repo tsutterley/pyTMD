@@ -82,7 +82,7 @@ class model:
     constituents: list or None
         Model constituents for ``FES`` models
     minor: list or None
-        Minor constituents for inference 
+        Minor constituents for inference
     description: str
         HDF5 ``description`` attribute string for output tide heights
     directory: str, pathlib.Path or None, default None
@@ -1444,7 +1444,7 @@ class model:
         fid.close()
         # return the model object
         return self
-    
+
     def from_auto(self, fid: io.IOBase):
         # attempt to read from JSON
         try:
@@ -1461,9 +1461,9 @@ class model:
         except Exception as exc:
             pass
         else:
-            return self 
+            return self
         # raise an exception
-        raise IOError('Cannot load definition file')     
+        raise IOError('Cannot load definition file')
 
     def from_ascii(self, fid: io.IOBase):
         """
@@ -1749,7 +1749,7 @@ class model:
             elif (temp.type == ['u','v']) and isinstance(temp.model_file, dict):
                 # resolve paths to model files for each direction
                 for key, model_file in temp.model_file.items():
-                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in 
+                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in
                         model_file]
                 # copy directory dictionaries
                 temp.model_directory = temp.model_file['u'][0].parent
@@ -1809,7 +1809,7 @@ class model:
             elif (temp.type == ['u','v']):
                 # resolve paths to model files for each direction
                 for key, model_file in temp.model_file.items():
-                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in 
+                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in
                         model_file]
                 # copy to directory dictionaries
                 temp.model_directory = temp.model_file['u'][0].parent
@@ -1861,7 +1861,7 @@ class model:
             elif (temp.type == ['u','v']):
                 # resolve paths to model files for each direction
                 for key, model_file in temp.model_file.items():
-                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in 
+                    temp.model_file[key] = [pathlib.Path(f).expanduser() for f in
                         model_file]
                 # build model directory dictionaries
                 temp.model_directory = {}
@@ -1899,7 +1899,7 @@ class model:
                 self.format = m[1]
         # assert that tide model is a known format
         assert self.format in self.formats()
-        
+
     def from_dict(self, d: dict):
         """
         Create a model object from a python dictionary
@@ -1967,7 +1967,7 @@ class model:
             raise ValueError(f'Constituent not found in file {model_file}')
         else:
             return None
-    
+
     @staticmethod
     def to_bool(val: str) -> bool:
         """

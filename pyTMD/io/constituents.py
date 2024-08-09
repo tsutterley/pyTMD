@@ -260,7 +260,7 @@ class constituents:
         constituent = getattr(self, field)
         self.__index__ += 1
         return (field, constituent)
-    
+
     def __getitem__(self, key):
         return getattr(self, key)
 

@@ -186,7 +186,7 @@ def info(args):
     if hasattr(os, 'getppid'):
         logging.debug(f'parent process: {os.getppid():d}')
     logging.debug(f'process id: {os.getpid():d}')
-    
+
 # PURPOSE: try to get the projection information for the input file
 def get_projection(attributes, PROJECTION):
     # coordinate reference system string from file

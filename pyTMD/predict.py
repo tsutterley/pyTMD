@@ -283,7 +283,7 @@ def infer_minor(
         use nodal corrections from OTIS/ATLAS or GOT/FES models
     minor: list or None, default None
         tidal constituent IDs
-            
+
     Returns
     -------
     dh: np.ndarray
