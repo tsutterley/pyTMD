@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (01/2024)
+Written by Tyler Sutterley (08/2024)
 Routines for estimating the harmonic constants for ocean tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     astro.py: computes the basic astronomical mean longitudes
 
 UPDATE HISTORY:
+    Updated 08/2024: use nodal arguments for all non-OTIS model type cases
     Updated 01/2024: moved to solve subdirectory
     Written 12/2023
 """
@@ -103,7 +104,7 @@ def constants(t: float | np.ndarray,
             amp, ph, omega, alpha, species = \
                 pyTMD.arguments._constituent_parameters(c)
             th = omega*t*86400.0 + ph + pu[:,k]
-        elif corrections in ('GOT', 'FES'):
+        else:
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         # add constituent to design matrix
         M.append(pf[:,k]*np.cos(th))

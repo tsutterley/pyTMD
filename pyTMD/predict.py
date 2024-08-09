@@ -23,6 +23,7 @@ UPDATE HISTORY:
     Updated 08/2024: minor nodal angle corrections in radians to match arguments
         include inference of eps2 and eta2 when predicting from GOT models
         add keyword argument to allow inferring specific minor constituents
+    	use nodal arguments for all non-OTIS model type cases
     Updated 07/2024: use normalize_angle from pyTMD astro module
         make number of days to convert tide time to MJD a variable
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -116,7 +117,7 @@ def map(t: float | np.ndarray,
                 pyTMD.arguments._constituent_parameters(c)
             # add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[0,k]
-        elif corrections in ('GOT', 'FES'):
+        else:
             th = G[0,k]*np.pi/180.0 + pu[0,k]
         # sum over all tides
         ht.data[:] += pf[0,k]*hc.real[:,k]*np.cos(th) - \
@@ -182,7 +183,7 @@ def drift(t: float | np.ndarray,
                 pyTMD.arguments._constituent_parameters(c)
             # add component for constituent to output tidal elevation
             th = omega*t*86400.0 + ph + pu[:,k]
-        elif corrections in ('GOT', 'FES'):
+        else:
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         # sum over all tides
         ht.data[:] += pf[:,k]*hc.real[:,k]*np.cos(th) - \
@@ -248,7 +249,7 @@ def time_series(t: float | np.ndarray,
                 pyTMD.arguments._constituent_parameters(c)
             # add component for constituent to output tidal time series
             th = omega*t*86400.0 + ph + pu[:,k]
-        elif corrections in ('GOT', 'FES'):
+        else:
             th = G[:,k]*np.pi/180.0 + pu[:,k]
         # sum over all tides at location
         ht.data[:] += pf[:,k]*hc.real[0,k]*np.cos(th) - \

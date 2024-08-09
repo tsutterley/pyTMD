@@ -143,14 +143,13 @@ def test_verify_GOT47(METHOD, CROP):
     # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
     tide.data[:] = pyTMD.predict.drift(ts.tide, hc, cons,
-        deltat=deltat, corrections=corrections)
+        deltat=deltat, corrections='perth3')
     minor = pyTMD.predict.infer_minor(ts.tide, hc, cons,
-        deltat=deltat, corrections=corrections, minor=model.minor)
+        deltat=deltat, corrections='perth3', minor=model.minor)
     tide.data[:] += minor.data[:]
 
     # will verify differences between model outputs are within tolerance
-    # since using newer nodal corrections than PERTH3: 5cm tolerance
-    eps = 0.05
+    eps = 0.01
     # calculate differences between perth3 and python version
     difference = np.ma.zeros((npts))
     difference.data[:] = tide.data - validation

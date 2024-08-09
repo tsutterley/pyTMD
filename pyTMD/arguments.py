@@ -39,6 +39,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 08/2024: add support for constituents in PERTH5 tables
+        add back nodal arguments from PERTH3 for backwards compatibility
     Updated 01/2024: add function to create arguments coefficients table
         add function to calculate the arguments for minor constituents
         include multiples of 90 degrees as variable following Ray 2017
@@ -129,7 +130,8 @@ def arguments(
     kwargs.setdefault('M1', 'perth5')
 
     # set function for astronomical longitudes
-    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
+    # use ASTRO5 routines if not using an OTIS type model
+    ASTRO5 = kwargs['corrections'] not in ('OTIS','ATLAS','TMD3','netcdf')
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
@@ -204,7 +206,8 @@ def minor_arguments(
     # degrees to radians
     dtr = np.pi/180.0
     # set function for astronomical longitudes
-    ASTRO5 = True if kwargs['corrections'] in ('GOT', 'FES') else False
+    # use ASTRO5 routines if not using an OTIS type model
+    ASTRO5 = kwargs['corrections'] not in ('OTIS','ATLAS','TMD3','netcdf')
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
@@ -443,7 +446,7 @@ def coefficients_table(
     coefficients['s1-'] = [1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0]
     if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
         coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0]
-    elif kwargs['corrections'] in ('GOT', 'FES'):
+    else:
         # Doodson's phase
         coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0] 
     coefficients['s1+'] = [1.0, 1.0, -1.0, 0.0, 0.0, 1.0, 1.0]
@@ -1051,6 +1054,7 @@ def nodal(
     # set correction type
     OTIS_TYPE = kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf')
     FES_TYPE = kwargs['corrections'] in ('FES',)
+    PERTH3_TYPE = kwargs['corrections'] in ('perth3',)
 
     # degrees to radians
     dtr = np.pi/180.0
@@ -1101,7 +1105,7 @@ def nodal(
         if c in ('msf','tau1','p1','theta1','lambda2','s2') and OTIS_TYPE:
             term1 = 0.0
             term2 = 1.0
-        elif c in ('p1','s2') and FES_TYPE:
+        elif c in ('p1','s2') and (FES_TYPE or PERTH3_TYPE):
             term1 = 0.0
             term2 = 1.0
         elif c in ('mm','msm') and OTIS_TYPE:
@@ -1151,13 +1155,17 @@ def nodal(
             f[:,i] = np.sin(II)*(np.cos(II/2.0)**2)/0.38 
             u[:,i] = (2.0*xi - nu)
             continue
+        elif c in ('q1','o1') and PERTH3_TYPE:
+            f[:,i] = 1.009 + 0.187*cosn - 0.015*cos2n
+            u[:,i] = dtr*(10.8*sinn - 1.3*sin2n)
+            continue 
         elif c in ('o1','so3','op2'):
             term1 = 0.1886*sinn - 0.0058*sin2n - 0.0065*sin2p
             term2 = 1.0 + 0.1886*cosn - 0.0058*cos2n - 0.0065*cos2p
         elif c in ('2q1','q1','rho1','sigma1') and OTIS_TYPE:
             f[:,i] = np.sqrt((1.0 + 0.188*cosn)**2 + (0.188*sinn)**2)
             u[:,i] = np.arctan(0.189*sinn/(1.0 + 0.189*cosn))
-            continue        
+            continue      
         elif c in ('2q1','q1','rho1','sigma1'):
             term1 = 0.1886*sinn 
             term2 = 1.0 + 0.1886*cosn
@@ -1201,6 +1209,10 @@ def nodal(
             f[:,i] = np.sqrt(temp1 + temp2 + 0.1006)
             u[:,i] = -nu_prime
             continue
+        elif c in ('k1',) and PERTH3_TYPE:
+            f[:,i] = 1.006 + 0.115*cosn - 0.009*cos2n
+            u[:,i] = dtr*(-8.9*sinn + 0.7*sin2n)
+            continue
         elif c in ('k1','sk3','2sk5'):
             term1 = -0.1554*sinn + 0.0031*sin2n
             term2 = 1.0 + 0.1158*cosn - 0.0028*cos2n
@@ -1222,10 +1234,14 @@ def nodal(
             f[:,i] = np.power(np.cos(II/2.0),4.0)/0.9154
             u[:,i] = 2.0*xi - 2.0*nu
             continue
+        elif c in ('m2','n2') and PERTH3_TYPE:
+            f[:,i] = 1.000 - 0.037*cosn
+            u[:,i] = dtr*(-2.1*sinn)
+            continue
         elif c in ('m2','2n2','mu2','n2','nu2','lambda2','ms4','eps2','2sm6',
                 '2sn6','mp1','mp3','sn4'):
             term1 = -0.03731*sinn + 0.00052*sin2n
-            term2 = 1.0 - 0.03731*cosn + 0.00052*cos2n
+            term2 = 1.0 - 0.03731*cosn + 0.00052*cos2n            
         elif c in ('l2','sl4') and OTIS_TYPE:
             term1 = -0.25*sin2p - 0.11*np.sin((2.0*p-n)*dtr) - 0.04*sinn
             term2 = 1.0 - 0.25*cos2p - 0.11*np.cos((2.0*p - n)*dtr) - 0.04*cosn
@@ -1248,6 +1264,10 @@ def nodal(
             term2 = 2.7702 * np.power(np.sin(II),2.0) * np.cos(2.0*nu)
             f[:,i] = np.sqrt(term1 + term2 + 0.0981)
             u[:,i] = -2.0*nu_sec
+            continue
+        elif c in ('k2',) and PERTH3_TYPE:
+            f[:,i] = 1.024 + 0.286*cosn + 0.008*cos2n
+            u[:,i] = dtr*(-17.7*sinn + 0.7*sin2n)
             continue
         elif c in ('k2','sk4','2sk6','kp1'):
             term1 = -0.3108*sinn - 0.0324*sin2n
