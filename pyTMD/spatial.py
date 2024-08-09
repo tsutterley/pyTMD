@@ -712,7 +712,7 @@ def from_parquet(filename: str, **kwargs):
         dinput['x'] = shapely.get_x(geometry)
         dinput['y'] = shapely.get_y(geometry)
     # remap columns to default names
-    if kwargs['columns'] is not None:   
+    if kwargs['columns'] is not None:
         field_mapping = default_field_mapping(kwargs['columns'])
         remap = inverse_mapping(field_mapping)
         dinput.rename(columns=remap, inplace=True)
@@ -1201,7 +1201,7 @@ def to_parquet(
         srs.SetFromUserInput(json.dumps(kwargs['crs']))
         # add projection information to attributes
         attributes['crs'] = copy.copy(kwargs['crs'])
-    # convert spatial coordinates to WKB encoded geometry 
+    # convert spatial coordinates to WKB encoded geometry
     if kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'WKB'):
         # get geometry columns
         primary_column = kwargs['primary_column']

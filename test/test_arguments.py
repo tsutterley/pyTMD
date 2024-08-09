@@ -33,7 +33,7 @@ def test_arguments(corrections):
     # use a random set of modified Julian days
     MJD = np.random.randint(58000, 61000, size=10)
     # set function for astronomical longitudes
-    ASTRO5 = True if corrections in ('GOT', 'FES') else False
+    ASTRO5 = corrections not in ('OTIS','ATLAS','TMD3','netcdf')
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, omega, pp = pyTMD.astro.mean_longitudes(MJD,
         ASTRO5=ASTRO5)
@@ -70,7 +70,7 @@ def test_arguments(corrections):
     arg[:,16] = t1 - h - 90.0 # p1
     if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
         arg[:,17] = t1 + 90.0 # s1
-    elif corrections in ('GOT', 'FES'):
+    else:
         arg[:,17] = t1 + 180.0 # s1 (Doodson's phase)
     arg[:,18] = t1 + h + 90.0 # k1
     arg[:,19] = t1 + 2.0*h - pp + 90.0 # psi1
@@ -149,7 +149,7 @@ def test_table(corrections):
     coef[:,16] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0] # p1
     if corrections in ('OTIS', 'ATLAS', 'TMD3', 'netcdf'):
         coef[:,17] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0] # s1
-    elif corrections in ('GOT', 'FES'):
+    else:
         coef[:,17] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0] # s1 (Doodson's phase)
     coef[:,18] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0] # k1
     coef[:,19] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, 1.0] # psi1
@@ -195,7 +195,7 @@ def test_table(corrections):
     coef[:,58] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0] # eps2
     # mean sea level
     coef[:,59] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # z0
-    
+
     # get Doodson coefficients
     test = pyTMD.arguments._arguments_table(corrections=corrections)
     # validate arguments between methods
@@ -259,7 +259,7 @@ def test_nodal(corrections, M1):
     # use a random set of modified Julian days
     MJD = np.random.randint(58000, 61000, size=10)
     # set function for astronomical longitudes
-    ASTRO5 = True if corrections in ('GOT', 'FES') else False
+    ASTRO5 = corrections not in ('OTIS','ATLAS','TMD3','netcdf')
     # convert from Modified Julian Dates into Ephemeris Time
     s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD,
         ASTRO5=ASTRO5)

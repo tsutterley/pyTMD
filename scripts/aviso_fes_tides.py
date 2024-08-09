@@ -248,7 +248,7 @@ def aviso_fes_list(MODEL, f, logger,
             remote_path = [*subdir, fi]
             LZMA = fi.endswith('.xz')
             ftp_download(logger, f, remote_path, local_dir,
-                LZMA=LZMA, 
+                LZMA=LZMA,
                 GZIP=GZIP,
                 CHUNK=32768,
                 MODE=MODE
@@ -277,7 +277,7 @@ def ftp_list(ftp, remote_path, basename=False, pattern=None, sort=False):
 # PURPOSE: pull file from a remote ftp server and decompress if tar file
 def ftp_download(logger, ftp, remote_path, local_dir,
         LZMA=None,
-        TARMODE=None, 
+        TARMODE=None,
         FLATTEN=None,
         GZIP=False,
         CHUNK=8192,
