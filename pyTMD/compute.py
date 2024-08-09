@@ -192,7 +192,7 @@ def tide_elevations(
         ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
-        DEFINITION_FORMAT: str = 'ascii',
+        DEFINITION_FORMAT: str = 'auto',
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
         EPSG: str | int = 3031,
@@ -230,11 +230,12 @@ def tide_elevations(
         Tide model files are gzip compressed
     DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
         Tide model definition file for use
-    DEFINITION_FORMAT: str, default 'ascii'
+    DEFINITION_FORMAT: str, default 'auto'
         Format for model definition file
 
             - ``'ascii'``: tab-delimited definition file
             - ``'json'``: JSON formatted definition file
+            - ``'auto'``: auto-detect the definition file format
     CROP: bool, default False
         Crop tide model data to (buffered) bounds
     BOUNDS: list, np.ndarray or NoneType, default None
@@ -476,11 +477,12 @@ def tide_currents(
         Tide model files are gzip compressed
     DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
         Tide model definition file for use
-    DEFINITION_FORMAT: str, default 'ascii'
+    DEFINITION_FORMAT: str, default 'auto'
         Format for model definition file
 
             - ``'ascii'``: tab-delimited definition file
             - ``'json'``: JSON formatted definition file
+            - ``'auto'``: auto-detect the definition file format
     CROP: bool, default False
         Crop tide model data to (buffered) bounds
     BOUNDS: list, np.ndarray or NoneType, default None

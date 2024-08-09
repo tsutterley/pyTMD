@@ -99,6 +99,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2024: allow inferring only specific minor constituents
+        added option to try automatic detection of definition file format
     Updated 07/2024: assert that data type is a known value
         added option to crop to the domain of the input data
         added option to use JSON format definition files
@@ -207,7 +208,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     ATLAS_FORMAT='ATLAS-netcdf',
     GZIP=True,
     DEFINITION_FILE=None,
-    DEFINITION_FORMAT='ascii',
+    DEFINITION_FORMAT='auto',
     CROP=False,
     FORMAT='csv',
     VARIABLES=[],
@@ -489,7 +490,7 @@ def arguments():
         type=pathlib.Path,
         help='Tide model definition file')
     parser.add_argument('--definition-format',
-        type=str, default='ascii', choices=('ascii', 'json'),
+        type=str, default='auto', choices=('ascii','json','auto'),
         help='Format for model definition file')
     # crop tide model to (buffered) bounds of data
     parser.add_argument('--crop', '-C',

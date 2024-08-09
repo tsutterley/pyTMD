@@ -8,6 +8,7 @@ Retrieves tide model parameters for named tide models and
 UPDATE HISTORY:
     Updated 08/2024: added attribute for minor constituents to infer
         allow searching over iterable glob strings in definition files
+        added option to try automatic detection of definition file format
     Updated 07/2024: added new FES2022 and FES2022_load to list of models
         added JSON format for model definition files
         use parse function from constituents class to extract names
@@ -1410,7 +1411,7 @@ class model:
 
     def from_file(self,
             definition_file: str | pathlib.Path | io.IOBase,
-            format: str = 'ascii'
+            format: str = 'auto'
         ):
         """
         Create a model object from an input definition file
@@ -1419,11 +1420,12 @@ class model:
         ----------
         definition_file: str, pathlib.Path or io.IOBase
             model definition file for creating model object
-        format: str
+        format: str, default 'json'
             format of the input definition file
 
                 - ``'ascii'``: tab-delimited definition file
                 - ``'json'``: JSON formatted definition file
+                - ``'auto'``: attempt to auto-detect format
         """
         # Opening definition file and assigning file ID number
         if isinstance(definition_file, io.IOBase):
@@ -1436,10 +1438,32 @@ class model:
             self.from_ascii(fid)
         elif (format.lower() == 'json'):
             self.from_json(fid)
+        elif (format.lower() == 'auto'):
+            self.from_auto(fid)
         # close the definition file
         fid.close()
         # return the model object
         return self
+    
+    def from_auto(self, fid: io.IOBase):
+        # attempt to read from JSON
+        try:
+            self.from_json(fid)
+        except json.decoder.JSONDecodeError as exc:
+            pass
+        else:
+            return self
+        # rewind the definition file
+        fid.seek(0)
+        # attempt to read from ascii
+        try:
+            self.from_ascii(fid)
+        except Exception as exc:
+            pass
+        else:
+            return self 
+        # raise an exception
+        raise IOError('Cannot load definition file')     
 
     def from_ascii(self, fid: io.IOBase):
         """
