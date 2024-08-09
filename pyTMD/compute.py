@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 08/2024: allow inferring only specific minor constituents
     Updated 07/2024: assert that data type is a known value
         make number of days to convert JD to MJD a variable
         added option to crop tide models to the domain of the input data
@@ -202,6 +203,7 @@ def tide_elevations(
         EXTRAPOLATE: bool = False,
         CUTOFF: int | float=10.0,
         INFER_MINOR: bool = True,
+        MINOR_CONSTITUENTS: list | None = None,
         APPLY_FLEXURE: bool = False,
         FILL_VALUE: float = np.nan,
         **kwargs
@@ -271,6 +273,8 @@ def tide_elevations(
         Set to ``np.inf`` to extrapolate for all points
     INFER_MINOR: bool, default True
         Infer the height values for minor tidal constituents
+    MINOR_CONSTITUENTS: list or None, default None
+        Specify constituents to infer
     APPLY_FLEXURE: bool, default False
         Apply ice flexure scaling factor to height values
 
@@ -374,6 +378,7 @@ def tide_elevations(
     hc = amp*np.exp(cph)
 
     # predict tidal elevations at time
+    minor_constituents = MINOR_CONSTITUENTS or model.minor
     if (TYPE.lower() == 'grid'):
         ny,nx = np.shape(x)
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
@@ -384,7 +389,8 @@ def tide_elevations(
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
-                    deltat=deltat[i], corrections=corrections)
+                    deltat=deltat[i], corrections=corrections,
+                    minor=minor_constituents)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components and reform grid
@@ -398,7 +404,8 @@ def tide_elevations(
         # calculate values for minor constituents by inferrence
         if INFER_MINOR:
             minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
-                deltat=deltat, corrections=corrections)
+                deltat=deltat, corrections=corrections,
+                minor=minor_constituents)
             tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
         nstation = len(x)
@@ -411,7 +418,8 @@ def tide_elevations(
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
-                    deltat=deltat, corrections=corrections)
+                    deltat=deltat, corrections=corrections,
+                    minor=minor_constituents)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components
@@ -442,6 +450,7 @@ def tide_currents(
         EXTRAPOLATE: bool = False,
         CUTOFF: int | float=10.0,
         INFER_MINOR: bool = True,
+        MINOR_CONSTITUENTS: list | None = None,
         FILL_VALUE: float = np.nan,
         **kwargs
     ):
@@ -510,6 +519,8 @@ def tide_currents(
         Set to ``np.inf`` to extrapolate for all points
     INFER_MINOR: bool, default True
         Infer the height values for minor tidal constituents
+    MINOR_CONSTITUENTS: list or None, default None
+        Specify constituents to infer
     FILL_VALUE: float, default np.nan
         Output invalid value
 
@@ -606,6 +617,7 @@ def tide_currents(
         hc = amp*np.exp(cph)
 
         # predict tidal currents at time
+        minor_constituents = MINOR_CONSTITUENTS or model.minor
         if (TYPE.lower() == 'grid'):
             ny,nx = np.shape(x)
             tide[t] = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
@@ -616,7 +628,8 @@ def tide_currents(
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
-                        deltat=deltat[i], corrections=corrections)
+                        deltat=deltat[i], corrections=corrections,
+                        minor=minor_constituents)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components and reform grid
@@ -630,7 +643,8 @@ def tide_currents(
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
-                    deltat=deltat, corrections=corrections)
+                    deltat=deltat, corrections=corrections,
+                    minor=minor_constituents)
                 tide[t].data[:] += minor.data[:]
         elif (TYPE.lower() == 'time series'):
             nstation = len(x)
@@ -643,7 +657,8 @@ def tide_currents(
                 # calculate values for minor constituents by inferrence
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
-                        deltat=deltat, corrections=corrections)
+                        deltat=deltat, corrections=corrections,
+                        minor=minor_constituents)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components

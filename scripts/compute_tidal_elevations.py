@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Oregon State University and ESR
@@ -58,7 +58,8 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
-    --infer-minor: Infer the height values for minor constituents
+    --infer-minor: Infer values for minor constituents
+    --minor-constituents: Minor constituents to infer
     --apply-flexure: Apply ice flexure scaling factor to height values
         Only valid for models containing flexure fields
     -f X, --fill-value X: Invalid value for spatial fields
@@ -100,6 +101,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 08/2024: allow inferring only specific minor constituents
     Updated 07/2024: assert that data type is a known value
         added option to crop to the domain of the input data
         added option to use JSON format definition files
@@ -224,6 +226,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     EXTRAPOLATE=False,
     CUTOFF=None,
     INFER_MINOR=False,
+    MINOR_CONSTITUENTS=None,
     APPLY_FLEXURE=False,
     FILL_VALUE=-9999.0,
     MODE=0o775):
@@ -266,6 +269,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     crs1 = get_projection(attributes, PROJECTION)
     crs2 = pyproj.CRS.from_epsg(4326)
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    assert TYPE.lower() in ('grid', 'drift', 'time series')
     if (TYPE == 'grid'):
         ny, nx = (len(dinput['y']), len(dinput['x']))
         gridx, gridy = np.meshgrid(dinput['x'], dinput['y'])
@@ -331,8 +335,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     # calculate constituent oscillation
     hc = amp*np.exp(cph)
 
+    # minor constituents to infer
+    minor_constituents = model.minor or MINOR_CONSTITUENTS
     # predict tidal elevations at time
-    assert TYPE.lower() in ('grid', 'drift', 'time series')
     if (TYPE == 'grid'):
         tide = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         tide.mask = np.zeros((ny,nx,nt),dtype=bool)
@@ -342,7 +347,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
-                    deltat=deltat[i], corrections=corrections)
+                    deltat=deltat[i], corrections=corrections,
+                    minor=minor_constituents)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components and reform grid
@@ -356,7 +362,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         # calculate values for minor constituents by inferrence
         if INFER_MINOR:
             minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
-                deltat=deltat, corrections=corrections)
+                deltat=deltat, corrections=corrections,
+                minor=minor_constituents)
             tide.data[:] += minor.data[:]
     elif (TYPE == 'time series'):
         tide = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
@@ -369,7 +376,8 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             # calculate values for minor constituents by inferrence
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
-                    deltat=deltat, corrections=corrections)
+                    deltat=deltat, corrections=corrections,
+                    minor=minor_constituents)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components
@@ -543,7 +551,11 @@ def arguments():
     # infer minor constituents from major
     parser.add_argument('--infer-minor',
         default=False, action='store_true',
-        help='Infer the height values for minor constituents')
+        help='Infer values for minor constituents')
+    # specify minor constituents to infer
+    parser.add_argument('--minor-constituents',
+        type=str, nargs='+',
+        help='Minor constituents to infer')
     # apply flexure scaling factors to height values
     parser.add_argument('--apply-flexure',
         default=False, action='store_true',
@@ -604,6 +616,7 @@ def main():
             CUTOFF=args.cutoff,
             APPLY_FLEXURE=args.apply_flexure,
             INFER_MINOR=args.infer_minor,
+            MINOR_CONSTITUENTS=args.minor_constituents,
             FILL_VALUE=args.fill_value,
             MODE=args.mode)
     except Exception as exc:

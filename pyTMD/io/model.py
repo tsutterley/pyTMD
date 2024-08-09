@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
 UPDATE HISTORY:
+    Updated 08/2024: added attribute for minor constituents to infer
+        allow searching over iterable glob strings in definition files
     Updated 07/2024: added new FES2022 and FES2022_load to list of models
         added JSON format for model definition files
         use parse function from constituents class to extract names
@@ -53,6 +55,7 @@ import copy
 import json
 import pathlib
 import pyTMD.io.constituents
+from collections.abc import Iterable
 
 class model:
     """Retrieves tide model parameters for named models or
@@ -75,8 +78,10 @@ class model:
         HDF5 dataset string for output ATL12 tide heights
     compressed: bool
         Model files are gzip compressed
-    constituents: list
+    constituents: list or None
         Model constituents for ``FES`` models
+    minor: list or None
+        Minor constituents for inference 
     description: str
         HDF5 ``description`` attribute string for output tide heights
     directory: str, pathlib.Path or None, default None
@@ -133,6 +138,7 @@ class model:
         # set initial attributes
         self.compressed = copy.copy(kwargs['compressed'])
         self.constituents = None
+        self.minor = None
         # set working data directory
         self.directory = None
         if directory is not None:
@@ -514,6 +520,10 @@ class model:
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
             self.version = '4.7'
+            # list of minor constituents for inference
+            self.minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
+                'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+                'l2', 'l2b', 't2']
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_ocean'
@@ -526,6 +536,10 @@ class model:
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
             self.version = '4.7'
+            # list of minor constituents for inference
+            self.minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
+                'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+                'l2', 'l2b', 't2']
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_load'
@@ -537,6 +551,10 @@ class model:
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
             self.version = '4.8'
+            # list of minor constituents for inference
+            self.minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
+                'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+                'l2', 'l2b', 't2']
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_ocean'
@@ -549,6 +567,10 @@ class model:
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
             self.version = '4.8'
+            # list of minor constituents for inference
+            self.minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
+                'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+                'l2', 'l2b', 't2']
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_load'
@@ -560,6 +582,10 @@ class model:
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/100.0
             self.version = '4.10'
+            # list of minor constituents for inference
+            self.minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
+                'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+                'l2', 'l2b', 't2']
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_ocean'
@@ -572,6 +598,10 @@ class model:
             self.model_file = self.pathfinder(model_files)
             self.scale = 1.0/1000.0
             self.version = '4.10'
+            # list of minor constituents for inference
+            self.minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
+                'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
+                'l2', 'l2b', 't2']
             # model description and references
             self.reference = 'https://ntrs.nasa.gov/citations/19990089548'
             self.variable = 'tide_load'
@@ -1469,8 +1499,11 @@ class model:
             elif (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-                model_file = list(temp.directory.glob(glob_string))
-                # copy to model file and directory dictionaries
+                model_file = []
+                # search singular glob string or iterable glob strings
+                for p in re.split(r'[\s\,]+', temp.model_file):
+                    model_file.extend(temp.directory.glob(p))
+                # update model file
                 temp.model_file = dict(u=model_file, v=model_file)
                 # attempt to extract model directory
                 try:
@@ -1481,7 +1514,10 @@ class model:
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-                temp.model_file = list(temp.directory.glob(glob_string))
+                temp.model_file = []
+                # search singular glob string or iterable glob strings
+                for p in re.split(r'[\s\,]+', glob_string):
+                    temp.model_file.extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent
@@ -1502,12 +1538,16 @@ class model:
             # extract model files
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # split model file string at semicolon
-                model_file = temp.model_file.split(';')
-                glob_string = dict(u=model_file[0], v=model_file[1])
+                glob_string = temp.model_file.split(';')
                 # use glob strings to find files in directory
                 temp.model_file = {}
-                temp.model_file['u'] = list(temp.directory.glob(glob_string['u']))
-                temp.model_file['v'] = list(temp.directory.glob(glob_string['v']))
+                temp.model_file['u'] = []
+                temp.model_file['v'] = []
+                # search singular glob string or iterable glob strings
+                for p in re.split(r'[\s\,]+', glob_string[0]):
+                    temp.model_file['u'].extend(temp.directory.glob(p))
+                for p in re.split(r'[\s\,]+', glob_string[1]):
+                    temp.model_file['v'].extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file['u'][0].parent
@@ -1517,7 +1557,10 @@ class model:
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-                temp.model_file = list(temp.directory.glob(glob_string))
+                temp.model_file = []
+                # search singular glob string or iterable glob strings
+                for p in re.split(r'[\s\,]+', glob_string):
+                    temp.model_file.extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent
@@ -1543,12 +1586,16 @@ class model:
             # extract model files
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # split model file string at semicolon
-                model_file = temp.model_file.split(';')
-                glob_string = dict(u=model_file[0], v=model_file[1])
+                glob_string = temp.model_file.split(';')
                 # use glob strings to find files in directory
                 temp.model_file = {}
-                temp.model_file['u'] = list(temp.directory.glob(glob_string['u']))
-                temp.model_file['v'] = list(temp.directory.glob(glob_string['v']))
+                temp.model_file['u'] = []
+                temp.model_file['v'] = []
+                # search singular glob string or iterable glob strings
+                for p in re.split(r'[\s\,]+', glob_string[0]):
+                    temp.model_file['u'].extend(temp.directory.glob(p))
+                for p in re.split(r'[\s\,]+', glob_string[1]):
+                    temp.model_file['v'].extend(temp.directory.glob(p))
                 # build model directory dictionaries
                 temp.model_directory = {}
                 for key, val in temp.model_file.items():
@@ -1561,7 +1608,11 @@ class model:
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-                temp.model_file = list(temp.directory.glob(glob_string))
+                temp.model_file = []
+                # search singular glob string or iterable glob strings
+                for p in re.split(r'[\s\,]+', glob_string):
+                    temp.model_file.extend(temp.directory.glob(p))
+                # build model directory
                 temp.model_directory = temp.model_file[0].parent
                 # attempt to extract model directory
                 try:
@@ -1638,7 +1689,15 @@ class model:
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
                 for key, glob_string in temp.model_file.items():
-                    temp.model_file[key] = list(temp.directory.glob(glob_string))
+                    # search singular glob string or iterable glob strings
+                    if isinstance(glob_string, str):
+                        # singular glob string
+                        temp.model_file[key] = list(temp.directory.glob(glob_string))
+                    elif isinstance(glob_string, Iterable):
+                        # iterable glob strings
+                        temp.model_file[key] = []
+                        for p in glob_string:
+                            temp.model_file[key].extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file['u'][0].parent
@@ -1648,8 +1707,15 @@ class model:
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-
-                temp.model_file = list(temp.directory.glob(glob_string))
+                # search singular glob string or iterable glob strings
+                if isinstance(glob_string, str):
+                    # singular glob string
+                    temp.model_file = list(temp.directory.glob(glob_string))
+                elif isinstance(glob_string, Iterable):
+                    # iterable glob strings
+                    temp.model_file = []
+                    for p in glob_string:
+                        temp.model_file.extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent
@@ -1683,7 +1749,15 @@ class model:
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
                 for key, glob_string in temp.model_file.items():
-                    temp.model_file[key] = list(temp.directory.glob(glob_string))
+                    # search singular glob string or iterable glob strings
+                    if isinstance(glob_string, str):
+                        # singular glob string
+                        temp.model_file[key] = list(temp.directory.glob(glob_string))
+                    elif isinstance(glob_string, Iterable):
+                        # iterable glob strings
+                        temp.model_file[key] = []
+                        for p in glob_string:
+                            temp.model_file[key].extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file['u'][0].parent
@@ -1693,7 +1767,15 @@ class model:
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-                temp.model_file = list(temp.directory.glob(glob_string))
+                # search singular glob string or iterable glob strings
+                if isinstance(glob_string, str):
+                    # singular glob string
+                    temp.model_file = list(temp.directory.glob(glob_string))
+                elif isinstance(glob_string, Iterable):
+                    # iterable glob strings
+                    temp.model_file = []
+                    for p in glob_string:
+                        temp.model_file.extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent
@@ -1717,7 +1799,15 @@ class model:
             if (temp.type == ['u','v']) and (temp.directory is not None):
                 # use glob strings to find files in directory
                 for key, glob_string in temp.model_file.items():
-                    temp.model_file[key] = list(temp.directory.glob(glob_string))
+                    # search singular glob string or iterable glob strings
+                    if isinstance(glob_string, str):
+                        # singular glob string
+                        temp.model_file[key] = list(temp.directory.glob(glob_string))
+                    elif isinstance(glob_string, Iterable):
+                        # iterable glob strings
+                        temp.model_file[key] = []
+                        for p in glob_string:
+                            temp.model_file[key].extend(temp.directory.glob(p))
                 # build model directory dictionaries
                 temp.model_directory = {}
                 for key, val in temp.model_file.items():
@@ -1730,8 +1820,15 @@ class model:
             elif (temp.type == 'z') and (temp.directory is not None):
                 # use glob strings to find files in directory
                 glob_string = copy.copy(temp.model_file)
-
-                temp.model_file = list(temp.directory.glob(glob_string))
+                # search singular glob string or iterable glob strings
+                if isinstance(glob_string, str):
+                    # singular glob string
+                    temp.model_file = list(temp.directory.glob(glob_string))
+                elif isinstance(glob_string, Iterable):
+                    # iterable glob strings
+                    temp.model_file = []
+                    for p in glob_string:
+                        temp.model_file.extend(temp.directory.glob(p))
                 # attempt to extract model directory
                 try:
                     temp.model_directory = temp.model_file[0].parent

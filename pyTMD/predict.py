@@ -21,6 +21,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2024: minor nodal angle corrections in radians to match arguments
+        include inference of eps2 and eta2 when predicting from GOT models
+        add keyword argument to allow inferring specific minor constituents
     Updated 07/2024: use normalize_angle from pyTMD astro module
         make number of days to convert tide time to MJD a variable
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -278,7 +280,9 @@ def infer_minor(
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
-
+    minor: list or None, default None
+        tidal constituent IDs
+            
     Returns
     -------
     dh: np.ndarray
@@ -304,6 +308,8 @@ def infer_minor(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
+    # list of minor constituents
+    kwargs.setdefault('minor', None)
 
     # number of constituents
     npts, nc = np.shape(zmajor)
@@ -328,9 +334,10 @@ def infer_minor(
         raise Exception('Not enough constituents for inference')
 
     # list of minor constituents
-    minor = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1', 'chi1', 'pi1',
-        'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'nu2', 'lambda2',
-        'l2', 'l2b', 't2', 'eps2', 'eta2']
+    minor_constituents = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1',
+        'chi1', 'pi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2',
+        'nu2', 'lambda2', 'l2', 'l2b', 't2', 'eps2', 'eta2']
+    minor = kwargs['minor'] or minor_constituents
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
 
@@ -354,7 +361,7 @@ def infer_minor(
     zmin[:,15] = 0.0131*z[:,5] + 0.0326*z[:,6]# L2
     zmin[:,16] = 0.0033*z[:,5] + 0.0082*z[:,6]# L2
     zmin[:,17] = 0.0585*z[:,6]# t2
-    # additional coefficients for FES models
+    # additional coefficients for FES and GOT models
     if kwargs['corrections'] in ('FES',):
         # spline coefficients for admittances
         mu2 = [0.069439968323, 0.351535557706, -0.046278307672]
@@ -367,6 +374,9 @@ def infer_minor(
         zmin[:,14] = lda2[0]*z[:,7] + lda2[1]*z[:,4] + lda2[2]*z[:,5]# lambda2
         zmin[:,16] = l2[0]*z[:,7] + l2[1]*z[:,4] + l2[2]*z[:,5]# L2
         zmin[:,17] = t2[0]*z[:,7] + t2[1]*z[:,4] + t2[2]*z[:,5]# t2
+        zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
+        zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
+    elif kwargs['corrections'] in ('GOT',):
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 

@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 08/2024: increased tolerance for comparing with GOT4.7 tests
         as using nodal corrections from PERTH5
+        use a reduced list of minor constituents to match GOT4.7 tests
     Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
@@ -89,16 +90,18 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
 # PURPOSE: Tests that interpolated results are comparable to PERTH3 program
 def test_verify_GOT47(METHOD, CROP):
     # model parameters for GOT4.7
-    model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
+    model = pyTMD.io.model(filepath,compressed=True).elevation('GOT4.7')
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model_file = [model_directory.joinpath(m) for m in model_files]
+    model.model_file = [model.model_directory.joinpath(m) for m in model_files]
+    # validate model constituents
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
-    model_format = 'GOT-ascii'
-    corrections, _, grid = model_format.partition('-')
-    GZIP = True
-    SCALE = 1.0
+    model.parse_constituents()
+    assert model.constituents == constituents
+    corrections, _, grid = model.format.partition('-')
+    # keep amplitudes in centimeters for comparison with outputs
+    model.scale = 1.0
 
     # read validation dataset
     with gzip.open(filepath.joinpath('perth_output_got4.7.gz'),'r') as fid:
@@ -119,16 +122,16 @@ def test_verify_GOT47(METHOD, CROP):
             validation.data[i] = np.float64(line_contents[3])
             validation.mask[i] = False
 
-    # convert time from MJD to days since 1992-01-01T00:00:00
-    tide_time = MJD - 48622.0
+    # convert time from MJD to timescale object
+    ts = timescale.time.Timescale(MJD=MJD)
+    # interpolate delta times
+    deltat = ts.tt_ut1
 
     # extract amplitude and phase from tide model
-    amp,ph,cons = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
-        grid=grid, method=METHOD, compressed=GZIP, scale=SCALE, crop=CROP)
+    amp,ph,cons = pyTMD.io.GOT.extract_constants(lon, lat,
+        model.model_file, grid=grid, method=METHOD,
+        compressed=model.compressed, scale=model.scale, crop=CROP)
     assert all(c in constituents for c in cons)
-    # interpolate delta times from calendar dates to tide time
-    deltat = timescale.time.interpolate_delta_time(
-        timescale.time._delta_file, tide_time)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillations
@@ -139,10 +142,10 @@ def test_verify_GOT47(METHOD, CROP):
     tide.mask = np.zeros((npts),dtype=bool)
     # predict tidal elevations at time and infer minor corrections
     tide.mask[:] = np.any(hc.mask, axis=1)
-    tide.data[:] = pyTMD.predict.drift(tide_time, hc, cons,
+    tide.data[:] = pyTMD.predict.drift(ts.tide, hc, cons,
         deltat=deltat, corrections=corrections)
-    minor = pyTMD.predict.infer_minor(tide_time, hc, cons,
-        deltat=deltat, corrections=corrections)
+    minor = pyTMD.predict.infer_minor(ts.tide, hc, cons,
+        deltat=deltat, corrections=corrections, minor=model.minor)
     tide.data[:] += minor.data[:]
 
     # will verify differences between model outputs are within tolerance
@@ -160,15 +163,18 @@ def test_verify_GOT47(METHOD, CROP):
 # PURPOSE: Tests that interpolated results are comparable
 def test_compare_GOT47(METHOD):
     # model parameters for GOT4.7
-    model_directory = filepath.joinpath('GOT4.7','grids_oceantide')
+    model = pyTMD.io.model(filepath,compressed=True).elevation('GOT4.7')
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model_file = [model_directory.joinpath(m) for m in model_files]
-    model_format = 'GOT-ascii'
-    corrections, _, grid = model_format.partition('-')
-    GZIP = True
-    SCALE = 1.0
+    model.model_file = [model.model_directory.joinpath(m) for m in model_files]
+    # validate model constituents
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
+    model.parse_constituents()
+    assert model.constituents == constituents
+    corrections, _, grid = model.format.partition('-')
+    # keep amplitudes in centimeters for comparison with outputs
+    model.scale = 1.0
 
     # read validation dataset
     with gzip.open(filepath.joinpath('perth_output_got4.7.gz'),'r') as fid:
@@ -183,15 +189,17 @@ def test_compare_GOT47(METHOD):
         lon[i] = np.float64(line_contents[1])
 
     # extract amplitude and phase from tide model
-    amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat, model_file,
-        grid=grid, method=METHOD, compressed=GZIP, scale=SCALE)
+    amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat,
+        model.model_file, grid=grid, method=METHOD,
+        compressed=model.compressed, scale=model.scale)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
     # read and interpolate constituents from tide model
-    constituents = pyTMD.io.GOT.read_constants(model_file, compressed=GZIP)
+    constituents = pyTMD.io.GOT.read_constants(model.model_file,
+        compressed=model.compressed)
     amp2, ph2 = pyTMD.io.GOT.interpolate_constants(lon, lat,
-        constituents, grid=grid, method=METHOD, scale=SCALE)
+        constituents, grid=grid, method=METHOD, scale=model.scale)
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
