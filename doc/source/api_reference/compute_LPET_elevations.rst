@@ -4,7 +4,7 @@ compute_LPET_elevation.py
 
 - Calculates long-period equilibrium tides for an input file
 - Uses the summation of fifteen tidal spectral lines from [Cartwright1971]_ [Cartwright1973]_
-- Can read and write ascii, netCDF4, HDF5, parquet and geotiff formats
+- Can read and write ascii, netCDF4, HDF5, (cloud optimized) geotiff and (geo)parquet formats
 
 `Source code`__
 
@@ -19,6 +19,14 @@ Calling Sequence
     :prog: compute_LPET_elevations.py
     :nodescription:
     :nodefault:
+
+    --format -F : @after
+        * ``'csv'``: ascii with comma-separated values
+        * ``'netCDF4'``: Network Common Data Format version 4
+        * ``'HDF5'``: Hierarchical Data Format version 5
+        * ``'GTiff'``: GeoTiff georeferenced raster imagery
+        * ``'cog'``: Cloud Optimized GeoTIFF
+        * ``'parquet'``: Apache (geo)parquet
 
     --variables : @after
         * for csv files: the order of the columns within the file

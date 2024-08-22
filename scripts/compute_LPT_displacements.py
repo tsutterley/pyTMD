@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_LPT_displacements.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 Calculates radial load pole tide displacements for an input file
     following IERS Convention (2010) guidelines
     https://iers-conventions.obspm.fr/chapter7.php
@@ -19,7 +19,8 @@ COMMAND LINE OPTIONS:
         netCDF4
         HDF5
         parquet
-        geotiff
+        GTiff
+        cog
     -v X, --variables X: variable names of data in csv, HDF5 or netCDF4 file
         for csv files: the order of the columns within the file
         for HDF5, netCDF4 and parquet files: time, y, x and data variable names
@@ -78,6 +79,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
     Updated 07/2024: assert that data type is a known value
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
@@ -192,7 +194,7 @@ def compute_LPT_displacements(input_file, output_file,
         dinput = pyTMD.spatial.from_HDF5(input_file,
             field_mapping=field_mapping)
         attributes = dinput['attributes']
-    elif (FORMAT == 'geotiff'):
+    elif FORMAT in ('GTiff', 'cog'):
         dinput = pyTMD.spatial.from_geotiff(input_file)
         attributes = dinput['attributes']
     elif (FORMAT == 'parquet'):
@@ -350,19 +352,20 @@ def compute_LPT_displacements(input_file, output_file,
     elif (FORMAT == 'HDF5'):
         # write to HDF5
         pyTMD.spatial.to_HDF5(output, attrib, output_file)
-    elif (FORMAT == 'geotiff'):
+    elif FORMAT in ('GTiff', 'cog'):
         # write raster data to geotiff
         # copy global geotiff attributes for projection and grid parameters
         for att_name in ['projection','wkt','spacing','extent']:
             attrib[att_name] = attributes[att_name]
         pyTMD.spatial.to_geotiff(output, attrib, output_file,
-            varname='tide_pole')
+            varname='tide_pole', driver=FORMAT)
     elif (FORMAT == 'parquet'):
         # write to (geo)parquet
         geoparquet = attributes.get('geoparquet', False)
         geometry_encoding = attributes.get('geometry_encoding', None)
         pyTMD.spatial.to_parquet(output, attrib, output_file,
-            geoparquet=geoparquet, geometry_encoding=geometry_encoding, crs=4326)
+            geoparquet=geoparquet, geometry_encoding=geometry_encoding,
+            crs=4326)
     # change the permissions level to MODE
     output_file.chmod(mode=MODE)
 
@@ -386,7 +389,7 @@ def arguments():
     # input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv',
-        choices=('csv','netCDF4','HDF5','geotiff','parquet'),
+        choices=('csv','netCDF4','HDF5','GTiff','cog','parquet'),
         help='Input and output data format')
     # variable names (for csv names of columns)
     parser.add_argument('--variables','-v',

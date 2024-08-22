@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (08/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
     Updated 07/2024: added functions to convert to and from DMS
     Updated 06/2024: added function to write parquet files with metadata
     Updated 05/2024: added function to read from parquet files
@@ -195,7 +196,7 @@ def from_file(filename: str, format: str, **kwargs):
         dinput = from_netCDF4(filename, **kwargs)
     elif (format == 'HDF5'):
         dinput = from_HDF5(filename, **kwargs)
-    elif (format == 'geotiff'):
+    elif format in ('GTiff','cog'):
         dinput = from_geotiff(filename, **kwargs)
     elif (format == 'parquet'):
         dinput = from_parquet(filename, **kwargs)
@@ -750,7 +751,7 @@ def to_file(
         to_netCDF4(output, attributes, filename, **kwargs)
     elif (format == 'HDF5'):
         to_HDF5(output, attributes, filename, **kwargs)
-    elif (format == 'geotiff'):
+    elif format in ('GTiff','cog'):
         to_geotiff(output, attributes, filename, **kwargs)
     elif (format == 'parquet'):
         to_parquet(output, attributes, filename, **kwargs)
@@ -1083,7 +1084,7 @@ def to_geotiff(
         **kwargs
     ):
     """
-    Write data to a geotiff file
+    Write data to a (cloud optimized) geotiff file
 
     Parameters
     ----------
