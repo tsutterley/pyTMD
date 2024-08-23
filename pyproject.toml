@@ -1,3 +1,70 @@
 [build-system]
-requires = ["setuptools", "setuptools_scm"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyTMD"
+description = "Tide Model Driver to read OTIS, ATLAS, GOT and FES formatted tidal solutions and make tidal predictions"
+keywords = [
+    "Ocean Tides",
+    "Load Tides",
+    "Pole Tides",
+    "Solid Earth Tides",
+    "Tidal Prediction",
+]
+authors = [
+    {name = "Tyler Sutterley"},
+    {name = "Karen Alley"},
+    {name = "Kelly Brunt"},
+    {name = "Susan Howard"},
+    {name = "Laurie Padman"},
+    {name = "Matt Siegfried"},
+    {email = "tsutterl@uw.edu"}
+]
+maintainers = [{ name = "pyTMD contributors" }]
+license = {file = "LICENSE"}
+readme = "README.rst"
+
+requires-python = "~=3.6"
+dependencies = [
+    "lxml",
+    "netCDF4",
+    "numpy",
+    "pyproj",
+    "python-dateutil",
+    "scipy>=1.10.1",
+    "setuptools_scm",
+    "timescale>=0.0.3",
+]
+
+dynamic = ["version"]
+
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Homepage = "https://pyTMD.readthedocs.io"
+Documentation = "https://pyTMD.readthedocs.io"
+Repository = "https://github.com/tsutterley/pyTMD"
+Issues = "https://github.com/tsutterley/pyTMD/issues"
+
+[project.optional-dependencies]
+doc = ["docutils", "fontconfig", "freetype", "graphviz", "numpydoc", "sphinx", "sphinx-argparse>=0.4", "sphinx_rtd_theme"]
+all = ["cartopy", "gdal", "h5py", "ipyleaflet", "ipywidgets", "jplephem", "matplotlib", "mpi4py", "notebook", "pandas", "pyyaml"]
+dev = ["flake8", "pytest>=4.6", "pytest-cov", "oct2py", "boto3"]
+
+[tool.setuptools.packages.find]
+exclude = ["test*", "run*"]
