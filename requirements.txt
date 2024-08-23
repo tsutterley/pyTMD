@@ -1,8 +1,0 @@
-lxml
-netCDF4
-numpy
-pyproj
-python-dateutil
-scipy>=1.10.1
-setuptools_scm
-timescale>=0.0.3
