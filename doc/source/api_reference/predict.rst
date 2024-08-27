@@ -34,6 +34,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.predict.equilibrium_tide
 
+.. autofunction:: pyTMD.predict.load_pole_tide
+
+.. autofunction:: pyTMD.predict.ocean_pole_tide
+
 .. autofunction:: pyTMD.predict.solid_earth_tide
 
 .. autofunction:: pyTMD.predict._out_of_phase_diurnal
