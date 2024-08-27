@@ -81,7 +81,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
     spatial.py: utilities for reading and writing spatial data
     utilities.py: download and management utilities for syncing files
-    io/ocean_pole_tide.py: read ocean pole load tide map from IERS
+    io/IERS.py: read ocean pole load tide map from IERS
 
 REFERENCES:
     S. Desai, "Observing the pole tide with satellite altimetry", Journal of
@@ -92,6 +92,9 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
+        drop use of heights when converting to cartesian coordinates
+        use io function to extract ocean pole tide values at coordinates
+        use prediction function to calculate cartesian tide displacements
     Updated 06/2024: include attributes in output parquet files
         use np.clongdouble instead of np.longcomplex
     Updated 05/2024: use function to reading parquet files to allow
@@ -264,9 +267,8 @@ def compute_OPT_displacements(input_file, output_file,
     # number of time points
     nt = len(time_decimal)
 
-    # degrees and arcseconds to radians
+    # degrees to radians
     dtr = np.pi/180.0
-    atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
     # mean equatorial gravitational acceleration [m/s^2]
@@ -276,19 +278,20 @@ def compute_OPT_displacements(input_file, output_file,
     # tidal love number differential (1 + kl - hl) for pole tide frequencies
     gamma = 0.6870 + 0.0036j
 
-    # flatten heights
-    h = np.ravel(dinput['data']) if ('data' in dinput.keys()) else 0.0
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(np.ravel(lon), np.ravel(lat), h=h,
+    X,Y,Z = pyTMD.spatial.to_cartesian(np.ravel(lon), np.ravel(lat),
         a_axis=units.a_axis, flat=units.flat)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
+    npts = len(latitude_geocentric)
+    # geocentric colatitude and longitude in radians
+    theta = dtr*(90.0 - latitude_geocentric)
+    phi = dtr*lon.flatten()
 
     # pole tide displacement scale factor
     Hp = np.sqrt(8.0*np.pi/15.0)*(units.omega**2*units.a_axis**4)/units.GM
     K = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis/(3.0*ge)
-    K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
 
     # calculate angular coordinates of mean/secular pole at time
     mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
@@ -300,52 +303,94 @@ def compute_OPT_displacements(input_file, output_file,
     my = -(py - mpy)
 
     # read ocean pole tide map from Desai (2002)
-    iur, iun, iue, ilon, ilat = pyTMD.io.ocean_pole_tide()
-    # interpolate ocean pole tide map from Desai (2002)
-    if (METHOD == 'spline'):
-        # use scipy bivariate splines to interpolate to output points
-        f1 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
-            iur[:,::-1].real, kx=1, ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
-            iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((len(latitude_geocentric)),dtype=np.clongdouble)
-        UR.real = f1.ev(np.ravel(lon), latitude_geocentric)
-        UR.imag = f2.ev(np.ravel(lon), latitude_geocentric)
-    else:
-        # use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((ilon, ilat[::-1]),
-            iur[:,::-1], method=METHOD)
-        UR = r1.__call__(np.c_[np.ravel(lon), latitude_geocentric])
+    ur, un, ue = pyTMD.io.IERS.extract_coefficients(lon.flatten(),
+        latitude_geocentric, method=METHOD)
+    # convert to cartesian coordinates
+    R = np.zeros((3, 3, npts))
+    R[0,0,:] = np.cos(phi)*np.cos(theta)
+    R[0,1,:] = -np.sin(phi)
+    R[0,2,:] = np.cos(phi)*np.sin(theta)
+    R[1,0,:] = np.sin(phi)*np.cos(theta)
+    R[1,1,:] = np.cos(phi)
+    R[1,2,:] = np.sin(phi)*np.sin(theta)
+    R[2,0,:] = -np.sin(theta)
+    R[2,2,:] = np.cos(theta)
+
+    # calculate pole tide displacements in Cartesian coordinates
+    # coefficients reordered to N, E, R to match IERS rotation matrix
+    UXYZ = np.einsum('ti...,jit...->tj...', np.c_[un, ue, ur], R)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
         Urad = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         Urad.mask = np.zeros((ny,nx,nt),dtype=bool)
+        XYZ = np.c_[X, Y, Z]
         for i in range(nt):
-            URAD = K*atr*np.real(
-                (mx[i]*gamma.real + my[i]*gamma.imag)*UR.real +
-                (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag
+            # calculate ocean pole tides in cartesian coordinates
+            dxi = pyTMD.predict.ocean_pole_tide(ts.tide[i], XYZ, UXYZ,
+                deltat=ts.tt_ut1[i],
+                a_axis=units.a_axis,
+                gamma_0=ge,
+                GM=units.GM,
+                omega=units.omega,
+                rho_w=rho_w,
+                g2=gamma,
+                convention=CONVENTION
             )
-            # reform grid
-            Urad.data[:,:,i] = np.reshape(URAD, (ny,nx))
+            # calculate radial component of ocean pole tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # reshape to output dimensions
+            Urad.data[:,:,i] = np.reshape(drad, (ny,nx))
             Urad.mask[:,:,i] = np.isnan(Urad.data[:,:,i])
     elif (TYPE == 'drift'):
-        Urad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Urad.data[:] = K*atr*np.real(
-            (mx*gamma.real + my*gamma.imag)*UR.real +
-            (my*gamma.real - mx*gamma.imag)*UR.imag
+        # calculate ocean pole tides in cartesian coordinates
+        XYZ = np.c_[X, Y, Z]
+        dxi = pyTMD.predict.ocean_pole_tide(ts.tide, XYZ, UXYZ,
+            deltat=ts.tt_ut1,
+            a_axis=units.a_axis,
+            gamma_0=ge,
+            GM=units.GM,
+            omega=units.omega,
+            rho_w=rho_w,
+            g2=gamma,
+            convention=CONVENTION
         )
+        # calculate radial component of ocean pole tides
+        dln,dlt,drad = pyTMD.spatial.to_geodetic(
+            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+            a_axis=units.a_axis, flat=units.flat)
+        # convert to masked array
+        Urad = np.ma.zeros((nt), fill_value=FILL_VALUE)
+        Urad.data[:] = drad.copy()
         Urad.mask = np.isnan(Urad.data)
     elif (TYPE == 'time series'):
         Urad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         Urad.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
-            URAD = K*atr*np.real(
-                (mx*gamma.real + my*gamma.imag)*UR.real[s] +
-                (my*gamma.real - mx*gamma.imag)*UR.imag[s]
+            # convert coordinates to column arrays
+            XYZ = np.repeat(np.c_[X[s], Y[s], Z[s]], nt, axis=0)
+            uxyz = np.repeat(np.atleast_2d(UXYZ[s,:]), nt, axis=0)
+            # calculate ocean pole tides in cartesian coordinates
+            dxi = pyTMD.predict.ocean_pole_tide(ts.tide, XYZ, uxyz,
+                deltat=ts.tt_ut1,
+                a_axis=units.a_axis,
+                gamma_0=ge,
+                GM=units.GM,
+                omega=units.omega,
+                rho_w=rho_w,
+                g2=gamma,
+                convention=CONVENTION
             )
-            Urad.data[s,:] = np.copy(URAD)
+            # calculate radial component of ocean pole tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # reshape to output dimensions
+            Urad.data[s,:] = drad.copy()
             Urad.mask[s,:] = np.isnan(Urad.data[s,:])
+
     # replace invalid data with fill values
     Urad.data[Urad.mask] = Urad.fill_value
 

@@ -11,4 +11,4 @@ io
     OTIS.rst
     constituents.rst
     model.rst
-    ocean_pole_tide.rst
+    IERS.rst

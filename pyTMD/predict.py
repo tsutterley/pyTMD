@@ -24,6 +24,8 @@ UPDATE HISTORY:
         include inference of eps2 and eta2 when predicting from GOT models
         add keyword argument to allow inferring specific minor constituents
     	use nodal arguments for all non-OTIS model type cases
+        add load pole tide function that exports in cartesian coordinates
+        add ocean pole tide function that exports in cartesian coordinates
     Updated 07/2024: use normalize_angle from pyTMD astro module
         make number of days to convert tide time to MJD a variable
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -56,9 +58,14 @@ import numpy as np
 import pyTMD.arguments
 import pyTMD.astro
 from pyTMD.crs import datum
+import timescale.time
 
+# number of days between the Julian day epoch and MJD
+_jd_mjd = 2400000.5
 # number of days between MJD and the tide epoch (1992-01-01T00:00:00)
 _mjd_tide = 48622.0
+# number of days between the Julian day epoch and the tide epoch
+_jd_tide = _jd_mjd + _mjd_tide
 
 # PURPOSE: Predict tides at single times
 def map(t: float | np.ndarray,
@@ -407,7 +414,7 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     t: np.ndarray
         time (days relative to January 1, 1992)
     lat: np.ndarray
-        latitudes (degrees north)
+        latitude (degrees north)
 
     Returns
     -------
@@ -473,6 +480,218 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     # return the long-period equilibrium tides
     return lpet
 
+# PURPOSE: estimate load pole tides in Cartesian coordinates
+def load_pole_tide(
+        t: np.ndarray,
+        XYZ: np.ndarray,
+        deltat: float = 0.0,
+        gamma_0: float = 9.80665,
+        omega: float = 7.2921151467e-5,
+        h2: float = 0.6207,
+        l2: float = 0.0836,
+        convention: str = '2018'
+    ):
+    """
+    Estimate load pole tide displacements in Cartesian coordinates
+    following IERS Convention (2010) guidelines
+
+    Parameters
+    ----------
+    t: np.ndarray
+        Time (days relative to January 1, 1992)
+    XYZ: np.ndarray
+        Cartesian coordinates of the prediction points (meters)
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    gamma_0: float, default 9.80665
+        Normal gravity (m/s^2)
+    omega: float, default 7.2921151467e-5
+        Earth's rotation rate (radians/second)
+    h2: float, default 0.6207
+        Degree-2 Love number of vertical displacement
+    l2: float, default 0.0836
+        Degree-2 Love (Shida) number of horizontal displacement
+    convention: str, default '2018'
+        IERS Mean or Secular Pole Convention
+
+            - ``'2003'``
+            - ``'2010'``
+            - ``'2015'``
+            - ``'2018'``
+
+    Returns
+    -------
+    dxt: np.ndarray
+        Load pole tide displacements in meters in Cartesian coordinates
+    """
+    # degrees and arcseconds to radians
+    dtr = np.pi/180.0
+    atr = np.pi/648000.0
+    # convert time to Terrestial Time (TT)
+    tt = t + _jd_tide + deltat
+    # convert time to Modified Julian Days (MJD)
+    MJD = tt - _jd_mjd
+    # convert Julian days to calendar dates
+    Y,M,D,h,m,s = timescale.time.convert_julian(tt, format='tuple')
+    # calculate time in year-decimal format
+    time_decimal = timescale.time.convert_calendar_decimal(Y, M, day=D,
+        hour=h, minute=m, second=s)
+
+    # radius of the Earth
+    radius = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2 + XYZ[:,2]**2)
+    # geocentric latitude (radians)
+    latitude = np.arctan(XYZ[:,2] / np.sqrt(XYZ[:,0]**2.0 + XYZ[:,1]**2.0))
+    # geocentric colatitude (radians)
+    theta = (np.pi/2.0 - latitude)
+    # calculate longitude (radians)
+    phi = np.arctan2(XYZ[:,1], XYZ[:,0])
+
+    # calculate angular coordinates of mean/secular pole at time
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
+        convention=convention)
+    # read and interpolate IERS daily polar motion values
+    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
+    # calculate differentials from mean/secular pole positions
+    # using the latest definition from IERS Conventions (2010)
+    mx = px - mpx
+    my = -(py - mpy)
+
+    # number of points
+    n = np.maximum(len(time_decimal), len(theta))
+    # conversion factors in latitude, longitude, and radial directions
+    dfactor = np.zeros((n, 3))
+    dfactor[:,0] = -l2*atr*(omega**2 * radius**2)/(gamma_0)
+    dfactor[:,1] = l2*atr*(omega**2 * radius**2)/(gamma_0)
+    dfactor[:,2] = -h2*atr*(omega**2 * radius**2)/(2.0*gamma_0)
+
+    # calculate pole tide displacements (meters)
+    S = np.zeros((n, 3))
+    # pole tide displacements in latitude, longitude, and radial directions
+    S[:,0] = dfactor[:,0]*np.cos(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
+    S[:,1] = dfactor[:,1]*np.cos(theta)*(mx*np.sin(phi) - my*np.cos(phi))
+    S[:,2] = dfactor[:,2]*np.sin(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
+
+    # rotation matrix
+    R = np.zeros((3, 3, n))
+    R[0,0,:] = np.cos(phi)*np.cos(theta)
+    R[0,1,:] = -np.sin(phi)
+    R[0,2,:] = np.cos(phi)*np.sin(theta)
+    R[1,0,:] = np.sin(phi)*np.cos(theta)
+    R[1,1,:] = np.cos(phi)
+    R[1,2,:] = np.sin(phi)*np.sin(theta)
+    R[2,0,:] = -np.sin(theta)
+    R[2,2,:] = np.cos(theta)
+    # rotate displacements to ECEF coordinates
+    dxt = np.einsum('ti...,jit...->tj...', S, R)
+
+    # return the pole tide displacements
+    # in Cartesian coordinates
+    return dxt
+
+# PURPOSE: estimate ocean pole tides in Cartesian coordinates
+def ocean_pole_tide(
+        t: np.ndarray,
+        XYZ: np.ndarray,
+        UXYZ: np.ndarray,
+        deltat: float = 0.0,
+        gamma_0: float = 9.780325,
+        a_axis: float = 6378136.3,
+        GM: float = 3.986004418e14,
+        omega: float = 7.2921151467e-5,
+        rho_w: float = 1025.0,
+        g2: complex = 0.6870 + 0.0036j,
+        convention: str = '2018'
+    ):
+    """
+    Estimate ocean pole tide displacements in Cartesian coordinates
+    following IERS Convention (2010) guidelines
+
+    Parameters
+    ----------
+    t: np.ndarray
+        Time (days relative to January 1, 1992)
+    XYZ: np.ndarray
+        Cartesian coordinates of the prediction points (meters)
+    UXYZ: np.ndarray
+        Ocean pole tide values from Desai (2002)
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    a_axis: float, default 6378136.3
+        Semi-major axis of the Earth (meters)
+    gamma_0: float, default 9.780325
+        Normal gravity (m/s^2)
+    GM: float, default 3.986004418e14
+        Earth's gravitational constant [m^3/s^2]
+    omega: float, default 7.2921151467e-5
+        Earth's rotation rate (radians/second)
+    rho_w: float, default 1025.0
+        Density of sea water [kg/m^3]
+    g2: complex, default 0.6870 + 0.0036j
+        Degree-2 Love number differential (1 + k2 - h2)
+    convention: str, default '2018'
+        IERS Mean or Secular Pole Convention
+
+            - ``'2003'``
+            - ``'2010'``
+            - ``'2015'``
+            - ``'2018'``
+
+    Returns
+    -------
+    dxt: np.ndarray
+        Load pole tide displacements in meters in Cartesian coordinates
+    """
+    # degrees and arcseconds to radians
+    dtr = np.pi/180.0
+    atr = np.pi/648000.0
+    # convert time to Terrestial Time (TT)
+    tt = t + _jd_tide + deltat
+    # convert time to Modified Julian Days (MJD)
+    MJD = tt - _jd_mjd
+    # convert Julian days to calendar dates
+    Y,M,D,h,m,s = timescale.time.convert_julian(tt, format='tuple')
+    # calculate time in year-decimal format
+    time_decimal = timescale.time.convert_calendar_decimal(Y, M, day=D,
+        hour=h, minute=m, second=s)
+
+    # radius of the Earth
+    radius = np.sqrt(XYZ[:,0]**2 + XYZ[:,1]**2 + XYZ[:,2]**2)
+    # geocentric latitude (radians)
+    latitude = np.arctan(XYZ[:,2] / np.sqrt(XYZ[:,0]**2.0 + XYZ[:,1]**2.0))
+    # geocentric colatitude (radians)
+    theta = (np.pi/2.0 - latitude)
+    # calculate longitude (radians)
+    phi = np.arctan2(XYZ[:,1], XYZ[:,0])
+    # universal gravitational constant [N*m^2/kg^2]
+    G = 6.67430e-11
+
+    # calculate angular coordinates of mean/secular pole at time
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
+        convention=convention)
+    # read and interpolate IERS daily polar motion values
+    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
+    # calculate differentials from mean/secular pole positions
+    # using the latest definition from IERS Conventions (2010)
+    mx = px - mpx
+    my = -(py - mpy)
+
+    # pole tide displacement factors
+    Hp = np.sqrt(8.0*np.pi/15.0)*(omega**2 * a_axis**4)/GM
+    K = 4.0*np.pi*G*rho_w*Hp*a_axis/(3.0*gamma_0)
+
+    # number of points
+    n = np.maximum(len(time_decimal), len(theta))
+    # calculate ocean pole tide displacements (meters)
+    dxt = np.zeros((n, 3))
+    for i in range(3):
+        dxt[:,i] = K*atr*np.real(
+            (mx*g2.real + my*g2.imag)*UXYZ.real[:,i] +
+            (my*g2.real - mx*g2.imag)*UXYZ.imag[:,i])
+
+    # return the ocean pole tide displacements
+    # in Cartesian coordinates
+    return dxt
+
 # get IERS parameters
 _iers = datum(ellipsoid='IERS', units='MKS')
 
@@ -495,7 +714,7 @@ def solid_earth_tide(
     t: np.ndarray
         Time (days relative to January 1, 1992)
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     SXYZ: np.ndarray
         Earth-centered Earth-fixed coordinates of the sun (meters)
     LXYZ: np.ndarray
@@ -616,7 +835,7 @@ def _out_of_phase_diurnal(
     Parameters
     ----------
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     SXYZ: np.ndarray
         Earth-centered Earth-fixed coordinates of the sun (meters)
     LXYZ: np.ndarray
@@ -677,7 +896,7 @@ def _out_of_phase_semidiurnal(
     Parameters
     ----------
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     SXYZ: np.ndarray
         Earth-centered Earth-fixed coordinates of the sun (meters)
     LXYZ: np.ndarray
@@ -745,7 +964,7 @@ def _latitude_dependence(
     Parameters
     ----------
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     SXYZ: np.ndarray
         Earth-centered Earth-fixed coordinates of the sun (meters)
     LXYZ: np.ndarray
@@ -812,7 +1031,7 @@ def _frequency_dependence_diurnal(
     Parameters
     ----------
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     MJD: np.ndarray
         Modified Julian Day (MJD)
     """
@@ -894,7 +1113,7 @@ def _frequency_dependence_long_period(
     Parameters
     ----------
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     MJD: np.ndarray
         Modified Julian Day (MJD)
     """
@@ -948,7 +1167,7 @@ def _free_to_mean(
     Parameters
     ----------
     XYZ: np.ndarray
-        Cartesian coordinates of the station (meters)
+        Cartesian coordinates of the prediction points (meters)
     h2: float or np.ndarray
         Degree-2 Love number of vertical displacement
     l2: float or np.ndarray
