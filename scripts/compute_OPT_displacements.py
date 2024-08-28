@@ -257,15 +257,8 @@ def compute_OPT_displacements(input_file, output_file,
         ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=epoch1, standard=TIME_STANDARD)
 
-    # convert dynamic time to Modified Julian Days (MJD)
-    MJD = ts.tt - 2400000.5
-    # convert Julian days to calendar dates
-    Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
-    # calculate time in year-decimal format
-    time_decimal = timescale.time.convert_calendar_decimal(Y,M,day=D,
-        hour=h,minute=m,second=s)
     # number of time points
-    nt = len(time_decimal)
+    nt = len(ts)
 
     # degrees to radians
     dtr = np.pi/180.0
@@ -288,19 +281,6 @@ def compute_OPT_displacements(input_file, output_file,
     # geocentric colatitude and longitude in radians
     theta = dtr*(90.0 - latitude_geocentric)
     phi = dtr*lon.flatten()
-
-    # pole tide displacement scale factor
-    Hp = np.sqrt(8.0*np.pi/15.0)*(units.omega**2*units.a_axis**4)/units.GM
-    K = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis/(3.0*ge)
-
-    # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
-        convention=CONVENTION)
-    # read and interpolate IERS daily polar motion values
-    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
-    # calculate differentials from mean/secular pole positions
-    mx = px - mpx
-    my = -(py - mpy)
 
     # read ocean pole tide map from Desai (2002)
     ur, un, ue = pyTMD.io.IERS.extract_coefficients(lon.flatten(),
