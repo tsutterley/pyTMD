@@ -69,6 +69,8 @@ UPDATE HISTORY:
         renamed format for netcdf to ATLAS-netcdf
         renamed format for FES to FES-netcdf and added FES-ascii
         renamed format for GOT to GOT-ascii and added GOT-netcdf
+        drop use of heights when converting to cartesian coordinates
+        use prediction function to calculate cartesian tide displacements
     Updated 06/2024: use np.clongdouble instead of np.longcomplex
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 02/2024: changed class name for ellipsoid parameters to datum
@@ -780,7 +782,6 @@ def LPET_elevations(
 # following IERS Convention (2010) guidelines
 def LPT_displacements(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        h: float | np.ndarray = 0.0,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -802,8 +803,6 @@ def LPT_displacements(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    h: float or np.ndarray, default 0.0
-        height coordinates in meters
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -876,83 +875,106 @@ def LPT_displacements(
         ts = timescale.time.Timescale().from_deltatime(delta_time,
             epoch=EPOCH, standard=TIME)
 
-    # convert dynamic time to Modified Julian Days (MJD)
-    MJD = ts.tt - _jd_mjd
-    # convert Julian days to calendar dates
-    Y,M,D,h,m,s = timescale.time.convert_julian(ts.tt, format='tuple')
-    # calculate time in year-decimal format
-    time_decimal = timescale.time.convert_calendar_decimal(Y, M, day=D,
-        hour=h, minute=m, second=s)
     # number of time points
-    nt = len(time_decimal)
+    nt = len(ts)
 
-    # degrees and arcseconds to radians
+    # degrees to radians
     dtr = np.pi/180.0
-    atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
-    # tidal love number appropriate for the load tide
+    # tidal love/shida numbers appropriate for the load tide
     hb2 = 0.6207
+    lb2 = 0.0836
 
-    # flatten heights
-    h = np.array(h).flatten() if np.ndim(h) else h
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(lon.flatten(), lat.flatten(), h=h,
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon.flatten(), lat.flatten(),
         a_axis=units.a_axis, flat=units.flat)
-    rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
-    # geocentric colatitude and longitude in radians
+    # geocentric colatitude in radians
     theta = dtr*(90.0 - latitude_geocentric)
-    phi = dtr*lon.flatten()
 
-    # compute normal gravity at spatial location and elevation of points.
-    # Normal gravity at height h. p. 82, Eqn.(2-215)
-    gamma_h = units.gamma_h(theta, h)
-    dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_h)
-
-    # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
-    # read and interpolate IERS daily polar motion values
-    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
-    # calculate differentials from mean/secular pole positions
-    mx = px - mpx
-    my = -(py - mpy)
+    # compute normal gravity at spatial location
+    # p. 80, Eqn.(2-199)
+    gamma_0 = units.gamma_0(theta)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
         ny,nx = np.shape(x)
         Srad = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
+        XYZ = np.c_[X, Y, Z]
         for i in range(nt):
-            SRAD = dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
-            # reform grid
-            Srad.data[:,:,i] = np.reshape(SRAD, (ny,nx))
+            # calculate load pole tides in cartesian coordinates
+            dxi = pyTMD.predict.load_pole_tide(ts.tide[i], XYZ,
+                deltat=ts.tt_ut1[i],
+                gamma_0=gamma_0,
+                omega=units.omega,
+                h2=hb2,
+                l2=lb2,
+                convention=CONVENTION
+            )
+            # calculate radial component of load pole tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # reshape to output dimensions
+            Srad.data[:,:,i] = np.reshape(drad, (ny,nx))
             Srad.mask[:,:,i] = np.isnan(Srad.data[:,:,i])
     elif (TYPE == 'drift'):
+        # calculate load pole tides in cartesian coordinates
+        XYZ = np.c_[X, Y, Z]
+        dxi = pyTMD.predict.load_pole_tide(ts.tide, XYZ,
+            deltat=ts.tt_ut1,
+            gamma_0=gamma_0,
+            omega=units.omega,
+            h2=hb2,
+            l2=lb2,
+            convention=CONVENTION
+        )
+        # calculate radial component of load pole tides
+        dln,dlt,drad = pyTMD.spatial.to_geodetic(
+            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+            a_axis=units.a_axis, flat=units.flat)
+        # reshape to output dimensions
         Srad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi)+my*np.sin(phi))
+        Srad.data[:] = drad.copy()
         Srad.mask = np.isnan(Srad.data)
     elif (TYPE == 'time series'):
         nstation = len(x)
         Srad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         Srad.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
-            SRAD = dfactor[s]*np.sin(2.0*theta[s])*(mx*np.cos(phi[s])+my*np.sin(phi[s]))
-            Srad.data[s,:] = np.copy(SRAD)
+            # convert coordinates to column arrays
+            XYZ = np.repeat(np.c_[X[s], Y[s], Z[s]], nt, axis=0)
+            # calculate load pole tides in cartesian coordinates
+            dxi = pyTMD.predict.load_pole_tide(ts.tide, XYZ,
+                deltat=ts.tt_ut1,
+                gamma_0=gamma_0[s],
+                omega=units.omega,
+                h2=hb2,
+                l2=lb2,
+                convention=CONVENTION
+            )
+            # calculate radial component of load pole tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # reshape to output dimensions
+            Srad.data[s,:] = drad.copy()
             Srad.mask[s,:] = np.isnan(Srad.data[s,:])
+
     # replace invalid data with fill values
     Srad.data[Srad.mask] = Srad.fill_value
 
-    # return the solid earth pole tide displacements
+    # return the load pole tide displacements
     return Srad
 
 # PURPOSE: compute radial load pole tide displacements
 # following IERS Convention (2010) guidelines
 def OPT_displacements(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        h: float | np.ndarray = 0.0,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -975,8 +997,6 @@ def OPT_displacements(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    h: float or np.ndarray, default 0.0
-        height coordinates in meters
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -1066,9 +1086,8 @@ def OPT_displacements(
     # number of time points
     nt = len(time_decimal)
 
-    # degrees and arcseconds to radians
+    # degrees to radians
     dtr = np.pi/180.0
-    atr = np.pi/648000.0
     # earth and physical parameters for ellipsoid
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
     # mean equatorial gravitational acceleration [m/s^2]
@@ -1078,72 +1097,108 @@ def OPT_displacements(
     # tidal love number differential (1 + kl - hl) for pole tide frequencies
     gamma = 0.6870 + 0.0036j
 
-    # flatten heights
-    h = np.array(h).flatten() if np.ndim(h) else h
     # convert from geodetic latitude to geocentric latitude
     # calculate X, Y and Z from geodetic latitude and longitude
-    X,Y,Z = pyTMD.spatial.to_cartesian(lon.flatten(), lat.flatten(), h=h,
+    X,Y,Z = pyTMD.spatial.to_cartesian(lon.flatten(), lat.flatten(),
         a_axis=units.a_axis, flat=units.flat)
-    rr = np.sqrt(X**2.0 + Y**2.0 + Z**2.0)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
+    npts = len(latitude_geocentric)
+    # geocentric colatitude and longitude in radians
+    theta = dtr*(90.0 - latitude_geocentric)
+    phi = dtr*lon.flatten()
 
-    # pole tide displacement scale factor
-    Hp = np.sqrt(8.0*np.pi/15.0)*(units.omega**2*units.a_axis**4)/units.GM
-    K = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis/(3.0*ge)
-    K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
+    # read and interpolate ocean pole tide map from Desai (2002)
+    ur, un, ue = pyTMD.io.IERS.extract_coefficients(lon.flatten(),
+        latitude_geocentric, method=METHOD)
+    # convert to cartesian coordinates
+    R = np.zeros((3, 3, npts))
+    R[0,0,:] = np.cos(phi)*np.cos(theta)
+    R[0,1,:] = -np.sin(phi)
+    R[0,2,:] = np.cos(phi)*np.sin(theta)
+    R[1,0,:] = np.sin(phi)*np.cos(theta)
+    R[1,1,:] = np.cos(phi)
+    R[1,2,:] = np.sin(phi)*np.sin(theta)
+    R[2,0,:] = -np.sin(theta)
+    R[2,2,:] = np.cos(theta)
 
-    # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
-    # read and interpolate IERS daily polar motion values
-    px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
-    # calculate differentials from mean/secular pole positions
-    mx = px - mpx
-    my = -(py - mpy)
-
-    # read ocean pole tide map from Desai (2002)
-    iur, iun, iue, ilon, ilat = pyTMD.io.ocean_pole_tide()
-    # interpolate ocean pole tide map from Desai (2002)
-    if (METHOD == 'spline'):
-        # use scipy bivariate splines to interpolate to output points
-        f1 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
-            iur[:,::-1].real, kx=1, ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
-            iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((len(latitude_geocentric)), dtype=np.clongdouble)
-        UR.real = f1.ev(lon.flatten(), latitude_geocentric)
-        UR.imag = f2.ev(lon.flatten(), latitude_geocentric)
-    else:
-        # use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
-            iur[:,::-1], method=METHOD)
-        UR = r1.__call__(np.c_[lon.flatten(), latitude_geocentric])
+    # calculate pole tide displacements in Cartesian coordinates
+    # coefficients reordered to N, E, R to match IERS rotation matrix
+    UXYZ = np.einsum('ti...,jit...->tj...', np.c_[un, ue, ur], R)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
         ny,nx = np.shape(x)
-        Urad = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
+        Urad = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)
         Urad.mask = np.zeros((ny,nx,nt),dtype=bool)
+        XYZ = np.c_[X, Y, Z]
         for i in range(nt):
-            URAD = K*atr*np.real((mx[i]*gamma.real + my[i]*gamma.imag)*UR.real +
-                (my[i]*gamma.real - mx[i]*gamma.imag)*UR.imag)
-            # reform grid
-            Urad.data[:,:,i] = np.reshape(URAD, (ny,nx))
+            # calculate ocean pole tides in cartesian coordinates
+            dxi = pyTMD.predict.ocean_pole_tide(ts.tide[i], XYZ, UXYZ,
+                deltat=ts.tt_ut1[i],
+                a_axis=units.a_axis,
+                gamma_0=ge,
+                GM=units.GM,
+                omega=units.omega,
+                rho_w=rho_w,
+                g2=gamma,
+                convention=CONVENTION
+            )
+            # calculate radial component of ocean pole tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # reshape to output dimensions
+            Urad.data[:,:,i] = np.reshape(drad, (ny,nx))
             Urad.mask[:,:,i] = np.isnan(Urad.data[:,:,i])
     elif (TYPE == 'drift'):
-        Urad = np.ma.zeros((nt),fill_value=FILL_VALUE)
-        Urad.data[:] = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
-            (my*gamma.real - mx*gamma.imag)*UR.imag)
+        # calculate ocean pole tides in cartesian coordinates
+        XYZ = np.c_[X, Y, Z]
+        dxi = pyTMD.predict.ocean_pole_tide(ts.tide, XYZ, UXYZ,
+            deltat=ts.tt_ut1,
+            a_axis=units.a_axis,
+            gamma_0=ge,
+            GM=units.GM,
+            omega=units.omega,
+            rho_w=rho_w,
+            g2=gamma,
+            convention=CONVENTION
+        )
+        # calculate radial component of ocean pole tides
+        dln,dlt,drad = pyTMD.spatial.to_geodetic(
+            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+            a_axis=units.a_axis, flat=units.flat)
+        # convert to masked array
+        Urad = np.ma.zeros((nt), fill_value=FILL_VALUE)
+        Urad.data[:] = drad.copy()
         Urad.mask = np.isnan(Urad.data)
     elif (TYPE == 'time series'):
         nstation = len(x)
-        Urad = np.ma.zeros((nstation,nt),fill_value=FILL_VALUE)
+        Urad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
         Urad.mask = np.zeros((nstation,nt),dtype=bool)
         for s in range(nstation):
-            URAD = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real[s] +
-                (my*gamma.real - mx*gamma.imag)*UR.imag[s])
-            Urad.data[s,:] = np.copy(URAD)
+            # convert coordinates to column arrays
+            XYZ = np.repeat(np.c_[X[s], Y[s], Z[s]], nt, axis=0)
+            uxyz = np.repeat(np.atleast_2d(UXYZ[s,:]), nt, axis=0)
+            # calculate ocean pole tides in cartesian coordinates
+            dxi = pyTMD.predict.ocean_pole_tide(ts.tide, XYZ, uxyz,
+                deltat=ts.tt_ut1,
+                a_axis=units.a_axis,
+                gamma_0=ge,
+                GM=units.GM,
+                omega=units.omega,
+                rho_w=rho_w,
+                g2=gamma,
+                convention=CONVENTION
+            )
+            # calculate radial component of ocean pole tides
+            dln,dlt,drad = pyTMD.spatial.to_geodetic(
+                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
+                a_axis=units.a_axis, flat=units.flat)
+            # reshape to output dimensions
+            Urad.data[s,:] = drad.copy()
             Urad.mask[s,:] = np.isnan(Urad.data[s,:])
+
     # replace invalid data with fill values
     Urad.data[Urad.mask] = Urad.fill_value
 
@@ -1153,7 +1208,6 @@ def OPT_displacements(
 # PURPOSE: compute solid earth tidal elevations
 def SET_displacements(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        h: float | np.ndarray = 0.0,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -1175,8 +1229,6 @@ def SET_displacements(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    h: float or np.ndarray, default 0.0
-        height coordinates in meters
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -1258,7 +1310,7 @@ def SET_displacements(
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
 
     # convert input coordinates to cartesian
-    X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+    X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat,
         a_axis=units.a_axis, flat=units.flat)
     # compute ephemerides for lunisolar coordinates
     SX, SY, SZ = pyTMD.astro.solar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
@@ -1284,9 +1336,8 @@ def SET_displacements(
             dln,dlt,drad = pyTMD.spatial.to_geodetic(
                 X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
-            # remove effects of original topography
-            # (if added when computing cartesian coordinates)
-            tide_se[:,:,i] = np.reshape(drad - h, (ny,nx))
+            # reshape to output dimensions
+            tide_se[:,:,i] = np.reshape(drad, (ny,nx))
     elif (TYPE == 'drift'):
         # convert coordinates to column arrays
         XYZ = np.c_[X, Y, Z]
@@ -1300,9 +1351,8 @@ def SET_displacements(
         dln,dlt,drad = pyTMD.spatial.to_geodetic(
             X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
             a_axis=units.a_axis, flat=units.flat)
-        # remove effects of original topography
-        # (if added when computing cartesian coordinates)
-        tide_se = drad - h
+        # reshape to output dimensions
+        tide_se = np.copy(drad)
     elif (TYPE == 'time series'):
         nstation = len(x)
         tide_se = np.zeros((nstation,nt))
@@ -1318,11 +1368,10 @@ def SET_displacements(
                 tide_system=TIDE_SYSTEM)
             # calculate radial component of solid earth tides
             dln,dlt,drad = pyTMD.spatial.to_geodetic(
-                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
-            # remove effects of original topography
-            # (if added when computing cartesian coordinates)
-            tide_se[s,:] = drad - h
+            # reshape to output dimensions
+            tide_se[s,:] = np.copy(drad)
 
     # return the solid earth tide displacements
     return tide_se

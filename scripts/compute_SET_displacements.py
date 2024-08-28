@@ -100,6 +100,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
+        drop use of heights when converting to cartesian coordinates
     Updated 07/2024: assert that data type is a known value
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
@@ -242,10 +243,8 @@ def compute_SET_displacements(input_file, output_file,
     # earth and physical parameters for ellipsoid
     units = pyTMD.datum(ellipsoid=ELLIPSOID, units='MKS')
 
-    # flatten heights
-    h = np.ravel(dinput['data']) if ('data' in dinput.keys()) else 0.0
     # convert input coordinates to cartesian
-    X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat, h=h,
+    X, Y, Z = pyTMD.spatial.to_cartesian(lon, lat,
         a_axis=units.a_axis, flat=units.flat)
     # compute ephemerides for lunisolar coordinates
     SX, SY, SZ = pyTMD.astro.solar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
@@ -270,9 +269,8 @@ def compute_SET_displacements(input_file, output_file,
             dln, dlt, drad = pyTMD.spatial.to_geodetic(
                 X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
-            # remove effects of original topography
-            # (if added when computing cartesian coordinates)
-            tide_se[:,:,i] = np.reshape(drad - h, (ny,nx))
+            # reshape to output dimensions
+            tide_se[:,:,i] = np.reshape(drad, (ny,nx))
     elif (TYPE == 'drift'):
         # convert coordinates to column arrays
         XYZ = np.c_[X, Y, Z]
@@ -286,9 +284,8 @@ def compute_SET_displacements(input_file, output_file,
         dln, dlt, drad = pyTMD.spatial.to_geodetic(
             X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
             a_axis=units.a_axis, flat=units.flat)
-        # remove effects of original topography
-        # (if added when computing cartesian coordinates)
-        tide_se = drad - h
+        # reshape to output dimensions
+        tide_se = drad.copy()
     elif (TYPE == 'time series'):
         tide_se = np.zeros((nstation,nt))
         # convert coordinates to column arrays
@@ -303,11 +300,10 @@ def compute_SET_displacements(input_file, output_file,
                 tide_system=TIDE_SYSTEM)
             # calculate radial component of solid earth tides
             dln, dlt, drad = pyTMD.spatial.to_geodetic(
-                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
+                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
                 a_axis=units.a_axis, flat=units.flat)
-            # remove effects of original topography
-            # (if added when computing cartesian coordinates)
-            tide_se[s,:] = drad - h
+            # reshape to output dimensions
+            tide_se[s,:] = drad.copy()
 
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files
