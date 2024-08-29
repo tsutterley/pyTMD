@@ -101,6 +101,7 @@ REFERENCES:
 UPDATE HISTORY:
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
         drop use of heights when converting to cartesian coordinates
+        use rotation matrix to convert from cartesian to spherical
     Updated 07/2024: assert that data type is a known value
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
@@ -250,6 +251,24 @@ def compute_SET_displacements(input_file, output_file,
     SX, SY, SZ = pyTMD.astro.solar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
     LX, LY, LZ = pyTMD.astro.lunar_ecef(ts.MJD, ephemerides=EPHEMERIDES)
 
+    # geocentric latitude (radians)
+    latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))
+    npts = len(latitude_geocentric)
+    # geocentric colatitude (radians)
+    theta = (np.pi/2.0 - latitude_geocentric)
+    # calculate longitude (radians)
+    phi = np.arctan2(Y, X)
+    # rotation matrix for converting from cartesian coordinates
+    R = np.zeros((npts, 3, 3))
+    R[:,0,0] = np.cos(phi)*np.cos(theta)
+    R[:,1,0] = -np.sin(phi)
+    R[:,2,0] = np.cos(phi)*np.sin(theta)
+    R[:,0,1] = np.sin(phi)*np.cos(theta)
+    R[:,1,1] = np.cos(phi)
+    R[:,2,1] = np.sin(phi)*np.sin(theta)
+    R[:,0,2] = -np.sin(theta)
+    R[:,2,2] = np.cos(theta)
+
     # calculate radial displacement at time
     if (TYPE == 'grid'):
         tide_se = np.zeros((ny,nx,nt))
@@ -265,12 +284,10 @@ def compute_SET_displacements(input_file, output_file,
             dxi = pyTMD.predict.solid_earth_tide(t,
                 XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
                 tide_system=TIDE_SYSTEM)
-            # calculate radial component of solid earth tides
-            dln, dlt, drad = pyTMD.spatial.to_geodetic(
-                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
-                a_axis=units.a_axis, flat=units.flat)
+            # calculate components of solid earth tides
+            SE = np.einsum('ti...,tji...->tj...', dxi, R)
             # reshape to output dimensions
-            tide_se[:,:,i] = np.reshape(drad, (ny,nx))
+            tide_se[:,:,i] = np.reshape(SE[:,2], (ny,nx))
     elif (TYPE == 'drift'):
         # convert coordinates to column arrays
         XYZ = np.c_[X, Y, Z]
@@ -280,12 +297,10 @@ def compute_SET_displacements(input_file, output_file,
         dxi = pyTMD.predict.solid_earth_tide(tide_time,
             XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
             tide_system=TIDE_SYSTEM)
-        # calculate radial component of solid earth tides
-        dln, dlt, drad = pyTMD.spatial.to_geodetic(
-            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
-            a_axis=units.a_axis, flat=units.flat)
+        # calculate components of solid earth tides
+        SE = np.einsum('ti...,tji...->tj...', dxi, R)
         # reshape to output dimensions
-        tide_se = drad.copy()
+        tide_se = SE[:,2].copy()
     elif (TYPE == 'time series'):
         tide_se = np.zeros((nstation,nt))
         # convert coordinates to column arrays
@@ -298,12 +313,10 @@ def compute_SET_displacements(input_file, output_file,
             dxi = pyTMD.predict.solid_earth_tide(tide_time,
                 XYZ, SXYZ, LXYZ, a_axis=units.a_axis,
                 tide_system=TIDE_SYSTEM)
-            # calculate radial component of solid earth tides
-            dln, dlt, drad = pyTMD.spatial.to_geodetic(
-                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
-                a_axis=units.a_axis, flat=units.flat)
+            # calculate components of solid earth tides
+            SE = np.einsum('ti...,ji...->tj...', dxi, R[s,:,:])
             # reshape to output dimensions
-            tide_se[s,:] = drad.copy()
+            tide_se[s,:] = SE[:,2].copy()
 
     # output netCDF4 and HDF5 file attributes
     # will be added to YAML header in csv files

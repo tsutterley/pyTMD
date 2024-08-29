@@ -82,6 +82,7 @@ UPDATE HISTORY:
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
         drop use of heights when converting to cartesian coordinates
         use prediction function to calculate cartesian tide displacements
+        use rotation matrix to convert from cartesian to spherical
     Updated 07/2024: assert that data type is a known value
     Updated 06/2024: include attributes in output parquet files
     Updated 05/2024: use function to reading parquet files to allow
@@ -262,12 +263,25 @@ def compute_LPT_displacements(input_file, output_file,
         a_axis=units.a_axis, flat=units.flat)
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
-    # geocentric colatitude in radians
+    npts = len(latitude_geocentric)
+    # geocentric colatitude and longitude in radians
     theta = dtr*(90.0 - latitude_geocentric)
+    phi = dtr*lon.flatten()
 
     # compute normal gravity at spatial location
     # p. 80, Eqn.(2-199)
     gamma_0 = units.gamma_0(theta)
+
+    # rotation matrix for converting from cartesian coordinates
+    R = np.zeros((npts, 3, 3))
+    R[:,0,0] = np.cos(phi)*np.cos(theta)
+    R[:,1,0] = -np.sin(phi)
+    R[:,2,0] = np.cos(phi)*np.sin(theta)
+    R[:,0,1] = np.sin(phi)*np.cos(theta)
+    R[:,1,1] = np.cos(phi)
+    R[:,2,1] = np.sin(phi)*np.sin(theta)
+    R[:,0,2] = -np.sin(theta)
+    R[:,2,2] = np.cos(theta)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -284,12 +298,10 @@ def compute_LPT_displacements(input_file, output_file,
                 l2=lb2,
                 convention=CONVENTION
             )
-            # calculate radial component of load pole tides
-            dln,dlt,drad = pyTMD.spatial.to_geodetic(
-                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
-                a_axis=units.a_axis, flat=units.flat)
+            # calculate components of load pole tides
+            S = np.einsum('ti...,tji...->tj...', dxi, R)
             # reshape to output dimensions
-            Srad.data[:,:,i] = np.reshape(drad, (ny,nx))
+            Srad.data[:,:,i] = np.reshape(S[:,2], (ny,nx))
             Srad.mask[:,:,i] = np.isnan(Srad.data[:,:,i])
     elif (TYPE == 'drift'):
         # calculate load pole tides in cartesian coordinates
@@ -302,13 +314,11 @@ def compute_LPT_displacements(input_file, output_file,
             l2=lb2,
             convention=CONVENTION
         )
-        # calculate radial component of load pole tides
-        dln,dlt,drad = pyTMD.spatial.to_geodetic(
-            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
-            a_axis=units.a_axis, flat=units.flat)
+        # calculate components of load pole tides
+        S = np.einsum('ti...,tji...->tj...', dxi, R)
         # reshape to output dimensions
         Srad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Srad.data[:] = drad.copy()
+        Srad.data[:] = S[:,2].copy()
         Srad.mask = np.isnan(Srad.data)
     elif (TYPE == 'time series'):
         Srad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
@@ -325,12 +335,10 @@ def compute_LPT_displacements(input_file, output_file,
                 l2=lb2,
                 convention=CONVENTION
             )
-            # calculate radial component of load pole tides
-            dln,dlt,drad = pyTMD.spatial.to_geodetic(
-                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
-                a_axis=units.a_axis, flat=units.flat)
+            # calculate components of load pole tides
+            S = np.einsum('ti...,ji...->tj...', dxi, R[s,:,:])
             # reshape to output dimensions
-            Srad.data[s,:] = drad.copy()
+            Srad.data[s,:] = S[:,2].copy()
             Srad.mask[s,:] = np.isnan(Srad.data[s,:])
 
     # replace invalid data with fill values

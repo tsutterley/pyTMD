@@ -31,6 +31,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
+        added functions to convert to and from East-North-Up coordinates
     Updated 07/2024: added functions to convert to and from DMS
     Updated 06/2024: added function to write parquet files with metadata
     Updated 05/2024: added function to read from parquet files
@@ -1562,7 +1563,7 @@ def to_dms(d: np.ndarray):
     degree, minute = np.divmod(minute, 60.0)
     return (sign*degree, minute, second)
 
-def to_degrees(
+def from_dms(
         degree: np.ndarray,
         minute: np.ndarray,
         second: np.ndarray
@@ -1619,8 +1620,8 @@ def to_cartesian(
         for spherical coordinates set to 0
     """
     # verify axes and copy to not modify inputs
-    lon = np.atleast_1d(np.copy(lon))
-    lat = np.atleast_1d(np.copy(lat))
+    lon = np.atleast_1d(np.copy(lon)).astype(np.float64)
+    lat = np.atleast_1d(np.copy(lat)).astype(np.float64)
     # fix coordinates to be 0:360
     lon[lon < 0] += 360.0
     # Linear eccentricity and first numerical eccentricity
@@ -1653,9 +1654,9 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
         cartesian z-coordinates
     """
     # verify axes and copy to not modify inputs
-    x = np.atleast_1d(np.copy(x))
-    y = np.atleast_1d(np.copy(y))
-    z = np.atleast_1d(np.copy(z))
+    x = np.atleast_1d(np.copy(x)).astype(np.float64)
+    y = np.atleast_1d(np.copy(y)).astype(np.float64)
+    z = np.atleast_1d(np.copy(z)).astype(np.float64)
     # calculate radius
     rad = np.sqrt(x**2.0 + y**2.0 + z**2.0)
     # calculate angular coordinates
@@ -1712,9 +1713,9 @@ def to_geodetic(
         maximum number of iterations
     """
     # verify axes and copy to not modify inputs
-    x = np.atleast_1d(np.copy(x))
-    y = np.atleast_1d(np.copy(y))
-    z = np.atleast_1d(np.copy(z))
+    x = np.atleast_1d(np.copy(x)).astype(np.float64)
+    y = np.atleast_1d(np.copy(y)).astype(np.float64)
+    z = np.atleast_1d(np.copy(z)).astype(np.float64)
     # calculate the geodetic coordinates using the specified method
     if (method.lower() == 'moritz'):
         return _moritz_iterative(x, y, z, a_axis=a_axis, flat=flat,
@@ -1945,6 +1946,142 @@ def _zhu_closed_form(
         h[ind] = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z[ind]-zi)**2.0)
     # return latitude, longitude and height
     return (lon, lat, h)
+
+def to_ENU(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        lon0: float = 0.0,
+        lat0: float = 0.0,
+        h0: float = 0.0,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat,
+    ):
+    """
+    Convert from Earth-Centered Earth-Fixed (ECEF) cartesian coordinates
+    to East-North-Up coordinates (ENU)
+
+    Parameters
+    ----------
+    x, float
+        cartesian x-coordinates
+    y, float
+        cartesian y-coordinates
+    z, float
+        cartesian z-coordinates
+    lon0: float, default 0.0
+        reference longitude (degrees east)
+    lat0: float, default 0.0
+        reference latitude (degrees north)
+    h0: float, default 0.0
+        reference height (meters)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    E: np.ndarray
+        east coordinates
+    N: np.ndarray
+        north coordinates
+    U: np.ndarray
+        up coordinates
+    """
+    # degrees to radians
+    dtr = np.pi/180.0
+    # verify axes and copy to not modify inputs
+    x = np.atleast_1d(np.copy(x)).astype(np.float64)
+    y = np.atleast_1d(np.copy(y)).astype(np.float64)
+    z = np.atleast_1d(np.copy(z)).astype(np.float64)
+    # convert latitude and longitude to ECEF
+    X0, Y0, Z0 = to_cartesian(lon0, lat0, h=h0, a_axis=a_axis, flat=flat)
+    # calculate the rotation matrix
+    R = np.zeros((3, 3))
+    R[0,0] = -np.sin(dtr*lon0)
+    R[0,1] = np.cos(dtr*lon0)
+    R[0,2] = 0.0
+    R[1,0] = -np.sin(dtr*lat0)*np.cos(dtr*lon0)
+    R[1,1] = -np.sin(dtr*lat0)*np.sin(dtr*lon0)
+    R[1,2] = np.cos(dtr*lat0)
+    R[2,0] = np.cos(dtr*lat0)*np.cos(dtr*lon0)
+    R[2,1] = np.cos(dtr*lat0)*np.sin(dtr*lon0)
+    R[2,2] = np.sin(dtr*lat0)
+    # calculate the ENU coordinates
+    E, N, U = np.dot(R, np.vstack((x - X0, y - Y0, z - Z0)))
+    # return the ENU coordinates
+    return (E, N, U)
+
+def from_ENU(
+        E: np.ndarray,
+        N: np.ndarray,
+        U: np.ndarray,
+        lon0: float = 0.0,
+        lat0: float = 0.0,
+        h0: float = 0.0,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat,
+    ):
+    """
+    Convert from East-North-Up coordinates (ENU) to
+    Earth-Centered Earth-Fixed (ECEF) cartesian coordinates
+
+    Parameters
+    ----------
+    E, float
+        east coordinates
+    N, float
+        north coordinates
+    U, float
+        up coordinates
+    lon0: float, default 0.0
+        reference longitude (degrees east)
+    lat0: float, default 0.0
+        reference latitude (degrees north)
+    h0: float, default 0.0
+        reference height (meters)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    x, float
+        cartesian x-coordinates
+    y, float
+        cartesian y-coordinates
+    z, float
+        cartesian z-coordinates
+    """
+    # degrees to radians
+    dtr = np.pi/180.0
+    # verify axes and copy to not modify inputs
+    E = np.atleast_1d(np.copy(E)).astype(np.float64)
+    N = np.atleast_1d(np.copy(N)).astype(np.float64)
+    U = np.atleast_1d(np.copy(U)).astype(np.float64)
+    # convert latitude and longitude to ECEF
+    X0, Y0, Z0 = to_cartesian(lon0, lat0, h=h0, a_axis=a_axis, flat=flat)
+    # calculate the rotation matrix
+    R = np.zeros((3, 3))
+    R[0,0] = -np.sin(dtr*lon0)
+    R[1,0] = np.cos(dtr*lon0)
+    R[2,0] = 0.0
+    R[0,1] = -np.sin(dtr*lat0)*np.cos(dtr*lon0)
+    R[1,1] = -np.sin(dtr*lat0)*np.sin(dtr*lon0)
+    R[2,1] = np.cos(dtr*lat0)
+    R[0,2] = np.cos(dtr*lat0)*np.cos(dtr*lon0)
+    R[1,2] = np.cos(dtr*lat0)*np.sin(dtr*lon0)
+    R[2,2] = np.sin(dtr*lat0)
+    # calculate the ECEF coordinates
+    x, y, z = np.dot(R, np.vstack((E, N, U)))
+    # add reference coordinates
+    x += X0
+    y += Y0
+    z += Z0
+    # return the ECEF coordinates
+    return (x, y, z)
 
 def scale_areas(*args, **kwargs):
     warnings.warn("Deprecated. Please use pyTMD.spatial.scale_factors instead",
