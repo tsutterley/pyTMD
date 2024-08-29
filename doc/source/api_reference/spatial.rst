@@ -79,7 +79,7 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.to_dms
 
-.. autofunction:: pyTMD.spatial.to_degrees
+.. autofunction:: pyTMD.spatial.from_dms
 
 .. autofunction:: pyTMD.spatial.to_cartesian
 
@@ -92,5 +92,9 @@ General Methods
 .. autofunction:: pyTMD.spatial._bowring_iterative
 
 .. autofunction:: pyTMD.spatial._zhu_closed_form
+
+.. autofunction:: pyTMD.spatial.to_ENU
+
+.. autofunction:: pyTMD.spatial.from_ENU
 
 .. autofunction:: pyTMD.spatial.scale_factors

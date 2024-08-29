@@ -95,6 +95,7 @@ UPDATE HISTORY:
         drop use of heights when converting to cartesian coordinates
         use io function to extract ocean pole tide values at coordinates
         use prediction function to calculate cartesian tide displacements
+        use rotation matrix to convert from cartesian to spherical
     Updated 06/2024: include attributes in output parquet files
         use np.clongdouble instead of np.longcomplex
     Updated 05/2024: use function to reading parquet files to allow
@@ -285,20 +286,21 @@ def compute_OPT_displacements(input_file, output_file,
     # read ocean pole tide map from Desai (2002)
     ur, un, ue = pyTMD.io.IERS.extract_coefficients(lon.flatten(),
         latitude_geocentric, method=METHOD)
-    # convert to cartesian coordinates
-    R = np.zeros((3, 3, npts))
-    R[0,0,:] = np.cos(phi)*np.cos(theta)
-    R[0,1,:] = -np.sin(phi)
-    R[0,2,:] = np.cos(phi)*np.sin(theta)
-    R[1,0,:] = np.sin(phi)*np.cos(theta)
-    R[1,1,:] = np.cos(phi)
-    R[1,2,:] = np.sin(phi)*np.sin(theta)
-    R[2,0,:] = -np.sin(theta)
-    R[2,2,:] = np.cos(theta)
+    # rotation matrix for converting to/from cartesian coordinates
+    R = np.zeros((npts, 3, 3))
+    R[:,0,0] = np.cos(phi)*np.cos(theta)
+    R[:,0,1] = -np.sin(phi)
+    R[:,0,2] = np.cos(phi)*np.sin(theta)
+    R[:,1,0] = np.sin(phi)*np.cos(theta)
+    R[:,1,1] = np.cos(phi)
+    R[:,1,2] = np.sin(phi)*np.sin(theta)
+    R[:,2,0] = -np.sin(theta)
+    R[:,2,2] = np.cos(theta)
+    Rinv = np.linalg.inv(R)
 
     # calculate pole tide displacements in Cartesian coordinates
     # coefficients reordered to N, E, R to match IERS rotation matrix
-    UXYZ = np.einsum('ti...,jit...->tj...', np.c_[un, ue, ur], R)
+    UXYZ = np.einsum('ti...,tji...->tj...', np.c_[un, ue, ur], R)
 
     # calculate radial displacement at time
     if (TYPE == 'grid'):
@@ -317,12 +319,10 @@ def compute_OPT_displacements(input_file, output_file,
                 g2=gamma,
                 convention=CONVENTION
             )
-            # calculate radial component of ocean pole tides
-            dln,dlt,drad = pyTMD.spatial.to_geodetic(
-                X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
-                a_axis=units.a_axis, flat=units.flat)
+            # calculate components of ocean pole tides
+            U = np.einsum('ti...,tji...->tj...', dxi, Rinv)
             # reshape to output dimensions
-            Urad.data[:,:,i] = np.reshape(drad, (ny,nx))
+            Urad.data[:,:,i] = np.reshape(U[:,2], (ny,nx))
             Urad.mask[:,:,i] = np.isnan(Urad.data[:,:,i])
     elif (TYPE == 'drift'):
         # calculate ocean pole tides in cartesian coordinates
@@ -337,13 +337,11 @@ def compute_OPT_displacements(input_file, output_file,
             g2=gamma,
             convention=CONVENTION
         )
-        # calculate radial component of ocean pole tides
-        dln,dlt,drad = pyTMD.spatial.to_geodetic(
-            X + dxi[:,0], Y + dxi[:,1], Z + dxi[:,2],
-            a_axis=units.a_axis, flat=units.flat)
+        # calculate components of ocean pole tides
+        U = np.einsum('ti...,tji...->tj...', dxi, Rinv)
         # convert to masked array
         Urad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Urad.data[:] = drad.copy()
+        Urad.data[:] = U[:,2].copy()
         Urad.mask = np.isnan(Urad.data)
     elif (TYPE == 'time series'):
         Urad = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
@@ -363,12 +361,10 @@ def compute_OPT_displacements(input_file, output_file,
                 g2=gamma,
                 convention=CONVENTION
             )
-            # calculate radial component of ocean pole tides
-            dln,dlt,drad = pyTMD.spatial.to_geodetic(
-                X[s] + dxi[:,0], Y[s] + dxi[:,1], Z[s] + dxi[:,2],
-                a_axis=units.a_axis, flat=units.flat)
+            # calculate components of ocean pole tides
+            U = np.einsum('ti...,ji...->tj...', dxi, Rinv[s,:,:])
             # reshape to output dimensions
-            Urad.data[s,:] = drad.copy()
+            Urad.data[s,:] = U[:,2].copy()
             Urad.mask[s,:] = np.isnan(Urad.data[s,:])
 
     # replace invalid data with fill values

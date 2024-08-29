@@ -424,20 +424,34 @@ def test_wrap_longitudes():
 def test_degrees_to_DMS():
     # test a range of angles
     d = np.array([180.0, -180.0, 180.75, -180.75, 180.755, -180.755])
-    deg, min, sec = pyTMD.spatial.to_dms(d)
+    degs, mins, secs = pyTMD.spatial.to_dms(d)
     expdeg = np.array([180, -180, 180, -180, 180, -180])
     expmin = np.array([0, 0, 45, 45, 45, 45])
     expsec = np.array([0, 0, 0, 0, 18, 18])
-    assert np.all(deg == expdeg)
-    assert np.all(min == expmin)
-    assert np.all(sec == expsec)
+    assert np.all(degs == expdeg)
+    assert np.all(mins == expmin)
+    assert np.all(secs == expsec)
 
 # PURPOSE: test the conversion of DMS to degrees
 def test_DMS_to_degrees():
     # test a range of angles
-    deg = np.array([180, -180, 180, -180, 180, -180])
-    min = np.array([0, 0, 45, 45, 45, 45])
-    sec = np.array([0, 0, 0, 0, 18, 18])
-    d = pyTMD.spatial.to_degrees(deg, min, sec)
+    degs = np.array([180, -180, 180, -180, 180, -180])
+    mins = np.array([0, 0, 45, 45, 45, 45])
+    secs = np.array([0, 0, 0, 0, 18, 18])
+    d = pyTMD.spatial.from_dms(degs, mins, secs)
     expd = np.array([180.0, -180.0, 180.75, -180.75, 180.755, -180.755])
     assert np.all(d == expd)
+
+# PURPOSE: test the conversion of ECEF to ENU coordinates
+def test_ECEF_to_ENU():
+    Xexp, Yexp, Zexp = (3771793.968, 140253.342, 5124304.349)
+    Eexp, Nexp, Uexp = (8534.192304843, 90086.3793375129, -569.0841634049)
+    lon0, lat0 = (2.0, 53.0)
+    E, N, U = pyTMD.spatial.to_ENU(Xexp, Yexp, Zexp, lon0=lon0, lat0=lat0)
+    assert np.isclose(E, Eexp)
+    assert np.isclose(N, Nexp)
+    assert np.isclose(U, Uexp)
+    X, Y, Z = pyTMD.spatial.from_ENU(E, N, U, lon0=lon0, lat0=lat0)
+    assert np.isclose(X, Xexp)
+    assert np.isclose(Y, Yexp)
+    assert np.isclose(Z, Zexp)
