@@ -307,37 +307,50 @@ def test_ocean_pole_tide(METHOD):
     # read ocean pole tide map from Desai (2002)
     ocean_pole_tide_file = pyTMD.utilities.get_data_path(
         ['data','opoleloadcoefcmcor.txt.gz'])
-    iur, iun, iue, ilon, ilat = pyTMD.io.ocean_pole_tide(ocean_pole_tide_file)
+    # interpolate ocean pole tide map to coordinates
+    iu = {}
+    iu['u_radial'], iu['u_north'], iu['u_east'], = \
+        pyTMD.io.IERS.extract_coefficients(
+            header['longitude'],
+            header['latitude'],
+            model_file=ocean_pole_tide_file,
+            method=METHOD
+        )
 
-    # interpolate ocean pole tide map from Desai (2002)
-    if (METHOD == 'spline'):
-        # use scipy bivariate splines to interpolate to output points
-        f1 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
-            iur[:,::-1].real, kx=1, ky=1)
-        f2 = scipy.interpolate.RectBivariateSpline(ilon, ilat[::-1],
-            iur[:,::-1].imag, kx=1, ky=1)
-        UR = np.zeros((file_lines),dtype=np.clongdouble)
-        UR.real = f1.ev(header['longitude'], header['latitude'])
-        UR.imag = f2.ev(header['longitude'], header['latitude'])
-    else:
-        # use scipy regular grid to interpolate values for a given method
-        r1 = scipy.interpolate.RegularGridInterpolator((ilon, ilat[::-1]),
-            iur[:,::-1], method=METHOD)
-        UR = r1.__call__(np.c_[header['longitude'], header['latitude']])
+    # create timescale object from MJD
+    ts = timescale.time.Timescale(MJD=validation['MJD'])
+    # calculate angular coordinates of mean/secular pole at time
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(ts.year,
+        convention='2003')
+    # read and interpolate IERS daily polar motion values
+    px, py = timescale.eop.iers_polar_motion(ts.MJD, k=3, s=0)
+    # calculate differentials from mean/secular pole positions
+    # using the latest definition from IERS Conventions (2010)
+    mx = px - mpx
+    my = -(py - mpy)
 
     # calculate differences in time
     dt = (validation['MJD'] - header['t0'])/header['1 year']
     # calculate angular coordinates of mean pole at time
-    mpx = xmean[0] + xmean[1]*dt
-    mpy = ymean[0] + ymean[1]*dt
+    mean_pole_x = xmean[0] + xmean[1]*dt
+    mean_pole_y = ymean[0] + ymean[1]*dt
+    # assert that the mean pole values are close
+    assert np.all(np.abs(mpx - mean_pole_x) < eps)
+    assert np.all(np.abs(mpy - mean_pole_y) < eps)
 
     # calculate differentials from mean pole positions
-    mx = validation['x_p'] - mpx
-    my = -(validation['y_p'] - mpy)
-    # calculate radial displacement at time
-    u_radial = K*atr*np.real((mx*gamma.real + my*gamma.imag)*UR.real +
-        (my*gamma.real - mx*gamma.imag)*UR.imag)
-    assert np.all(np.abs(u_radial - validation['u_radial']) < eps)
+    x_bar = validation['x_p'] - mean_pole_x
+    y_bar = -(validation['y_p'] - mean_pole_y)
+    # assert that the mean pole differentials are close
+    assert np.all(np.abs(mx - x_bar) < eps)
+    assert np.all(np.abs(my - y_bar) < eps)
+
+    # calculate ocean pole tide displacements at time
+    for key, val in iu.items():
+        u = K*atr*np.real((x_bar*gamma.real + y_bar*gamma.imag)*val.real +
+            (y_bar*gamma.real - x_bar*gamma.imag)*val.imag)
+        # assert that the predicted values are close
+        assert np.all(np.abs(u - validation[key]) < eps)
 
 # PURPOSE: compute radial load pole tide displacements
 # following IERS Convention (2010) guidelines
