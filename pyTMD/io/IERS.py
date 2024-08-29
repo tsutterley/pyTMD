@@ -208,11 +208,12 @@ def read_binary_file(**kwargs):
         U['N'][ilon,ilat] = unr + 1j*uni
         U['E'][ilon,ilat] = uer + 1j*uei
     # shift ocean pole tide grid to -180:180
+    longitudes = np.copy(glon)
     for key, val in U.items():
-        U[key], glon = _shift(val, glon, lon0=180.0,
+        U[key], glon = _shift(val, longitudes, lon0=180.0,
             cyclic=360.0, direction='west')
     # extend matrix for bilinear interpolation
-    glon = _extend_array(glon,dlon)
+    glon = _extend_array(glon, dlon)
     # pad ends of matrix for interpolation
     for key, val in U.items():
         U[key] = _extend_matrix(val)
