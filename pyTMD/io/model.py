@@ -9,6 +9,7 @@ UPDATE HISTORY:
     Updated 08/2024: added attribute for minor constituents to infer
         allow searching over iterable glob strings in definition files
         added option to try automatic detection of definition file format
+        added new TPXO10-atlas-v2 to list of models
     Updated 07/2024: added new FES2022 and FES2022_load to list of models
         added JSON format for model definition files
         use parse function from constituents class to extract names
@@ -190,6 +191,26 @@ class model:
             self.format = 'TMD3'
             self.model_directory = self.directory.joinpath('CATS2008_v2023')
             self.grid_file = self.pathfinder('CATS2008_v2023.nc')
+        elif (m == 'TPXO7.2'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO7.2_tmd')
+            self.grid_file = self.pathfinder('grid_tpxo7.2')
+            self.version = '7.2'
+        elif (m == 'TPXO7.2_load'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO7.2_load')
+            self.grid_file = self.pathfinder('grid_tpxo6.2')
+            self.version = '7.2'
+        elif (m == 'TPXO9.1'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO9.1','DATA')
+            self.grid_file = self.pathfinder('grid_tpxo9')
+            self.version = '9.1'
+        elif (m == 'TPXO8-atlas'):
+            self.format = 'ATLAS-compact'
+            self.model_directory = self.directory.joinpath('tpxo8_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
+            self.version = '8'
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
@@ -210,26 +231,10 @@ class model:
             self.model_directory = self.directory.joinpath('TPXO9_atlas_v5')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas_30_v5')
             self.version = 'v5'
-        elif (m == 'TPXO9.1'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO9.1','DATA')
-            self.grid_file = self.pathfinder('grid_tpxo9')
-            self.version = '9.1'
-        elif (m == 'TPXO8-atlas'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('tpxo8_atlas')
-            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
-            self.version = '8'
-        elif (m == 'TPXO7.2'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO7.2_tmd')
-            self.grid_file = self.pathfinder('grid_tpxo7.2')
-            self.version = '7.2'
-        elif (m == 'TPXO7.2_load'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO7.2_load')
-            self.grid_file = self.pathfinder('grid_tpxo6.2')
-            self.version = '7.2'
+        elif (m == 'TPXO10-atlas-v2'):
+            self.model_directory = self.directory.joinpath('TPXO10_atlas_v2')
+            self.grid_file = self.pathfinder('grid_tpxo10atlas_v2')
+            self.version = 'v2'
         elif (m == 'AODTM-5'):
             self.format = 'OTIS'
             self.model_directory = self.directory.joinpath('aodtm5_tmd')
@@ -320,6 +325,50 @@ class model:
             self.reference = ('https://www.esr.org/research/'
                 'polar-tide-models/list-of-polar-tide-models/cats2008/')
             self.variable = 'tide_ocean'
+        elif (m == 'TPXO7.2'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO7.2_tmd')
+            self.grid_file = self.pathfinder('grid_tpxo7.2')
+            self.model_file = self.pathfinder('h_tpxo7.2')
+            self.projection = '4326'
+            self.version = '7.2'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/'
+                'tides/global.html')
+            self.variable = 'tide_ocean'
+        elif (m == 'TPXO7.2_load'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO7.2_load')
+            self.grid_file = self.pathfinder('grid_tpxo6.2')
+            self.model_file = self.pathfinder('h_tpxo7.2_load')
+            self.projection = '4326'
+            self.version = '7.2'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/'
+                'tides/global.html')
+            self.variable = 'tide_load'
+        elif (m == 'TPXO9.1'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO9.1','DATA')
+            self.grid_file = self.pathfinder('grid_tpxo9')
+            self.model_file = self.pathfinder('h_tpxo9.v1')
+            self.projection = '4326'
+            self.version = '9.1'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/'
+                'tides/global.html')
+            self.variable = 'tide_ocean'
+        elif (m == 'TPXO8-atlas'):
+            self.format = 'ATLAS-compact'
+            self.model_directory = self.directory.joinpath('tpxo8_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
+            self.model_file = self.pathfinder('hf.tpxo8_atlas_30_v1')
+            self.projection = '4326'
+            self.version = '8'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/'
+                'tides/tpxo8_atlas.html')
+            self.variable = 'tide_ocean'
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
@@ -405,50 +454,24 @@ class model:
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
             self.variable = 'tide_ocean'
-        elif (m == 'TPXO9.1'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO9.1','DATA')
-            self.grid_file = self.pathfinder('grid_tpxo9')
-            self.model_file = self.pathfinder('h_tpxo9.v1')
+        elif (m == 'TPXO10-atlas-v2'):
+            self.model_directory = self.directory.joinpath('TPXO10_atlas_v2')
+            self.grid_file = self.pathfinder('grid_tpxo10atlas_v2')
+            model_files = ['h_2n2_tpxo10_atlas_30_v2',
+                'h_k1_tpxo10_atlas_30_v2','h_k2_tpxo10_atlas_30_v2',
+                'h_m2_tpxo10_atlas_30_v2','h_m4_tpxo10_atlas_30_v2',
+                'h_mf_tpxo10_atlas_30_v2','h_mm_tpxo10_atlas_30_v2',
+                'h_mn4_tpxo10_atlas_30_v2','h_ms4_tpxo10_atlas_30_v2',
+                'h_n2_tpxo10_atlas_30_v2','h_o1_tpxo10_atlas_30_v2',
+                'h_p1_tpxo10_atlas_30_v2','h_q1_tpxo10_atlas_30_v2',
+                'h_s1_tpxo10_atlas_30_v2','h_s2_tpxo10_atlas_30_v2']
+            self.model_file = self.pathfinder(model_files)
             self.projection = '4326'
-            self.version = '9.1'
+            self.scale = 1.0/1000.0
+            self.version = 'v2'
             # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/'
-                'tides/global.html')
+            self.reference = 'https://www.tpxo.net/global/tpxo10-atlas'
             self.variable = 'tide_ocean'
-        elif (m == 'TPXO8-atlas'):
-            self.format = 'ATLAS-compact'
-            self.model_directory = self.directory.joinpath('tpxo8_atlas')
-            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
-            self.model_file = self.pathfinder('hf.tpxo8_atlas_30_v1')
-            self.projection = '4326'
-            self.version = '8'
-            # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/'
-                'tides/tpxo8_atlas.html')
-            self.variable = 'tide_ocean'
-        elif (m == 'TPXO7.2'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO7.2_tmd')
-            self.grid_file = self.pathfinder('grid_tpxo7.2')
-            self.model_file = self.pathfinder('h_tpxo7.2')
-            self.projection = '4326'
-            self.version = '7.2'
-            # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/'
-                'tides/global.html')
-            self.variable = 'tide_ocean'
-        elif (m == 'TPXO7.2_load'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO7.2_load')
-            self.grid_file = self.pathfinder('grid_tpxo6.2')
-            self.model_file = self.pathfinder('h_tpxo7.2_load')
-            self.projection = '4326'
-            self.version = '7.2'
-            # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/'
-                'tides/global.html')
-            self.variable = 'tide_load'
         elif (m == 'AODTM-5'):
             self.format = 'OTIS'
             self.model_directory = self.directory.joinpath('aodtm5_tmd')
@@ -814,6 +837,36 @@ class model:
             self.grid_file = self.pathfinder('CATS2008_v2023.nc')
             self.model_file = dict(u=self.pathfinder('CATS2008_v2023.nc'))
             self.projection = 'CATS2008'
+        elif (m == 'TPXO7.2'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO7.2_tmd')
+            self.grid_file = self.pathfinder('grid_tpxo7.2')
+            self.model_file = dict(u=self.pathfinder('u_tpxo7.2'))
+            self.projection = '4326'
+            self.version = '7.2'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/tides/'
+                'global.html')
+        elif (m == 'TPXO9.1'):
+            self.format = 'OTIS'
+            self.model_directory = self.directory.joinpath('TPXO9.1')
+            self.grid_file = self.pathfinder('grid_tpxo9')
+            self.model_file = dict(u=self.pathfinder('u_tpxo9.v1'))
+            self.projection = '4326'
+            self.version = '9.1'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/tides/'
+                'global.html')
+        elif (m == 'TPXO8-atlas'):
+            self.format = 'ATLAS-compact'
+            self.model_directory = self.directory.joinpath('tpxo8_atlas')
+            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
+            self.model_file = dict(u=self.pathfinder('uv.tpxo8_atlas_30_v1'))
+            self.projection = '4326'
+            self.version = '8'
+            # model description and references
+            self.reference = ('http://volkov.oce.orst.edu/tides/'
+                'tpxo8_atlas.html')
         elif (m == 'TPXO9-atlas'):
             self.model_directory = self.directory.joinpath('TPXO9_atlas')
             self.grid_file = self.pathfinder('grid_tpxo9_atlas')
@@ -962,36 +1015,38 @@ class model:
             self.version = 'v5'
             # model description and references
             self.reference = 'https://www.tpxo.net/global/tpxo9-atlas'
-        elif (m == 'TPXO9.1'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO9.1')
-            self.grid_file = self.pathfinder('grid_tpxo9')
-            self.model_file = dict(u=self.pathfinder('u_tpxo9.v1'))
+        elif (m == 'TPXO10-atlas-v2'):
+            self.model_directory = self.directory.joinpath('TPXO10_atlas_v2')
+            self.grid_file = self.pathfinder('grid_tpxo10atlas_v2')
+            model_files = {}
+            model_files['u'] = ['u_2n2_tpxo10_atlas_30_v2',
+                'u_k1_tpxo10_atlas_30_v2','u_k2_tpxo10_atlas_30_v2',
+                'u_m2_tpxo10_atlas_30_v2','u_m4_tpxo10_atlas_30_v2',
+                'u_mf_tpxo10_atlas_30_v2','u_mm_tpxo10_atlas_30_v2',
+                'u_mn4_tpxo10_atlas_30_v2','u_ms4_tpxo10_atlas_30_v2',
+                'u_n2_tpxo10_atlas_30_v2','u_o1_tpxo10_atlas_30_v2',
+                'u_p1_tpxo10_atlas_30_v2','u_q1_tpxo10_atlas_30_v2',
+                'u_s1_tpxo10_atlas_30_v2','u_s2_tpxo10_atlas_30_v2']
+            # add v-component if format is netcdf
+            if (self.format == 'ATLAS-netcdf'):
+                model_files['v']
+                model_files['u'] = ['u_2n2_tpxo10_atlas_30_v2',
+                    'u_k1_tpxo10_atlas_30_v2','u_k2_tpxo10_atlas_30_v2',
+                    'u_m2_tpxo10_atlas_30_v2','u_m4_tpxo10_atlas_30_v2',
+                    'u_mf_tpxo10_atlas_30_v2','u_mm_tpxo10_atlas_30_v2',
+                    'u_mn4_tpxo10_atlas_30_v2','u_ms4_tpxo10_atlas_30_v2',
+                    'u_n2_tpxo10_atlas_30_v2','u_o1_tpxo10_atlas_30_v2',
+                    'u_p1_tpxo10_atlas_30_v2','u_q1_tpxo10_atlas_30_v2',
+                    'u_s1_tpxo10_atlas_30_v2','u_s2_tpxo10_atlas_30_v2']
+            # build model file dictionary
+            self.model_file = {}
+            for key,val in model_files.items():
+                self.model_file[key] = self.pathfinder(val)
             self.projection = '4326'
-            self.version = '9.1'
+            self.scale = 1e-4
+            self.version = 'v2'
             # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/tides/'
-                'global.html')
-        elif (m == 'TPXO8-atlas'):
-            self.format = 'ATLAS-compact'
-            self.model_directory = self.directory.joinpath('tpxo8_atlas')
-            self.grid_file = self.pathfinder('grid_tpxo8atlas_30_v1')
-            self.model_file = dict(u=self.pathfinder('uv.tpxo8_atlas_30_v1'))
-            self.projection = '4326'
-            self.version = '8'
-            # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/tides/'
-                'tpxo8_atlas.html')
-        elif (m == 'TPXO7.2'):
-            self.format = 'OTIS'
-            self.model_directory = self.directory.joinpath('TPXO7.2_tmd')
-            self.grid_file = self.pathfinder('grid_tpxo7.2')
-            self.model_file = dict(u=self.pathfinder('u_tpxo7.2'))
-            self.projection = '4326'
-            self.version = '7.2'
-            # model description and references
-            self.reference = ('http://volkov.oce.orst.edu/tides/'
-                'global.html')
+            self.reference = 'https://www.tpxo.net/global/tpxo10-atlas'
         elif (m == 'AODTM-5'):
             self.format = 'OTIS'
             self.model_directory = self.directory.joinpath('aodtm5_tmd')
@@ -1239,8 +1294,9 @@ class model:
         Returns list of global ocean tide elevation models
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
-            'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas',
-            'TPXO7.2','GOT4.7','GOT4.8','GOT4.10','GOT5.5',
+            'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO10-atlas-v2',
+            'TPXO9.1','TPXO8-atlas','TPXO7.2',
+            'GOT4.7','GOT4.8','GOT4.10','GOT5.5',
             'FES2014','FES2022','EOT20','HAMTIDE11']
 
     @staticmethod
@@ -1258,7 +1314,8 @@ class model:
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2',
             'TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5',
-            'TPXO9.1','TPXO8-atlas','TPXO7.2','FES2014','HAMTIDE11']
+            'TPXO10-atlas-v2','TPXO9.1','TPXO8-atlas','TPXO7.2',
+            'FES2014','HAMTIDE11']
 
     @staticmethod
     def antarctic_ocean() -> list:
@@ -1309,11 +1366,13 @@ class model:
         """
         Returns list of ocean tide elevation models
         """
-        return ['CATS0201','CATS2008','CATS2008-v2023','TPXO9-atlas',
-            'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
-            'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
-            'AODTM-5','AOTIM-5','AOTIM-5-2018','Arc2kmTM','Gr1kmTM',
-            'Gr1km-v2','GOT4.7','GOT4.8','GOT4.10','GOT5.5',
+        return ['CATS0201','CATS2008','CATS2008-v2023',
+            'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+            'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO10-atlas-v2',
+            'TPXO9.1','TPXO8-atlas','TPXO7.2',
+            'AODTM-5','AOTIM-5','AOTIM-5-2018',
+            'Arc2kmTM','Gr1kmTM','Gr1km-v2',
+            'GOT4.7','GOT4.8','GOT4.10','GOT5.5',
             'FES2014','FES2022','EOT20','HAMTIDE11']
 
     @staticmethod
@@ -1330,9 +1389,10 @@ class model:
         """
         Returns list of tidal current models
         """
-        return ['CATS0201','CATS2008','CATS2008-v2023','TPXO9-atlas',
-            'TPXO9-atlas-v2','TPXO9-atlas-v3','TPXO9-atlas-v4',
-            'TPXO9-atlas-v5','TPXO9.1','TPXO8-atlas','TPXO7.2',
+        return ['CATS0201','CATS2008','CATS2008-v2023',
+            'TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+            'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO10-atlas-v2',
+            'TPXO9.1','TPXO8-atlas','TPXO7.2',
             'AODTM-5','AOTIM-5','AOTIM-5-2018',
             'Arc2kmTM','Gr1kmTM','Gr1km-v2','FES2014','HAMTIDE11']
 
@@ -1365,7 +1425,7 @@ class model:
         Returns list of ATLAS format models
         """
         return ['TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
-            'TPXO9-atlas-v4','TPXO9-atlas-v5']
+            'TPXO9-atlas-v4','TPXO9-atlas-v5','TPXO10-atlas-v2']
 
     @staticmethod
     def GOT() -> list:
