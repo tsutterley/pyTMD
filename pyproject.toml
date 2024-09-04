@@ -96,6 +96,7 @@ omit = [
     "pyTMD/load_constituent.py",
     "pyTMD/load_nodal_corrections.py",
     "test/def_to_json.py",
+    "test/model_to_json.py",
 ]
 
 [tool.coverage.report]

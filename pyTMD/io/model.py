@@ -1029,8 +1029,7 @@ class model:
                 'u_s1_tpxo10_atlas_30_v2','u_s2_tpxo10_atlas_30_v2']
             # add v-component if format is netcdf
             if (self.format == 'ATLAS-netcdf'):
-                model_files['v']
-                model_files['u'] = ['u_2n2_tpxo10_atlas_30_v2',
+                model_files['v'] = ['u_2n2_tpxo10_atlas_30_v2',
                     'u_k1_tpxo10_atlas_30_v2','u_k2_tpxo10_atlas_30_v2',
                     'u_m2_tpxo10_atlas_30_v2','u_m4_tpxo10_atlas_30_v2',
                     'u_mf_tpxo10_atlas_30_v2','u_mm_tpxo10_atlas_30_v2',
@@ -1981,6 +1980,23 @@ class model:
             setattr(self, key, copy.copy(val))
         # return the model parameters
         return self
+
+    def to_dict(self, relative: bool = False):
+        """
+        Create a python dictionary from a model object
+        """
+        # output dictionary
+        d = {}
+        # model keys to return
+        keys = ['format', 'type', 'model_directory',
+            'grid_file', 'model_file', 'projection',
+            'variable', 'scale', 'constituents',
+            'version', 'reference']
+        for key in keys:
+            if hasattr(self, key) and getattr(self, key) is not None:
+                d[key] = getattr(self, key)
+        # return the model dictionary
+        return d
 
     def parse_constituents(self) -> list:
         """
