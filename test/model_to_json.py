@@ -22,6 +22,9 @@ def arguments():
         fromfile_prefix_chars="@"
     )
     # command line parameters
+    parser.add_argument('--atlas-format',
+        default=False, action='store_true',
+        help='Parse over ATLAS tide model format')
     parser.add_argument('--pretty', '-p',
         action='store_true',
         help='Pretty print the json file')
@@ -61,9 +64,10 @@ def main():
         m = pyTMD.io.model(directory=None, verify=False, format='OTIS').elevation(n)
         d['elevation'][n] = serialize(m.to_dict())
     # ATLAS netcdf models
-    for n in pyTMD.io.model.ATLAS():
-        m = pyTMD.io.model(directory=None, verify=False).elevation(n)
-        d['elevation'][f'{n}-nc'] = serialize(m.to_dict())
+    if args.atlas_format:
+        for n in pyTMD.io.model.ATLAS():
+            m = pyTMD.io.model(directory=None, verify=False).elevation(n)
+            d['elevation'][f'{n}-nc'] = serialize(m.to_dict())
     # load tide models
     for n in pyTMD.io.model.load_elevation():
         m = pyTMD.io.model(directory=None, verify=False, format='OTIS').elevation(n)
@@ -73,9 +77,10 @@ def main():
         m = pyTMD.io.model(directory=None, verify=False, format='OTIS').current(n)
         d['current'][n] = serialize(m.to_dict())
     # ATLAS netcdf models
-    for n in pyTMD.io.model.ATLAS():
-        m = pyTMD.io.model(directory=None, verify=False).current(n)
-        d['current'][f'{n}-nc'] = serialize(m.to_dict())
+    if args.atlas_format:
+        for n in pyTMD.io.model.ATLAS():
+            m = pyTMD.io.model(directory=None, verify=False).current(n)
+            d['current'][f'{n}-nc'] = serialize(m.to_dict())
 
     # writing model parameters to JSON database file
     json_file = filepath.joinpath('pyTMD','data','database.json')
