@@ -64,7 +64,8 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('FES2014')
     # recursively create model directory
-    model.model_directory.mkdir(parents=True, exist_ok=True)
+    model_directory = model.model_file[0].parent
+    model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
@@ -78,7 +79,7 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # run tests
     yield
     # clean up model
-    shutil.rmtree(model.model_directory)
+    shutil.rmtree(model_directory)
 
 # PURPOSE: Tests check point program
 def test_check_FES2014():

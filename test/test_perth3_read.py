@@ -68,7 +68,8 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('GOT4.7')
     # recursively create model directory
-    model.model_directory.mkdir(parents=True, exist_ok=True)
+    model_directory = model.model_file[0].parent
+    model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
@@ -82,7 +83,7 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # run tests
     yield
     # clean up model
-    shutil.rmtree(model.model_directory)
+    shutil.rmtree(model_directory)
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
@@ -91,10 +92,11 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
 def test_verify_GOT47(METHOD, CROP):
     # model parameters for GOT4.7
     model = pyTMD.io.model(filepath,compressed=True).elevation('GOT4.7')
+    model_directory = model.model_file[0].parent
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model.model_file = [model.model_directory.joinpath(m) for m in model_files]
+    model.model_file = [model_directory.joinpath(m) for m in model_files]
     # validate model constituents
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model.parse_constituents()
@@ -163,10 +165,11 @@ def test_verify_GOT47(METHOD, CROP):
 def test_compare_GOT47(METHOD):
     # model parameters for GOT4.7
     model = pyTMD.io.model(filepath,compressed=True).elevation('GOT4.7')
+    model_directory = model.model_file[0].parent
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model.model_file = [model.model_directory.joinpath(m) for m in model_files]
+    model.model_file = [model_directory.joinpath(m) for m in model_files]
     # validate model constituents
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model.parse_constituents()

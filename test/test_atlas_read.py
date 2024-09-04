@@ -95,7 +95,8 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,format='ATLAS-netcdf',compressed=True,
         verify=False).elevation('TPXO9-atlas-v2')
     # recursively create model directory
-    model.model_directory.mkdir(parents=True, exist_ok=True)
+    model_directory = model.model_file[0].parent
+    model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve grid file from s3
     obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model.grid_file.name))
     response = obj.get()
@@ -115,7 +116,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # run tests
     yield
     # clean up model
-    shutil.rmtree(model.model_directory)
+    shutil.rmtree(model_directory)
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])

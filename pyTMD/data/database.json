@@ -3,7 +3,6 @@
         "AODTM-5": {
             "format": "OTIS",
             "grid_file": "aodtm5_tmd/grid_Arc5km",
-            "model_directory": "aodtm5_tmd",
             "model_file": {
                 "u": "aodtm5_tmd/UV0_Arc5km"
             },
@@ -17,7 +16,6 @@
         "AOTIM-5": {
             "format": "OTIS",
             "grid_file": "aotim5_tmd/grid_Arc5km",
-            "model_directory": "aotim5_tmd",
             "model_file": {
                 "u": "aotim5_tmd/UV_Arc5km"
             },
@@ -31,7 +29,6 @@
         "AOTIM-5-2018": {
             "format": "OTIS",
             "grid_file": "Arc5km2018/grid_Arc5km2018",
-            "model_directory": "Arc5km2018",
             "model_file": {
                 "u": "Arc5km2018/UV_Arc5km2018"
             },
@@ -46,7 +43,6 @@
         "Arc2kmTM": {
             "format": "OTIS",
             "grid_file": "Arc2kmTM/grid_Arc2kmTM_v1",
-            "model_directory": "Arc2kmTM",
             "model_file": {
                 "u": "Arc2kmTM/UV_Arc2kmTM_v1"
             },
@@ -61,7 +57,6 @@
         "CATS0201": {
             "format": "OTIS",
             "grid_file": "cats0201_tmd/grid_CATS",
-            "model_directory": "cats0201_tmd",
             "model_file": {
                 "u": "cats0201_tmd/UV0_CATS02_01"
             },
@@ -75,7 +70,6 @@
         "CATS2008": {
             "format": "OTIS",
             "grid_file": "CATS2008/grid_CATS2008",
-            "model_directory": "CATS2008",
             "model_file": {
                 "u": "CATS2008/uv.CATS2008.out"
             },
@@ -88,7 +82,6 @@
         "CATS2008-v2023": {
             "format": "TMD3",
             "grid_file": "CATS2008_v2023/CATS2008_v2023.nc",
-            "model_directory": "CATS2008_v2023",
             "model_file": {
                 "u": "CATS2008_v2023/CATS2008_v2023.nc"
             },
@@ -136,7 +129,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "fes2014/northward_velocity",
             "model_file": {
                 "u": [
                     "fes2014/eastward_velocity/2n2.nc",
@@ -222,7 +214,6 @@
         "Gr1km-v2": {
             "format": "OTIS",
             "grid_file": "greenlandTMD_v2/grid_Greenland8.v2",
-            "model_directory": "greenlandTMD_v2",
             "model_file": {
                 "u": "greenlandTMD_v2/u_Greenland8_rot.v2"
             },
@@ -237,7 +228,6 @@
         "Gr1kmTM": {
             "format": "OTIS",
             "grid_file": "Gr1kmTM/grid_Gr1kmTM_v1",
-            "model_directory": "Gr1kmTM",
             "model_file": {
                 "u": "Gr1kmTM/UV_Gr1kmTM_v1"
             },
@@ -262,7 +252,6 @@
                 "s2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "hamtide",
             "model_file": {
                 "u": [
                     "hamtide/HAMcurrent11a_2n.nc",
@@ -298,7 +287,6 @@
         "TPXO10-atlas-v2": {
             "format": "OTIS",
             "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
-            "model_directory": "TPXO10_atlas_v2",
             "model_file": {
                 "u": [
                     "TPXO10_atlas_v2/u_2n2_tpxo10_atlas_30_v2",
@@ -330,7 +318,6 @@
         "TPXO10-atlas-v2-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2.nc",
-            "model_directory": "TPXO10_atlas_v2",
             "model_file": {
                 "u": [
                     "TPXO10_atlas_v2/u_2n2_tpxo10_atlas_30_v2.nc",
@@ -379,7 +366,6 @@
         "TPXO7.2": {
             "format": "OTIS",
             "grid_file": "TPXO7.2_tmd/grid_tpxo7.2",
-            "model_directory": "TPXO7.2_tmd",
             "model_file": {
                 "u": "TPXO7.2_tmd/u_tpxo7.2"
             },
@@ -394,7 +380,6 @@
         "TPXO8-atlas": {
             "format": "ATLAS-compact",
             "grid_file": "tpxo8_atlas/grid_tpxo8atlas_30_v1",
-            "model_directory": "tpxo8_atlas",
             "model_file": {
                 "u": "tpxo8_atlas/uv.tpxo8_atlas_30_v1"
             },
@@ -409,7 +394,6 @@
         "TPXO9-atlas": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas/grid_tpxo9_atlas",
-            "model_directory": "TPXO9_atlas",
             "model_file": {
                 "u": [
                     "TPXO9_atlas/u_q1_tpxo9_atlas_30",
@@ -438,7 +422,6 @@
         "TPXO9-atlas-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas/grid_tpxo9_atlas.nc",
-            "model_directory": "TPXO9_atlas",
             "model_file": {
                 "u": [
                     "TPXO9_atlas/u_q1_tpxo9_atlas_30.nc",
@@ -481,7 +464,6 @@
         "TPXO9-atlas-v2": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2",
-            "model_directory": "TPXO9_atlas_v2",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v2/u_q1_tpxo9_atlas_30_v2",
@@ -510,7 +492,6 @@
         "TPXO9-atlas-v2-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2.nc",
-            "model_directory": "TPXO9_atlas_v2",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v2/u_q1_tpxo9_atlas_30_v2.nc",
@@ -553,7 +534,6 @@
         "TPXO9-atlas-v3": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3",
-            "model_directory": "TPXO9_atlas_v3",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v3/u_q1_tpxo9_atlas_30_v3",
@@ -584,7 +564,6 @@
         "TPXO9-atlas-v3-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3.nc",
-            "model_directory": "TPXO9_atlas_v3",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v3/u_q1_tpxo9_atlas_30_v3.nc",
@@ -631,7 +610,6 @@
         "TPXO9-atlas-v4": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4",
-            "model_directory": "TPXO9_atlas_v4",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v4/u_q1_tpxo9_atlas_30_v4",
@@ -662,7 +640,6 @@
         "TPXO9-atlas-v4-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4.nc",
-            "model_directory": "TPXO9_atlas_v4",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v4/u_q1_tpxo9_atlas_30_v4.nc",
@@ -709,7 +686,6 @@
         "TPXO9-atlas-v5": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5",
-            "model_directory": "TPXO9_atlas_v5",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5",
@@ -741,7 +717,6 @@
         "TPXO9-atlas-v5-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc",
-            "model_directory": "TPXO9_atlas_v5",
             "model_file": {
                 "u": [
                     "TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc",
@@ -790,7 +765,6 @@
         "TPXO9.1": {
             "format": "OTIS",
             "grid_file": "TPXO9.1/grid_tpxo9",
-            "model_directory": "TPXO9.1",
             "model_file": {
                 "u": "TPXO9.1/u_tpxo9.v1"
             },
@@ -807,7 +781,6 @@
         "AODTM-5": {
             "format": "OTIS",
             "grid_file": "aodtm5_tmd/grid_Arc5km",
-            "model_directory": "aodtm5_tmd",
             "model_file": "aodtm5_tmd/h0_Arc5km.oce",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
@@ -817,7 +790,6 @@
         "AOTIM-5": {
             "format": "OTIS",
             "grid_file": "aotim5_tmd/grid_Arc5km",
-            "model_directory": "aotim5_tmd",
             "model_file": "aotim5_tmd/h_Arc5km.oce",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
@@ -827,7 +799,6 @@
         "AOTIM-5-2018": {
             "format": "OTIS",
             "grid_file": "Arc5km2018/grid_Arc5km2018",
-            "model_directory": "Arc5km2018",
             "model_file": "Arc5km2018/h_Arc5km2018",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
@@ -838,7 +809,6 @@
         "Arc2kmTM": {
             "format": "OTIS",
             "grid_file": "Arc2kmTM/grid_Arc2kmTM_v1",
-            "model_directory": "Arc2kmTM",
             "model_file": "Arc2kmTM/h_Arc2kmTM_v1",
             "projection": "3413",
             "reference": "https://doi.org/10.18739/A2D21RK6K",
@@ -849,7 +819,6 @@
         "CATS0201": {
             "format": "OTIS",
             "grid_file": "cats0201_tmd/grid_CATS",
-            "model_directory": "cats0201_tmd",
             "model_file": "cats0201_tmd/h0_CATS02_01",
             "projection": "4326",
             "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
@@ -859,7 +828,6 @@
         "CATS2008": {
             "format": "OTIS",
             "grid_file": "CATS2008/grid_CATS2008",
-            "model_directory": "CATS2008",
             "model_file": "CATS2008/hf.CATS2008.out",
             "projection": "CATS2008",
             "reference": "https://doi.org/10.15784/601235",
@@ -869,7 +837,6 @@
         "CATS2008-v2023": {
             "format": "TMD3",
             "grid_file": "CATS2008_v2023/CATS2008_v2023.nc",
-            "model_directory": "CATS2008_v2023",
             "model_file": "CATS2008_v2023/CATS2008_v2023.nc",
             "projection": "CATS2008",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/cats2008/",
@@ -879,7 +846,6 @@
         "CATS2008_load": {
             "format": "OTIS",
             "grid_file": "CATS2008a_SPOTL_Load/grid_CATS2008a_opt",
-            "model_directory": "CATS2008a_SPOTL_Load",
             "model_file": "CATS2008a_SPOTL_Load/h_CATS2008a_SPOTL_load",
             "projection": "CATS2008",
             "reference": "https://doi.org/10.15784/601235",
@@ -907,7 +873,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "EOT20/ocean_tides",
             "model_file": [
                 "EOT20/ocean_tides/2N2_ocean_eot20.nc",
                 "EOT20/ocean_tides/J1_ocean_eot20.nc",
@@ -954,7 +919,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "EOT20/load_tides",
             "model_file": [
                 "EOT20/load_tides/2N2_load_eot20.nc",
                 "EOT20/load_tides/J1_load_eot20.nc",
@@ -1018,7 +982,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "fes2014/ocean_tide",
             "model_file": [
                 "fes2014/ocean_tide/2n2.nc",
                 "fes2014/ocean_tide/eps2.nc",
@@ -1099,7 +1062,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "fes2014/load_tide",
             "model_file": [
                 "fes2014/load_tide/2n2.nc",
                 "fes2014/load_tide/eps2.nc",
@@ -1180,7 +1142,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "fes2022b/ocean_tide",
             "model_file": [
                 "fes2022b/ocean_tide/2n2_fes2022.nc",
                 "fes2022b/ocean_tide/eps2_fes2022.nc",
@@ -1261,7 +1222,6 @@
                 "t2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "fes2022b/load_tide",
             "model_file": [
                 "fes2022b/load_tide/2n2_fes2022.nc",
                 "fes2022b/load_tide/eps2_fes2022.nc",
@@ -1306,7 +1266,6 @@
         },
         "GOT4.10": {
             "format": "GOT-ascii",
-            "model_directory": "GOT4.10c/grids_oceantide",
             "model_file": [
                 "GOT4.10c/grids_oceantide/q1.d",
                 "GOT4.10c/grids_oceantide/o1.d",
@@ -1327,7 +1286,6 @@
         },
         "GOT4.10_load": {
             "format": "GOT-ascii",
-            "model_directory": "GOT4.10c/grids_loadtide",
             "model_file": [
                 "GOT4.10c/grids_loadtide/q1load.d",
                 "GOT4.10c/grids_loadtide/o1load.d",
@@ -1348,7 +1306,6 @@
         },
         "GOT4.7": {
             "format": "GOT-ascii",
-            "model_directory": "GOT4.7/grids_oceantide",
             "model_file": [
                 "GOT4.7/grids_oceantide/q1.d",
                 "GOT4.7/grids_oceantide/o1.d",
@@ -1369,7 +1326,6 @@
         },
         "GOT4.7_load": {
             "format": "GOT-ascii",
-            "model_directory": "GOT4.7/grids_loadtide",
             "model_file": [
                 "GOT4.7/grids_loadtide/q1load.d",
                 "GOT4.7/grids_loadtide/o1load.d",
@@ -1390,7 +1346,6 @@
         },
         "GOT4.8": {
             "format": "GOT-ascii",
-            "model_directory": "got4.8/grids_oceantide",
             "model_file": [
                 "got4.8/grids_oceantide/q1.d",
                 "got4.8/grids_oceantide/o1.d",
@@ -1411,7 +1366,6 @@
         },
         "GOT4.8_load": {
             "format": "GOT-ascii",
-            "model_directory": "got4.8/grids_loadtide",
             "model_file": [
                 "got4.8/grids_loadtide/q1load.d",
                 "got4.8/grids_loadtide/o1load.d",
@@ -1432,7 +1386,6 @@
         },
         "GOT5.5": {
             "format": "GOT-netcdf",
-            "model_directory": "GOT5.5/ocean_tides",
             "model_file": [
                 "GOT5.5/ocean_tides/2n2.nc",
                 "GOT5.5/ocean_tides/j1.nc",
@@ -1459,7 +1412,6 @@
         },
         "GOT5.5_load": {
             "format": "GOT-netcdf",
-            "model_directory": "GOT5.5/load_tides",
             "model_file": [
                 "GOT5.5/load_tides/2n2load.nc",
                 "GOT5.5/load_tides/k1load.nc",
@@ -1487,7 +1439,6 @@
         "Gr1km-v2": {
             "format": "OTIS",
             "grid_file": "greenlandTMD_v2/grid_Greenland8.v2",
-            "model_directory": "greenlandTMD_v2",
             "model_file": "greenlandTMD_v2/h_Greenland8.v2",
             "projection": "3413",
             "reference": "https://doi.org/10.1002/2016RG000546",
@@ -1498,7 +1449,6 @@
         "Gr1kmTM": {
             "format": "OTIS",
             "grid_file": "Gr1kmTM/grid_Gr1kmTM_v1",
-            "model_directory": "Gr1kmTM",
             "model_file": "Gr1kmTM/h_Gr1kmTM_v1",
             "projection": "3413",
             "reference": "https://doi.org/10.18739/A2B853K18",
@@ -1519,7 +1469,6 @@
                 "s2"
             ],
             "format": "FES-netcdf",
-            "model_directory": "hamtide",
             "model_file": [
                 "hamtide/2n.hamtide11a.nc",
                 "hamtide/k1.hamtide11a.nc",
@@ -1540,7 +1489,6 @@
         "TPXO10-atlas-v2": {
             "format": "OTIS",
             "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
-            "model_directory": "TPXO10_atlas_v2",
             "model_file": [
                 "TPXO10_atlas_v2/h_2n2_tpxo10_atlas_30_v2",
                 "TPXO10_atlas_v2/h_k1_tpxo10_atlas_30_v2",
@@ -1568,7 +1516,6 @@
         "TPXO10-atlas-v2-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2.nc",
-            "model_directory": "TPXO10_atlas_v2",
             "model_file": [
                 "TPXO10_atlas_v2/h_2n2_tpxo10_atlas_30_v2.nc",
                 "TPXO10_atlas_v2/h_k1_tpxo10_atlas_30_v2.nc",
@@ -1596,7 +1543,6 @@
         "TPXO7.2": {
             "format": "OTIS",
             "grid_file": "TPXO7.2_tmd/grid_tpxo7.2",
-            "model_directory": "TPXO7.2_tmd",
             "model_file": "TPXO7.2_tmd/h_tpxo7.2",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
@@ -1607,7 +1553,6 @@
         "TPXO7.2_load": {
             "format": "OTIS",
             "grid_file": "TPXO7.2_load/grid_tpxo6.2",
-            "model_directory": "TPXO7.2_load",
             "model_file": "TPXO7.2_load/h_tpxo7.2_load",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
@@ -1618,7 +1563,6 @@
         "TPXO8-atlas": {
             "format": "ATLAS-compact",
             "grid_file": "tpxo8_atlas/grid_tpxo8atlas_30_v1",
-            "model_directory": "tpxo8_atlas",
             "model_file": "tpxo8_atlas/hf.tpxo8_atlas_30_v1",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo8_atlas.html",
@@ -1629,7 +1573,6 @@
         "TPXO9-atlas": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas/grid_tpxo9_atlas",
-            "model_directory": "TPXO9_atlas",
             "model_file": [
                 "TPXO9_atlas/h_q1_tpxo9_atlas_30",
                 "TPXO9_atlas/h_o1_tpxo9_atlas_30",
@@ -1654,7 +1597,6 @@
         "TPXO9-atlas-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas/grid_tpxo9_atlas.nc",
-            "model_directory": "TPXO9_atlas",
             "model_file": [
                 "TPXO9_atlas/h_q1_tpxo9_atlas_30.nc",
                 "TPXO9_atlas/h_o1_tpxo9_atlas_30.nc",
@@ -1679,7 +1621,6 @@
         "TPXO9-atlas-v2": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2",
-            "model_directory": "TPXO9_atlas_v2",
             "model_file": [
                 "TPXO9_atlas_v2/h_q1_tpxo9_atlas_30_v2",
                 "TPXO9_atlas_v2/h_o1_tpxo9_atlas_30_v2",
@@ -1704,7 +1645,6 @@
         "TPXO9-atlas-v2-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2.nc",
-            "model_directory": "TPXO9_atlas_v2",
             "model_file": [
                 "TPXO9_atlas_v2/h_q1_tpxo9_atlas_30_v2.nc",
                 "TPXO9_atlas_v2/h_o1_tpxo9_atlas_30_v2.nc",
@@ -1729,7 +1669,6 @@
         "TPXO9-atlas-v3": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3",
-            "model_directory": "TPXO9_atlas_v3",
             "model_file": [
                 "TPXO9_atlas_v3/h_q1_tpxo9_atlas_30_v3",
                 "TPXO9_atlas_v3/h_o1_tpxo9_atlas_30_v3",
@@ -1756,7 +1695,6 @@
         "TPXO9-atlas-v3-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3.nc",
-            "model_directory": "TPXO9_atlas_v3",
             "model_file": [
                 "TPXO9_atlas_v3/h_q1_tpxo9_atlas_30_v3.nc",
                 "TPXO9_atlas_v3/h_o1_tpxo9_atlas_30_v3.nc",
@@ -1783,7 +1721,6 @@
         "TPXO9-atlas-v4": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4",
-            "model_directory": "TPXO9_atlas_v4",
             "model_file": [
                 "TPXO9_atlas_v4/h_q1_tpxo9_atlas_30_v4",
                 "TPXO9_atlas_v4/h_o1_tpxo9_atlas_30_v4",
@@ -1810,7 +1747,6 @@
         "TPXO9-atlas-v4-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4.nc",
-            "model_directory": "TPXO9_atlas_v4",
             "model_file": [
                 "TPXO9_atlas_v4/h_q1_tpxo9_atlas_30_v4.nc",
                 "TPXO9_atlas_v4/h_o1_tpxo9_atlas_30_v4.nc",
@@ -1837,7 +1773,6 @@
         "TPXO9-atlas-v5": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5",
-            "model_directory": "TPXO9_atlas_v5",
             "model_file": [
                 "TPXO9_atlas_v5/h_q1_tpxo9_atlas_30_v5",
                 "TPXO9_atlas_v5/h_o1_tpxo9_atlas_30_v5",
@@ -1865,7 +1800,6 @@
         "TPXO9-atlas-v5-nc": {
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc",
-            "model_directory": "TPXO9_atlas_v5",
             "model_file": [
                 "TPXO9_atlas_v5/h_q1_tpxo9_atlas_30_v5.nc",
                 "TPXO9_atlas_v5/h_o1_tpxo9_atlas_30_v5.nc",
@@ -1893,7 +1827,6 @@
         "TPXO9.1": {
             "format": "OTIS",
             "grid_file": "TPXO9.1/DATA/grid_tpxo9",
-            "model_directory": "TPXO9.1/DATA",
             "model_file": "TPXO9.1/DATA/h_tpxo9.v1",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
