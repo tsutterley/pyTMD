@@ -44,7 +44,7 @@ jobs:
     - name: Merge Providers
       run: |
         pip install --no-deps .
-        python providers/_providers_to_database.py
+        python providers/_providers_to_database.py --pretty -vv
     - name: Check for changes
       id: changes
       run: |
