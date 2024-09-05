@@ -1,0 +1,68 @@
+# This workflow will install Python dependencies and update database from the provider files
+
+name: Update provider database on pull request
+
+on:
+  pull_request:
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.11]
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up mamba ${{ matrix.python-version }}
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: 'latest'
+        environment-file: environment.yml
+        init-shell: bash
+        environment-name: pyTMD
+        cache-environment: true
+        post-cleanup: 'all'
+        create-args: >-
+          python=${{ matrix.python-version }}
+          flake8
+          gh
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Merge Providers
+      run: |
+        pip install --no-deps --editable .
+        python providers/_providers_to_database.py --pretty -vv
+    - name: Check for changes
+      id: changes
+      run: |
+        if [ -n "$(git status --porcelain)" ] ; then
+            echo "DETECTED=true" >> $GITHUB_OUTPUT;
+            echo "::debug::Changes detected";
+        else
+            echo "DETECTED=false" >> $GITHUB_OUTPUT;
+            echo "::debug::No changes detected";
+        fi
+    - name: Checkout PR and Push Changes
+      if: steps.changes.outputs.DETECTED == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh pr checkout ${{ github.event.pull_request.number }}
+        git add -A
+        git config user.name ${{ github.actor }}
+        git config user.email ${{ github.actor }}@users.noreply.github.com
+        git commit -m "Update provider database"
+        git push
