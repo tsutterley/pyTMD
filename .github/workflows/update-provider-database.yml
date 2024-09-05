@@ -62,4 +62,5 @@ jobs:
       run: |
         gh pr checkout ${{ github.event.pull_request.number }}
         git add -A
+        git commit -m "Update provider database"
         git push
