@@ -368,7 +368,7 @@ class model:
         parameters = load_database()
         # extract all known formats
         format_list = []
-        for type, models in parameters.items():
+        for variable, models in parameters.items():
             for model, val in models.items():
                 format_list.append(val['format'])
         # return unique list of formats
@@ -871,23 +871,6 @@ class model:
             raise ValueError(f'Constituent not found in file {model_file}')
         else:
             return None
-
-    @staticmethod
-    def to_bool(val: str) -> bool:
-        """
-        Converts strings of True/False to a boolean values
-
-        Parameters
-        ----------
-        val: str
-            string for converting to True/False
-        """
-        if val.lower() in ('y', 'yes', 't', 'true', '1'):
-            return True
-        elif val.lower() in ('n', 'no', 'f', 'false', '0'):
-            return False
-        else:
-            raise ValueError(f'Invalid boolean string {val}')
 
     def __str__(self):
         """String representation of the ``io.model`` object

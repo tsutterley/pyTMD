@@ -179,6 +179,34 @@
             "type": "z",
             "variable": "tide_load",
             "version": "5.5"
+        },
+        "GOT5.5D": {
+            "format": "GOT-netcdf",
+            "name": "GOT5.5D",
+            "model_file": [
+                "GOT5.5/ocean_tides/2n2.nc",
+                "GOT5.5/ocean_tides/j1.nc",
+                "GOT5.5D/ocean_tides/k1_5.5D.nc",
+                "GOT5.5/ocean_tides/k2.nc",
+                "GOT5.5D/ocean_tides/m2_5.5D.nc",
+                "GOT5.5/ocean_tides/m4.nc",
+                "GOT5.5/ocean_tides/ms4.nc",
+                "GOT5.5/ocean_tides/mu2.nc",
+                "GOT5.5/ocean_tides/n2.nc",
+                "GOT5.5/ocean_tides/o1.nc",
+                "GOT5.5/ocean_tides/oo1.nc",
+                "GOT5.5D/ocean_tides/p1_5.5D.nc",
+                "GOT5.5/ocean_tides/q1.nc",
+                "GOT5.5D/ocean_tides/s1_5.5D.nc",
+                "GOT5.5D/ocean_tides/s2_5.5D.nc",
+                "GOT5.5/ocean_tides/sig1.nc"
+            ],
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "5.5",
+            "scale": 0.01,
+            "compressed": false,
+            "reference": "https://ntrs.nasa.gov/citations/19990089548"
         }
     }
 }
