@@ -35,8 +35,6 @@ jobs:
           python=${{ matrix.python-version }}
           flake8
           gh
-          pip:
-            - -e ..
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -45,7 +43,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Merge Providers
       run: |
-        pip install --no-deps .
+        pip install --no-deps --editable .
         python providers/_providers_to_database.py --pretty -vv
     - name: Check for changes
       id: changes
