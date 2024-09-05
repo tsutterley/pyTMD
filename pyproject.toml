@@ -67,7 +67,7 @@ all = ["cartopy", "gdal", "h5py", "ipyleaflet", "ipywidgets", "jplephem", "matpl
 dev = ["flake8", "pytest>=4.6", "pytest-cov", "oct2py", "boto3"]
 
 [tool.setuptools.packages.find]
-exclude = ["test*", "run*"]
+exclude = ["providers*", "run*", "test*"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -95,8 +95,9 @@ omit = [
     "pyTMD/convert_ll_xy.py",
     "pyTMD/load_constituent.py",
     "pyTMD/load_nodal_corrections.py",
-    "test/def_to_json.py",
-    "test/model_to_json.py",
+    "test/_def_to_json.py",
+    "providers/_model_to_json.py",
+    "providers/_providers_to_database.py",
 ]
 
 [tool.coverage.report]

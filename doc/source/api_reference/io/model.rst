@@ -11,5 +11,7 @@ Retrieves tide model parameters for named tide models and from model definition 
 General Attributes and Methods
 ==============================
 
+.. autofunction:: pyTMD.io.load_database
+
 .. autoclass:: pyTMD.io.model
    :members:

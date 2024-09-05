@@ -100,6 +100,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 09/2024: use JSON database for known model parameters
         use model name in default output filename for definition file case
+        drop support for the ascii definition file format
     Updated 08/2024: allow inferring only specific minor constituents
         added option to try automatic detection of definition file format
         changed from 'geotiff' to 'GTiff' and 'cog' formats
@@ -210,7 +211,6 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     TIDE_MODEL=None,
     GZIP=True,
     DEFINITION_FILE=None,
-    DEFINITION_FORMAT='auto',
     CROP=False,
     FORMAT='csv',
     VARIABLES=[],
@@ -231,8 +231,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE,
-            format=DEFINITION_FORMAT)
+        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE)
     else:
         model = pyTMD.io.model(tide_dir, compressed=GZIP).current(TIDE_MODEL)
 
@@ -487,9 +486,6 @@ def arguments():
     group.add_argument('--definition-file',
         type=pathlib.Path,
         help='Tide model definition file')
-    parser.add_argument('--definition-format',
-        type=str, default='auto', choices=('ascii','json','auto'),
-        help='Format for model definition file')
     # crop tide model to (buffered) bounds of data
     parser.add_argument('--crop', '-C',
         default=False, action='store_true',
@@ -602,7 +598,6 @@ def main():
             TIDE_MODEL=args.tide,
             GZIP=args.gzip,
             DEFINITION_FILE=args.definition_file,
-            DEFINITION_FORMAT=args.definition_format,
             CROP=args.crop,
             FORMAT=args.format,
             VARIABLES=args.variables,

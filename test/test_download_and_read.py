@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (07/2024)
+test_download_and_read.py (09/2024)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2024: drop support for the ascii definition file format
     Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
@@ -43,6 +44,7 @@ UPDATE HISTORY:
 """
 import re
 import io
+import json
 import boto3
 import shutil
 import pytest
@@ -748,12 +750,8 @@ class Test_CATS2008:
         # create model definition file
         fid = io.StringIO()
         attrs = ['name','format','grid_file','model_file','type','projection']
-        for attr in attrs:
-            val = getattr(model,attr)
-            if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-            else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
+        d = model.to_dict(fields=attrs, serialize=True)
+        json.dump(d, fid)
         fid.seek(0)
         # use model definition file as input
         m = pyTMD.io.model().from_file(fid)
@@ -1025,13 +1023,8 @@ class Test_AOTIM5_2018:
         # create model definition file
         fid = io.StringIO()
         attrs = ['name','format','grid_file','model_file','type','projection']
-        for attr in attrs:
-            val = getattr(model,attr)
-            if isinstance(val,list):
-                var = ','.join(str(v) for v in val)
-                fid.write(f'{attr}\t{var}\n')
-            else:
-                fid.write(f'{attr}\t{val}\n')
+        d = model.to_dict(fields=attrs, serialize=True)
+        json.dump(d, fid)
         fid.seek(0)
         # use model definition file as input
         m = pyTMD.io.model().from_file(fid)

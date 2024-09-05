@@ -52,6 +52,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2024: use JSON database for known model parameters
+        drop support for the ascii definition file format
     Updated 07/2024: renamed format for ATLAS to ATLAS-compact
         renamed format for netcdf to ATLAS-netcdf
         renamed format for FES to FES-netcdf and added FES-ascii
@@ -136,8 +137,7 @@ def check_points(x: np.ndarray, y: np.ndarray,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(
-            pathlib.Path(DEFINITION_FILE).expanduser())
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
         model = pyTMD.io.model(DIRECTORY, compressed=GZIP).elevation(MODEL)
 

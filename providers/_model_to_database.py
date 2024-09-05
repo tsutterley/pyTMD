@@ -1,23 +1,18 @@
 """
-model_to_json.py (08/2024)
-Converts model definitions to a json file
+_model_to_json.py (08/2024)
+Converts model definitions to a JSON file
 """
-import re
 import copy
 import json
-import inspect
 import pathlib
 import argparse
 import pyTMD.io
-
-# current file path
-filename = inspect.getframeinfo(inspect.currentframe()).filename
-filepath = pathlib.Path(filename).absolute().parents[1]
+import pyTMD.utilities
 
 # PURPOSE: create argument parser
 def arguments():
     parser = argparse.ArgumentParser(
-        description="""Converts model definitions to a json file"
+        description="""Converts model definitions to a JSON file"
             """,
         fromfile_prefix_chars="@"
     )
@@ -83,7 +78,7 @@ def main():
             d['current'][f'{n}-nc'] = serialize(m.to_dict())
 
     # writing model parameters to JSON database file
-    json_file = filepath.joinpath('pyTMD','data','database.json')
+    json_file = pyTMD.utilities.get_data_path(['data','database.json'])
     print(f'\t{json_file}') if args.verbose else None
     with open(json_file, 'w') as fid:
         indent = 4 if args.pretty else None

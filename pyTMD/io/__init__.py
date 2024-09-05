@@ -7,4 +7,4 @@ from .GOT import *
 from .OTIS import *
 from .IERS import *
 from .constituents import constituents
-from .model import model
+from .model import model, load_database
