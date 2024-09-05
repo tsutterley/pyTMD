@@ -7,7 +7,6 @@ Download and management utilities for syncing time and auxiliary files
  - Can list a directory on a ftp host
  - Can download a file from a ftp or http host
  - Can download a file from CDDIS via https when NASA Earthdata credentials are supplied
- - Checks ``MD5`` or ``sha1`` hashes between local and remote files
 
 `Source code`__
 

@@ -93,7 +93,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
 
     # model parameters for TPXO9-atlas-v2
     model = pyTMD.io.model(filepath,format='ATLAS-netcdf',compressed=True,
-        verify=False).elevation('TPXO9-atlas-v2')
+        verify=False).elevation('TPXO9-atlas-v2-nc')
     # recursively create model directory
     model_directory = model.model_file[0].parent
     model_directory.mkdir(parents=True, exist_ok=True)
@@ -380,7 +380,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
         assert np.all(np.abs(difference) <= eps)
 
 # parameterize ATLAS tide model
-@pytest.mark.parametrize("MODEL", ['TPXO8-atlas','TPXO9-atlas-v2'])
+@pytest.mark.parametrize("MODEL", ['TPXO8-atlas','TPXO9-atlas-v2-nc'])
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
@@ -405,7 +405,7 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     assert np.any(tide)
 
 # PURPOSE: test definition file functionality
-@pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2'])
+@pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2-nc'])
 def test_definition_file(MODEL):
     # get model parameters
     model = pyTMD.io.model(filepath,compressed=True).elevation(MODEL)

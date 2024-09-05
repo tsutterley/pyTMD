@@ -99,6 +99,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2024: use JSON database for known model parameters
+        use model name in default output filename for definition file case
     Updated 08/2024: allow inferring only specific minor constituents
         added option to try automatic detection of definition file format
         changed from 'geotiff' to 'GTiff' and 'cog' formats
@@ -583,9 +584,15 @@ def main():
     loglevels = [logging.CRITICAL, logging.INFO, logging.DEBUG]
     logging.basicConfig(level=loglevels[args.verbose])
 
+    # get parameters for tide model
+    if args.definition_file is not None:
+        model = pyTMD.io.model(verify=False).from_file(args.definition_file)
+    else:
+        model = pyTMD.io.model(verify=False).current(args.tide)
+
     # set output file from input filename if not entered
     if not args.outfile:
-        vars = (args.infile.stem,args.tide,'_currents',args.infile.suffix)
+        vars = (args.infile.stem,model.name,'_currents',args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}{3}'.format(*vars))
 
     # try to run tidal current program for input file

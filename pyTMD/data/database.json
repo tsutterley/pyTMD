@@ -6,6 +6,7 @@
             "model_file": {
                 "u": "aodtm5_tmd/UV0_Arc5km"
             },
+            "name": "AODTM-5",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
             "type": [
@@ -19,6 +20,7 @@
             "model_file": {
                 "u": "aotim5_tmd/UV_Arc5km"
             },
+            "name": "AOTIM-5",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": [
@@ -32,6 +34,7 @@
             "model_file": {
                 "u": "Arc5km2018/UV_Arc5km2018"
             },
+            "name": "AOTIM-5-2018",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": [
@@ -46,6 +49,7 @@
             "model_file": {
                 "u": "Arc2kmTM/UV_Arc2kmTM_v1"
             },
+            "name": "Arc2kmTM",
             "projection": "3413",
             "reference": "https://doi.org/10.18739/A2D21RK6K",
             "type": [
@@ -60,6 +64,7 @@
             "model_file": {
                 "u": "cats0201_tmd/UV0_CATS02_01"
             },
+            "name": "CATS0201",
             "projection": "4326",
             "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
             "type": [
@@ -73,6 +78,7 @@
             "model_file": {
                 "u": "CATS2008/uv.CATS2008.out"
             },
+            "name": "CATS2008",
             "projection": "CATS2008",
             "type": [
                 "u",
@@ -85,6 +91,7 @@
             "model_file": {
                 "u": "CATS2008_v2023/CATS2008_v2023.nc"
             },
+            "name": "CATS2008-v2023",
             "projection": "CATS2008",
             "type": [
                 "u",
@@ -203,6 +210,7 @@
                     "fes2014/northward_velocity/t2.nc"
                 ]
             },
+            "name": "FES2014",
             "reference": "https://www.aviso.altimetry.fr/en/data/productsauxiliary-products/global-tide-fes.html",
             "scale": 1.0,
             "type": [
@@ -217,6 +225,7 @@
             "model_file": {
                 "u": "greenlandTMD_v2/u_Greenland8_rot.v2"
             },
+            "name": "Gr1km-v2",
             "projection": "3413",
             "reference": "https://doi.org/10.1002/2016RG000546",
             "type": [
@@ -231,6 +240,7 @@
             "model_file": {
                 "u": "Gr1kmTM/UV_Gr1kmTM_v1"
             },
+            "name": "Gr1kmTM",
             "projection": "3413",
             "reference": "https://doi.org/10.18739/A2B853K18",
             "type": [
@@ -276,6 +286,7 @@
                     "hamtide/HAMcurrent11a_s2.nc"
                 ]
             },
+            "name": "HAMTIDE11",
             "reference": "https://doi.org/10.1002/2013JC009766",
             "scale": 1.0,
             "type": [
@@ -306,6 +317,7 @@
                     "TPXO10_atlas_v2/u_s2_tpxo10_atlas_30_v2"
                 ]
             },
+            "name": "TPXO10-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo10-atlas",
             "scale": 0.0001,
@@ -354,6 +366,7 @@
                     "TPXO10_atlas_v2/u_s2_tpxo10_atlas_30_v2.nc"
                 ]
             },
+            "name": "TPXO10-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo10-atlas",
             "scale": 0.0001,
@@ -369,6 +382,7 @@
             "model_file": {
                 "u": "TPXO7.2_tmd/u_tpxo7.2"
             },
+            "name": "TPXO7.2",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
             "type": [
@@ -383,6 +397,7 @@
             "model_file": {
                 "u": "tpxo8_atlas/uv.tpxo8_atlas_30_v1"
             },
+            "name": "TPXO8-atlas",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo8_atlas.html",
             "type": [
@@ -410,6 +425,7 @@
                     "TPXO9_atlas/u_2n2_tpxo9_atlas_30"
                 ]
             },
+            "name": "TPXO9-atlas",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
             "scale": 0.0001,
@@ -452,6 +468,7 @@
                     "TPXO9_atlas/v_2n2_tpxo9_atlas_30.nc"
                 ]
             },
+            "name": "TPXO9-atlas",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
             "scale": 0.0001,
@@ -480,6 +497,7 @@
                     "TPXO9_atlas_v2/u_2n2_tpxo9_atlas_30_v2"
                 ]
             },
+            "name": "TPXO9-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -522,6 +540,7 @@
                     "TPXO9_atlas_v2/v_2n2_tpxo9_atlas_30_v2.nc"
                 ]
             },
+            "name": "TPXO9-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -552,6 +571,7 @@
                     "TPXO9_atlas_v3/u_mm_tpxo9_atlas_30_v3"
                 ]
             },
+            "name": "TPXO9-atlas-v3",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -598,6 +618,7 @@
                     "TPXO9_atlas_v3/v_mm_tpxo9_atlas_30_v3.nc"
                 ]
             },
+            "name": "TPXO9-atlas-v3",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -628,6 +649,7 @@
                     "TPXO9_atlas_v4/u_mm_tpxo9_atlas_30_v4"
                 ]
             },
+            "name": "TPXO9-atlas-v4",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -674,6 +696,7 @@
                     "TPXO9_atlas_v4/v_mm_tpxo9_atlas_30_v4.nc"
                 ]
             },
+            "name": "TPXO9-atlas-v4",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -705,6 +728,7 @@
                     "TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5"
                 ]
             },
+            "name": "TPXO9-atlas-v5",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -753,6 +777,7 @@
                     "TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5.nc"
                 ]
             },
+            "name": "TPXO9-atlas-v5",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.0001,
@@ -768,6 +793,7 @@
             "model_file": {
                 "u": "TPXO9.1/u_tpxo9.v1"
             },
+            "name": "TPXO9.1",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
             "type": [
@@ -782,6 +808,7 @@
             "format": "OTIS",
             "grid_file": "aodtm5_tmd/grid_Arc5km",
             "model_file": "aodtm5_tmd/h0_Arc5km.oce",
+            "name": "AODTM-5",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
             "type": "z",
@@ -791,6 +818,7 @@
             "format": "OTIS",
             "grid_file": "aotim5_tmd/grid_Arc5km",
             "model_file": "aotim5_tmd/h_Arc5km.oce",
+            "name": "AOTIM-5",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": "z",
@@ -800,6 +828,7 @@
             "format": "OTIS",
             "grid_file": "Arc5km2018/grid_Arc5km2018",
             "model_file": "Arc5km2018/h_Arc5km2018",
+            "name": "AOTIM-5-2018",
             "projection": "PSNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": "z",
@@ -810,6 +839,7 @@
             "format": "OTIS",
             "grid_file": "Arc2kmTM/grid_Arc2kmTM_v1",
             "model_file": "Arc2kmTM/h_Arc2kmTM_v1",
+            "name": "Arc2kmTM",
             "projection": "3413",
             "reference": "https://doi.org/10.18739/A2D21RK6K",
             "type": "z",
@@ -820,6 +850,7 @@
             "format": "OTIS",
             "grid_file": "cats0201_tmd/grid_CATS",
             "model_file": "cats0201_tmd/h0_CATS02_01",
+            "name": "CATS0201",
             "projection": "4326",
             "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
             "type": "z",
@@ -829,6 +860,7 @@
             "format": "OTIS",
             "grid_file": "CATS2008/grid_CATS2008",
             "model_file": "CATS2008/hf.CATS2008.out",
+            "name": "CATS2008",
             "projection": "CATS2008",
             "reference": "https://doi.org/10.15784/601235",
             "type": "z",
@@ -838,6 +870,7 @@
             "format": "TMD3",
             "grid_file": "CATS2008_v2023/CATS2008_v2023.nc",
             "model_file": "CATS2008_v2023/CATS2008_v2023.nc",
+            "name": "CATS2008-v2023",
             "projection": "CATS2008",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/cats2008/",
             "type": "z",
@@ -847,6 +880,7 @@
             "format": "OTIS",
             "grid_file": "CATS2008a_SPOTL_Load/grid_CATS2008a_opt",
             "model_file": "CATS2008a_SPOTL_Load/h_CATS2008a_SPOTL_load",
+            "name": "CATS2008_load",
             "projection": "CATS2008",
             "reference": "https://doi.org/10.15784/601235",
             "type": "z",
@@ -892,6 +926,7 @@
                 "EOT20/ocean_tides/SSA_ocean_eot20.nc",
                 "EOT20/ocean_tides/T2_ocean_eot20.nc"
             ],
+            "name": "EOT20",
             "reference": "https://doi.org/10.17882/79489",
             "scale": 0.01,
             "type": "z",
@@ -938,6 +973,7 @@
                 "EOT20/load_tides/SSA_load_eot20.nc",
                 "EOT20/load_tides/T2_load_eot20.nc"
             ],
+            "name": "EOT20_load",
             "reference": "https://doi.org/10.17882/79489",
             "scale": 0.01,
             "type": "z",
@@ -1018,6 +1054,7 @@
                 "fes2014/ocean_tide/ssa.nc",
                 "fes2014/ocean_tide/t2.nc"
             ],
+            "name": "FES2014",
             "reference": "https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html",
             "scale": 0.01,
             "type": "z",
@@ -1098,6 +1135,7 @@
                 "fes2014/load_tide/ssa.nc",
                 "fes2014/load_tide/t2.nc"
             ],
+            "name": "FES2014_load",
             "reference": "https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html",
             "scale": 0.01,
             "type": "z",
@@ -1178,6 +1216,7 @@
                 "fes2022b/ocean_tide/ssa_fes2022.nc",
                 "fes2022b/ocean_tide/t2_fes2022.nc"
             ],
+            "name": "FES2022",
             "reference": "https://doi.org/10.24400/527896/A01-2024.004",
             "scale": 0.01,
             "type": "z",
@@ -1258,6 +1297,7 @@
                 "fes2022b/load_tide/ssa_fes2022.nc",
                 "fes2022b/load_tide/t2_fes2022.nc"
             ],
+            "name": "FES2022_load",
             "reference": "https://doi.org/10.24400/527896/A01-2024.004",
             "scale": 0.01,
             "type": "z",
@@ -1278,6 +1318,7 @@
                 "GOT4.10c/grids_oceantide/s1.d",
                 "GOT4.10c/grids_oceantide/m4.d"
             ],
+            "name": "GOT4.10",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.01,
             "type": "z",
@@ -1298,6 +1339,7 @@
                 "GOT4.10c/grids_loadtide/s1load.d",
                 "GOT4.10c/grids_loadtide/m4load.d"
             ],
+            "name": "GOT4.10_load",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.001,
             "type": "z",
@@ -1318,6 +1360,7 @@
                 "GOT4.7/grids_oceantide/s1.d",
                 "GOT4.7/grids_oceantide/m4.d"
             ],
+            "name": "GOT4.7",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.01,
             "type": "z",
@@ -1338,6 +1381,7 @@
                 "GOT4.7/grids_loadtide/s1load.d",
                 "GOT4.7/grids_loadtide/m4load.d"
             ],
+            "name": "GOT4.7_load",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.001,
             "type": "z",
@@ -1358,6 +1402,7 @@
                 "got4.8/grids_oceantide/s1.d",
                 "got4.8/grids_oceantide/m4.d"
             ],
+            "name": "GOT4.8",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.01,
             "type": "z",
@@ -1378,6 +1423,7 @@
                 "got4.8/grids_loadtide/s1load.d",
                 "got4.8/grids_loadtide/m4load.d"
             ],
+            "name": "GOT4.8_load",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.001,
             "type": "z",
@@ -1404,6 +1450,7 @@
                 "GOT5.5/ocean_tides/s2.nc",
                 "GOT5.5/ocean_tides/sig1.nc"
             ],
+            "name": "GOT5.5",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.01,
             "type": "z",
@@ -1430,6 +1477,7 @@
                 "GOT5.5/load_tides/s1load.nc",
                 "GOT5.5/load_tides/sig1load.nc"
             ],
+            "name": "GOT5.5_load",
             "reference": "https://ntrs.nasa.gov/citations/19990089548",
             "scale": 0.001,
             "type": "z",
@@ -1440,6 +1488,7 @@
             "format": "OTIS",
             "grid_file": "greenlandTMD_v2/grid_Greenland8.v2",
             "model_file": "greenlandTMD_v2/h_Greenland8.v2",
+            "name": "Gr1km-v2",
             "projection": "3413",
             "reference": "https://doi.org/10.1002/2016RG000546",
             "type": "z",
@@ -1450,6 +1499,7 @@
             "format": "OTIS",
             "grid_file": "Gr1kmTM/grid_Gr1kmTM_v1",
             "model_file": "Gr1kmTM/h_Gr1kmTM_v1",
+            "name": "Gr1kmTM",
             "projection": "3413",
             "reference": "https://doi.org/10.18739/A2B853K18",
             "type": "z",
@@ -1480,6 +1530,7 @@
                 "hamtide/q1.hamtide11a.nc",
                 "hamtide/s2.hamtide11a.nc"
             ],
+            "name": "HAMTIDE11",
             "reference": "https://doi.org/10.1002/2013JC009766",
             "scale": 0.01,
             "type": "z",
@@ -1506,6 +1557,7 @@
                 "TPXO10_atlas_v2/h_s1_tpxo10_atlas_30_v2",
                 "TPXO10_atlas_v2/h_s2_tpxo10_atlas_30_v2"
             ],
+            "name": "TPXO10-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo10-atlas",
             "scale": 0.001,
@@ -1533,6 +1585,7 @@
                 "TPXO10_atlas_v2/h_s1_tpxo10_atlas_30_v2.nc",
                 "TPXO10_atlas_v2/h_s2_tpxo10_atlas_30_v2.nc"
             ],
+            "name": "TPXO10-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo10-atlas",
             "scale": 0.001,
@@ -1544,6 +1597,7 @@
             "format": "OTIS",
             "grid_file": "TPXO7.2_tmd/grid_tpxo7.2",
             "model_file": "TPXO7.2_tmd/h_tpxo7.2",
+            "name": "TPXO7.2",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
             "type": "z",
@@ -1554,6 +1608,7 @@
             "format": "OTIS",
             "grid_file": "TPXO7.2_load/grid_tpxo6.2",
             "model_file": "TPXO7.2_load/h_tpxo7.2_load",
+            "name": "TPXO7.2_load",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
             "type": "z",
@@ -1564,6 +1619,7 @@
             "format": "ATLAS-compact",
             "grid_file": "tpxo8_atlas/grid_tpxo8atlas_30_v1",
             "model_file": "tpxo8_atlas/hf.tpxo8_atlas_30_v1",
+            "name": "TPXO8-atlas",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo8_atlas.html",
             "type": "z",
@@ -1587,6 +1643,7 @@
                 "TPXO9_atlas/h_mn4_tpxo9_atlas_30",
                 "TPXO9_atlas/h_2n2_tpxo9_atlas_30"
             ],
+            "name": "TPXO9-atlas",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
             "scale": 0.001,
@@ -1611,6 +1668,7 @@
                 "TPXO9_atlas/h_mn4_tpxo9_atlas_30.nc",
                 "TPXO9_atlas/h_2n2_tpxo9_atlas_30.nc"
             ],
+            "name": "TPXO9-atlas",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
             "scale": 0.001,
@@ -1635,6 +1693,7 @@
                 "TPXO9_atlas_v2/h_mn4_tpxo9_atlas_30_v2",
                 "TPXO9_atlas_v2/h_2n2_tpxo9_atlas_30_v2"
             ],
+            "name": "TPXO9-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1659,6 +1718,7 @@
                 "TPXO9_atlas_v2/h_mn4_tpxo9_atlas_30_v2.nc",
                 "TPXO9_atlas_v2/h_2n2_tpxo9_atlas_30_v2.nc"
             ],
+            "name": "TPXO9-atlas-v2",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1685,6 +1745,7 @@
                 "TPXO9_atlas_v3/h_mf_tpxo9_atlas_30_v3",
                 "TPXO9_atlas_v3/h_mm_tpxo9_atlas_30_v3"
             ],
+            "name": "TPXO9-atlas-v3",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1711,6 +1772,7 @@
                 "TPXO9_atlas_v3/h_mf_tpxo9_atlas_30_v3.nc",
                 "TPXO9_atlas_v3/h_mm_tpxo9_atlas_30_v3.nc"
             ],
+            "name": "TPXO9-atlas-v3",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1737,6 +1799,7 @@
                 "TPXO9_atlas_v4/h_mf_tpxo9_atlas_30_v4",
                 "TPXO9_atlas_v4/h_mm_tpxo9_atlas_30_v4"
             ],
+            "name": "TPXO9-atlas-v4",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1763,6 +1826,7 @@
                 "TPXO9_atlas_v4/h_mf_tpxo9_atlas_30_v4.nc",
                 "TPXO9_atlas_v4/h_mm_tpxo9_atlas_30_v4.nc"
             ],
+            "name": "TPXO9-atlas-v4",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1790,6 +1854,7 @@
                 "TPXO9_atlas_v5/h_mf_tpxo9_atlas_30_v5",
                 "TPXO9_atlas_v5/h_mm_tpxo9_atlas_30_v5"
             ],
+            "name": "TPXO9-atlas-v5",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1817,6 +1882,7 @@
                 "TPXO9_atlas_v5/h_mf_tpxo9_atlas_30_v5.nc",
                 "TPXO9_atlas_v5/h_mm_tpxo9_atlas_30_v5.nc"
             ],
+            "name": "TPXO9-atlas-v5",
             "projection": "4326",
             "reference": "https://www.tpxo.net/global/tpxo9-atlas",
             "scale": 0.001,
@@ -1828,6 +1894,7 @@
             "format": "OTIS",
             "grid_file": "TPXO9.1/DATA/grid_tpxo9",
             "model_file": "TPXO9.1/DATA/h_tpxo9.v1",
+            "name": "TPXO9.1",
             "projection": "4326",
             "reference": "http://volkov.oce.orst.edu/tides/global.html",
             "type": "z",

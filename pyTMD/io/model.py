@@ -167,10 +167,6 @@ class model:
         # set working data directory if unset
         if self.directory is None:
             self.directory = pathlib.Path().absolute()
-        # model name
-        self.name = m
-        # model type
-        self.type = 'z'
         # select between known tide models
         parameters = self.load_database()
         # try to extract parameters for model
@@ -200,10 +196,6 @@ class model:
         # set working data directory if unset
         if self.directory is None:
             self.directory = pathlib.Path().absolute()
-        # model name
-        self.name = m
-        # model type
-        self.type = ['u','v']
         # select between tide models
         parameters = self.load_database()
         # try to extract parameters for model
@@ -955,7 +947,7 @@ class model:
         # output dictionary
         d = {}
         # model keys to return
-        keys = ['format', 'type', 'grid_file', 'model_file', 'projection',
+        keys = ['name', 'format', 'type', 'grid_file', 'model_file', 'projection',
             'variable', 'scale', 'constituents', 'version', 'reference']
         for key in keys:
             if hasattr(self, key) and getattr(self, key) is not None:
@@ -985,9 +977,14 @@ class model:
         return self
 
     @staticmethod
-    def load_database() -> dict:
+    def load_database(extra_databases: list = []) -> dict:
         """
         Load the JSON database of model files
+
+        Parameters
+        ----------
+        extra_databases: list, default []
+            list of additional databases to load
 
         Returns
         -------
@@ -999,6 +996,10 @@ class model:
         # extract JSON data
         with open(database, 'r') as fid:
             parameters = json.load(fid)
+        # load any additional databases
+        for db in extra_databases:
+            with open(db, 'r') as fid:
+                parameters.update(json.load(fid))
         # return parameters
         return parameters
 

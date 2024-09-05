@@ -56,8 +56,8 @@ classifiers=[
 ]
 
 [project.urls]
-Homepage = "https://pyTMD.readthedocs.io"
-Documentation = "https://pyTMD.readthedocs.io"
+Homepage = "https://pytmd.readthedocs.io"
+Documentation = "https://pytmd.readthedocs.io"
 Repository = "https://github.com/tsutterley/pyTMD"
 Issues = "https://github.com/tsutterley/pyTMD/issues"
 

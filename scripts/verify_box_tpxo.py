@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (04/2023)
+Written by Tyler Sutterley (09/2024)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -15,11 +15,6 @@ COMMAND LINE OPTIONS:
     -t X, --token X: user access token for box API
     -F X, --folder X: box folder id for model
     --tide X: TPXO9-atlas model to verify
-        TPXO9-atlas
-        TPXO9-atlas-v2
-        TPXO9-atlas-v3
-        TPXO9-atlas-v4
-        TPXO9-atlas-v5
     --currents: verify tide model current outputs
     -M X, --mode X: Local permissions mode of the files downloaded
 
@@ -31,6 +26,7 @@ REFERENCE:
     https://developer.box.com/guides/
 
 UPDATE HISTORY:
+    Updated 09/2024: use model class to define output directory
     Updated 04/2023: using pathlib to define and expand paths
     Updated 01/2023: use default context from utilities module
     Updated 11/2022: use f-strings for formatting verbose or ascii output
@@ -90,18 +86,8 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
     logger = pyTMD.utilities.build_logger(__name__, level=logging.INFO)
 
     # check if local directory exists and recursively create if not
-    tide_dir = pathlib.Path(tide_dir).expanduser().absolute()
-    if (TIDE_MODEL == 'TPXO9-atlas'):
-        localpath = tide_dir.joinpath('TPXO9_atlas')
-    elif (TIDE_MODEL == 'TPXO9-atlas-v2'):
-        localpath = tide_dir.joinpath('TPXO9_atlas_v2')
-    elif (TIDE_MODEL == 'TPXO9-atlas-v3'):
-        localpath = tide_dir.joinpath('TPXO9_atlas_v3')
-    elif (TIDE_MODEL == 'TPXO9-atlas-v4'):
-        localpath = tide_dir.joinpath('TPXO9_atlas_v4')
-    elif (TIDE_MODEL == 'TPXO9-atlas-v5'):
-        localpath = tide_dir.joinpath('TPXO9_atlas_v5')
-
+    m = pyTMD.io.model(directory=tide_dir).elevation(TIDE_MODEL)
+    localpath = m.model_file[0].parent
     # create output directory if non-existent
     localpath.mkdir(MODE, parents=True, exist_ok=True)
 
@@ -140,7 +126,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
         local = localpath.joinpath(entry['name'])
         logger.info(f'\t{str(local)}')
         # compare checksums to validate download
-        sha1 = pyTMD.utilities.get_hash(local,algorithm='sha1')
+        sha1 = pyTMD.utilities.get_hash(local, algorithm='sha1')
         if sha1 != entry['sha1']:
             logger.critical(f'Remote checksum: {entry["sha1"]}')
             logger.critical(f'Local checksum: {sha1}')

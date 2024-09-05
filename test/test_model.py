@@ -778,9 +778,9 @@ def test_parse_TPXO9_elevation(MODEL):
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
     assert all(c in m.constituents for c in constituents)
     # test additional constituents found in newer models
-    if MODEL in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
+    if m.name in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
         assert all(c in m.constituents for c in ['mf','mm'])
-    if MODEL in ('TPXO9-atlas-v5',):
+    if m.name in ('TPXO9-atlas-v5',):
         assert all(c in m.constituents for c in ['s1',])
 
 # parameterize model
@@ -794,7 +794,7 @@ def test_parse_TPXO9_currents(MODEL):
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
     assert all(c in m.constituents for c in constituents)
     # test additional constituents found in newer models
-    if MODEL in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
+    if m.name in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
         assert all(c in m.constituents for c in ['mf','mm'])
-    if MODEL in ('TPXO9-atlas-v5',):
+    if m.name in ('TPXO9-atlas-v5',):
         assert all(c in m.constituents for c in ['s1',])
