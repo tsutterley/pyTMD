@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Oregon State University and ESR
@@ -21,7 +21,6 @@ INPUTS:
 COMMAND LINE OPTIONS:
     -D X, --directory X: Working data directory
     -T X, --tide X: Tide model to use in correction
-    --atlas-format X: ATLAS tide model format (OTIS, ATLAS-netcdf)
     --gzip, -G: Tide model files are gzip compressed
     --definition-file X: Model definition file for use as correction
     -C, --crop: Crop tide model to (buffered) bounds of data
@@ -102,6 +101,9 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 09/2024: use JSON database for known model parameters
+        use model name in default output filename for definition file case
+        drop support for the ascii definition file format
     Updated 08/2024: allow inferring only specific minor constituents
         added option to try automatic detection of definition file format
         changed from 'geotiff' to 'GTiff' and 'cog' formats
@@ -211,10 +213,8 @@ def get_projection(attributes, PROJECTION):
 # compute tides at points and times using tidal model driver algorithms
 def compute_tidal_elevations(tide_dir, input_file, output_file,
     TIDE_MODEL=None,
-    ATLAS_FORMAT='ATLAS-netcdf',
     GZIP=True,
     DEFINITION_FILE=None,
-    DEFINITION_FORMAT='ascii',
     CROP=False,
     FORMAT='csv',
     VARIABLES=[],
@@ -236,11 +236,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE,
-            format=DEFINITION_FORMAT)
+        model = pyTMD.io.model(tide_dir).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.io.model(tide_dir, format=ATLAS_FORMAT,
-            compressed=GZIP).elevation(TIDE_MODEL)
+        model = pyTMD.io.model(tide_dir, compressed=GZIP).elevation(TIDE_MODEL)
 
     # read input file to extract time, spatial coordinates and data
     if (FORMAT == 'csv'):
@@ -478,10 +476,6 @@ def arguments():
     group.add_argument('--tide','-T',
         type=str, choices=choices,
         help='Tide model to use in correction')
-    parser.add_argument('--atlas-format',
-        type=str, choices=('OTIS','ATLAS-netcdf'),
-        default='ATLAS-netcdf',
-        help='ATLAS tide model format')
     parser.add_argument('--gzip','-G',
         default=False, action='store_true',
         help='Tide model files are gzip compressed')
@@ -489,9 +483,6 @@ def arguments():
     group.add_argument('--definition-file',
         type=pathlib.Path,
         help='Tide model definition file')
-    parser.add_argument('--definition-format',
-        type=str, default='auto', choices=('ascii','json','auto'),
-        help='Format for model definition file')
     # crop tide model to (buffered) bounds of data
     parser.add_argument('--crop', '-C',
         default=False, action='store_true',
@@ -590,10 +581,16 @@ def main():
     loglevels = [logging.CRITICAL, logging.INFO, logging.DEBUG]
     logging.basicConfig(level=loglevels[args.verbose])
 
+    # get parameters for tide model
+    if args.definition_file is not None:
+        model = pyTMD.io.model(verify=False).from_file(args.definition_file)
+    else:
+        model = pyTMD.io.model(verify=False).elevation(args.tide)
+
     # set output file from input filename if not entered
     if not args.outfile:
         flexure_flag = '_flexure' if args.apply_flexure else ''
-        vars = (args.infile.stem,args.tide,flexure_flag,args.infile.suffix)
+        vars = (args.infile.stem,model.name,flexure_flag,args.infile.suffix)
         args.outfile = args.infile.with_name('{0}_{1}{2}{3}'.format(*vars))
 
     # try to run tidal elevation program for input file
@@ -601,10 +598,8 @@ def main():
         info(args)
         compute_tidal_elevations(args.directory, args.infile, args.outfile,
             TIDE_MODEL=args.tide,
-            ATLAS_FORMAT=args.atlas_format,
             GZIP=args.gzip,
             DEFINITION_FILE=args.definition_file,
-            DEFINITION_FORMAT=args.definition_format,
             CROP=args.crop,
             FORMAT=args.format,
             VARIABLES=args.variables,

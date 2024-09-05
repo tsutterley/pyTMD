@@ -83,8 +83,11 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL,
         PROJECTION='4326',
         MODE=0o775
     ):
-    # get parameters for tide model
-    model = pyTMD.io.model(directory=tide_dir).grid(TIDE_MODEL)
+    # get parameters for tide model grid
+    try:
+        model = pyTMD.io.model(directory=tide_dir).elevation(TIDE_MODEL)
+    except Exception as exc:
+        model = pyTMD.io.model(directory=tide_dir).current(TIDE_MODEL)
     # directionaries with input and output files
     model_file = {}
     new_model_file = {}

@@ -24,7 +24,7 @@ Directories
 
 ``pyTMD`` uses a tree structure for storing the tidal constituent data.
 This structure was chosen based on the different formats of each tide model.
-Presently, the following models and their directories parameterized within ``pyTMD``.
+Presently, the following models and their directories are parameterized within ``pyTMD`` in a JSON database.
 
 - Circum-Antarctic Tidal Simulations [Padman2008]_
 
@@ -52,6 +52,7 @@ Presently, the following models and their directories parameterized within ``pyT
     * `TPXO9-atlas-v3 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v3/``
     * `TPXO9-atlas-v4 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v4/``
     * `TPXO9-atlas-v5 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v5/``
+    * `TPXO10-atlas-v2 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO10_atlas_v2/``
 
 - Global Ocean Tide models [Ray1999]_
 
@@ -132,15 +133,9 @@ elevations or currents (zonal and meridional) for each point.
 Definition Files
 ################
 
-For models not parameterized within ``pyTMD``, the parameters can be set with a model definition file.
-There are two types of definition files currently supported by ``pyTMD`` (``ascii`` and ``json``).
-
-The tab-delimited text format (``ascii``) consists of two separate columns (parameter names and parameter values).
-These definition files are read line by line to fill a python dictionary mapping the names with their values.
-For parameters consisting of lists, the parameter values can be separated by spaces or commas.
-For FES-type models of currents, the two lists of model files (``u`` and ``v``) should be separated in the list with a semi-colon.
-
-The JSON format (``json``) directly maps the parameter names with their values stored in the appropriate data type (strings, lists, numbers, booleans, etc).
+For models within the ``pyTMD`` database, the parameters can be set with a model definition file in JSON format.
+The JSON definition files follow a similar structure as the main ``pyTMD`` database, but for individual entries.
+The JSON format directly maps the parameter names with their values stored in the appropriate data type (strings, lists, numbers, booleans, etc).
 For FES-type models of currents, the two lists of model files (``u`` and ``v``) are stored in a name-value pair objects (similar to a python dictionary).
 While still human readable, the JSON format is both interoperable and more easily machine readable.
 

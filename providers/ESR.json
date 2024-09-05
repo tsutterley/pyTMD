@@ -1,0 +1,215 @@
+{
+    "current": {
+        "AODTM-5": {
+            "format": "OTIS",
+            "grid_file": "aodtm5_tmd/grid_Arc5km",
+            "model_file": {
+                "u": "aodtm5_tmd/UV0_Arc5km"
+            },
+            "name": "AODTM-5",
+            "projection": "PSNorth",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
+            "type": [
+                "u",
+                "v"
+            ]
+        },
+        "AOTIM-5": {
+            "format": "OTIS",
+            "grid_file": "aotim5_tmd/grid_Arc5km",
+            "model_file": {
+                "u": "aotim5_tmd/UV_Arc5km"
+            },
+            "name": "AOTIM-5",
+            "projection": "PSNorth",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
+            "type": [
+                "u",
+                "v"
+            ]
+        },
+        "AOTIM-5-2018": {
+            "format": "OTIS",
+            "grid_file": "Arc5km2018/grid_Arc5km2018",
+            "model_file": {
+                "u": "Arc5km2018/UV_Arc5km2018"
+            },
+            "name": "AOTIM-5-2018",
+            "projection": "PSNorth",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "2018"
+        },
+        "Arc2kmTM": {
+            "format": "OTIS",
+            "grid_file": "Arc2kmTM/grid_Arc2kmTM_v1",
+            "model_file": {
+                "u": "Arc2kmTM/UV_Arc2kmTM_v1"
+            },
+            "name": "Arc2kmTM",
+            "projection": "3413",
+            "reference": "https://doi.org/10.18739/A2D21RK6K",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v1"
+        },
+        "CATS0201": {
+            "format": "OTIS",
+            "grid_file": "cats0201_tmd/grid_CATS",
+            "model_file": {
+                "u": "cats0201_tmd/UV0_CATS02_01"
+            },
+            "name": "CATS0201",
+            "projection": "4326",
+            "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
+            "type": [
+                "u",
+                "v"
+            ]
+        },
+        "CATS2008": {
+            "format": "OTIS",
+            "grid_file": "CATS2008/grid_CATS2008",
+            "model_file": {
+                "u": "CATS2008/uv.CATS2008.out"
+            },
+            "name": "CATS2008",
+            "projection": "CATS2008",
+            "type": [
+                "u",
+                "v"
+            ]
+        },
+        "Gr1km-v2": {
+            "format": "OTIS",
+            "grid_file": "greenlandTMD_v2/grid_Greenland8.v2",
+            "model_file": {
+                "u": "greenlandTMD_v2/u_Greenland8_rot.v2"
+            },
+            "name": "Gr1km-v2",
+            "projection": "3413",
+            "reference": "https://doi.org/10.1002/2016RG000546",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v2"
+        },
+        "Gr1kmTM": {
+            "format": "OTIS",
+            "grid_file": "Gr1kmTM/grid_Gr1kmTM_v1",
+            "model_file": {
+                "u": "Gr1kmTM/UV_Gr1kmTM_v1"
+            },
+            "name": "Gr1kmTM",
+            "projection": "3413",
+            "reference": "https://doi.org/10.18739/A2B853K18",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v1"
+        }
+    },
+    "elevation": {
+        "AODTM-5": {
+            "format": "OTIS",
+            "grid_file": "aodtm5_tmd/grid_Arc5km",
+            "model_file": "aodtm5_tmd/h0_Arc5km.oce",
+            "name": "AODTM-5",
+            "projection": "PSNorth",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
+            "type": "z",
+            "variable": "tide_ocean"
+        },
+        "AOTIM-5": {
+            "format": "OTIS",
+            "grid_file": "aotim5_tmd/grid_Arc5km",
+            "model_file": "aotim5_tmd/h_Arc5km.oce",
+            "name": "AOTIM-5",
+            "projection": "PSNorth",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
+            "type": "z",
+            "variable": "tide_ocean"
+        },
+        "AOTIM-5-2018": {
+            "format": "OTIS",
+            "grid_file": "Arc5km2018/grid_Arc5km2018",
+            "model_file": "Arc5km2018/h_Arc5km2018",
+            "name": "AOTIM-5-2018",
+            "projection": "PSNorth",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "2018"
+        },
+        "Arc2kmTM": {
+            "format": "OTIS",
+            "grid_file": "Arc2kmTM/grid_Arc2kmTM_v1",
+            "model_file": "Arc2kmTM/h_Arc2kmTM_v1",
+            "name": "Arc2kmTM",
+            "projection": "3413",
+            "reference": "https://doi.org/10.18739/A2D21RK6K",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v1"
+        },
+        "CATS0201": {
+            "format": "OTIS",
+            "grid_file": "cats0201_tmd/grid_CATS",
+            "model_file": "cats0201_tmd/h0_CATS02_01",
+            "name": "CATS0201",
+            "projection": "4326",
+            "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
+            "type": "z",
+            "variable": "tide_ocean"
+        },
+        "CATS2008": {
+            "format": "OTIS",
+            "grid_file": "CATS2008/grid_CATS2008",
+            "model_file": "CATS2008/hf.CATS2008.out",
+            "name": "CATS2008",
+            "projection": "CATS2008",
+            "reference": "https://doi.org/10.15784/601235",
+            "type": "z",
+            "variable": "tide_ocean"
+        },
+        "CATS2008_load": {
+            "format": "OTIS",
+            "grid_file": "CATS2008a_SPOTL_Load/grid_CATS2008a_opt",
+            "model_file": "CATS2008a_SPOTL_Load/h_CATS2008a_SPOTL_load",
+            "name": "CATS2008_load",
+            "projection": "CATS2008",
+            "reference": "https://doi.org/10.15784/601235",
+            "type": "z",
+            "variable": "tide_load"
+        },
+        "Gr1km-v2": {
+            "format": "OTIS",
+            "grid_file": "greenlandTMD_v2/grid_Greenland8.v2",
+            "model_file": "greenlandTMD_v2/h_Greenland8.v2",
+            "name": "Gr1km-v2",
+            "projection": "3413",
+            "reference": "https://doi.org/10.1002/2016RG000546",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v2"
+        },
+        "Gr1kmTM": {
+            "format": "OTIS",
+            "grid_file": "Gr1kmTM/grid_Gr1kmTM_v1",
+            "model_file": "Gr1kmTM/h_Gr1kmTM_v1",
+            "name": "Gr1kmTM",
+            "projection": "3413",
+            "reference": "https://doi.org/10.18739/A2B853K18",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v1"
+        }
+    }
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_perth3_read.py (08/2024)
+test_perth3_read.py (09/2024)
 Tests that GOT4.7 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 Tests that interpolated results are comparable to NASA PERTH3 program
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2024: drop support for the ascii definition file format
     Updated 08/2024: increased tolerance for comparing with GOT4.7 tests
         as using nodal corrections from PERTH5
         use a reduced list of minor constituents to match GOT4.7 tests
@@ -33,6 +34,7 @@ UPDATE HISTORY:
 """
 import io
 import gzip
+import json
 import boto3
 import shutil
 import pytest
@@ -68,7 +70,8 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model = pyTMD.io.model(filepath,compressed=True,
         verify=False).elevation('GOT4.7')
     # recursively create model directory
-    model.model_directory.mkdir(parents=True, exist_ok=True)
+    model_directory = model.model_file[0].parent
+    model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
@@ -82,7 +85,7 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # run tests
     yield
     # clean up model
-    shutil.rmtree(model.model_directory)
+    shutil.rmtree(model_directory)
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','linear','bilinear'])
@@ -91,10 +94,11 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
 def test_verify_GOT47(METHOD, CROP):
     # model parameters for GOT4.7
     model = pyTMD.io.model(filepath,compressed=True).elevation('GOT4.7')
+    model_directory = model.model_file[0].parent
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model.model_file = [model.model_directory.joinpath(m) for m in model_files]
+    model.model_file = [model_directory.joinpath(m) for m in model_files]
     # validate model constituents
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model.parse_constituents()
@@ -163,10 +167,11 @@ def test_verify_GOT47(METHOD, CROP):
 def test_compare_GOT47(METHOD):
     # model parameters for GOT4.7
     model = pyTMD.io.model(filepath,compressed=True).elevation('GOT4.7')
+    model_directory = model.model_file[0].parent
     # perth3 test program infers m4 tidal constituent
     model_files = ['q1.d.gz','o1.d.gz','p1.d.gz','k1.d.gz','n2.d.gz',
         'm2.d.gz','s2.d.gz','k2.d.gz','s1.d.gz']
-    model.model_file = [model.model_directory.joinpath(m) for m in model_files]
+    model.model_file = [model_directory.joinpath(m) for m in model_files]
     # validate model constituents
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model.parse_constituents()
@@ -269,13 +274,8 @@ def test_definition_file(MODEL):
     # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','model_file','compressed','type','scale']
-    for attr in attrs:
-        val = getattr(model,attr)
-        if isinstance(val,list):
-            var = ','.join(str(v) for v in val)
-            fid.write(f'{attr}\t{var}\n')
-        else:
-            fid.write(f'{attr}\t{val}\n')
+    d = model.to_dict(fields=attrs, serialize=True)
+    json.dump(d, fid)
     fid.seek(0)
     # use model definition file as input
     m = pyTMD.io.model().from_file(fid)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_points.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (09/2024)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Oregon State University and ESR
@@ -18,7 +18,6 @@ INPUTS:
 OPTIONS:
     DIRECTORY: working data directory for tide models
     MODEL: Tide model to use
-    ATLAS_FORMAT: ATLAS tide model format (OTIS, ATLAS-netcdf)
     GZIP: Tide model files are gzip compressed
     DEFINITION_FILE: Tide model definition file for use
     EPSG: input coordinate system
@@ -52,6 +51,8 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 09/2024: use JSON database for known model parameters
+        drop support for the ascii definition file format
     Updated 07/2024: renamed format for ATLAS to ATLAS-compact
         renamed format for netcdf to ATLAS-netcdf
         renamed format for FES to FES-netcdf and added FES-ascii
@@ -91,7 +92,6 @@ pyproj = pyTMD.utilities.import_dependency('pyproj')
 def check_points(x: np.ndarray, y: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
-        ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | None = None,
         EPSG: str | int = 3031,
@@ -110,8 +110,6 @@ def check_points(x: np.ndarray, y: np.ndarray,
         working data directory for tide models
     MODEL: str or NoneType, default None
         Tide model to use
-    ATLAS_FORMAT: str, default 'ATLAS-netcdf'
-        ATLAS tide model format
     GZIP: bool, default False
         Tide model files are gzip compressed
     DEFINITION_FILE: str or NoneType, default None
@@ -139,11 +137,9 @@ def check_points(x: np.ndarray, y: np.ndarray,
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(
-            pathlib.Path(DEFINITION_FILE).expanduser())
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
-            compressed=GZIP).elevation(MODEL)
+        model = pyTMD.io.model(DIRECTORY, compressed=GZIP).elevation(MODEL)
 
     # input shape of data
     idim = np.shape(x)

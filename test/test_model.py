@@ -1,6 +1,12 @@
 """
-test_model.py (04/2024)
+test_model.py (09/2024)
 Tests the reading of model definition files
+
+UPDATE HISTORY:
+    Updated 09/2024: drop support for the ascii definition file format
+    Updated 08/2024: add automatic detection of definition file format
+    Updated 07/2024: add new JSON format definition file format
+    Written 04/2024
 """
 from __future__ import annotations
 
@@ -16,18 +22,12 @@ import pyTMD.io
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 filepath = pathlib.Path(filename).absolute().parent
 
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_CATS2008(file_format):
+def test_definition_CATS2008():
     """Tests the reading of the CATS2008 model definition file
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_CATS2008.def'
-    definition_file['json'] = 'model_CATS2008.json'
-    definition_file['auto'] = 'model_CATS2008.json'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read definition file
+    definition_file = 'model_CATS2008.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # test read variables
     assert m.format == 'OTIS'
     assert m.name == 'CATS2008'
@@ -46,18 +46,12 @@ def test_definition_CATS2008(file_format):
     assert m.gla12 == 'd_ocElv'
     assert m.long_name == 'ocean_tide_elevation'
 
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_FES(file_format):
+def test_definition_FES():
     """Tests the reading of the FES2014 model definition file
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_FES2014.def'
-    definition_file['json'] = 'model_FES2014.json'
-    definition_file['auto'] = 'model_FES2014.json'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read definition file
+    definition_file = 'model_FES2014.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files and constituents
     model_files = ['fes2014/ocean_tide/2n2.nc.gz',
         'fes2014/ocean_tide/eps2.nc.gz', 'fes2014/ocean_tide/j1.nc.gz',
@@ -107,19 +101,13 @@ def test_definition_FES(file_format):
     assert m.long_name == 'ocean_tide_elevation'
 
 # PURPOSE: test glob file functionality
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_FES_glob(file_format):
+def test_definition_FES_glob():
     """Tests the reading of the FES2014 model definition file
     with glob file searching
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_FES2014.def'
-    definition_file['json'] = 'model_FES2014.json'
-    definition_file['auto'] = 'model_FES2014.def'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_FES2014.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files
     model_files = ['fes2014/ocean_tide/2n2.nc.gz',
         'fes2014/ocean_tide/eps2.nc.gz', 'fes2014/ocean_tide/j1.nc.gz',
@@ -148,25 +136,14 @@ def test_definition_FES_glob(file_format):
     fid = io.StringIO()
     glob_string = r'fes2014/ocean_tide/*.nc.gz'
     attrs = ['name','format','compressed','type','scale','version']
-    if file_format in ('ascii', 'auto'):
-        # create tab-delimited definition file
-        for attr in attrs:
-            val = getattr(m,attr)
-            if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-            else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
-        # append glob strings for model file
-        fid.write(f'model_file\t{glob_string}\n')
-    elif (file_format == 'json'):
-        # create JSON definition file
-        d = {attr:getattr(m,attr) for attr in attrs}
-        d['model_file'] = glob_string
-        json.dump(d, fid)
+    # create JSON definition file
+    d = {attr:getattr(m,attr) for attr in attrs}
+    d['model_file'] = glob_string
+    json.dump(d, fid)
     # rewind the glob definition file
     fid.seek(0)
     # use model definition file as input
-    model = pyTMD.io.model(directory=filepath).from_file(fid, format=file_format)
+    model = pyTMD.io.model(directory=filepath).from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files and constituents match
@@ -180,18 +157,12 @@ def test_definition_FES_glob(file_format):
     # clean up model
     shutil.rmtree(filepath.joinpath('fes2014'))
 
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_FES_currents(file_format):
+def test_definition_FES_currents():
     """Tests the reading of the FES2014 model definition file for currents
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_FES2014_currents.def'
-    definition_file['json'] = 'model_FES2014_currents.json'
-    definition_file['auto'] = 'model_FES2014_currents.json'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_FES2014_currents.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files and constituents
     model_files = {}
     model_files['u'] = ['fes2014/eastward_velocity/2n2.nc.gz',
@@ -254,19 +225,13 @@ def test_definition_FES_currents(file_format):
     assert m.long_name['v'] == 'meridional_tidal_current'
 
 # PURPOSE: test glob file functionality
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_FES_currents_glob(file_format):
+def test_definition_FES_currents_glob():
     """Tests the reading of the FES2014 model definition file
     with glob file searching for currents
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_FES2014_currents.def'
-    definition_file['json'] = 'model_FES2014_currents.json'
-    definition_file['auto'] = 'model_FES2014_currents.def'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_FES2014_currents.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files for each component
     model_files = {}
     model_files['u'] = ['fes2014/eastward_velocity/2n2.nc.gz',
@@ -316,25 +281,14 @@ def test_definition_FES_currents_glob(file_format):
     attrs = ['name','format','compressed','type','scale','version']
     glob_string_u = r'fes2014/eastward_velocity/*.nc.gz'
     glob_string_v = r'fes2014/northward_velocity/*.nc.gz'
-    if file_format in ('ascii','auto'):
-        # create tab-delimited definition file
-        for attr in attrs:
-            val = getattr(m,attr)
-            if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-            else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
-        # append glob strings for model file
-        fid.write(f'model_file\t{glob_string_u};{glob_string_v}\n')
-    elif (file_format == 'json'):
-        # create JSON definition file
-        d = {attr:getattr(m,attr) for attr in attrs}
-        d['model_file'] = {'u':glob_string_u,'v':glob_string_v}
-        json.dump(d, fid)
+    # create JSON definition file
+    d = {attr:getattr(m,attr) for attr in attrs}
+    d['model_file'] = {'u':glob_string_u,'v':glob_string_v}
+    json.dump(d, fid)
     # rewind the glob definition file
     fid.seek(0)
     # use model definition file as input
-    model = pyTMD.io.model(directory=filepath).from_file(fid, format=file_format)
+    model = pyTMD.io.model(directory=filepath).from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files and constituents match
@@ -349,18 +303,12 @@ def test_definition_FES_currents_glob(file_format):
     # clean up model
     shutil.rmtree(filepath.joinpath('fes2014'))
 
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_GOT(file_format):
+def test_definition_GOT():
     """Tests the reading of the GOT4.10 model definition file
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_GOT4.10.def'
-    definition_file['json'] = 'model_GOT4.10.json'
-    definition_file['auto'] = 'model_GOT4.10.json'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_GOT4.10.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files
     model_files = ['GOT4.10c/grids_loadtide/k1load.d.gz',
         'GOT4.10c/grids_loadtide/k2load.d.gz',
@@ -393,19 +341,13 @@ def test_definition_GOT(file_format):
     assert m.long_name == 'load_tide_elevation'
 
 # PURPOSE: test glob file functionality
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_GOT_glob(file_format):
+def test_definition_GOT_glob():
     """Tests the reading of the GOT4.10 model definition file
     with glob file searching
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_GOT4.10.def'
-    definition_file['json'] = 'model_GOT4.10.json'
-    definition_file['auto'] = 'model_GOT4.10.def'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_GOT4.10.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files
     model_files = ['GOT4.10c/grids_loadtide/k1load.d.gz',
         'GOT4.10c/grids_loadtide/k2load.d.gz',
@@ -426,25 +368,14 @@ def test_definition_GOT_glob(file_format):
     fid = io.StringIO()
     attrs = ['name','format','compressed','type','scale']
     glob_string = r'GOT4.10c/grids_loadtide/*.d.gz'
-    if file_format in ('ascii','auto'):
-        # create tab-delimited definition file
-        for attr in attrs:
-            val = getattr(m,attr)
-            if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-            else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
-        # append glob strings for model file
-        fid.write(f'model_file\t{glob_string}\n')
-    elif (file_format == 'json'):
-        # create JSON definition file
-        d = {attr:getattr(m,attr) for attr in attrs}
-        d['model_file'] = glob_string
-        json.dump(d, fid)
+    # create JSON definition file
+    d = {attr:getattr(m,attr) for attr in attrs}
+    d['model_file'] = glob_string
+    json.dump(d, fid)
     # rewind the glob definition file
     fid.seek(0)
     # use model definition file as input
-    model = pyTMD.io.model(directory=filepath).from_file(fid, format=file_format)
+    model = pyTMD.io.model(directory=filepath).from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files match
@@ -456,18 +387,12 @@ def test_definition_GOT_glob(file_format):
     # clean up model
     shutil.rmtree(filepath.joinpath('GOT4.10c'))
 
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_TPXO9(file_format):
+def test_definition_TPXO9():
     """Tests the reading of the TPXO9-atlas-v5 model definition file
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_TPXO9-atlas-v5.def'
-    definition_file['json'] = 'model_TPXO9-atlas-v5.json'
-    definition_file['auto'] = 'model_TPXO9-atlas-v5.json'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_TPXO9-atlas-v5.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files
     model_files = ['TPXO9_atlas_v5/h_2n2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/h_k1_tpxo9_atlas_30_v5.nc',
@@ -507,19 +432,13 @@ def test_definition_TPXO9(file_format):
     assert m.long_name == 'ocean_tide_elevation'
 
 # PURPOSE: test glob file functionality
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_TPXO9_glob(file_format):
+def test_definition_TPXO9_glob():
     """Tests the reading of the TPXO9-atlas-v5 model definition file
     with glob file searching
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_TPXO9-atlas-v5.def'
-    definition_file['json'] = 'model_TPXO9-atlas-v5.json'
-    definition_file['auto'] = 'model_TPXO9-atlas-v5.def'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_TPXO9-atlas-v5.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files
     model_files = ['TPXO9_atlas_v5/h_2n2_tpxo9_atlas_30_v5.nc',
         'TPXO9_atlas_v5/h_k1_tpxo9_atlas_30_v5.nc',
@@ -552,27 +471,15 @@ def test_definition_TPXO9_glob(file_format):
     fid = io.StringIO()
     attrs = ['name','format','compressed','type','scale']
     glob_string = r'TPXO9_atlas_v5/h*.nc'
-    if file_format in ('ascii','auto'):
-        # create tab-delimited definition file
-        for attr in attrs:
-            val = getattr(m,attr)
-            if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-            else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
-        # append glob strings for model file
-        fid.write(f'model_file\t{glob_string}\n')
-        fid.write(f'grid_file\t{grid_file}\n')
-    elif (file_format == 'json'):
-        # create JSON definition file
-        d = {attr:getattr(m,attr) for attr in attrs}
-        d['model_file'] = glob_string
-        d['grid_file'] = str(grid_file)
-        json.dump(d, fid)
+    # create JSON definition file
+    d = {attr:getattr(m,attr) for attr in attrs}
+    d['model_file'] = glob_string
+    d['grid_file'] = str(grid_file)
+    json.dump(d, fid)
     # rewind the glob definition file
     fid.seek(0)
     # use model definition file as input
-    model = pyTMD.io.model(directory=filepath).from_file(fid, format=file_format)
+    model = pyTMD.io.model(directory=filepath).from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files match
@@ -584,18 +491,12 @@ def test_definition_TPXO9_glob(file_format):
     # clean up model
     shutil.rmtree(filepath.joinpath('TPXO9_atlas_v5'))
 
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_TPXO9_currents(file_format):
+def test_definition_TPXO9_currents():
     """Tests the reading of the TPXO9-atlas-v5 model definition file for currents
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_TPXO9-atlas-v5_currents.def'
-    definition_file['json'] = 'model_TPXO9-atlas-v5_currents.json'
-    definition_file['auto'] = 'model_TPXO9-atlas-v5_currents.json'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_TPXO9-atlas-v5_currents.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files for each component
     model_files = {}
     model_files['u'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
@@ -642,20 +543,14 @@ def test_definition_TPXO9_currents(file_format):
     assert m.long_name['u'] == 'zonal_tidal_current'
     assert m.long_name['v'] == 'meridional_tidal_current'
 
-# PURPOSE: test glob file functionalityfrom_dict
-@pytest.mark.parametrize("file_format", ['ascii','json','auto'])
-def test_definition_TPXO9_currents_glob(file_format):
+# PURPOSE: test glob file functionality
+def test_definition_TPXO9_currents_glob():
     """Tests the reading of the TPXO9-atlas-v5 model definition file for currents
     with glob file searching
     """
-    # definition files of each format
-    definition_file = {}
-    definition_file['ascii'] = 'model_TPXO9-atlas-v5_currents.def'
-    definition_file['json'] = 'model_TPXO9-atlas-v5_currents.json'
-    definition_file['auto'] = 'model_TPXO9-atlas-v5_currents.def'
-    val = definition_file[file_format]
-    # read model definition file for format
-    m = pyTMD.io.model().from_file(filepath.joinpath(val), format=file_format)
+    # read model definition file
+    definition_file = 'model_TPXO9-atlas-v5_currents.json'
+    m = pyTMD.io.model().from_file(filepath.joinpath(definition_file))
     # model files for each component
     model_files = {}
     model_files['u'] = ['TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc',
@@ -703,27 +598,15 @@ def test_definition_TPXO9_currents_glob(file_format):
     attrs = ['name','format','compressed','type','scale']
     glob_string_u = r'TPXO9_atlas_v5/u*.nc'
     glob_string_v = r'TPXO9_atlas_v5/u*.nc'
-    if file_format in ('ascii','auto'):
-        # create tab-delimited definition file
-        for attr in attrs:
-            val = getattr(m,attr)
-            if isinstance(val,list):
-                fid.write('{0}\t{1}\n'.format(attr,','.join(val)))
-            else:
-                fid.write('{0}\t{1}\n'.format(attr,val))
-        # append glob strings for model file
-        fid.write(f'model_file\t{glob_string_u};{glob_string_v}\n')
-        fid.write(f'grid_file\t{grid_file}\n')
-    elif (file_format == 'json'):
-        # create JSON definition file
-        d = {attr:getattr(m,attr) for attr in attrs}
-        d['model_file'] = {'u':glob_string_u,'v':glob_string_v}
-        d['grid_file'] = str(grid_file)
-        json.dump(d, fid)
+    # create JSON definition file
+    d = {attr:getattr(m,attr) for attr in attrs}
+    d['model_file'] = {'u':glob_string_u,'v':glob_string_v}
+    d['grid_file'] = str(grid_file)
+    json.dump(d, fid)
     # rewind the glob definition file
     fid.seek(0)
     # use model definition file as input
-    model = pyTMD.io.model(directory=filepath).from_file(fid, format=file_format)
+    model = pyTMD.io.model(directory=filepath).from_file(fid)
     for attr in attrs:
         assert getattr(model,attr) == getattr(m,attr)
     # verify that the model files match
@@ -778,9 +661,9 @@ def test_parse_TPXO9_elevation(MODEL):
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
     assert all(c in m.constituents for c in constituents)
     # test additional constituents found in newer models
-    if MODEL in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
+    if m.name in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
         assert all(c in m.constituents for c in ['mf','mm'])
-    if MODEL in ('TPXO9-atlas-v5',):
+    if m.name in ('TPXO9-atlas-v5',):
         assert all(c in m.constituents for c in ['s1',])
 
 # parameterize model
@@ -794,7 +677,7 @@ def test_parse_TPXO9_currents(MODEL):
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
     assert all(c in m.constituents for c in constituents)
     # test additional constituents found in newer models
-    if MODEL in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
+    if m.name in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
         assert all(c in m.constituents for c in ['mf','mm'])
-    if MODEL in ('TPXO9-atlas-v5',):
+    if m.name in ('TPXO9-atlas-v5',):
         assert all(c in m.constituents for c in ['s1',])

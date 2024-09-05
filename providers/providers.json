@@ -1,0 +1,200 @@
+{
+    "current": {
+        "CATS2008-v2023": {
+            "format": "TMD3",
+            "grid_file": "CATS2008_v2023/CATS2008_v2023.nc",
+            "model_file": {
+                "u": "CATS2008_v2023/CATS2008_v2023.nc"
+            },
+            "name": "CATS2008-v2023",
+            "projection": "CATS2008",
+            "type": [
+                "u",
+                "v"
+            ]
+        },
+        "HAMTIDE11": {
+            "constituents": [
+                "2n2",
+                "k1",
+                "k2",
+                "m2",
+                "n2",
+                "o1",
+                "p1",
+                "q1",
+                "s2"
+            ],
+            "format": "FES-netcdf",
+            "model_file": {
+                "u": [
+                    "hamtide/HAMcurrent11a_2n.nc",
+                    "hamtide/HAMcurrent11a_k1.nc",
+                    "hamtide/HAMcurrent11a_k2.nc",
+                    "hamtide/HAMcurrent11a_m2.nc",
+                    "hamtide/HAMcurrent11a_n2.nc",
+                    "hamtide/HAMcurrent11a_o1.nc",
+                    "hamtide/HAMcurrent11a_p1.nc",
+                    "hamtide/HAMcurrent11a_q1.nc",
+                    "hamtide/HAMcurrent11a_s2.nc"
+                ],
+                "v": [
+                    "hamtide/HAMcurrent11a_2n.nc",
+                    "hamtide/HAMcurrent11a_k1.nc",
+                    "hamtide/HAMcurrent11a_k2.nc",
+                    "hamtide/HAMcurrent11a_m2.nc",
+                    "hamtide/HAMcurrent11a_n2.nc",
+                    "hamtide/HAMcurrent11a_o1.nc",
+                    "hamtide/HAMcurrent11a_p1.nc",
+                    "hamtide/HAMcurrent11a_q1.nc",
+                    "hamtide/HAMcurrent11a_s2.nc"
+                ]
+            },
+            "name": "HAMTIDE11",
+            "reference": "https://doi.org/10.1002/2013JC009766",
+            "scale": 1.0,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "HAMTIDE11"
+        }
+    },
+    "elevation": {
+        "CATS2008-v2023": {
+            "format": "TMD3",
+            "grid_file": "CATS2008_v2023/CATS2008_v2023.nc",
+            "model_file": "CATS2008_v2023/CATS2008_v2023.nc",
+            "name": "CATS2008-v2023",
+            "projection": "CATS2008",
+            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/cats2008/",
+            "type": "z",
+            "variable": "tide_ocean"
+        },
+        "EOT20": {
+            "constituents": [
+                "2n2",
+                "j1",
+                "k1",
+                "k2",
+                "m2",
+                "m4",
+                "mf",
+                "mm",
+                "n2",
+                "o1",
+                "p1",
+                "q1",
+                "s1",
+                "s2",
+                "sa",
+                "ssa",
+                "t2"
+            ],
+            "format": "FES-netcdf",
+            "model_file": [
+                "EOT20/ocean_tides/2N2_ocean_eot20.nc",
+                "EOT20/ocean_tides/J1_ocean_eot20.nc",
+                "EOT20/ocean_tides/K1_ocean_eot20.nc",
+                "EOT20/ocean_tides/K2_ocean_eot20.nc",
+                "EOT20/ocean_tides/M2_ocean_eot20.nc",
+                "EOT20/ocean_tides/M4_ocean_eot20.nc",
+                "EOT20/ocean_tides/MF_ocean_eot20.nc",
+                "EOT20/ocean_tides/MM_ocean_eot20.nc",
+                "EOT20/ocean_tides/N2_ocean_eot20.nc",
+                "EOT20/ocean_tides/O1_ocean_eot20.nc",
+                "EOT20/ocean_tides/P1_ocean_eot20.nc",
+                "EOT20/ocean_tides/Q1_ocean_eot20.nc",
+                "EOT20/ocean_tides/S1_ocean_eot20.nc",
+                "EOT20/ocean_tides/S2_ocean_eot20.nc",
+                "EOT20/ocean_tides/SA_ocean_eot20.nc",
+                "EOT20/ocean_tides/SSA_ocean_eot20.nc",
+                "EOT20/ocean_tides/T2_ocean_eot20.nc"
+            ],
+            "name": "EOT20",
+            "reference": "https://doi.org/10.17882/79489",
+            "scale": 0.01,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "EOT20"
+        },
+        "EOT20_load": {
+            "constituents": [
+                "2n2",
+                "j1",
+                "k1",
+                "k2",
+                "m2",
+                "m4",
+                "mf",
+                "mm",
+                "n2",
+                "o1",
+                "p1",
+                "q1",
+                "s1",
+                "s2",
+                "sa",
+                "ssa",
+                "t2"
+            ],
+            "format": "FES-netcdf",
+            "model_file": [
+                "EOT20/load_tides/2N2_load_eot20.nc",
+                "EOT20/load_tides/J1_load_eot20.nc",
+                "EOT20/load_tides/K1_load_eot20.nc",
+                "EOT20/load_tides/K2_load_eot20.nc",
+                "EOT20/load_tides/M2_load_eot20.nc",
+                "EOT20/load_tides/M4_load_eot20.nc",
+                "EOT20/load_tides/MF_load_eot20.nc",
+                "EOT20/load_tides/MM_load_eot20.nc",
+                "EOT20/load_tides/N2_load_eot20.nc",
+                "EOT20/load_tides/O1_load_eot20.nc",
+                "EOT20/load_tides/P1_load_eot20.nc",
+                "EOT20/load_tides/Q1_load_eot20.nc",
+                "EOT20/load_tides/S1_load_eot20.nc",
+                "EOT20/load_tides/S2_load_eot20.nc",
+                "EOT20/load_tides/SA_load_eot20.nc",
+                "EOT20/load_tides/SSA_load_eot20.nc",
+                "EOT20/load_tides/T2_load_eot20.nc"
+            ],
+            "name": "EOT20_load",
+            "reference": "https://doi.org/10.17882/79489",
+            "scale": 0.01,
+            "type": "z",
+            "variable": "tide_load",
+            "version": "EOT20"
+        },
+        "HAMTIDE11": {
+            "constituents": [
+                "2n2",
+                "k1",
+                "k2",
+                "m2",
+                "n2",
+                "o1",
+                "p1",
+                "q1",
+                "s2"
+            ],
+            "format": "FES-netcdf",
+            "model_file": [
+                "hamtide/2n.hamtide11a.nc",
+                "hamtide/k1.hamtide11a.nc",
+                "hamtide/k2.hamtide11a.nc",
+                "hamtide/m2.hamtide11a.nc",
+                "hamtide/n2.hamtide11a.nc",
+                "hamtide/o1.hamtide11a.nc",
+                "hamtide/p1.hamtide11a.nc",
+                "hamtide/q1.hamtide11a.nc",
+                "hamtide/s2.hamtide11a.nc"
+            ],
+            "name": "HAMTIDE11",
+            "reference": "https://doi.org/10.1002/2013JC009766",
+            "scale": 0.01,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "HAMTIDE11"
+        }
+    }
+}

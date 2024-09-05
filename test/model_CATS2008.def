@@ -1,8 +1,0 @@
-format      OTIS
-name        CATS2008
-model_file  CATS2008/hf.CATS2008.out
-grid_file   CATS2008/grid_CATS2008
-projection  CATS2008
-type        z
-variable    tide_ocean
-reference   https://doi.org/10.15784/601235

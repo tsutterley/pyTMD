@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,8 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 09/2024: use JSON database for known model parameters
+        drop support for the ascii definition file format
     Updated 08/2024: allow inferring only specific minor constituents
         use prediction functions for pole tides in cartesian coordinates
         use rotation matrix to convert from cartesian to spherical
@@ -193,10 +195,8 @@ def tide_elevations(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
-        ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
-        DEFINITION_FORMAT: str = 'auto',
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
         EPSG: str | int = 3031,
@@ -228,18 +228,10 @@ def tide_elevations(
         working data directory for tide models
     MODEL: str or NoneType, default None
         Tide model to use in correction
-    ATLAS_FORMAT: str, default 'ATLAS-netcdf'
-        ATLAS tide model format
     GZIP: bool, default False
         Tide model files are gzip compressed
     DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
         Tide model definition file for use
-    DEFINITION_FORMAT: str, default 'auto'
-        Format for model definition file
-
-            - ``'ascii'``: tab-delimited definition file
-            - ``'json'``: JSON formatted definition file
-            - ``'auto'``: auto-detect the definition file format
     CROP: bool, default False
         Crop tide model data to (buffered) bounds
     BOUNDS: list, np.ndarray or NoneType, default None
@@ -305,11 +297,9 @@ def tide_elevations(
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE,
-            format=DEFINITION_FORMAT)
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
-            compressed=GZIP).elevation(MODEL)
+        model = pyTMD.io.model(DIRECTORY, compressed=GZIP).elevation(MODEL)
 
     # determine input data type based on variable dimensions
     if not TYPE:
@@ -441,10 +431,8 @@ def tide_currents(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,
         MODEL: str | None = None,
-        ATLAS_FORMAT: str = 'ATLAS-netcdf',
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
-        DEFINITION_FORMAT: str = 'ascii',
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
         EPSG: str | int = 3031,
@@ -475,18 +463,10 @@ def tide_currents(
         working data directory for tide models
     MODEL: str or NoneType, default None
         Tide model to use in correction
-    ATLAS_FORMAT: str, default 'ATLAS-netcdf'
-        ATLAS tide model format
     GZIP: bool, default False
         Tide model files are gzip compressed
     DEFINITION_FILE: str, pathlib.Path, io.IOBase or NoneType, default None
         Tide model definition file for use
-    DEFINITION_FORMAT: str, default 'auto'
-        Format for model definition file
-
-            - ``'ascii'``: tab-delimited definition file
-            - ``'json'``: JSON formatted definition file
-            - ``'auto'``: auto-detect the definition file format
     CROP: bool, default False
         Crop tide model data to (buffered) bounds
     BOUNDS: list, np.ndarray or NoneType, default None
@@ -548,11 +528,9 @@ def tide_currents(
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE,
-            format=DEFINITION_FORMAT)
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
     else:
-        model = pyTMD.io.model(DIRECTORY, format=ATLAS_FORMAT,
-            compressed=GZIP).current(MODEL)
+        model = pyTMD.io.model(DIRECTORY, compressed=GZIP).current(MODEL)
 
     # determine input data type based on variable dimensions
     if not TYPE:

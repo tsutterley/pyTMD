@@ -6,4 +6,3 @@ prune run*
 prune test*
 exclude *.cfg
 exclude *.yml
-include requirements.txt

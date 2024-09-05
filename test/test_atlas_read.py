@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_atlas_read.py (07/2024)
+test_atlas_read.py (09/2024)
 Tests that ATLAS compact and netCDF4 data can be downloaded from AWS S3 bucket
 Tests the read program to verify that constituents are being extracted
 
@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 09/2024: drop support for the ascii definition file format
     Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: test doodson and cartwright numbers of each constituent
@@ -32,6 +33,7 @@ UPDATE HISTORY:
 import re
 import io
 import gzip
+import json
 import boto3
 import shutil
 import pytest
@@ -93,9 +95,10 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
 
     # model parameters for TPXO9-atlas-v2
     model = pyTMD.io.model(filepath,format='ATLAS-netcdf',compressed=True,
-        verify=False).elevation('TPXO9-atlas-v2')
+        verify=False).elevation('TPXO9-atlas-v2-nc')
     # recursively create model directory
-    model.model_directory.mkdir(parents=True, exist_ok=True)
+    model_directory = model.model_file[0].parent
+    model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve grid file from s3
     obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model.grid_file.name))
     response = obj.get()
@@ -115,7 +118,7 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # run tests
     yield
     # clean up model
-    shutil.rmtree(model.model_directory)
+    shutil.rmtree(model_directory)
 
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
@@ -379,7 +382,7 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
         assert np.all(np.abs(difference) <= eps)
 
 # parameterize ATLAS tide model
-@pytest.mark.parametrize("MODEL", ['TPXO8-atlas','TPXO9-atlas-v2'])
+@pytest.mark.parametrize("MODEL", ['TPXO8-atlas','TPXO9-atlas-v2-nc'])
 # parameterize interpolation method
 @pytest.mark.parametrize("METHOD", ['spline','nearest'])
 @pytest.mark.parametrize("EXTRAPOLATE", [False])
@@ -404,20 +407,15 @@ def test_Ross_Ice_Shelf(MODEL, METHOD, EXTRAPOLATE):
     assert np.any(tide)
 
 # PURPOSE: test definition file functionality
-@pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2'])
+@pytest.mark.parametrize("MODEL", ['TPXO9-atlas-v2-nc'])
 def test_definition_file(MODEL):
     # get model parameters
     model = pyTMD.io.model(filepath,compressed=True).elevation(MODEL)
     # create model definition file
     fid = io.StringIO()
     attrs = ['name','format','grid_file','model_file','compressed','type','scale']
-    for attr in attrs:
-        val = getattr(model,attr)
-        if isinstance(val,list):
-            var = ','.join(str(v) for v in val)
-            fid.write(f'{attr}\t{var}\n')
-        else:
-            fid.write(f'{attr}\t{val}\n')
+    d = model.to_dict(fields=attrs, serialize=True)
+    json.dump(d, fid)
     fid.seek(0)
     # use model definition file as input
     m = pyTMD.io.model().from_file(fid)

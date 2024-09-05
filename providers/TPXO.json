@@ -1,0 +1,877 @@
+{
+    "current": {
+        "TPXO10-atlas-v2": {
+            "format": "OTIS",
+            "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
+            "model_file": {
+                "u": [
+                    "TPXO10_atlas_v2/u_2n2_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_k1_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_k2_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_m2_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_m4_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_mf_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_mm_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_mn4_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_ms4_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_n2_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_o1_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_p1_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_q1_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_s1_tpxo10_atlas_30_v2",
+                    "TPXO10_atlas_v2/u_s2_tpxo10_atlas_30_v2"
+                ]
+            },
+            "name": "TPXO10-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo10-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v2"
+        },
+        "TPXO10-atlas-v2-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2.nc",
+            "model_file": {
+                "u": [
+                    "TPXO10_atlas_v2/u_2n2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_k1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_k2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_m2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_m4_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_mf_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_mm_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_mn4_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_ms4_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_n2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_o1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_p1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_q1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_s1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_s2_tpxo10_atlas_30_v2.nc"
+                ],
+                "v": [
+                    "TPXO10_atlas_v2/u_2n2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_k1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_k2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_m2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_m4_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_mf_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_mm_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_mn4_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_ms4_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_n2_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_o1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_p1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_q1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_s1_tpxo10_atlas_30_v2.nc",
+                    "TPXO10_atlas_v2/u_s2_tpxo10_atlas_30_v2.nc"
+                ]
+            },
+            "name": "TPXO10-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo10-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v2"
+        },
+        "TPXO7.2": {
+            "format": "OTIS",
+            "grid_file": "TPXO7.2_tmd/grid_tpxo7.2",
+            "model_file": {
+                "u": "TPXO7.2_tmd/u_tpxo7.2"
+            },
+            "name": "TPXO7.2",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/global.html",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "7.2"
+        },
+        "TPXO8-atlas": {
+            "format": "ATLAS-compact",
+            "grid_file": "tpxo8_atlas/grid_tpxo8atlas_30_v1",
+            "model_file": {
+                "u": "tpxo8_atlas/uv.tpxo8_atlas_30_v1"
+            },
+            "name": "TPXO8-atlas",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo8_atlas.html",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "8"
+        },
+        "TPXO9-atlas": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas/grid_tpxo9_atlas",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas/u_q1_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_o1_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_p1_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_k1_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_n2_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_m2_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_s2_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_k2_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_m4_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_ms4_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_mn4_tpxo9_atlas_30",
+                    "TPXO9_atlas/u_2n2_tpxo9_atlas_30"
+                ]
+            },
+            "name": "TPXO9-atlas",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v1"
+        },
+        "TPXO9-atlas-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas/grid_tpxo9_atlas.nc",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas/u_q1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_o1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_p1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_k1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_n2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_m2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_s2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_k2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_m4_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_ms4_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_mn4_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/u_2n2_tpxo9_atlas_30.nc"
+                ],
+                "v": [
+                    "TPXO9_atlas/v_q1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_o1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_p1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_k1_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_n2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_m2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_s2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_k2_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_m4_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_ms4_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_mn4_tpxo9_atlas_30.nc",
+                    "TPXO9_atlas/v_2n2_tpxo9_atlas_30.nc"
+                ]
+            },
+            "name": "TPXO9-atlas",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v1"
+        },
+        "TPXO9-atlas-v2": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v2/u_q1_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_o1_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_p1_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_k1_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_n2_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_m2_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_s2_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_k2_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_m4_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_ms4_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_mn4_tpxo9_atlas_30_v2",
+                    "TPXO9_atlas_v2/u_2n2_tpxo9_atlas_30_v2"
+                ]
+            },
+            "name": "TPXO9-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v2"
+        },
+        "TPXO9-atlas-v2-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2.nc",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v2/u_q1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_o1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_p1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_k1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_n2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_m2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_s2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_k2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_m4_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_ms4_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_mn4_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/u_2n2_tpxo9_atlas_30_v2.nc"
+                ],
+                "v": [
+                    "TPXO9_atlas_v2/v_q1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_o1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_p1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_k1_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_n2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_m2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_s2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_k2_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_m4_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_ms4_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_mn4_tpxo9_atlas_30_v2.nc",
+                    "TPXO9_atlas_v2/v_2n2_tpxo9_atlas_30_v2.nc"
+                ]
+            },
+            "name": "TPXO9-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v2"
+        },
+        "TPXO9-atlas-v3": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v3/u_q1_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_o1_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_p1_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_k1_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_n2_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_m2_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_s2_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_k2_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_m4_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_ms4_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_mn4_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_2n2_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_mf_tpxo9_atlas_30_v3",
+                    "TPXO9_atlas_v3/u_mm_tpxo9_atlas_30_v3"
+                ]
+            },
+            "name": "TPXO9-atlas-v3",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v3"
+        },
+        "TPXO9-atlas-v3-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3.nc",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v3/u_q1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_o1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_p1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_k1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_n2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_m2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_s2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_k2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_m4_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_ms4_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_mn4_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_2n2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_mf_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/u_mm_tpxo9_atlas_30_v3.nc"
+                ],
+                "v": [
+                    "TPXO9_atlas_v3/v_q1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_o1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_p1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_k1_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_n2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_m2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_s2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_k2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_m4_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_ms4_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_mn4_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_2n2_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_mf_tpxo9_atlas_30_v3.nc",
+                    "TPXO9_atlas_v3/v_mm_tpxo9_atlas_30_v3.nc"
+                ]
+            },
+            "name": "TPXO9-atlas-v3",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v3"
+        },
+        "TPXO9-atlas-v4": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v4/u_q1_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_o1_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_p1_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_k1_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_n2_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_m2_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_s2_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_k2_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_m4_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_ms4_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_mn4_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_2n2_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_mf_tpxo9_atlas_30_v4",
+                    "TPXO9_atlas_v4/u_mm_tpxo9_atlas_30_v4"
+                ]
+            },
+            "name": "TPXO9-atlas-v4",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v4"
+        },
+        "TPXO9-atlas-v4-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4.nc",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v4/u_q1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_o1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_p1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_k1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_n2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_m2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_s2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_k2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_m4_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_ms4_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_mn4_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_2n2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_mf_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/u_mm_tpxo9_atlas_30_v4.nc"
+                ],
+                "v": [
+                    "TPXO9_atlas_v4/v_q1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_o1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_p1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_k1_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_n2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_m2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_s2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_k2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_m4_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_ms4_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_mn4_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_2n2_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_mf_tpxo9_atlas_30_v4.nc",
+                    "TPXO9_atlas_v4/v_mm_tpxo9_atlas_30_v4.nc"
+                ]
+            },
+            "name": "TPXO9-atlas-v4",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v4"
+        },
+        "TPXO9-atlas-v5": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_o1_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_p1_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_n2_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_m4_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_ms4_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_mn4_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_mf_tpxo9_atlas_30_v5",
+                    "TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5"
+                ]
+            },
+            "name": "TPXO9-atlas-v5",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v5"
+        },
+        "TPXO9-atlas-v5-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc",
+            "model_file": {
+                "u": [
+                    "TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_o1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_p1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_n2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_m4_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_ms4_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_mn4_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_mf_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5.nc"
+                ],
+                "v": [
+                    "TPXO9_atlas_v5/u_q1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_o1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_p1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_k1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_n2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_m2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_s1_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_s2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_k2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_m4_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_ms4_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_mn4_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_2n2_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_mf_tpxo9_atlas_30_v5.nc",
+                    "TPXO9_atlas_v5/u_mm_tpxo9_atlas_30_v5.nc"
+                ]
+            },
+            "name": "TPXO9-atlas-v5",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.0001,
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "v5"
+        },
+        "TPXO9.1": {
+            "format": "OTIS",
+            "grid_file": "TPXO9.1/grid_tpxo9",
+            "model_file": {
+                "u": "TPXO9.1/u_tpxo9.v1"
+            },
+            "name": "TPXO9.1",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/global.html",
+            "type": [
+                "u",
+                "v"
+            ],
+            "version": "9.1"
+        }
+    },
+    "elevation": {
+        "TPXO10-atlas-v2": {
+            "format": "OTIS",
+            "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
+            "model_file": [
+                "TPXO10_atlas_v2/h_2n2_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_k1_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_k2_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_m2_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_m4_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_mf_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_mm_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_mn4_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_ms4_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_n2_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_o1_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_p1_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_q1_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_s1_tpxo10_atlas_30_v2",
+                "TPXO10_atlas_v2/h_s2_tpxo10_atlas_30_v2"
+            ],
+            "name": "TPXO10-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo10-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v2"
+        },
+        "TPXO10-atlas-v2-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2.nc",
+            "model_file": [
+                "TPXO10_atlas_v2/h_2n2_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_k1_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_k2_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_m2_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_m4_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_mf_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_mm_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_mn4_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_ms4_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_n2_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_o1_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_p1_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_q1_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_s1_tpxo10_atlas_30_v2.nc",
+                "TPXO10_atlas_v2/h_s2_tpxo10_atlas_30_v2.nc"
+            ],
+            "name": "TPXO10-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo10-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v2"
+        },
+        "TPXO7.2": {
+            "format": "OTIS",
+            "grid_file": "TPXO7.2_tmd/grid_tpxo7.2",
+            "model_file": "TPXO7.2_tmd/h_tpxo7.2",
+            "name": "TPXO7.2",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/global.html",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "7.2"
+        },
+        "TPXO7.2_load": {
+            "format": "OTIS",
+            "grid_file": "TPXO7.2_load/grid_tpxo6.2",
+            "model_file": "TPXO7.2_load/h_tpxo7.2_load",
+            "name": "TPXO7.2_load",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/global.html",
+            "type": "z",
+            "variable": "tide_load",
+            "version": "7.2"
+        },
+        "TPXO8-atlas": {
+            "format": "ATLAS-compact",
+            "grid_file": "tpxo8_atlas/grid_tpxo8atlas_30_v1",
+            "model_file": "tpxo8_atlas/hf.tpxo8_atlas_30_v1",
+            "name": "TPXO8-atlas",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo8_atlas.html",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "8"
+        },
+        "TPXO9-atlas": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas/grid_tpxo9_atlas",
+            "model_file": [
+                "TPXO9_atlas/h_q1_tpxo9_atlas_30",
+                "TPXO9_atlas/h_o1_tpxo9_atlas_30",
+                "TPXO9_atlas/h_p1_tpxo9_atlas_30",
+                "TPXO9_atlas/h_k1_tpxo9_atlas_30",
+                "TPXO9_atlas/h_n2_tpxo9_atlas_30",
+                "TPXO9_atlas/h_m2_tpxo9_atlas_30",
+                "TPXO9_atlas/h_s2_tpxo9_atlas_30",
+                "TPXO9_atlas/h_k2_tpxo9_atlas_30",
+                "TPXO9_atlas/h_m4_tpxo9_atlas_30",
+                "TPXO9_atlas/h_ms4_tpxo9_atlas_30",
+                "TPXO9_atlas/h_mn4_tpxo9_atlas_30",
+                "TPXO9_atlas/h_2n2_tpxo9_atlas_30"
+            ],
+            "name": "TPXO9-atlas",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v1"
+        },
+        "TPXO9-atlas-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas/grid_tpxo9_atlas.nc",
+            "model_file": [
+                "TPXO9_atlas/h_q1_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_o1_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_p1_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_k1_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_n2_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_m2_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_s2_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_k2_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_m4_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_ms4_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_mn4_tpxo9_atlas_30.nc",
+                "TPXO9_atlas/h_2n2_tpxo9_atlas_30.nc"
+            ],
+            "name": "TPXO9-atlas",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo9_atlas.html",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v1"
+        },
+        "TPXO9-atlas-v2": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2",
+            "model_file": [
+                "TPXO9_atlas_v2/h_q1_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_o1_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_p1_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_k1_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_n2_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_m2_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_s2_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_k2_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_m4_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_ms4_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_mn4_tpxo9_atlas_30_v2",
+                "TPXO9_atlas_v2/h_2n2_tpxo9_atlas_30_v2"
+            ],
+            "name": "TPXO9-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v2"
+        },
+        "TPXO9-atlas-v2-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v2/grid_tpxo9_atlas_30_v2.nc",
+            "model_file": [
+                "TPXO9_atlas_v2/h_q1_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_o1_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_p1_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_k1_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_n2_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_m2_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_s2_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_k2_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_m4_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_ms4_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_mn4_tpxo9_atlas_30_v2.nc",
+                "TPXO9_atlas_v2/h_2n2_tpxo9_atlas_30_v2.nc"
+            ],
+            "name": "TPXO9-atlas-v2",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v2"
+        },
+        "TPXO9-atlas-v3": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3",
+            "model_file": [
+                "TPXO9_atlas_v3/h_q1_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_o1_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_p1_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_k1_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_n2_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_m2_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_s2_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_k2_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_m4_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_ms4_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_mn4_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_2n2_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_mf_tpxo9_atlas_30_v3",
+                "TPXO9_atlas_v3/h_mm_tpxo9_atlas_30_v3"
+            ],
+            "name": "TPXO9-atlas-v3",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v3"
+        },
+        "TPXO9-atlas-v3-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v3/grid_tpxo9_atlas_30_v3.nc",
+            "model_file": [
+                "TPXO9_atlas_v3/h_q1_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_o1_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_p1_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_k1_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_n2_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_m2_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_s2_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_k2_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_m4_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_ms4_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_mn4_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_2n2_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_mf_tpxo9_atlas_30_v3.nc",
+                "TPXO9_atlas_v3/h_mm_tpxo9_atlas_30_v3.nc"
+            ],
+            "name": "TPXO9-atlas-v3",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v3"
+        },
+        "TPXO9-atlas-v4": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4",
+            "model_file": [
+                "TPXO9_atlas_v4/h_q1_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_o1_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_p1_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_k1_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_n2_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_m2_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_s2_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_k2_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_m4_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_ms4_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_mn4_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_2n2_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_mf_tpxo9_atlas_30_v4",
+                "TPXO9_atlas_v4/h_mm_tpxo9_atlas_30_v4"
+            ],
+            "name": "TPXO9-atlas-v4",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v4"
+        },
+        "TPXO9-atlas-v4-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v4/grid_tpxo9_atlas_30_v4.nc",
+            "model_file": [
+                "TPXO9_atlas_v4/h_q1_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_o1_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_p1_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_k1_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_n2_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_m2_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_s2_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_k2_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_m4_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_ms4_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_mn4_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_2n2_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_mf_tpxo9_atlas_30_v4.nc",
+                "TPXO9_atlas_v4/h_mm_tpxo9_atlas_30_v4.nc"
+            ],
+            "name": "TPXO9-atlas-v4",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v4"
+        },
+        "TPXO9-atlas-v5": {
+            "format": "OTIS",
+            "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5",
+            "model_file": [
+                "TPXO9_atlas_v5/h_q1_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_o1_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_p1_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_k1_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_n2_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_m2_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_s1_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_s2_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_k2_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_m4_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_ms4_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_mn4_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_2n2_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_mf_tpxo9_atlas_30_v5",
+                "TPXO9_atlas_v5/h_mm_tpxo9_atlas_30_v5"
+            ],
+            "name": "TPXO9-atlas-v5",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v5"
+        },
+        "TPXO9-atlas-v5-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO9_atlas_v5/grid_tpxo9_atlas_30_v5.nc",
+            "model_file": [
+                "TPXO9_atlas_v5/h_q1_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_o1_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_p1_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_k1_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_n2_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_m2_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_s1_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_s2_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_k2_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_m4_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_ms4_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_mn4_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_2n2_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_mf_tpxo9_atlas_30_v5.nc",
+                "TPXO9_atlas_v5/h_mm_tpxo9_atlas_30_v5.nc"
+            ],
+            "name": "TPXO9-atlas-v5",
+            "projection": "4326",
+            "reference": "https://www.tpxo.net/global/tpxo9-atlas",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v5"
+        },
+        "TPXO9.1": {
+            "format": "OTIS",
+            "grid_file": "TPXO9.1/DATA/grid_tpxo9",
+            "model_file": "TPXO9.1/DATA/h_tpxo9.v1",
+            "name": "TPXO9.1",
+            "projection": "4326",
+            "reference": "http://volkov.oce.orst.edu/tides/global.html",
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "9.1"
+        }
+    }
+}
