@@ -35,6 +35,8 @@ jobs:
           python=${{ matrix.python-version }}
           flake8
           gh
+          pip:
+            - -e ..
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
