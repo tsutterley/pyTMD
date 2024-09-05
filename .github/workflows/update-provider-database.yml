@@ -61,4 +61,5 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh pr checkout ${{ github.event.pull_request.number }}
+        git add -A
         git push
