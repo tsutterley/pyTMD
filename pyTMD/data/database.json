@@ -410,7 +410,7 @@
             "format": "ATLAS-netcdf",
             "grid_file": "TPXO8_atlas_v1/grid_tpxo8atlas_30_v1.nc",
             "model_file": "TPXO8_atlas_v1/hf.*_tpxo8_atlas_30c_v1.nc",
-            "name": "TPXO8-atlas-v1",
+            "name": "TPXO8-atlas-nc",
             "reference": "https://www.tpxo.net/global/tpxo8-atlas",
             "scale": 0.001,
             "type": "z",
