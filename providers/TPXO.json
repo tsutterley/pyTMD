@@ -113,7 +113,7 @@
         },
         "TPXO8-atlas-nc": {
             "format": "ATLAS-netcdf",
-            "name": "TPXO8-atlas-v1",
+            "name": "TPXO8-atlas-nc",
             "model_file": "TPXO8_atlas_v1/hf.*_tpxo8_atlas_30c_v1.nc",
             "grid_file": "TPXO8_atlas_v1/grid_tpxo8atlas_30_v1.nc",
             "type": "z",
