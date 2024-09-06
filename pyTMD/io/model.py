@@ -209,6 +209,9 @@ class model:
             self.grid_file = self.pathfinder(self.grid_file)
         # validate paths: model constituent files
         self.model_file = self.pathfinder(self.model_file)
+        # get model constituents from constituent files
+        if self.format in ('FES-ascii','FES-netcdf',):
+            self.parse_constituents()
         # return the model parameters
         self.validate_format()
         return self
@@ -240,6 +243,9 @@ class model:
         # validate paths: model constituent files
         for key, val in self.model_file.items():
             self.model_file[key] = self.pathfinder(val)
+        # get model constituents from constituent files
+        if self.format in ('FES-ascii','FES-netcdf',):
+            self.parse_constituents()
         # return the model parameters
         self.validate_format()
         return self

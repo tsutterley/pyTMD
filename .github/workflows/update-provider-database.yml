@@ -49,14 +49,14 @@ jobs:
       id: changes
       run: |
         if [ -n "$(git status --porcelain)" ] ; then
-            echo "DETECTED=true" >> $GITHUB_OUTPUT;
+            echo "detected=true" >> $GITHUB_OUTPUT;
             echo "::debug::Changes detected";
         else
-            echo "DETECTED=false" >> $GITHUB_OUTPUT;
+            echo "detected=false" >> $GITHUB_OUTPUT;
             echo "::debug::No changes detected";
         fi
     - name: Checkout PR and Push Changes
-      if: steps.changes.outputs.DETECTED == 'true'
+      if: steps.changes.outputs.detected == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
