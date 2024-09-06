@@ -192,7 +192,7 @@
                 "fes2012/data/S2_FES2012_SLEV.nc",
                 "fes2012/data/M8_FES2012_SLEV.nc",
                 "fes2012/data/Nu2_FES2012_SLEV.nc"
-            ]
+            ],
             "name": "FES2012",
             "type": "z",
             "version": "FES2012",
