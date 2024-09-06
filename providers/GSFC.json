@@ -234,6 +234,33 @@
             "scale": 0.01,
             "reference": "https://ntrs.nasa.gov/citations/19990089548"
         },
+        "GOT5.5D_extrapolated": {
+            "format": "GOT-netcdf",
+            "name": "GOT5.5D",
+            "model_file": [
+                "GOT5.5/extrapolated/2n2x.nc",
+                "GOT5.5/extrapolated/j1x.nc",
+                "GOT5.5D/extrapolated/k1_5.5Dx.nc",
+                "GOT5.5/extrapolated/k2x.nc",
+                "GOT5.5D/extrapolated/m2_5.5Dx.nc",
+                "GOT5.5/extrapolated/m4x.nc",
+                "GOT5.5/extrapolated/ms4x.nc",
+                "GOT5.5/extrapolated/mu2x.nc",
+                "GOT5.5/extrapolated/n2x.nc",
+                "GOT5.5/extrapolated/o1x.nc",
+                "GOT5.5/extrapolated/oo1x.nc",
+                "GOT5.5D/extrapolated/p1_5.5Dx.nc",
+                "GOT5.5/extrapolated/q1x.nc",
+                "GOT5.5D/extrapolated/s1_5.5Dx.nc",
+                "GOT5.5D/extrapolated/s2_5.5Dx.nc",
+                "GOT5.5/extrapolated/sig1x.nc"
+            ],
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "5.5",
+            "scale": 0.01,
+            "reference": "https://ntrs.nasa.gov/citations/19990089548"
+        },
         "GOT5.6": {
             "format": "GOT-netcdf",
             "name": "GOT5.6",
