@@ -406,17 +406,6 @@
             ],
             "version": "8"
         },
-        "TPXO8-atlas-nc": {
-            "format": "ATLAS-netcdf",
-            "grid_file": "TPXO8_atlas_v1/grid_tpxo8atlas_30_v1.nc",
-            "model_file": "TPXO8_atlas_v1/hf.*_tpxo8_atlas_30c_v1.nc",
-            "name": "TPXO8-atlas-nc",
-            "reference": "https://www.tpxo.net/global/tpxo8-atlas",
-            "scale": 0.001,
-            "type": "z",
-            "variable": "tide_ocean",
-            "version": "v1"
-        },
         "TPXO9-atlas": {
             "format": "OTIS",
             "grid_file": "TPXO9_atlas/grid_tpxo9_atlas",
@@ -1963,6 +1952,27 @@
             "type": "z",
             "variable": "tide_ocean",
             "version": "8"
+        },
+        "TPXO8-atlas-nc": {
+            "format": "ATLAS-netcdf",
+            "grid_file": "TPXO8_atlas_v1/grid_tpxo8atlas_30_v1.nc",
+            "model_file": [
+                "TPXO8_atlas_v1/hf.k1_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.n2_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.o1_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.q1_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.s2_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.k2_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.p1_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.m4_tpxo8_atlas_30c_v1.nc",
+                "TPXO8_atlas_v1/hf.m2_tpxo8_atlas_30c_v1.nc"
+            ],
+            "name": "TPXO8-atlas-nc",
+            "reference": "http://volkov.oce.orst.edu/tides/tpxo8_atlas.html",
+            "scale": 0.001,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "v1"
         },
         "TPXO9-atlas": {
             "format": "OTIS",
