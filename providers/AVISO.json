@@ -126,7 +126,7 @@
         "FES2012": {
             "format": "FES-netcdf",
             "constituents": [
-                "t2"
+                "t2",
                 "msf",
                 "mtm",
                 "l2",
