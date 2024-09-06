@@ -180,6 +180,33 @@
             "variable": "tide_load",
             "version": "5.5"
         },
+        "GOT5.5_extrapolated": {
+            "format": "GOT-netcdf",
+            "name": "GOT5.5",
+            "model_file": [
+                "GOT5.5/extrapolated/2n2x.nc",
+                "GOT5.5/extrapolated/j1x.nc",
+                "GOT5.5/extrapolated/k1x.nc",
+                "GOT5.5/extrapolated/k2x.nc",
+                "GOT5.5/extrapolated/m2x.nc",
+                "GOT5.5/extrapolated/m4x.nc",
+                "GOT5.5/extrapolated/ms4x.nc",
+                "GOT5.5/extrapolated/mu2x.nc",
+                "GOT5.5/extrapolated/n2x.nc",
+                "GOT5.5/extrapolated/o1x.nc",
+                "GOT5.5/extrapolated/oo1x.nc",
+                "GOT5.5/extrapolated/p1x.nc",
+                "GOT5.5/extrapolated/q1x.nc",
+                "GOT5.5/extrapolated/s1x.nc",
+                "GOT5.5/extrapolated/s2x.nc",
+                "GOT5.5/extrapolated/sig1x.nc"
+            ],
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "5.5",
+            "scale": 0.01,
+            "reference": "https://ntrs.nasa.gov/citations/19990089548"
+        },
         "GOT5.5D": {
             "format": "GOT-netcdf",
             "name": "GOT5.5D",
@@ -205,7 +232,6 @@
             "variable": "tide_ocean",
             "version": "5.5",
             "scale": 0.01,
-            "compressed": false,
             "reference": "https://ntrs.nasa.gov/citations/19990089548"
         },
         "GOT5.6": {
@@ -240,7 +266,7 @@
         },
         "GOT5.6_extrapolated": {
             "format": "GOT-netcdf",
-            "name": "GOT5.6_extrapolated",
+            "name": "GOT5.6",
             "model_file": [
                 "GOT5.5/extrapolated/2n2x.nc",
                 "GOT5.5/extrapolated/j1x.nc",
