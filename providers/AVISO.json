@@ -163,8 +163,7 @@
                 "fes2012/data/T2_FES2012_SLEV.nc",
                 "fes2012/data/MSf_FES2012_SLEV.nc",
                 "fes2012/data/Mtm_FES2012_SLEV.nc",
-                "fes2012/data/L2_FES2012_SLEV.nc",                
-                # "fes2012/data/Z0_FES2012_SLEV.nc",  # no match              
+                "fes2012/data/L2_FES2012_SLEV.nc",                          
                 "fes2012/data/Mm_FES2012_SLEV.nc",
                 "fes2012/data/Q1_FES2012_SLEV.nc",
                 "fes2012/data/2N2_FES2012_SLEV.nc",
@@ -177,10 +176,10 @@
                 "fes2012/data/MS4_FES2012_SLEV.nc",
                 "fes2012/data/R2_FES2012_SLEV.nc",
                 "fes2012/data/Mu2_FES2012_SLEV.nc",
-                "fes2012/data/E2_FES2012_SLEV.nc",  # eps2?
+                "fes2012/data/E2_FES2012_SLEV.nc",
                 "fes2012/data/S4_FES2012_SLEV.nc",
                 "fes2012/data/Ssa_FES2012_SLEV.nc",
-                "fes2012/data/La2_FES2012_SLEV.nc",  # l2?
+                "fes2012/data/La2_FES2012_SLEV.nc",
                 "fes2012/data/MN4_FES2012_SLEV.nc",
                 "fes2012/data/M2_FES2012_SLEV.nc",
                 "fes2012/data/J1_FES2012_SLEV.nc",
