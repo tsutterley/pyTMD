@@ -57,7 +57,7 @@ jobs:
     - name: "Check if repository secrets are accessible"
       id: secrets
       run: |
-        if [ "${{ secrets.MY_KEY }}" == '' ] ; then
+        if [ "${{ secrets.AWS_ACCESS_KEY_ID }}" == '' ] ; then
             echo "accessible=false" >> $GITHUB_OUTPUT;
             echo "::debug::GitHub secrets unavailable for Actions";
         else
