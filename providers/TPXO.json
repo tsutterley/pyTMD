@@ -611,7 +611,7 @@
                 "TPXO8_atlas_v1/hf.p1_tpxo8_atlas_30c_v1.nc",
                 "TPXO8_atlas_v1/hf.m4_tpxo8_atlas_30c_v1.nc",
                 "TPXO8_atlas_v1/hf.m2_tpxo8_atlas_30c_v1.nc"
-            ],            
+            ],
             "grid_file": "TPXO8_atlas_v1/grid_tpxo8atlas_30_v1.nc",
             "type": "z",
             "version": "v1",

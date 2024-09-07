@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 interpolate.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (09/2024)
 Interpolators for spatial data
 
 PYTHON DEPENDENCIES:
@@ -12,6 +12,7 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 09/2024: deprecation fix case where an array is output to scalars
     Updated 07/2024: changed projection flag in extrapolation to is_geographic
     Written 12/2022
 """
@@ -88,17 +89,17 @@ def bilinear(
             WM[3-j], = np.abs(lon[i]-ilon[XI])*np.abs(lat[i]-ilat[YI])
         # if on corner value: use exact
         if (np.isclose(lat[i],ilat[iy]) & np.isclose(lon[i],ilon[ix])):
-            data.data[i] = idata.data[iy,ix].astype(dtype)
-            data.mask[i] = idata.mask[iy,ix]
+            data.data[i] = np.squeeze(idata.data[iy,ix]).astype(dtype)
+            data.mask[i] = np.squeeze(idata.mask[iy,ix])
         elif (np.isclose(lat[i],ilat[iy+1]) & np.isclose(lon[i],ilon[ix])):
-            data.data[i] = idata.data[iy+1,ix].astype(dtype)
-            data.mask[i] = idata.mask[iy+1,ix]
+            data.data[i] = np.squeeze(idata.data[iy+1,ix]).astype(dtype)
+            data.mask[i] = np.squeeze(idata.mask[iy+1,ix])
         elif (np.isclose(lat[i],ilat[iy]) & np.isclose(lon[i],ilon[ix+1])):
-            data.data[i] = idata.data[iy,ix+1].astype(dtype)
-            data.mask[i] = idata.mask[iy,ix+1]
+            data.data[i] = np.squeeze(idata.data[iy,ix+1]).astype(dtype)
+            data.mask[i] = np.squeeze(idata.mask[iy,ix+1])
         elif (np.isclose(lat[i],ilat[iy+1]) & np.isclose(lon[i],ilon[ix+1])):
-            data.data[i] = idata.data[iy+1,ix+1].astype(dtype)
-            data.mask[i] = idata.mask[iy+1,ix+1]
+            data.data[i] = np.squeeze(idata.data[iy+1,ix+1]).astype(dtype)
+            data.mask[i] = np.squeeze(idata.mask[iy+1,ix+1])
         elif np.any(np.isfinite(IM) & (~IM.mask)):
             # find valid indices for data summation and weight matrix
             ii, = np.nonzero(np.isfinite(IM) & (~IM.mask))

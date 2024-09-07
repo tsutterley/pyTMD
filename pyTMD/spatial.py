@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 09/2024: deprecation fix case where an array is output to scalars
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
         added functions to convert to and from East-North-Up coordinates
     Updated 07/2024: added functions to convert to and from DMS
@@ -1620,6 +1621,7 @@ def to_cartesian(
         for spherical coordinates set to 0
     """
     # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(lon) == 0)
     lon = np.atleast_1d(np.copy(lon)).astype(np.float64)
     lat = np.atleast_1d(np.copy(lat)).astype(np.float64)
     # fix coordinates to be 0:360
@@ -1638,7 +1640,11 @@ def to_cartesian(
     Y = (N + h) * np.cos(latitude_geodetic_rad) * np.sin(lon*dtr)
     Z = (N * (1.0 - ecc1**2.0) + h) * np.sin(latitude_geodetic_rad)
     # return the cartesian coordinates
-    return (X, Y, Z)
+    # flattened to singular values if necessary
+    if singular_values:
+        return (X[0], Y[0], Z[0])
+    else:
+        return (X, Y, Z)
 
 def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     """
@@ -1654,6 +1660,7 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
         cartesian z-coordinates
     """
     # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(x) == 0)
     x = np.atleast_1d(np.copy(x)).astype(np.float64)
     y = np.atleast_1d(np.copy(y)).astype(np.float64)
     z = np.atleast_1d(np.copy(z)).astype(np.float64)
@@ -1672,8 +1679,12 @@ def to_sphere(x: np.ndarray, y: np.ndarray, z: np.ndarray):
     # convert to degrees and fix to -90:90
     lat = 90.0 - (180.0*th/np.pi)
     np.clip(lat, -90, 90, out=lat)
-    # return latitude, longitude and radius
-    return (lon, lat, rad)
+    # return longitude, latitude and radius
+    # flattened to singular values if necessary
+    if singular_values:
+        return (lon[0], lat[0], rad[0])
+    else:
+        return (lon, lat, rad)
 
 def to_geodetic(
         x: np.ndarray,
@@ -1713,20 +1724,35 @@ def to_geodetic(
         maximum number of iterations
     """
     # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(x) == 0)
     x = np.atleast_1d(np.copy(x)).astype(np.float64)
     y = np.atleast_1d(np.copy(y)).astype(np.float64)
     z = np.atleast_1d(np.copy(z)).astype(np.float64)
     # calculate the geodetic coordinates using the specified method
     if (method.lower() == 'moritz'):
-        return _moritz_iterative(x, y, z, a_axis=a_axis, flat=flat,
-            eps=eps, iterations=iterations)
+        lon, lat, h = _moritz_iterative(x, y, z,
+            a_axis=a_axis,
+            flat=flat,
+            eps=eps,
+            iterations=iterations)
     elif (method.lower() == 'bowring'):
-        return _bowring_iterative(x, y, z, a_axis=a_axis, flat=flat,
-            eps=eps, iterations=iterations)
+        lon, lat, h = _bowring_iterative(x, y, z,
+            a_axis=a_axis,
+            flat=flat,
+            eps=eps,
+            iterations=iterations)
     elif (method.lower() == 'zhu'):
-        return _zhu_closed_form(x, y, z, a_axis=a_axis, flat=flat)
+        lon, lat, h = _zhu_closed_form(x, y, z,
+            a_axis=a_axis,
+            flat=flat)
     else:
         raise ValueError(f'Unknown conversion method: {method}')
+    # return longitude, latitude and height
+    # flattened to singular values if necessary
+    if singular_values:
+        return (lon[0], lat[0], h[0])
+    else:
+        return (lon, lat, h)
 
 def _moritz_iterative(
         x: np.ndarray,
@@ -1792,7 +1818,7 @@ def _moritz_iterative(
         phi = np.arctan(z/(p*(1.0 - ecc1**2*N/(N + h))))
         # add to iterator
         i += 1
-    # return latitude, longitude and height
+    # return longitude, latitude and height
     return (lon, phi/dtr, h)
 
 def _bowring_iterative(
@@ -1871,7 +1897,7 @@ def _bowring_iterative(
     N = a_axis/np.sqrt(1.0 - e12 * np.sin(phi)**2)
     # estimate final height (Bowring, 1985)
     h = p*np.cos(phi) + z*np.sin(phi) - a_axis**2/N
-    # return latitude, longitude and height
+    # return longitude, latitude and height
     return (lon, phi/dtr, h)
 
 def _zhu_closed_form(
@@ -1944,7 +1970,7 @@ def _zhu_closed_form(
         # calculate latitude and height
         lat[ind] = np.arctan2(zi, ((1.0 - e12)*wi))/dtr
         h[ind] = np.sign(t-1.0+l)*np.sqrt((w-wi)**2.0 + (z[ind]-zi)**2.0)
-    # return latitude, longitude and height
+    # return longitude, latitude and height
     return (lon, lat, h)
 
 def to_ENU(
@@ -1992,6 +2018,7 @@ def to_ENU(
     # degrees to radians
     dtr = np.pi/180.0
     # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(x) == 0)
     x = np.atleast_1d(np.copy(x)).astype(np.float64)
     y = np.atleast_1d(np.copy(y)).astype(np.float64)
     z = np.atleast_1d(np.copy(z)).astype(np.float64)
@@ -2011,7 +2038,11 @@ def to_ENU(
     # calculate the ENU coordinates
     E, N, U = np.dot(R, np.vstack((x - X0, y - Y0, z - Z0)))
     # return the ENU coordinates
-    return (E, N, U)
+    # flattened to singular values if necessary
+    if singular_values:
+        return (E[0], N[0], U[0])
+    else:
+        return (E, N, U)
 
 def from_ENU(
         E: np.ndarray,
@@ -2058,6 +2089,7 @@ def from_ENU(
     # degrees to radians
     dtr = np.pi/180.0
     # verify axes and copy to not modify inputs
+    singular_values = (np.ndim(E) == 0)
     E = np.atleast_1d(np.copy(E)).astype(np.float64)
     N = np.atleast_1d(np.copy(N)).astype(np.float64)
     U = np.atleast_1d(np.copy(U)).astype(np.float64)
@@ -2081,7 +2113,11 @@ def from_ENU(
     y += Y0
     z += Z0
     # return the ECEF coordinates
-    return (x, y, z)
+    # flattened to singular values if necessary
+    if singular_values:
+        return (x[0], y[0], z[0])
+    else:
+        return (x, y, z)
 
 def scale_areas(*args, **kwargs):
     warnings.warn("Deprecated. Please use pyTMD.spatial.scale_factors instead",
