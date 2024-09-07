@@ -219,7 +219,7 @@ OTIS models may be projected into a separate coordinate system. The available OT
 - ``'3413'`` (NSIDC Sea Ice Polar Stereographic North in kilometers)
 - ``'CATS2008'`` (CATS2008 Polar Stereographic in kilometers)
 - ``'3976'`` (NSIDC Sea Ice Polar Stereographic South in kilometers)
-- ``'PSNorth'`` (idealized polar stereographic in kilometers)
+- ``'AEDNorth'`` (idealized polar Azimuthal equidistant projection in kilometers)
 
 For other model projections, a formatted coordinate reference system (CRS) descriptor (e.g. PROJ, WKT, or EPSG code) can be used.
 

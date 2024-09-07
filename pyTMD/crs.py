@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 crs.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (09/2024)
 Coordinates Reference System (CRS) routines
 
 CALLING SEQUENCE:
@@ -30,6 +30,7 @@ PYTHON DEPENDENCIES:
         https://pyproj4.github.io/pyproj/
 
 UPDATE HISTORY:
+    Updated 09/2024: added function for idealized Arctic Azimuthal projection
     Updated 07/2024: added function to get the CRS transform
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: use wrapper to importlib for optional dependencies
@@ -143,6 +144,7 @@ class crs:
         transforms['CATS2008'] = self._CATS2008
         transforms['3976'] = self._EPSG3976
         transforms['PSNorth'] = self._PSNorth
+        transforms['AEDNorth'] = self._AEDNorth
         transforms['4326'] = self._EPSG4326
         # check that PROJ for conversion was entered correctly
         # run named conversion program and return values
@@ -326,6 +328,26 @@ class crs:
         # projections for converting to and from input EPSG
         crs1 = self.from_input(EPSG)
         crs2 = pyproj.CRS.from_epsg(4326)
+        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
+            always_xy=True)
+        return self
+
+    # function for models in (idealized) Azimuthal Equidistant projection
+    def _AEDNorth(self, EPSG: int | str = 4326):
+        """
+        Transform for models in idealized Azimuthal Equidistant projections
+
+        Parameters
+        ----------
+        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
+            input (``'F'``) or output (``'B'``) coordinate system
+        """
+        # projections for converting to and from input EPSG
+        crs1 = self.from_input(EPSG)
+        R = 111700.0*180.0/np.pi
+        crs2 = pyproj.CRS.from_user_input({'proj':'aeqd','lat_0':90,
+            'lon_0':270,'x_0':0.,'y_0':0.,'ellps':'sphere',
+            'R':R,'units':'km'})
         self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
             always_xy=True)
         return self

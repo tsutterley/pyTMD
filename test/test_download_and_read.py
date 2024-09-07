@@ -833,7 +833,7 @@ class Test_AOTIM5_2018:
         model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
         GRID = 'OTIS'
-        EPSG = 'PSNorth'
+        EPSG = 'AEDNorth'
 
         # open Arctic Tidal Current Atlas list of records
         ATLAS = filepath.joinpath('List_of_records.txt')
@@ -936,7 +936,7 @@ class Test_AOTIM5_2018:
         model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
         GRID = 'OTIS'
-        EPSG = 'PSNorth'
+        EPSG = 'AEDNorth'
 
         # open Arctic Tidal Current Atlas list of records
         ATLAS = filepath.joinpath('List_of_records.txt')
