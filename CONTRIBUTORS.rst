@@ -1,4 +1,5 @@
 - `Karen Alley (University of Manitoba) <https://umanitoba.ca/environment-earth-resources/dr-karen-alley-profile-page>`_
+- `Robbi Bishop-Taylor (Geoscience Australia) <https://github.com/robbibt>`_
 - `Kelly Brunt (NASA Goddard Space Flight Center) <https://science.gsfc.nasa.gov/sed/bio/kelly.m.brunt>`_
 - `Susan Howard (Earth \& Space Research) <https://www.esr.org/staff/susan-l-howard/>`_
 - `Laurie Padman (Earth \& Space Research) <https://www.esr.org/staff/laurence-padman/>`_
