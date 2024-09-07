@@ -4,6 +4,7 @@ Tests the reading of model definition files
 
 UPDATE HISTORY:
     Updated 09/2024: drop support for the ascii definition file format
+        fix parsing of TPXO8-atlas-nc constituents
     Updated 08/2024: add automatic detection of definition file format
     Updated 07/2024: add new JSON format definition file format
     Written 04/2024
@@ -658,9 +659,12 @@ def test_parse_TPXO9_elevation(MODEL):
     """
     m = pyTMD.io.model(verify=False).elevation(MODEL)
     m.constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file]
-    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4']
     assert all(c in m.constituents for c in constituents)
     # test additional constituents found in newer models
+    if m.name in ('TPXO9-atlas','TPXO9-atlas-v2','TPXO9-atlas-v3',
+            'TPXO9-atlas-v4','TPXO9-atlas-v5'):
+        assert all(c in m.constituents for c in ['2n2','mn4','ms4'])
     if m.name in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
         assert all(c in m.constituents for c in ['mf','mm'])
     if m.name in ('TPXO9-atlas-v5',):

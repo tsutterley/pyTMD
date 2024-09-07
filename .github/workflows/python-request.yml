@@ -57,7 +57,7 @@ jobs:
     - name: "Check if repository secrets are accessible"
       id: secrets
       run: |
-        if [ "${{ secrets.MY_KEY }}" == '' ] ; then
+        if [ "${{ secrets.EARTHDATA_USERNAME }}" == '' ] ; then
             echo "accessible=false" >> $GITHUB_OUTPUT;
             echo "::debug::GitHub secrets unavailable for Actions";
         else
@@ -65,14 +65,14 @@ jobs:
             echo "::debug::GitHub secrets available for Actions";
         fi
     - name: Checkout Matlab TMD Toolbox
-      if: steps.changes.secrets.accessible == 'true'
+      if: steps.secrets.outputs.accessible == 'true'
       uses: actions/checkout@v4
       with:
         repository: EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         path: TMD_Matlab_Toolbox
         ref: master
     - name: Test with pytest
-      if: steps.changes.secrets.accessible == 'true'
+      if: steps.secrets.outputs.accessible == 'true'
       run: |
         pip install --no-deps .
         pytest --verbose --capture=no --cov=./ --cov-report=xml \
@@ -82,7 +82,7 @@ jobs:
             --aws-secret=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
             --aws-region=${{ secrets.AWS_REGION_NAME }}
     - name: Upload coverage to Codecov
-      if: steps.changes.secrets.accessible == 'true'
+      if: steps.secrets.outputs.accessible == 'true'
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -93,7 +93,7 @@ jobs:
         fail_ci_if_error: true
         verbose: true
     - name: Archive code coverage results
-      if: steps.changes.secrets.accessible == 'true'
+      if: steps.secrets.outputs.accessible == 'true'
       uses: actions/upload-artifact@v3
       with:
         name: code-coverage-report

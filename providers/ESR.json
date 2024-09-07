@@ -7,7 +7,7 @@
                 "u": "aodtm5_tmd/UV0_Arc5km"
             },
             "name": "AODTM-5",
-            "projection": "PSNorth",
+            "projection": "AEDNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
             "type": [
                 "u",
@@ -21,7 +21,7 @@
                 "u": "aotim5_tmd/UV_Arc5km"
             },
             "name": "AOTIM-5",
-            "projection": "PSNorth",
+            "projection": "AEDNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": [
                 "u",
@@ -35,7 +35,7 @@
                 "u": "Arc5km2018/UV_Arc5km2018"
             },
             "name": "AOTIM-5-2018",
-            "projection": "PSNorth",
+            "projection": "AEDNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": [
                 "u",
@@ -122,7 +122,7 @@
             "grid_file": "aodtm5_tmd/grid_Arc5km",
             "model_file": "aodtm5_tmd/h0_Arc5km.oce",
             "name": "AODTM-5",
-            "projection": "PSNorth",
+            "projection": "AEDNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
             "type": "z",
             "variable": "tide_ocean"
@@ -132,7 +132,7 @@
             "grid_file": "aotim5_tmd/grid_Arc5km",
             "model_file": "aotim5_tmd/h_Arc5km.oce",
             "name": "AOTIM-5",
-            "projection": "PSNorth",
+            "projection": "AEDNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": "z",
             "variable": "tide_ocean"
@@ -142,7 +142,7 @@
             "grid_file": "Arc5km2018/grid_Arc5km2018",
             "model_file": "Arc5km2018/h_Arc5km2018",
             "name": "AOTIM-5-2018",
-            "projection": "PSNorth",
+            "projection": "AEDNorth",
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": "z",
             "variable": "tide_ocean",
