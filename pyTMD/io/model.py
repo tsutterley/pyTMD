@@ -8,6 +8,7 @@ Retrieves tide model parameters for named tide models and
 UPDATE HISTORY:
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
+        add file_format and nodal correction attributes
     Updated 08/2024: added attribute for minor constituents to infer
         allow searching over iterable glob strings in definition files
         added option to try automatic detection of definition file format
@@ -112,12 +113,12 @@ class model:
         Model files are gzip compressed
     constituents: list or None
         Model constituents for ``FES`` models
-    minor: list or None
-        Minor constituents for inference
     description: str
         HDF5 ``description`` attribute string for output tide heights
     directory: str, pathlib.Path or None, default None
         Working data directory for tide models
+    file_format: str
+        File format for model
     flexure: bool
         Flexure adjustment field for tide heights is available
     format: str
@@ -139,6 +140,8 @@ class model:
         Suffix if model is compressed
     long_name: str
         HDF5 ``long_name`` attribute string for output tide heights
+    minor: list or None
+        Minor constituents for inference
     model_file: pathlib.Path or list
         Model constituent file or list of files
     name: str
@@ -255,6 +258,30 @@ class model:
         """Returns suffix for gzip compression
         """
         return '.gz' if self.compressed else ''
+
+    @property
+    def corrections(self) -> str:
+        """
+        Returns the corrections type for the model
+        """
+        part1, _, part2 = self.format.partition('-')
+        if self.format in ('GOT-ascii', ):
+            return 'perth3'
+        else:
+            return part1
+
+    @property
+    def file_format(self) -> str:
+        """
+        Returns the file format for the model
+        """
+        part1, _, part2 = self.format.partition('-')
+        if self.format in ('ATLAS-compact'):
+            return part1
+        elif ('-' in self.format):
+            return part2
+        else:
+            return self.format
 
     @property
     def atl03(self) -> str:

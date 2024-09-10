@@ -20,6 +20,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2024: drop support for the ascii definition file format
+        use model class attributes for file format and corrections
     Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
@@ -573,7 +574,6 @@ class Test_CATS2008:
     def test_solve(self):
         # get model parameters
         model = pyTMD.io.model(filepath).elevation('CATS2008')
-        corrections, _, grid = model.format.partition('-')
 
         # calculate a forecast every minute
         minutes = np.arange(366*1440)
@@ -586,7 +586,7 @@ class Test_CATS2008:
         constituents = pyTMD.io.OTIS.read_constants(
             model.grid_file, model.model_file,
             model.projection, type=model.type,
-            grid=corrections)
+            grid=model.file_format)
         c = constituents.fields
         DELTAT = np.zeros_like(tide_time)
 
@@ -601,7 +601,7 @@ class Test_CATS2008:
         hc = amp*np.exp(-1j*ph*np.pi/180.0)
         # predict tidal elevations at times
         TIDE = pyTMD.predict.time_series(tide_time, hc, c,
-            deltat=DELTAT, corrections=corrections)
+            deltat=DELTAT, corrections=model.corrections)
         # solve for amplitude and phase
         famp, fph = pyTMD.solve.constants(tide_time, TIDE.data, c)
         # calculate complex form of constituent oscillation

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 09/2024: verify order of minor constituents to infer
     Updated 08/2024: minor nodal angle corrections in radians to match arguments
         include inference of eps2 and eta2 when predicting from GOT models
         add keyword argument to allow inferring specific minor constituents
@@ -341,13 +342,15 @@ def infer_minor(
     if (nz < 6):
         raise Exception('Not enough constituents for inference')
 
-    # list of minor constituents
+    # complete list of minor constituents
     minor_constituents = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1',
         'chi1', 'pi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2',
         'nu2', 'lambda2', 'l2', 'l2b', 't2', 'eps2', 'eta2']
+    # possibly reduced list of minor constituents
     minor = kwargs['minor'] or minor_constituents
     # only add minor constituents that are not on the list of major values
-    minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
+    minor_indices = [i for i,m in enumerate(minor_constituents)
+        if (m not in constituents) and (m in minor)]
 
     # relationship between major and minor constituent amplitude and phase
     zmin = np.zeros((n, 20), dtype=np.complex64)
