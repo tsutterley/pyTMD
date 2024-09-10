@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2024: drop support for the ascii definition file format
+        use model class attributes for file format and corrections
     Updated 08/2024: increased tolerance for comparing with GOT4.7 tests
         as using nodal corrections from PERTH5
         use a reduced list of minor constituents to match GOT4.7 tests
@@ -103,7 +104,6 @@ def test_verify_GOT47(METHOD, CROP):
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model.parse_constituents()
     assert model.constituents == constituents
-    corrections, _, grid = model.format.partition('-')
     # keep amplitudes in centimeters for comparison with outputs
     model.scale = 1.0
 
@@ -133,7 +133,7 @@ def test_verify_GOT47(METHOD, CROP):
 
     # extract amplitude and phase from tide model
     amp,ph,cons = pyTMD.io.GOT.extract_constants(lon, lat,
-        model.model_file, grid=grid, method=METHOD,
+        model.model_file, grid=model.file_format, method=METHOD,
         compressed=model.compressed, scale=model.scale, crop=CROP)
     assert all(c in constituents for c in cons)
     # calculate complex phase in radians for Euler's
@@ -176,7 +176,6 @@ def test_compare_GOT47(METHOD):
     constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
     model.parse_constituents()
     assert model.constituents == constituents
-    corrections, _, grid = model.format.partition('-')
     # keep amplitudes in centimeters for comparison with outputs
     model.scale = 1.0
 
@@ -194,7 +193,7 @@ def test_compare_GOT47(METHOD):
 
     # extract amplitude and phase from tide model
     amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat,
-        model.model_file, grid=grid, method=METHOD,
+        model.model_file, grid=model.file_format, method=METHOD,
         compressed=model.compressed, scale=model.scale)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
@@ -203,7 +202,8 @@ def test_compare_GOT47(METHOD):
     constituents = pyTMD.io.GOT.read_constants(model.model_file,
         compressed=model.compressed)
     amp2, ph2 = pyTMD.io.GOT.interpolate_constants(lon, lat,
-        constituents, grid=grid, method=METHOD, scale=model.scale)
+        constituents, grid=model.file_format, method=METHOD,
+        scale=model.scale)
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
