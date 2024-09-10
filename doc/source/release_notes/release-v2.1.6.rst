@@ -20,5 +20,8 @@
 * ``fix``: nodal corrections for ``eps2`` and ``eta2`` when inferring for GOT5.5 (`#336 <https://github.com/tsutterley/pyTMD/pull/336>`_)
 * ``feat``: use model class attributes for file format and corrections (`#336 <https://github.com/tsutterley/pyTMD/pull/336>`_)
 * ``feat``: add option to select nodal corrections type (`#336 <https://github.com/tsutterley/pyTMD/pull/336>`_)
+* ``feat``: export database as ``dataclass`` (`#337 <https://github.com/tsutterley/pyTMD/pull/337>`_)
+* ``docs``: update getting started and ``README.rst`` (`#337 <https://github.com/tsutterley/pyTMD/pull/337>`_)
+* ``test``: add test for reading model database (`#337 <https://github.com/tsutterley/pyTMD/pull/337>`_)
 
 .. __: https://github.com/tsutterley/pyTMD/releases/tag/2.1.6
