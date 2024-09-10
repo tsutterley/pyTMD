@@ -19,12 +19,32 @@ GOT formatted data use ascii files for each height constituent (``z``).
 FES formatted data use either ascii (1999, 2004) or netCDF4 (2012, 2014) files for each constituent and variable type (``z``, ``u``, ``v``).
 The FES models can be downloaded using the `aviso_fes_tides.py <https://github.com/tsutterley/pyTMD/blob/main/scripts/aviso_fes_tides.py>`_ program for users registered with AVISO.
 
+Model Database
+##############
+
+``pyTMD`` comes parameterized with models for the prediction of tidal elevations and currents.
+All presently available models are stored within a `JSON database <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/database.json>`_:
+
+.. code-block:: python
+
+   >>> import pyTMD
+   >>> pyTMD.models.current.get('CATS2008')
+   {'format': 'OTIS', 'grid_file': 'CATS2008/grid_CATS2008',
+   'model_file': {'u': 'CATS2008/uv.CATS2008.out'}, 'name': 'CATS2008',
+   'projection': 'CATS2008', 'reference': 'https://doi.org/10.15784/601235',
+   'type': ['u', 'v']}
+   >>> pyTMD.models.elevation.get('CATS2008')
+   {'format': 'OTIS', 'grid_file': 'CATS2008/grid_CATS2008',
+   'model_file': 'CATS2008/hf.CATS2008.out', 'name': 'CATS2008',
+   'projection': 'CATS2008', 'reference': 'https://doi.org/10.15784/601235',
+   'type': 'z', 'variable': 'tide_ocean'}
+
 Directories
 ###########
 
 ``pyTMD`` uses a tree structure for storing the tidal constituent data.
 This structure was chosen based on the different formats of each tide model.
-Presently, the following models and their directories are parameterized within ``pyTMD`` in a JSON database.
+Presently, the following models and their directories are parameterized within ``pyTMD``.
 
 - Circum-Antarctic Tidal Simulations [Padman2008]_
 
@@ -133,14 +153,14 @@ elevations or currents (zonal and meridional) for each point.
 Definition Files
 ################
 
-For models within the ``pyTMD`` database, the parameters can be set with a model definition file in JSON format.
+For models not currently within the ``pyTMD`` `database <./Getting-Started.html#model-database>`_, the model parameters can be set with a definition file in JSON format.
 The JSON definition files follow a similar structure as the main ``pyTMD`` database, but for individual entries.
 The JSON format directly maps the parameter names with their values stored in the appropriate data type (strings, lists, numbers, booleans, etc).
 For FES-type models of currents, the two lists of model files (``u`` and ``v``) are stored in a name-value pair objects (similar to a python dictionary).
 While still human readable, the JSON format is both interoperable and more easily machine readable.
 
-Each definition file regardless of the format should have ``name``, ``format`` and ``type`` parameters.
-Each model type also requires specific sets of parameters for the model reader.
+Each definition file should have ``name``, ``format`` and ``type`` parameters.
+Each model type may also require specific sets of parameters for the individual model reader.
 For models with multiple constituent files, the files can be found using a ``glob`` string to search a directory.
 
 - ``OTIS``, ``ATLAS-compact`` and ``TMD3``
@@ -154,7 +174,7 @@ For models with multiple constituent files, the files can be found using a ``glo
 
 - ``ATLAS-netcdf``
 
-    * ``compressed``: model files are gzip compressed
+    * ``compressed``: model files are ``gzip`` compressed
     * ``format``: ``ATLAS-netcdf``
     * ``grid_file``: path to model grid file
     * ``model_file``: path to model constituent files or a ``glob`` string
@@ -164,7 +184,7 @@ For models with multiple constituent files, the files can be found using a ``glo
 
 - ``GOT-ascii`` and ``GOT-netcdf``
 
-    * ``compressed``: model files are gzip compressed
+    * ``compressed``: model files are ``gzip`` compressed
     * ``format``: ``GOT-ascii`` or ``GOT-netcdf``
     * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name
@@ -173,7 +193,7 @@ For models with multiple constituent files, the files can be found using a ``glo
 
 - ``FES-ascii`` and ``FES-netcdf``
 
-    * ``compressed``: model files are gzip compressed
+    * ``compressed``: model files are ``gzip`` compressed
     * ``format``: ``FES-ascii`` or ``FES-netcdf``
     * ``model_file``: path to model constituent files or a ``glob`` string
     * ``name``: tide model name

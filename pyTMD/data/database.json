@@ -80,6 +80,7 @@
             },
             "name": "CATS2008",
             "projection": "CATS2008",
+            "reference": "https://doi.org/10.15784/601235",
             "type": [
                 "u",
                 "v"
@@ -93,6 +94,7 @@
             },
             "name": "CATS2008-v2023",
             "projection": "CATS2008",
+            "reference": "https://doi.org/10.15784/601772",
             "type": [
                 "u",
                 "v"
@@ -214,17 +216,6 @@
             "version": "v1"
         },
         "HAMTIDE11": {
-            "constituents": [
-                "2n2",
-                "k1",
-                "k2",
-                "m2",
-                "n2",
-                "o1",
-                "p1",
-                "q1",
-                "s2"
-            ],
             "format": "FES-netcdf",
             "model_file": {
                 "u": [
@@ -836,7 +827,7 @@
             "model_file": "CATS2008_v2023/CATS2008_v2023.nc",
             "name": "CATS2008-v2023",
             "projection": "CATS2008",
-            "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/cats2008/",
+            "reference": "https://doi.org/10.15784/601772",
             "type": "z",
             "variable": "tide_ocean"
         },
@@ -851,25 +842,6 @@
             "variable": "tide_load"
         },
         "EOT20": {
-            "constituents": [
-                "2n2",
-                "j1",
-                "k1",
-                "k2",
-                "m2",
-                "m4",
-                "mf",
-                "mm",
-                "n2",
-                "o1",
-                "p1",
-                "q1",
-                "s1",
-                "s2",
-                "sa",
-                "ssa",
-                "t2"
-            ],
             "format": "FES-netcdf",
             "model_file": [
                 "EOT20/ocean_tides/2N2_ocean_eot20.nc",
@@ -898,25 +870,6 @@
             "version": "EOT20"
         },
         "EOT20_load": {
-            "constituents": [
-                "2n2",
-                "j1",
-                "k1",
-                "k2",
-                "m2",
-                "m4",
-                "mf",
-                "mm",
-                "n2",
-                "o1",
-                "p1",
-                "q1",
-                "s1",
-                "s2",
-                "sa",
-                "ssa",
-                "t2"
-            ],
             "format": "FES-netcdf",
             "model_file": [
                 "EOT20/load_tides/2N2_load_eot20.nc",
@@ -1601,17 +1554,6 @@
             "version": "v1"
         },
         "HAMTIDE11": {
-            "constituents": [
-                "2n2",
-                "k1",
-                "k2",
-                "m2",
-                "n2",
-                "o1",
-                "p1",
-                "q1",
-                "s2"
-            ],
             "format": "FES-netcdf",
             "model_file": [
                 "hamtide/2n.hamtide11a.nc",

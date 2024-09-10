@@ -9,6 +9,7 @@ UPDATE HISTORY:
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         add file_format and nodal correction attributes
+        export database as a dataclass for easier access
     Updated 08/2024: added attribute for minor constituents to infer
         allow searching over iterable glob strings in definition files
         added option to try automatic detection of definition file format
@@ -62,9 +63,32 @@ import pathlib
 import pyTMD.io.constituents
 from pyTMD.utilities import get_data_path
 from collections.abc import Iterable
+from dataclasses import dataclass
+
+@dataclass
+class DataBase:
+    """Class for pyTMD model database"""
+    current: dict
+    elevation: dict
+
+    def keys(self):
+        """Returns the keys of the model database"""
+        return self.__dict__.keys()
+
+    def values(self):
+        """Returns the values of the model database"""
+        return self.__dict__.values()
+
+    def items(self):
+        """Returns the items of the model database"""
+        return self.__dict__.items()
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
 
 # PURPOSE: load the JSON database of model files
-def load_database(extra_databases: list = []) -> dict:
+def load_database(extra_databases: list = []):
     """
     Load the JSON database of model files
 
@@ -88,7 +112,7 @@ def load_database(extra_databases: list = []) -> dict:
         with open(db, 'r', encoding='utf-8') as fid:
             parameters.update(json.load(fid))
     # return parameters
-    return parameters
+    return DataBase(**parameters)
 
 class model:
     """Retrieves tide model parameters for named models or

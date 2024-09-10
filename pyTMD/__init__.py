@@ -44,3 +44,5 @@ import pyTMD.time
 
 # get semantic version from setuptools-scm
 __version__ = pyTMD.version.version
+# read model database
+models = io.load_database()
