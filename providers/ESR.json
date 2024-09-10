@@ -80,6 +80,7 @@
             },
             "name": "CATS2008",
             "projection": "CATS2008",
+            "reference": "https://doi.org/10.15784/601235",
             "type": [
                 "u",
                 "v"

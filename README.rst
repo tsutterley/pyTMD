@@ -33,25 +33,32 @@ pyTMD
 
 Python-based tidal prediction software for estimating ocean, load, solid Earth and pole tides
 
-Ocean and load tidal predictions using OTIS, GOT and FES formatted tidal solutions
+For more information: see the documentation at `pytmd.readthedocs.io <https://pytmd.readthedocs.io/>`_
 
-- `OSU Tidal Prediction Software (OTPS) <https://www.tpxo.net/otps>`_
-- `ESR Tide Model Driver (TMD) Matlab Toolbox <https://www.esr.org/research/polar-tide-models/tmd-software/>`_
-- `OSU Global and Regional Tide Models <https://www.tpxo.net>`_
-- `ESR Polar Tide Models <https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/>`_
-- `A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2 <https://ntrs.nasa.gov/citations/19990089548>`_
-- `Finite Element Solution (FES) tide models <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html>`_
-- `Delta times from US Naval Observatory (USNO) Earth Orientation Products <http://maia.usno.navy.mil/ser7/deltat.data>`_
-- `Delta times from NASA Crustal Dynamics Data Information System (CDDIS) <ftp://cddis.nasa.gov/products/iers/deltat.data>`_
+Installation
+############
 
-Radial solid Earth and pole tide displacements following IERS conventions
+From PyPI:
 
-- `IERS Conventions (2010) <http://iers-conventions.obspm.fr/>`_
-- `IERS Mean Pole Location <https://hpiers.obspm.fr/iers/eop/eopc01/mean-pole.tab>`_
-- `IERS Pole Coordinates to Calculate Mean Pole <https://hpiers.obspm.fr/iers/eop/eopc01/eopc01.1900-now.dat>`_
-- `IERS Daily Earth Orientation Parameters (EOP) from USNO <http://www.usno.navy.mil/USNO/earth-orientation/eo-products/weekly>`_
-- `IERS Daily Earth Orientation Parameters (EOP) from NASA CDDIS <ftp://cddis.nasa.gov/products/iers/finals.all>`_
-- `IERS Ocean Pole Load Tide Coefficients Map <http://maia.usno.navy.mil/conventions/2010/2010_update/chapter7/additional_info/opoleloadcoefcmcor.txt.gz>`_
+.. code-block:: bash
+
+   python3 -m pip install pyTMD
+
+Using `conda` or `mamba` from conda-forge:
+
+.. code-block:: bash
+
+   conda install -c conda-forge pytmd
+
+.. code-block:: bash
+
+   mamba install -c conda-forge pytmd
+
+Development version from GitHub:
+
+.. code-block:: bash
+
+   python3 -m pip install git+https://github.com/tsutterley/pyTMD.git
 
 Dependencies
 ############
@@ -87,11 +94,11 @@ Download
 Alternative Software
 ####################
 
-| perth5 from NASA Goddard Space Flight Center is available at:
+| perth5 from NASA Goddard Space Flight Center:
 | https://codeberg.org/rray/perth5
-| Matlab Tide Model Driver from Earth & Space Research is available at:
+| Matlab Tide Model Driver from Earth & Space Research:
 | https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-| Fortran OSU Tidal Prediction Software OTPS is available at:
+| Fortran OSU Tidal Prediction Software:
 | https://www.tpxo.net/otps
 
 Disclaimer
@@ -102,10 +109,15 @@ It is not sponsored or maintained by the Universities Space Research Association
 The software is provided here for your convenience but *with no guarantees whatsoever*.
 It should not be used for coastal navigation or any application that may risk life or property.
 
+Contributing
+############
+
+This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
+If you would like to contribute to the project, please have a look at the `open issues <https://github.com/tsutterley/pyTMD/issues>`_ and the project `code of conduct <./CODE_OF_CONDUCT.rst>`_.
+
 Credits
 #######
 
-This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
 The Tidal Model Driver (`TMD <https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5>`_) Matlab Toolbox was developed by Laurie Padman, Lana Erofeeva and Susan Howard.
 An updated version of the TMD Matlab Toolbox (`TMD3 <https://github.com/chadagreene/Tide-Model-Driver>`_) was developed by Chad Greene.
 The OSU Tidal Inversion Software (OTIS) and OSU Tidal Prediction Software (`OTPS <https://www.tpxo.net/otps>`_) were developed by Lana Erofeeva and Gary Egbert (`copyright OSU <https://www.tpxo.net/tpxo-products-and-registration>`_, licensed for non-commercial use).

@@ -52,13 +52,7 @@ To use the development repository, please fork ``pyTMD`` into your own account a
 
     git clone https://github.com/tsutterley/pyTMD.git
 
-``pyTMD`` can then be installed within the package directory using ``setuptools``:
-
-.. code-block:: bash
-
-    python3 setup.py install
-
-or ``pip``
+``pyTMD`` can then be installed within the package directory using ``pip``:
 
 .. code-block:: bash
 

@@ -685,3 +685,19 @@ def test_parse_TPXO9_currents(MODEL):
         assert all(c in m.constituents for c in ['mf','mm'])
     if m.name in ('TPXO9-atlas-v5',):
         assert all(c in m.constituents for c in ['s1',])
+
+# PURPOSE: test reading of model database
+def test_read_database():
+    """Tests the reading of the pyTMD model database
+    """
+    database = pyTMD.io.load_database()
+    # for each database entry
+    for key, val in database.items():
+        assert isinstance(key, str)
+        assert val == pyTMD.models[key]
+    # assert DataBase class entries
+    pyTMD.models.current == database['current']
+    pyTMD.models.elevation == database['elevation']
+    # assert that models are accessible
+    assert pyTMD.models.elevation.get('CATS2008') is not None
+    assert pyTMD.models.current.get('CATS2008') is not None
