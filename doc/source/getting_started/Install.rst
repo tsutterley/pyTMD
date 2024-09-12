@@ -58,6 +58,13 @@ To use the development repository, please fork ``pyTMD`` into your own account a
 
     python3 -m pip install --user .
 
+
+To include all optional dependencies:
+
+.. code-block:: bash
+
+   python3 -m pip install --user .[all]
+
 The development version of ``pyTMD`` can also be installed directly from GitHub using ``pip``:
 
 .. code-block:: bash

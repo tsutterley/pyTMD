@@ -4,23 +4,25 @@
 Examples
 ========
 
-Jupyter Notebooks providing demonstrations of ``pyTMD`` functionality:
+Examples of using the ``pyTMD`` package are provided in the form of Jupyter Notebooks.
+Running the example notebooks requires a `full installation <../getting_started/Install.html>`_ of the ``pyTMD`` package to include all of the optional dependencies.
+The available examples include:
 
-- Check Tide Map |github check| |nbviewer check|
+- Tide Map Checker |github check| |nbviewer check|
     Check if a given point is within a tide model domain
-- Plot Tidal Forecasts at a Location |github forecasts| |nbviewer forecasts|
+- Tide Forecasts Plotter |github forecasts| |nbviewer forecasts|
     Plots a weekly forecast of tidal displacements at a given location
-- Solve for Harmonic Constants at a Location |github solve| |nbviewer solve|
+- Harmonic Constants Solver |github solve| |nbviewer solve|
     Solves for the amplitude and phase of harmonic constituents at a given location
-- Plot Range of Tidal Amplitudes around Antarctica |github range| |nbviewer range|
+- Antarctic Tidal Amplitudes Mapper |github range| |nbviewer range|
     Plot the total combined tidal amplitude for all constituents around Antarctica
-- Plot Tides in the Arctic Ocean |github arctic| |nbviewer arctic|
+- Arctic Ocean Tide Mapper |github arctic| |nbviewer arctic|
     Creates an animation of hourly tidal currents in the Arctic Ocean
-- Plot Tidal Currents around Antarctica |github currents| |nbviewer currents|
+- Antarctic Tidal Currents Mapper |github currents| |nbviewer currents|
     Creates an animation of hourly tidal currents around Antarctica
-- Plot Tides under the Ross Ice Shelf in Antarctica |github ross| |nbviewer ross|
+- Ross Ice Shelf Tide Mapper |github ross| |nbviewer ross|
     Creates an animation of hourly tidal elevations around Antarctica
-- Plot Radial Ocean Pole Tide Components |github opt| |nbviewer opt|
+- Ocean Pole Tide Mapper |github opt| |nbviewer opt|
     Plots maps of the real and imaginary geocentric pole tide admittance functions
 
 .. |github check| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github

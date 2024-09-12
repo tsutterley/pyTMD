@@ -29,15 +29,9 @@ All presently available models are stored within a `JSON database <https://githu
 
    >>> import pyTMD
    >>> pyTMD.models.current.get('CATS2008')
-   {'format': 'OTIS', 'grid_file': 'CATS2008/grid_CATS2008',
-   'model_file': {'u': 'CATS2008/uv.CATS2008.out'}, 'name': 'CATS2008',
-   'projection': 'CATS2008', 'reference': 'https://doi.org/10.15784/601235',
-   'type': ['u', 'v']}
+   {'format': 'OTIS', 'grid_file': 'CATS2008/grid_CATS2008','model_file': {'u': 'CATS2008/uv.CATS2008.out'}, 'name': 'CATS2008','projection': 'CATS2008', 'reference': 'https://doi.org/10.15784/601235','type': ['u', 'v']}
    >>> pyTMD.models.elevation.get('CATS2008')
-   {'format': 'OTIS', 'grid_file': 'CATS2008/grid_CATS2008',
-   'model_file': 'CATS2008/hf.CATS2008.out', 'name': 'CATS2008',
-   'projection': 'CATS2008', 'reference': 'https://doi.org/10.15784/601235',
-   'type': 'z', 'variable': 'tide_ocean'}
+   {'format': 'OTIS', 'grid_file': 'CATS2008/grid_CATS2008','model_file': 'CATS2008/hf.CATS2008.out', 'name': 'CATS2008','projection': 'CATS2008', 'reference': 'https://doi.org/10.15784/601235','type': 'z', 'variable': 'tide_ocean'}
 
 Directories
 ###########
@@ -115,17 +109,9 @@ compute the corresponding tidal elevation or currents.
 
 .. code-block:: python
 
-    import pyTMD
-    tide_h = pyTMD.compute.tide_elevations(x, y, delta_time,
-        DIRECTORY=path_to_tide_models,
-        MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0),
-        TYPE='drift', TIME='GPS',
-        METHOD='spline', FILL_VALUE=np.nan)
-    tide_uv = pyTMD.compute.tide_currents(x, y, delta_time,
-        DIRECTORY=path_to_tide_models,
-        MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0),
-        TYPE='drift', TIME='GPS',
-        METHOD='spline', FILL_VALUE=np.nan)
+    >>> import pyTMD
+    >>> tide_h = pyTMD.compute.tide_elevations(x, y, delta_time, DIRECTORY=path_to_tide_models, MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='GPS', METHOD='spline', FILL_VALUE=np.nan)
+    >>> tide_uv = pyTMD.compute.tide_currents(x, y, delta_time, DIRECTORY=path_to_tide_models, MODEL='CATS2008', EPSG=3031, EPOCH=(2000,1,1,0,0,0), TYPE='drift', TIME='GPS', METHOD='spline', FILL_VALUE=np.nan)
 
 
 For users wanting to calculate tidal elevations or currents for a series of files, the
@@ -136,16 +122,16 @@ elevations or currents (zonal and meridional) for each point.
 
 .. code-block:: bash
 
-    python compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
+    compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
         --format HDF5 --variables t_sec lat lon h_cor --projection 4326 \
         --epoch 'seconds since 1970-01-01T00:00:00' --verbose --mode 0o775 \
         input_file.H5 output_file.H5
 
-    python compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
+    compute_tidal_elevations.py --directory <path_to_tide_models> --tide CATS2008 \
         --format geotiff --projection 3031 --type grid --epoch '2000-01-01T12:00:00' \
         --verbose --mode 0o775 input_file.tif output_file.tif
 
-    python compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS2008 \
+    compute_tidal_currents.py --directory <path_to_tide_models> --tide CATS2008 \
         --format HDF5 --variables t_sec lat lon h_cor --projection 4326 \
         --epoch 'seconds since 1970-01-01T00:00:00' --verbose --mode 0o775 \
         input_file.H5 output_file.H5

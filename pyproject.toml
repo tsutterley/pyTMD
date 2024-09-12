@@ -14,14 +14,11 @@ keywords = [
 ]
 authors = [
     {name = "Tyler Sutterley"},
-    {name = "Karen Alley"},
-    {name = "Kelly Brunt"},
-    {name = "Susan Howard"},
-    {name = "Laurie Padman"},
-    {name = "Matt Siegfried"},
     {email = "tsutterl@uw.edu"}
 ]
-maintainers = [{ name = "pyTMD contributors" }]
+maintainers = [
+    {name = "pyTMD contributors"}
+]
 license = {file = "LICENSE"}
 readme = "README.rst"
 

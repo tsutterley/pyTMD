@@ -44,6 +44,12 @@ From PyPI:
 
    python3 -m pip install pyTMD
 
+To include all optional dependencies:
+
+.. code-block:: bash
+
+   python3 -m pip install pyTMD[all]
+
 Using `conda` or `mamba` from conda-forge:
 
 .. code-block:: bash

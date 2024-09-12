@@ -34,4 +34,10 @@ Software
 - `Antarctic Tide Gauge (AntTG) Database Tools <https://github.com/EarthAndSpaceResearch/AntTG_Database_Tools>`_
 - `OSU Tidal Prediction Software (OTPS) <https://www.tpxo.net/otps>`_
 - `FES (Finite Element Solution) tide model software <https://github.com/CNES/aviso-fes>`_
+- `Python tools for time and astronomical calculations <https://github.com/tsutterley/timescale>`_
 - `Tidal Correction Software for NASA Polar Altimetry Missions <https://github.com/tsutterley/Grounding-Zones>`_
+
+Alternative Data Sources
+########################
+
+- `astropy-iers-data <https://github.com/astropy/astropy-iers-data>`_
