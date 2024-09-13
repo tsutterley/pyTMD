@@ -31,17 +31,14 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
-import logging
 import numpy as np
 import scipy.ndimage
 from pyTMD.crs import datum
 from pyTMD.spatial import scale_factors
+from pyTMD.utilities import import_dependency
 
 # attempt imports
-try:
-    import pyproj
-except (AttributeError, ImportError, ModuleNotFoundError) as exc:
-    logging.critical("pyproj not available")
+pyproj = import_dependency('pyproj')
 
 class grid:
     """
