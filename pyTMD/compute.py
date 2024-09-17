@@ -1264,7 +1264,7 @@ def SET_displacements(
     # validate input arguments
     assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
     assert TIDE_SYSTEM.lower() in ('mean_tide', 'tide_free')
-    assert EPHEMERIDES.lower() in ('approximate', 'JPL')
+    assert EPHEMERIDES.lower() in ('approximate', 'jpl')
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
