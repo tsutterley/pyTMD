@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2024: verify order of minor constituents to infer
+        fix to use case insensitive assertions of string argument values
     Updated 08/2024: minor nodal angle corrections in radians to match arguments
         include inference of eps2 and eta2 when predicting from GOT models
         add keyword argument to allow inferring specific minor constituents
@@ -767,7 +768,7 @@ def solid_earth_tide(
     kwargs.setdefault('mass_ratio_solar', 332946.0482)
     kwargs.setdefault('mass_ratio_lunar', 0.0123000371)
     # validate output tide system
-    assert tide_system in ('tide_free', 'mean_tide')
+    assert tide_system.lower() in ('tide_free', 'mean_tide')
     # number of input coordinates
     nt = len(np.atleast_1d(t))
     # convert time to Modified Julian Days (MJD)
