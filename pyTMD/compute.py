@@ -64,6 +64,7 @@ UPDATE HISTORY:
         drop support for the ascii definition file format
         use model class attributes for file format and corrections
         add keyword argument to select nodal corrections type
+        fix to use case insensitive assertions of string argument values
     Updated 08/2024: allow inferring only specific minor constituents
         use prediction functions for pole tides in cartesian coordinates
         use rotation matrix to convert from cartesian to spherical
@@ -207,7 +208,7 @@ def tide_elevations(
         TIME: str = 'UTC',
         METHOD: str = 'spline',
         EXTRAPOLATE: bool = False,
-        CUTOFF: int | float=10.0,
+        CUTOFF: int | float = 10.0,
         CORRECTIONS: str | None = None,
         INFER_MINOR: bool = True,
         MINOR_CONSTITUENTS: list | None = None,
@@ -297,8 +298,8 @@ def tide_elevations(
             raise FileNotFoundError("Invalid tide directory")
 
     # validate input arguments
-    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
-    assert METHOD in ('bilinear', 'spline', 'linear', 'nearest')
+    assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
+    assert METHOD.lower() in ('bilinear', 'spline', 'linear', 'nearest')
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
@@ -327,7 +328,7 @@ def tide_elevations(
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
 
-    # assert delta time is an array
+    # verify that delta time is an array
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
@@ -447,7 +448,7 @@ def tide_currents(
         TIME: str = 'UTC',
         METHOD: str = 'spline',
         EXTRAPOLATE: bool = False,
-        CUTOFF: int | float=10.0,
+        CUTOFF: int | float = 10.0,
         CORRECTIONS: str | None = None,
         INFER_MINOR: bool = True,
         MINOR_CONSTITUENTS: list | None = None,
@@ -532,8 +533,8 @@ def tide_currents(
             raise FileNotFoundError("Invalid tide directory")
 
     # validate input arguments
-    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
-    assert METHOD in ('bilinear', 'spline', 'linear', 'nearest')
+    assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
+    assert METHOD.lower() in ('bilinear', 'spline', 'linear', 'nearest')
 
     # get parameters for tide model
     if DEFINITION_FILE is not None:
@@ -562,7 +563,7 @@ def tide_currents(
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
 
-    # assert delta time is an array
+    # verify that delta time is an array
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
@@ -714,7 +715,7 @@ def LPET_elevations(
     """
 
     # validate input arguments
-    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
+    assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -736,7 +737,7 @@ def LPET_elevations(
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
 
-    # assert delta time is an array
+    # verify that delta time is an array
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
@@ -832,9 +833,9 @@ def LPT_displacements(
     """
 
     # validate input arguments
-    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
-    assert ELLIPSOID in pyTMD._ellipsoids
-    assert CONVENTION in timescale.eop._conventions
+    assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
+    assert ELLIPSOID.upper() in pyTMD._ellipsoids
+    assert CONVENTION.isdigit() and CONVENTION in timescale.eop._conventions
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -856,7 +857,7 @@ def LPT_displacements(
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
 
-    # assert delta time is an array
+    # verify that delta time is an array
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
@@ -1039,10 +1040,10 @@ def OPT_displacements(
     """
 
     # validate input arguments
-    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
-    assert ELLIPSOID in pyTMD._ellipsoids
-    assert CONVENTION in timescale.eop._conventions
-    assert METHOD in ('bilinear', 'spline', 'linear', 'nearest')
+    assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
+    assert ELLIPSOID.upper() in pyTMD._ellipsoids
+    assert CONVENTION.isdigit() and CONVENTION in timescale.eop._conventions
+    assert METHOD.lower() in ('bilinear', 'spline', 'linear', 'nearest')
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -1064,7 +1065,7 @@ def OPT_displacements(
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon,lat = transformer.transform(x.flatten(), y.flatten())
 
-    # assert delta time is an array
+    # verify that delta time is an array
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
@@ -1261,9 +1262,9 @@ def SET_displacements(
     """
 
     # validate input arguments
-    assert TIME in ('GPS', 'LORAN', 'TAI', 'UTC', 'datetime')
-    assert TIDE_SYSTEM in ('mean_tide', 'tide_free')
-    assert EPHEMERIDES in ('approximate', 'JPL')
+    assert TIME.lower() in ('gps', 'loran', 'tai', 'utc', 'datetime')
+    assert TIDE_SYSTEM.lower() in ('mean_tide', 'tide_free')
+    assert EPHEMERIDES.lower() in ('approximate', 'jpl')
     # determine input data type based on variable dimensions
     if not TYPE:
         TYPE = pyTMD.spatial.data_type(x, y, delta_time)
@@ -1285,7 +1286,7 @@ def SET_displacements(
     transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
     lon, lat = transformer.transform(x.flatten(), y.flatten())
 
-    # assert delta time is an array
+    # verify that delta time is an array
     delta_time = np.atleast_1d(delta_time)
     # convert delta times or datetimes objects to timescale
     if (TIME.lower() == 'datetime'):
