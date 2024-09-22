@@ -571,7 +571,8 @@ class Test_CATS2008:
                 assert np.all(np.abs(difference) < eps)
 
     # PURPOSE: Tests solving for harmonic constants
-    def test_solve(self):
+    @pytest.mark.parametrize("SOLVER", ['lstsq', 'gelsy', 'gelss', 'gelsd', 'bvls'])
+    def test_solve(self, SOLVER):
         # get model parameters
         model = pyTMD.io.model(filepath).elevation('CATS2008')
 
@@ -603,7 +604,7 @@ class Test_CATS2008:
         TIDE = pyTMD.predict.time_series(tide_time, hc, c,
             deltat=DELTAT, corrections=model.corrections)
         # solve for amplitude and phase
-        famp, fph = pyTMD.solve.constants(tide_time, TIDE.data, c)
+        famp, fph = pyTMD.solve.constants(tide_time, TIDE.data, c, solver=SOLVER)
         # calculate complex form of constituent oscillation
         fhc = famp*np.exp(-1j*fph*np.pi/180.0)
         # verify differences are within tolerance
