@@ -1573,6 +1573,23 @@
             "variable": "tide_ocean",
             "version": "HAMTIDE11"
         },
+        "RE14": {
+            "format": "GOT-netcdf",
+            "model_file": [
+                "RE14_LongPeriodTides_rel/oceantides/Mf_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Mm_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Mt_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Node_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Sa_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Ssa_RE14_oceantide.nc"
+            ],
+            "name": "RE14",
+            "reference": "https://doi.org/10.1002/2013JB010830",
+            "scale": 0.01,
+            "type": "z",
+            "variable": "tide_lpe",
+            "version": "2014"
+        },
         "TPXO10-atlas-v2": {
             "format": "OTIS",
             "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
