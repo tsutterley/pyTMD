@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 gsfc_got_tides.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Download GSFC Global Ocean Tide (GOT) models
 
 CALLING SEQUENCE:
@@ -16,6 +16,7 @@ COMMAND LINE OPTIONS:
         GOT5.5
         GOT5.5D
         GOT5.6
+        RE14
     --format: GOT tide model format to download
         ascii
         netCDF
@@ -31,6 +32,7 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 09/2024: added Ray and Erofeeva (2014) long-period tide model
     Updated 08/2024: keep prime nomenclature for 3rd degree tides
     Written 07/2024
 """
@@ -66,6 +68,15 @@ def gsfc_got_tides(MODEL: str,
     PATH['GOT5.5'] = ['2024-07','GOT5.5.tar%201.gz']
     PATH['GOT5.5D'] = ['2024-07','GOT5.5D.tar%201.gz']
     PATH['GOT5.6'] = ['2024-07','GOT5.6.tar%201.gz']
+    PATH['RE14'] = ['2022-07','re14_longperiodtides_rel.tar']
+    # tarfile mode for each tide model
+    TAR = {}
+    TAR['GOT4.8'] = 'r:gz'
+    TAR['GOT4.10'] = 'r:gz'
+    TAR['GOT5.5'] = 'r:gz'
+    TAR['GOT5.5D'] = 'r:gz'
+    TAR['GOT5.6'] = 'r:gz'
+    TAR['RE14'] = 'r'
 
     # recursively create directories if non-existent
     DIRECTORY = pathlib.Path(DIRECTORY).expanduser().absolute()
@@ -77,7 +88,7 @@ def gsfc_got_tides(MODEL: str,
     logger.info(f'{posixpath.join(*URL)} -->\n')
     fileobj = pyTMD.utilities.from_http(URL, timeout=TIMEOUT)
     # open the tar file
-    tar = tarfile.open(name=PATH[MODEL][-1], fileobj=fileobj, mode='r:gz')
+    tar = tarfile.open(name=PATH[MODEL][-1], fileobj=fileobj, mode=TAR[MODEL])
     # read tar file and extract all files
     member_files = [m for m in tar.getmembers() if tarfile.TarInfo.isfile(m)]
     for m in member_files:
@@ -87,6 +98,8 @@ def gsfc_got_tides(MODEL: str,
         if (sfx == '.nc') and (FORMAT == 'ascii'):
             continue
         elif (sfx == '.d') and (FORMAT == 'netcdf'):
+            continue
+        elif re.match(r'^.DS', posixpath.basename(m.name)):
             continue
         elif re.match(r'^._', posixpath.basename(m.name)):
             continue
@@ -131,7 +144,7 @@ def arguments():
     # Global Ocean Tide model to download
     parser.add_argument('--tide','-T',
         metavar='TIDE', type=str, nargs='+', default=['GOT5.5'],
-        choices=('GOT4.8','GOT4.10','GOT5.5','GOT5.5D','GOT5.6'),
+        choices=('GOT4.8','GOT4.10','GOT5.5','GOT5.5D','GOT5.6','RE14'),
         help='Global Ocean Tide model to download')
     # Global Ocean Tide model format to download
     parser.add_argument('--format',
