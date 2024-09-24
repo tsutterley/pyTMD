@@ -23,6 +23,14 @@ import scipy.spatial
 import scipy.interpolate
 import pyTMD.spatial
 
+__all__ = [
+    "bilinear",
+    "spline",
+    "regulargrid",
+    "extrapolate",
+    "_distance"
+]
+
 # PURPOSE: bilinear interpolation of input data to output data
 def bilinear(
         ilon: np.ndarray,

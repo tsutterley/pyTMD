@@ -100,6 +100,19 @@ from pyTMD.utilities import import_dependency
 # attempt imports
 netCDF4 = import_dependency('netCDF4')
 
+__all__ = [
+    "extract_constants",
+    "read_constants",
+    "interpolate_constants",
+    "read_ascii_file",
+    "read_netcdf_file",
+    "output_netcdf_file",
+    "_extend_array",
+    "_extend_matrix",
+    "_crop",
+    "_shift"
+]
+
 # PURPOSE: extract harmonic constants from tide models at coordinates
 def extract_constants(
         ilon: np.ndarray,

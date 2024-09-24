@@ -46,3 +46,4 @@ import pyTMD.time
 __version__ = pyTMD.version.version
 # read model database
 models = io.load_database()
+__models__ = {key:list(val.keys()) for key, val in models.items()}

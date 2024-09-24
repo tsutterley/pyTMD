@@ -62,6 +62,23 @@ import pyTMD.astro
 from pyTMD.crs import datum
 import timescale.time
 
+__all__ = [
+    "map",
+    "drift",
+    "time_series",
+    "infer_minor",
+    "equilibrium_tide",
+    "load_pole_tide",
+    "ocean_pole_tide",
+    "solid_earth_tide",
+    "_out_of_phase_diurnal",
+    "_out_of_phase_semidiurnal",
+    "_latitude_dependence",
+    "_frequency_dependence_diurnal",
+    "_frequency_dependence_long_period",
+    "_free_to_mean"
+]
+
 # number of days between the Julian day epoch and MJD
 _jd_mjd = 2400000.5
 # number of days between MJD and the tide epoch (1992-01-01T00:00:00)

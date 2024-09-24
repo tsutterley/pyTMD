@@ -2,6 +2,8 @@
 solve
 =====
 
+Solve functions for estimating ocean tides
+
 .. toctree::
     :maxdepth: 1
 

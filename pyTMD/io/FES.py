@@ -113,6 +113,19 @@ from pyTMD.utilities import import_dependency
 # attempt imports
 netCDF4 = import_dependency('netCDF4')
 
+__all__ = [
+    "extract_constants",
+    "read_constants",
+    "interpolate_constants",
+    "read_ascii_file",
+    "read_netcdf_file",
+    "output_netcdf_file",
+    "_extend_array",
+    "_extend_matrix",
+    "_crop",
+    "_shift"
+]
+
 # versions of FES models
 _ascii_versions = ('FES1999','FES2004')
 _netcdf_versions = ('FES2012','FES2014','FES2022','EOT20','HAMTIDE11')

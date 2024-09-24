@@ -33,6 +33,10 @@ import scipy.linalg
 import scipy.optimize
 import pyTMD.arguments
 
+__all__ = [
+    'constants'
+]
+
 def constants(t: float | np.ndarray,
         ht: np.ndarray,
         constituents: str | list | np.ndarray,

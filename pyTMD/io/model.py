@@ -65,6 +65,12 @@ from pyTMD.utilities import get_data_path
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+__all__ = [
+    'DataBase',
+    'load_database',
+    'model'
+]
+
 @dataclass
 class DataBase:
     """Class for pyTMD model database"""

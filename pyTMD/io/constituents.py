@@ -26,6 +26,10 @@ import copy
 import numpy as np
 import pyTMD.arguments
 
+__all__ = [
+    "constituents"
+]
+
 class constituents:
     """
     Class for tide model constituents

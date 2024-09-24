@@ -58,6 +58,15 @@ import numpy as np
 import scipy.interpolate
 from pyTMD.utilities import get_data_path
 
+__all__ = [
+    "extract_coefficients",
+    "read_binary_file",
+    "ocean_pole_tide",
+    "_extend_array",
+    "_extend_matrix",
+    "_shift"
+]
+
 # ocean pole tide file from Desai (2002) and IERS conventions
 _ocean_pole_tide_file = get_data_path(['data','opoleloadcoefcmcor.txt.gz'])
 

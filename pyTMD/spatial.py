@@ -121,6 +121,44 @@ shapely = import_dependency('shapely')
 shapely.geometry = import_dependency('shapely.geometry')
 yaml = import_dependency('yaml')
 
+__all__ = [
+    "case_insensitive_filename",
+    "data_type",
+    "from_file",
+    "from_ascii",
+    "from_netCDF4",
+    "from_HDF5",
+    "from_geotiff",
+    "from_parquet",
+    "to_file",
+    "to_ascii",
+    "to_netCDF4",
+    "_drift_netCDF4",
+    "_grid_netCDF4",
+    "_time_series_netCDF4",
+    "to_HDF5",
+    "to_geotiff",
+    "to_parquet",
+    "expand_dims",
+    "default_field_mapping",
+    "inverse_mapping",
+    "convert_ellipsoid",
+    "compute_delta_h",
+    "wrap_longitudes",
+    "to_dms",
+    "from_dms",
+    "to_cartesian",
+    "to_sphere",
+    "to_geodetic",
+    "_moritz_iterative",
+    "_bowring_iterative",
+    "_zhu_closed_form",
+    "to_ENU",
+    "from_ENU",
+    "scale_areas",
+    "scale_factors",
+]
+
 def case_insensitive_filename(filename: str | pathlib.Path):
     """
     Searches a directory for a filename without case dependence
