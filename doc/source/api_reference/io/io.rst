@@ -2,6 +2,8 @@
 io
 ==
 
+Input/output functions for reading and writing tidal data
+
 .. toctree::
     :maxdepth: 1
 

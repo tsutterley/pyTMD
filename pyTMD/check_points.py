@@ -88,6 +88,10 @@ import pyTMD.utilities
 # attempt imports
 pyproj = pyTMD.utilities.import_dependency('pyproj')
 
+__all__ = [
+    'check_points'
+]
+
 # PURPOSE: compute tides at points and times using tide model algorithms
 def check_points(x: np.ndarray, y: np.ndarray,
         DIRECTORY: str | pathlib.Path | None = None,

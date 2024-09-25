@@ -60,6 +60,11 @@ from pyTMD.utilities import import_dependency
 # attempt imports
 pyproj = import_dependency('pyproj')
 
+__all__ = [
+    'crs',
+    'datum'
+]
+
 class crs:
     """Coordinate Reference System transformations for tide models
 

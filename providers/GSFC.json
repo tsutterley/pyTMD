@@ -320,6 +320,23 @@
             "version": "5.6",
             "scale": 0.01,
             "reference": "https://doi.org/10.1126/sciadv.abd4744"
+        },
+        "RE14": {
+            "format": "GOT-netcdf",
+            "name": "RE14",
+            "model_file": [
+                "RE14_LongPeriodTides_rel/oceantides/Mf_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Mm_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Mt_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Node_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Sa_RE14_oceantide.nc",
+                "RE14_LongPeriodTides_rel/oceantides/Ssa_RE14_oceantide.nc"
+            ],
+            "type": "z",
+            "variable": "tide_lpe",
+            "version": "2014",
+            "scale": 0.01,
+            "reference": "https://doi.org/10.1002/2013JB010830"
         }
     }
 }

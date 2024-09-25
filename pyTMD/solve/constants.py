@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constants.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Routines for estimating the harmonic constants for ocean tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     astro.py: computes the basic astronomical mean longitudes
 
 UPDATE HISTORY:
+    Updated 09/2024: added bounded options for least squares solvers
     Updated 08/2024: use nodal arguments for all non-OTIS model type cases
     Updated 01/2024: moved to solve subdirectory
     Written 12/2023
@@ -29,14 +30,21 @@ from __future__ import annotations
 
 import numpy as np
 import scipy.linalg
+import scipy.optimize
 import pyTMD.arguments
+
+__all__ = [
+    'constants'
+]
 
 def constants(t: float | np.ndarray,
         ht: np.ndarray,
         constituents: str | list | np.ndarray,
         deltat: float | np.ndarray = 0.0,
         corrections: str = 'OTIS',
-        solver: str = 'lstsq'
+        solver: str = 'lstsq',
+        bounds: tuple = (-np.inf, np.inf),
+        max_iter: int | None = None
     ):
     """
     Estimate the harmonic constants for an elevation time series [1]_
@@ -60,6 +68,11 @@ def constants(t: float | np.ndarray,
         - ``'gelsy'``: complete orthogonal factorization
         - ``'gelss'``: singular value decomposition (SVD)
         - ``'gelsd'``: SVD with divide and conquer method
+        - ``'bvls'``: bounded-variable least-squares
+    bounds: tuple, default (None, None)
+        Lower and upper bounds on parameters for ``'bvls'``
+    max_iter: int or None, default None
+        Maximum number of iterations for ``'bvls'``
 
     Returns
     -------
@@ -113,11 +126,16 @@ def constants(t: float | np.ndarray,
     M = np.transpose(M)
 
     # use a least-squares fit to solve for parameters
+    # can optionally use a bounded-variable least-squares fit
     if (solver == 'lstsq'):
         p, res, rnk, s = np.linalg.lstsq(M, ht, rcond=-1)
     elif solver in ('gelsd', 'gelsy', 'gelss'):
         p, res, rnk, s = scipy.linalg.lstsq(M, ht,
             lapack_driver=solver)
+    elif (solver == 'bvls'):
+        p = scipy.optimize.lsq_linear(M, ht,
+            method=solver, bounds=bounds,
+            max_iter=max_iter).x
 
     # calculate amplitude and phase for each constituent
     amp = np.zeros((nc))

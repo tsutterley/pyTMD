@@ -50,6 +50,7 @@ ocean, load, solid Earth and pole tides
 
     api_reference/arcticdata_tides.rst
     api_reference/aviso_fes_tides.rst
+    api_reference/gsfc_got_tides.rst
     api_reference/reduce_OTIS_files.rst
     api_reference/usap_cats_tides.rst
     api_reference/verify_box_tpxo.rst

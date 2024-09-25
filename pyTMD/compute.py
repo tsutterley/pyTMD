@@ -143,6 +143,16 @@ import timescale.time
 # attempt imports
 pyproj = pyTMD.utilities.import_dependency('pyproj')
 
+__all__ = [
+    "corrections",
+    "tide_elevations",
+    "tide_currents",
+    "LPET_elevations",
+    "LPT_displacements",
+    "OPT_displacements",
+    "SET_displacements"
+]
+
 # number of days between the Julian day epoch and MJD
 _jd_mjd = 2400000.5
 

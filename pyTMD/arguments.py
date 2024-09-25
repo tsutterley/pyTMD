@@ -72,6 +72,19 @@ from __future__ import annotations
 import numpy as np
 import pyTMD.astro
 
+__all__ = [
+    "arguments",
+    "minor_arguments",
+    "coefficients_table",
+    "doodson_number",
+    "nodal",
+    "_arguments_table",
+    "_minor_table",
+    "_constituent_parameters",
+    "_to_doodson_number",
+    "_from_doodson_number"
+]
+
 def arguments(
         MJD: np.ndarray,
         constituents: list | np.ndarray,

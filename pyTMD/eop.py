@@ -31,6 +31,16 @@ import logging
 import timescale.eop
 import timescale.utilities
 
+__all__ = [
+    "update_mean_pole",
+    "calculate_mean_pole",
+    "pull_pole_coordinates",
+    "update_finals_file",
+    "iers_mean_pole",
+    "iers_daily_EOP",
+    "iers_polar_motion"
+]
+
 # IERS mean pole file for 2015 conventional mean pole
 _mean_pole_file = timescale.utilities.get_data_path(['data','mean-pole.tab'])
 # daily finals polar motion file from IERS

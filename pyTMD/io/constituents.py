@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 09/2024: add node to list of known constituent names
     Updated 08/2024: add GOT prime nomenclature for 3rd degree constituents
     Updated 07/2024: add function to parse tidal constituents from strings
     Updated 05/2024: make subscriptable and allow item assignment
@@ -25,6 +26,10 @@ import re
 import copy
 import numpy as np
 import pyTMD.arguments
+
+__all__ = [
+    "constituents"
+]
 
 class constituents:
     """
@@ -212,7 +217,7 @@ class constituents:
             'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
             'r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4','m4',
             'ms4','mk4',r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2',
-            'msqm','mtm',r'(?<!m)n4','eps2','z0']
+            'msqm','mtm',r'(?<!m)n4','eps2','z0','node']
         # compile regular expression
         # adding GOT prime nomenclature for 3rd degree constituents
         rx = re.compile(r'(' + '|'.join(cindex) + r')(\')?', re.IGNORECASE)

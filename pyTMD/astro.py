@@ -61,6 +61,34 @@ from pyTMD.utilities import (
 # attempt imports
 jplephem_spk = import_dependency('jplephem.spk')
 
+__all__ = [
+    "polynomial_sum",
+    "normalize_angle",
+    "rotate",
+    "mean_longitudes",
+    "phase_angles",
+    "doodson_arguments",
+    "delaunay_arguments",
+    "mean_obliquity",
+    "solar_ecef",
+    "solar_approximate",
+    "solar_ephemerides",
+    "lunar_ecef",
+    "lunar_approximate",
+    "lunar_ephemerides",
+    "gast",
+    "itrs",
+    "_eqeq_complement",
+    "_frame_bias_matrix",
+    "_nutation_angles",
+    "_nutation_matrix",
+    "_polar_motion_matrix",
+    "_precession_matrix",
+    "_parse_table_5_2e",
+    "_parse_table_5_3a",
+    "_parse_table_5_3b",
+]
+
 # default JPL Spacecraft and Planet ephemerides kernel
 _default_kernel = get_data_path(['data','de440s.bsp'])
 

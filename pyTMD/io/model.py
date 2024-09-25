@@ -10,6 +10,7 @@ UPDATE HISTORY:
         drop support for the ascii definition file format
         add file_format and nodal correction attributes
         export database as a dataclass for easier access
+        added variable name and descriptions for long period tides
     Updated 08/2024: added attribute for minor constituents to infer
         allow searching over iterable glob strings in definition files
         added option to try automatic detection of definition file format
@@ -64,6 +65,12 @@ import pyTMD.io.constituents
 from pyTMD.utilities import get_data_path
 from collections.abc import Iterable
 from dataclasses import dataclass
+
+__all__ = [
+    'DataBase',
+    'load_database',
+    'model'
+]
 
 @dataclass
 class DataBase:
@@ -315,6 +322,8 @@ class model:
             return 'tide_ocean'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'tide_load'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'tide_equilibrium'
         else:
             return None
 
@@ -326,6 +335,8 @@ class model:
             return 'tide_ocean'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'tide_load'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'tide_equilibrium'
         else:
             return None
 
@@ -337,6 +348,8 @@ class model:
             return 'height_segment_ocean'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'height_segment_load'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'height_segment_lpe'
         else:
             return None
 
@@ -348,6 +361,8 @@ class model:
             return 'height_segment_ocean'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'height_segment_load'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'height_segment_lpe'
         else:
             return None
 
@@ -359,6 +374,8 @@ class model:
             return 'tide_ocean'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'tide_load'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'tide_equilibrium'
         else:
             return None
 
@@ -370,6 +387,8 @@ class model:
             return 'tide_ocean_seg'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'tide_load_seg'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'tide_equilibrium_seg'
         else:
             return None
 
@@ -381,6 +400,8 @@ class model:
             return 'd_ocElv'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'd_ldElv'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'd_eqElv'
         else:
             return None
 
@@ -392,6 +413,8 @@ class model:
             return 'ocean_tide_elevation'
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'load_tide_elevation'
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'Equilibrium_Tide'
         elif (self.type == ['u','v']):
             return dict(u='zonal_tidal_current', v='meridional_tidal_current')
         else:
@@ -406,6 +429,8 @@ class model:
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return ("Local displacement due to ocean tidal loading "
                 "derived from harmonic constants")
+        elif (self.type == 'z') and (self.variable == 'tide_lpe'):
+            return 'Long-period equilibrium tide elevations'
         elif (self.type == ['u','v']):
             attr = {}
             attr['u'] = ('Depth-averaged tidal zonal current '
@@ -442,6 +467,8 @@ class model:
         model_list = []
         for model, val in parameters['elevation'].items():
             if (val['type'] == 'z') and (val['variable'] == 'tide_ocean'):
+                model_list.append(model)
+            elif (val['type'] == 'z') and (val['variable'] == 'tide_lpe'):
                 model_list.append(model)
         # return unique list of models
         return sorted(set(model_list))

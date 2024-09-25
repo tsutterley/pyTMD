@@ -649,7 +649,12 @@ def test_parse_GOT_elevation(MODEL):
     """
     m = pyTMD.io.model(verify=False).elevation(MODEL)
     m.constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file]
-    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+    # constituents for long-period and short-period tides
+    if MODEL in ('RE14',):
+        constituents = ['mf','mm','mt','node','sa','ssa']
+    else:
+        constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','s1','m4']
+    # verify that all constituents exist
     assert all(c in m.constituents for c in constituents)
 
 # parameterize model
