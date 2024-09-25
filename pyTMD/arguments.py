@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -38,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 09/2024: add function to calculate tidal angular frequencies
     Updated 08/2024: add support for constituents in PERTH5 tables
         add back nodal arguments from PERTH3 for backwards compatibility
     Updated 01/2024: add function to create arguments coefficients table
@@ -78,6 +79,7 @@ __all__ = [
     "coefficients_table",
     "doodson_number",
     "nodal",
+    "frequency",
     "_arguments_table",
     "_minor_table",
     "_constituent_parameters",
@@ -1060,12 +1062,9 @@ def nodal(
         model time series," *Advances in Water Resources*, 12(3), 109--120,
         (1989). `doi: 10.1016/0309-1708(89)90017-1
         <https://doi.org/10.1016/0309-1708(89)90017-1>`_
-    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
+    .. [4] R. D. Ray, "A global ocean tide model from
+        Topex/Poseidon altimetry: GOT99.2",
+        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
@@ -1723,6 +1722,67 @@ def nodal(
 
     # return corrections for constituents
     return (u, f)
+
+def frequency(
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the angular frequency for tidal constituents [1]_
+
+    Parameters
+    ----------
+    constituents: list
+        tidal constituent IDs
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS, FES or GOT models
+    M1: str, default 'perth5'
+        coefficients to use for M1 tides
+
+                - ``'Doodson'``
+                - ``'Ray'``
+                - ``'perth5'``
+
+    Returns
+    -------
+    omega: np.ndarray
+        angular frequency in radians per second
+
+    References
+    ----------
+    .. [1] R. D. Ray, "A global ocean tide model from
+        Topex/Poseidon altimetry: GOT99.2",
+        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
+    """
+    # set default keyword arguments
+    kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('M1', 'perth5')
+    # set function for astronomical longitudes
+    # use ASTRO5 routines if not using an OTIS type model
+    ASTRO5 = kwargs['corrections'] not in ('OTIS','ATLAS','TMD3','netcdf')
+    # Modified Julian Dates at J2000
+    MJD = np.array([51544.5, 51544.55])
+    # time interval in seconds
+    deltat = 86400.0*(MJD[1] - MJD[0])
+    # calculate the mean longitudes of the sun and moon
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD, ASTRO5=ASTRO5)
+
+    # number of temporal values
+    nt = len(np.atleast_1d(MJD))
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros((nt))
+
+    # determine equilibrium arguments
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    rates = (fargs[1,:] - fargs[0,:])/deltat
+    fd = np.dot(rates, coefficients_table(constituents, **kwargs))
+    # convert to radians per second
+    omega = 2.0*np.pi*fd/360.0
+    return omega
 
 def _arguments_table(**kwargs):
     """

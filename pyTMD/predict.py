@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 09/2024: verify order of minor constituents to infer
         fix to use case insensitive assertions of string argument values
+        split infer minor function into short and long period calculations
     Updated 08/2024: minor nodal angle corrections in radians to match arguments
         include inference of eps2 and eta2 when predicting from GOT models
         add keyword argument to allow inferring specific minor constituents
@@ -67,6 +68,8 @@ __all__ = [
     "drift",
     "time_series",
     "infer_minor",
+    "_infer_short_period",
+    "_infer_long_period",
     "equilibrium_tide",
     "load_pole_tide",
     "ocean_pole_tide",
@@ -307,6 +310,11 @@ def infer_minor(
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
+    frequency: str, default 'short'
+        frequency of tidal constituents to infer
+
+            - 'short': diurnal and semidiurnal constituents
+            - 'long': long-period constituents
     minor: list or None, default None
         tidal constituent IDs
 
@@ -335,9 +343,65 @@ def infer_minor(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('frequency', 'short')
     # list of minor constituents
     kwargs.setdefault('minor', None)
+    # infer the minor tidal constituents
+    if kwargs['frequency'] in ('short',):
+        dh = _infer_short_period(t, zmajor, constituents, **kwargs)
+    elif kwargs['frequency'] in ('long',):
+        dh = _infer_long_period(t, zmajor, constituents, **kwargs)
+    # return the inferred values
+    return dh
 
+# PURPOSE: infer short-period tides for minor constituents
+def _infer_short_period(
+        t: float | np.ndarray,
+        zmajor: np.ndarray,
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Infer the tidal values for short-period minor constituents
+    using their relation with major constituents [1]_ [2]_
+
+    Parameters
+    ----------
+    t: float or np.ndarray
+        days relative to 1992-01-01T00:00:00
+    zmajor: np.ndarray
+        Complex HC for given constituents/points
+    constituents: list
+        tidal constituent IDs
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS/ATLAS or GOT/FES models
+    minor: list or None, default None
+        tidal constituent IDs
+
+    Returns
+    -------
+    dh: np.ndarray
+        tidal time series for minor constituents
+
+    References
+    ----------
+    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
+        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
+        Technology*, 19(2), 183--204, (2002).
+        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
+    .. [2] R. D. Ray, "A global ocean tide model from
+        Topex/Poseidon altimetry: GOT99.2",
+        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
+
+    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
+    """
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
+    # list of minor constituents
+    kwargs.setdefault('minor', None)
     # number of constituents
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
@@ -348,7 +412,7 @@ def infer_minor(
     # major constituents used for inferring minor tides
     cindex = ['q1', 'o1', 'p1', 'k1', 'n2', 'm2', 's2', 'k2', '2n2']
     # re-order major tides to correspond to order of cindex
-    z = np.ma.zeros((n,9),dtype=np.complex64)
+    z = np.ma.zeros((n,len(cindex)), dtype=np.complex64)
     nz = 0
     for i,c in enumerate(cindex):
         j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
@@ -421,6 +485,126 @@ def infer_minor(
         th = G[:,k]*np.pi/180.0 + pu[:,k]
         dh += zmin.real[:,k]*pf[:,k]*np.cos(th) - \
             zmin.imag[:,k]*pf[:,k]*np.sin(th)
+    # return the inferred values
+    return dh
+
+# PURPOSE: infer long-period tides for minor constituents
+def _infer_long_period(
+        t: float | np.ndarray,
+        zmajor: np.ndarray,
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Infer the tidal values for long-period minor constituents
+    using their relation with major constituents [1]_ [2]_
+
+    Parameters
+    ----------
+    t: float or np.ndarray
+        days relative to 1992-01-01T00:00:00
+    zmajor: np.ndarray
+        Complex HC for given constituents/points
+    constituents: list
+        tidal constituent IDs
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    minor: list or None, default None
+        tidal constituent IDs
+
+    Returns
+    -------
+    dh: np.ndarray
+        tidal time series for minor constituents
+
+    References
+    ----------
+    .. [1] R. D. Ray, "A global ocean tide model from
+        Topex/Poseidon altimetry: GOT99.2",
+        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
+    .. [2] R. D. Ray and S. Y. Erofeeva, "Long-period tidal
+        variations in the length of day", *Journal of Geophysical
+        Research: Solid Earth*, 119, 1498--1509, (2013).
+        `doi: 10.1002/2013JB010830 <https://doi.org/10.1002/2013JB010830>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
+    # list of minor constituents
+    kwargs.setdefault('minor', None)
+    # number of constituents
+    npts, nc = np.shape(zmajor)
+    nt = len(np.atleast_1d(t))
+    # number of data points to calculate if running time series/drift/map
+    n = nt if ((npts == 1) & (nt > 1)) else npts
+    # allocate for output elevation correction
+    dh = np.ma.zeros((n))
+    # major constituents used for inferring long period minor tides
+    cindex = ['node', 'mm', 'mf']
+    # angular frequencies for major constituents
+    omajor = pyTMD.arguments.frequency(cindex, **kwargs)
+    # Cartwright and Edden potential amplitudes for major constituents
+    amajor = np.zeros((3))
+    amajor[0] = 0.027929# node
+    amajor[1] = 0.035184# mm
+    amajor[2] = 0.066607# mf
+    # re-order major tides to correspond to order of cindex
+    z = np.ma.zeros((n,len(cindex)), dtype=np.complex64)
+    nz = 0
+    for i,c in enumerate(cindex):
+        j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
+        if j:
+            j1, = j
+            z[:,i] = zmajor[:,j1]/amajor[i]
+            nz += 1
+
+    if (nz < 3):
+        raise Exception('Not enough constituents for inference')
+
+    # complete list of minor constituents
+    minor_constituents = ['sa', 'ssa', 'sta', 'msm', 'msf',
+        'mst', 'mt', 'msqm', 'mq']
+    # possibly reduced list of minor constituents
+    minor = kwargs['minor'] or minor_constituents
+    # only add minor constituents that are not on the list of major values
+    minor_indices = [i for i,m in enumerate(minor_constituents)
+        if (m not in constituents) and (m in minor)]
+
+    # angular frequencies for inferred constituents
+    omega = pyTMD.arguments.frequency(minor_constituents, **kwargs)
+    # Cartwright and Edden potential amplitudes for inferred constituents
+    amin = np.zeros((9))
+    amin[0] = 0.004922# sa
+    amin[1] = 0.030988# ssa
+    amin[2] = 0.001809# sta
+    amin[3] = 0.006728# msm
+    amin[4] = 0.005837# msf
+    amin[5] = 0.002422# mst
+    amin[6] = 0.012753# mt
+    amin[7] = 0.002037# msqm
+    amin[8] = 0.001687# mq
+
+    # load the nodal corrections for minor constituents
+    # convert time to Modified Julian Days (MJD)
+    pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
+        minor_constituents,
+        deltat=kwargs['deltat'],
+        corrections=kwargs['corrections']
+    )
+
+    # sum over the minor tidal constituents of interest
+    for k in minor_indices:
+        # linearly interpolate between major constituents
+        if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
+            slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
+            zmin = amin[k]*(z[:,0] + slope*(omega[k] - omajor[0]))
+        else:
+            slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
+            zmin = amin[k]*(z[:,1] + slope*(omega[k] - omajor[1]))
+        # sum over all tides
+        th = G[:,k]*np.pi/180.0 + pu[:,k]
+        dh += zmin.real*pf[:,k]*np.cos(th) - \
+            zmin.imag*pf[:,k]*np.sin(th)
     # return the inferred values
     return dh
 

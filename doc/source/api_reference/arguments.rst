@@ -28,6 +28,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.arguments.nodal
 
+.. autofunction:: pyTMD.arguments.frequency
+
 .. autofunction:: pyTMD.arguments._arguments_table
 
 .. autofunction:: pyTMD.arguments._minor_table

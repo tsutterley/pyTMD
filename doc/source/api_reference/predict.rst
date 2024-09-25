@@ -32,6 +32,10 @@ Calling Sequence
 
 .. autofunction:: pyTMD.predict.infer_minor
 
+.. autofunction:: pyTMD.predict._infer_short_period
+
+.. autofunction:: pyTMD.predict._infer_long_period
+
 .. autofunction:: pyTMD.predict.equilibrium_tide
 
 .. autofunction:: pyTMD.predict.load_pole_tide

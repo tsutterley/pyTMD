@@ -65,6 +65,7 @@ UPDATE HISTORY:
         use model class attributes for file format and corrections
         add keyword argument to select nodal corrections type
         fix to use case insensitive assertions of string argument values
+        add model attribute for tide model bulk frequencies
     Updated 08/2024: allow inferring only specific minor constituents
         use prediction functions for pole tides in cartesian coordinates
         use rotation matrix to convert from cartesian to spherical
@@ -402,7 +403,7 @@ def tide_elevations(
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                     deltat=deltat[i], corrections=nodal_corrections,
-                    minor=minor_constituents)
+                    minor=minor_constituents, frequency=model.frequency)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components and reform grid
@@ -417,7 +418,7 @@ def tide_elevations(
         if INFER_MINOR:
             minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                 deltat=deltat, corrections=nodal_corrections,
-                minor=minor_constituents)
+                minor=minor_constituents, frequency=model.frequency)
             tide.data[:] += minor.data[:]
     elif (TYPE.lower() == 'time series'):
         nstation = len(x)
@@ -431,7 +432,7 @@ def tide_elevations(
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                     deltat=deltat, corrections=nodal_corrections,
-                    minor=minor_constituents)
+                    minor=minor_constituents, frequency=model.frequency)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components
@@ -635,7 +636,7 @@ def tide_currents(
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                         deltat=deltat[i], corrections=nodal_corrections,
-                        minor=minor_constituents)
+                        minor=minor_constituents, frequency=model.frequency)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components and reform grid
@@ -650,7 +651,7 @@ def tide_currents(
             if INFER_MINOR:
                 minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                     deltat=deltat, corrections=nodal_corrections,
-                    minor=minor_constituents)
+                    minor=minor_constituents, frequency=model.frequency)
                 tide[t].data[:] += minor.data[:]
         elif (TYPE.lower() == 'time series'):
             nstation = len(x)
@@ -664,7 +665,7 @@ def tide_currents(
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                         deltat=deltat, corrections=nodal_corrections,
-                        minor=minor_constituents)
+                        minor=minor_constituents, frequency=model.frequency)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components
