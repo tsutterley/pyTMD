@@ -106,6 +106,7 @@ UPDATE HISTORY:
         drop support for the ascii definition file format
         use model class attributes for file format and corrections
         add command line option to select nodal corrections type
+        use attribute for inferring minor long period constituents
     Updated 08/2024: allow inferring only specific minor constituents
         added option to try automatic detection of definition file format
         changed from 'geotiff' to 'GTiff' and 'cog' formats
@@ -353,7 +354,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                     deltat=deltat[i], corrections=nodal_corrections,
-                    minor=minor_constituents)
+                    minor=minor_constituents, frequency=model.frequency)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components and reform grid
@@ -368,7 +369,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
         if INFER_MINOR:
             minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                 deltat=deltat, corrections=nodal_corrections,
-                minor=minor_constituents)
+                minor=minor_constituents, frequency=model.frequency)
             tide.data[:] += minor.data[:]
     elif (TYPE == 'time series'):
         tide = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
@@ -382,7 +383,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             if INFER_MINOR:
                 MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                     deltat=deltat, corrections=nodal_corrections,
-                    minor=minor_constituents)
+                    minor=minor_constituents, frequency=model.frequency)
             else:
                 MINOR = np.ma.zeros_like(TIDE)
             # add major and minor components
