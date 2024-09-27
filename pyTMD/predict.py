@@ -424,6 +424,7 @@ def _infer_short_period(
         raise Exception('Not enough constituents for inference')
     elif (nz < 6):
         logging.debug('Not enough constituents for inference')
+        return 0.0
 
     # complete list of minor constituents
     minor_constituents = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1',
@@ -565,6 +566,7 @@ def _infer_long_period(
         raise Exception('Not enough constituents for inference')
     elif (nz < 3):
         logging.debug('Not enough constituents for inference')
+        return 0.0
 
     # complete list of minor constituents
     minor_constituents = ['sa', 'ssa', 'sta', 'msm', 'msf',
