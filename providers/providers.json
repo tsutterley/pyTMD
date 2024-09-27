@@ -7,7 +7,17 @@
                 "u": "CATS2008_v2023/CATS2008_v2023.nc"
             },
             "name": "CATS2008-v2023",
-            "projection": "CATS2008",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": -90,
+                "lat_ts": -71,
+                "lon_0": -70,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.15784/601772",
             "type": [
                 "u",
@@ -56,7 +66,17 @@
             "grid_file": "CATS2008_v2023/CATS2008_v2023.nc",
             "model_file": "CATS2008_v2023/CATS2008_v2023.nc",
             "name": "CATS2008-v2023",
-            "projection": "CATS2008",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": -90,
+                "lat_ts": -71,
+                "lon_0": -70,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.15784/601772",
             "type": "z",
             "variable": "tide_ocean"

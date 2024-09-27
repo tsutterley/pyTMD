@@ -103,7 +103,6 @@ UPDATE HISTORY:
         drop support for the ascii definition file format
         use model class attributes for file format and corrections
         add command line option to select nodal corrections type
-        use attribute for inferring minor long period constituents
     Updated 08/2024: allow inferring only specific minor constituents
         added option to try automatic detection of definition file format
         changed from 'geotiff' to 'GTiff' and 'cog' formats

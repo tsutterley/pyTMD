@@ -7,7 +7,16 @@
                 "u": "aodtm5_tmd/UV0_Arc5km"
             },
             "name": "AODTM-5",
-            "projection": "AEDNorth",
+            "projection": {
+                "R": 6399938.5716113,
+                "lat_0": 90,
+                "lon_0": 270,
+                "proj": "aeqd",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
             "type": [
                 "u",
@@ -21,7 +30,16 @@
                 "u": "aotim5_tmd/UV_Arc5km"
             },
             "name": "AOTIM-5",
-            "projection": "AEDNorth",
+            "projection": {
+                "R": 6399938.5716113,
+                "lat_0": 90,
+                "lon_0": 270,
+                "proj": "aeqd",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": [
                 "u",
@@ -35,7 +53,16 @@
                 "u": "Arc5km2018/UV_Arc5km2018"
             },
             "name": "AOTIM-5-2018",
-            "projection": "AEDNorth",
+            "projection": {
+                "R": 6399938.5716113,
+                "lat_0": 90,
+                "lon_0": 270,
+                "proj": "aeqd",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": [
                 "u",
@@ -50,7 +77,17 @@
                 "u": "Arc2kmTM/UV_Arc2kmTM_v1"
             },
             "name": "Arc2kmTM",
-            "projection": "3413",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": 90,
+                "lat_ts": 70,
+                "lon_0": -45,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.18739/A2D21RK6K",
             "type": [
                 "u",
@@ -65,7 +102,7 @@
                 "u": "cats0201_tmd/UV0_CATS02_01"
             },
             "name": "CATS0201",
-            "projection": "4326",
+            "projection": "EPSG:4326",
             "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
             "type": [
                 "u",
@@ -79,7 +116,17 @@
                 "u": "CATS2008/uv.CATS2008.out"
             },
             "name": "CATS2008",
-            "projection": "CATS2008",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": -90,
+                "lat_ts": -71,
+                "lon_0": -70,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.15784/601235",
             "type": [
                 "u",
@@ -93,7 +140,17 @@
                 "u": "greenlandTMD_v2/u_Greenland8_rot.v2"
             },
             "name": "Gr1km-v2",
-            "projection": "3413",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": 90,
+                "lat_ts": 70,
+                "lon_0": -45,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.1002/2016RG000546",
             "type": [
                 "u",
@@ -108,7 +165,17 @@
                 "u": "Gr1kmTM/UV_Gr1kmTM_v1"
             },
             "name": "Gr1kmTM",
-            "projection": "3413",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": 90,
+                "lat_ts": 70,
+                "lon_0": -45,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.18739/A2B853K18",
             "type": [
                 "u",
@@ -123,7 +190,16 @@
             "grid_file": "aodtm5_tmd/grid_Arc5km",
             "model_file": "aodtm5_tmd/h0_Arc5km.oce",
             "name": "AODTM-5",
-            "projection": "AEDNorth",
+            "projection": {
+                "R": 6399938.5716113,
+                "lat_0": 90,
+                "lon_0": 270,
+                "proj": "aeqd",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aodtm-5/",
             "type": "z",
             "variable": "tide_ocean"
@@ -133,7 +209,16 @@
             "grid_file": "aotim5_tmd/grid_Arc5km",
             "model_file": "aotim5_tmd/h_Arc5km.oce",
             "name": "AOTIM-5",
-            "projection": "AEDNorth",
+            "projection": {
+                "R": 6399938.5716113,
+                "lat_0": 90,
+                "lon_0": 270,
+                "proj": "aeqd",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": "z",
             "variable": "tide_ocean"
@@ -143,7 +228,16 @@
             "grid_file": "Arc5km2018/grid_Arc5km2018",
             "model_file": "Arc5km2018/h_Arc5km2018",
             "name": "AOTIM-5-2018",
-            "projection": "AEDNorth",
+            "projection": {
+                "R": 6399938.5716113,
+                "lat_0": 90,
+                "lon_0": 270,
+                "proj": "aeqd",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://www.esr.org/research/polar-tide-models/list-of-polar-tide-models/aotim-5/",
             "type": "z",
             "variable": "tide_ocean",
@@ -154,7 +248,17 @@
             "grid_file": "Arc2kmTM/grid_Arc2kmTM_v1",
             "model_file": "Arc2kmTM/h_Arc2kmTM_v1",
             "name": "Arc2kmTM",
-            "projection": "3413",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": 90,
+                "lat_ts": 70,
+                "lon_0": -45,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.18739/A2D21RK6K",
             "type": "z",
             "variable": "tide_ocean",
@@ -165,7 +269,7 @@
             "grid_file": "cats0201_tmd/grid_CATS",
             "model_file": "cats0201_tmd/h0_CATS02_01",
             "name": "CATS0201",
-            "projection": "4326",
+            "projection": "EPSG:4326",
             "reference": "https://mail.esr.org/polar_tide_models/Model_CATS0201.html",
             "type": "z",
             "variable": "tide_ocean"
@@ -175,7 +279,17 @@
             "grid_file": "CATS2008/grid_CATS2008",
             "model_file": "CATS2008/hf.CATS2008.out",
             "name": "CATS2008",
-            "projection": "CATS2008",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": -90,
+                "lat_ts": -71,
+                "lon_0": -70,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.15784/601235",
             "type": "z",
             "variable": "tide_ocean"
@@ -185,7 +299,17 @@
             "grid_file": "CATS2008a_SPOTL_Load/grid_CATS2008a_opt",
             "model_file": "CATS2008a_SPOTL_Load/h_CATS2008a_SPOTL_load",
             "name": "CATS2008_load",
-            "projection": "CATS2008",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": -90,
+                "lat_ts": -71,
+                "lon_0": -70,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.15784/601235",
             "type": "z",
             "variable": "tide_load"
@@ -195,7 +319,17 @@
             "grid_file": "greenlandTMD_v2/grid_Greenland8.v2",
             "model_file": "greenlandTMD_v2/h_Greenland8.v2",
             "name": "Gr1km-v2",
-            "projection": "3413",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": 90,
+                "lat_ts": 70,
+                "lon_0": -45,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.1002/2016RG000546",
             "type": "z",
             "variable": "tide_ocean",
@@ -206,7 +340,17 @@
             "grid_file": "Gr1kmTM/grid_Gr1kmTM_v1",
             "model_file": "Gr1kmTM/h_Gr1kmTM_v1",
             "name": "Gr1kmTM",
-            "projection": "3413",
+            "projection": {
+                "datum": "WGS84",
+                "lat_0": 90,
+                "lat_ts": 70,
+                "lon_0": -45,
+                "proj": "stere",
+                "type": "crs",
+                "units": "km",
+                "x_0": 0,
+                "y_0": 0
+            },
             "reference": "https://doi.org/10.18739/A2B853K18",
             "type": "z",
             "variable": "tide_ocean",
