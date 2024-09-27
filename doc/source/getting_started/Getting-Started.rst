@@ -218,18 +218,9 @@ Spatial Coordinates
 The default coordinate system in ``pyTMD`` is WGS84 geodetic coordinates in latitude and longitude.
 ``pyTMD`` uses `pyproj <https://pypi.org/project/pyproj/>`_ to convert from different coordinate systems and datums.
 Some regional tide models are projected in a different coordinate system.
-For these cases, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/convert_crs.py>`_.
-
-OTIS models may be projected into a separate coordinate system. The available OTIS projections within ``pyTMD`` are
-
-- ``'4326'`` (global latitude and longitude)
-- ``'3031'`` (Antarctic Polar Stereographic in kilometers)
-- ``'3413'`` (NSIDC Sea Ice Polar Stereographic North in kilometers)
-- ``'CATS2008'`` (CATS2008 Polar Stereographic in kilometers)
-- ``'3976'`` (NSIDC Sea Ice Polar Stereographic South in kilometers)
-- ``'AEDNorth'`` (idealized polar Azimuthal equidistant projection in kilometers)
-
-For other model projections, a formatted coordinate reference system (CRS) descriptor (e.g. PROJ, WKT, or EPSG code) can be used.
+These models have their coordinate reference system (CRS) information stored as PROJ descriptors in the `JSON model database <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/database.json>`_:
+For other projected models, a formatted coordinate reference system (CRS) descriptor (e.g. PROJ, WKT, or EPSG code) can be used.
+For all cases with projected models, ``pyTMD`` will `convert from latitude and longitude to the model coordinate system <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/crs.py>`_ to calculate the local tidal constants.
 
 Interpolation
 #############
