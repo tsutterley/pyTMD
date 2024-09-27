@@ -5,6 +5,7 @@ Tests the reading of model definition files
 UPDATE HISTORY:
     Updated 09/2024: drop support for the ascii definition file format
         fix parsing of TPXO8-atlas-nc constituents
+        using new JSON dictionary format for model projections
     Updated 08/2024: add automatic detection of definition file format
     Updated 07/2024: add new JSON format definition file format
     Written 04/2024
@@ -34,7 +35,9 @@ def test_definition_CATS2008():
     assert m.name == 'CATS2008'
     assert m.model_file == pathlib.Path('CATS2008/hf.CATS2008.out')
     assert m.grid_file == pathlib.Path('CATS2008/grid_CATS2008')
-    assert m.projection == 'CATS2008'
+    assert m.projection == {'datum': 'WGS84', 'lat_0': -90, 'lat_ts': -71,
+        'lon_0': -70, 'proj': 'stere', 'type': 'crs', 'units': 'km',
+        'x_0': 0, 'y_0': 0}
     assert m.type == 'z'
     assert m.variable == 'tide_ocean'
     # test properties

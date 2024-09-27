@@ -5,6 +5,7 @@ Verify forward and backwards coordinate conversions
 
 UPDATE HISTORY:
     Updated 09/2024: add test for Arctic regions with new projection
+        using new JSON dictionary format for model projections
     Updated 07/2024: add check for if projections are geographic
     Updated 12/2023: use new crs class for coordinate reprojection
     Written 08/2020
@@ -14,19 +15,21 @@ import numpy as np
 import pyTMD.crs
 
 # parameterize projections
-@pytest.mark.parametrize("PROJ", ['3031','CATS2008','3976','AEDNorth','4326'])
+models = ['AOTIM-5-2018','Gr1km-v2','CATS2008','TPXO9-atlas-v5']
+@pytest.mark.parametrize("MODEL", models)
 # PURPOSE: verify forward and backwards coordinate conversions
-def test_coordinates(PROJ):
-    startlat = {'3031':-60,'CATS2008':-60,'3976':-60,'AEDNorth':60,'4326':90}
-    endlat = {'3031':-70,'CATS2008':-70,'3976':-70,'AEDNorth':70,'4326':-90}
-    is_geographic = {'3031':False,'CATS2008':False,'3976':False,
-        'AEDNorth':False,'4326':True}
+def test_coordinates(MODEL):
+    startlat = {'Gr1km-v2':60,'CATS2008':-60,'AOTIM-5-2018':60,'TPXO9-atlas-v5':90}
+    endlat = {'Gr1km-v2':70,'CATS2008':-70,'AOTIM-5-2018':70,'TPXO9-atlas-v5':-90}
+    is_geographic = {'Gr1km-v2':False,'CATS2008':False,
+        'AOTIM-5-2018':False,'TPXO9-atlas-v5':True}
     i1 = np.arange(-180,180+1,1)
-    i2 = np.linspace(startlat[PROJ],endlat[PROJ],len(i1))
+    i2 = np.linspace(startlat[MODEL],endlat[MODEL],len(i1))
     # convert latitude and longitude to and from projection
-    transform = pyTMD.crs().get(PROJ)
-    o1, o2 = pyTMD.crs().convert(i1,i2,PROJ,'F')
-    lon, lat = pyTMD.crs().convert(o1,o2,PROJ,'B')
+    model = pyTMD.models.elevation[MODEL]
+    crs = pyTMD.crs().get(model['projection'])
+    o1, o2 = crs.transform(i1, i2, direction='FORWARD')
+    lon, lat = crs.transform(o1, o2, direction='INVERSE')
     # calculate great circle distance between inputs and outputs
     cdist = np.arccos(np.sin(i2*np.pi/180.0)*np.sin(lat*np.pi/180.0) +
         np.cos(i2*np.pi/180.0)*np.cos(lat*np.pi/180.0)*
@@ -34,7 +37,18 @@ def test_coordinates(PROJ):
     # test that forward and backwards conversions are within tolerance
     eps = np.finfo(np.float32).eps
     assert np.all(cdist < eps)
-    assert transform.is_geographic == is_geographic[PROJ]
+    # convert latitude and longitude to and from projection
+    # using the convert function
+    o1, o2 = pyTMD.crs().convert(i1, i2, model['projection'], 'F')
+    lon, lat = pyTMD.crs().convert(o1, o2, model['projection'], 'B')
+    # calculate great circle distance between inputs and outputs
+    cdist = np.arccos(np.sin(i2*np.pi/180.0)*np.sin(lat*np.pi/180.0) +
+        np.cos(i2*np.pi/180.0)*np.cos(lat*np.pi/180.0)*
+        np.cos((lon-i1)*np.pi/180.0),dtype=np.float32)
+    # test that forward and backwards conversions are within tolerance
+    eps = np.finfo(np.float32).eps
+    assert np.all(cdist < eps)
+    assert crs.is_geographic == is_geographic[MODEL]
 
 # PURPOSE: verify coordinate conversions are close for Arctic regions
 def test_arctic_projection():
@@ -43,8 +57,10 @@ def test_arctic_projection():
     i1 = -180.0 + 360.0*np.random.rand(N)
     i2 = 60.0 + 30.0*np.random.rand(N)
     # convert latitude and longitude to and from projection
-    o1, o2 = pyTMD.crs().convert(i1,i2,'AEDNorth','F')
-    lon, lat = pyTMD.crs().convert(o1,o2,'AEDNorth','B')
+    model = pyTMD.models.elevation['AOTIM-5-2018']
+    crs = pyTMD.crs().get(model['projection'])
+    o1, o2 = crs.transform(i1, i2, direction='FORWARD')
+    lon, lat = crs.transform(o1, o2, direction='INVERSE')
     # calculate great circle distance between inputs and outputs
     cdist = np.arccos(np.sin(i2*np.pi/180.0)*np.sin(lat*np.pi/180.0) +
         np.cos(i2*np.pi/180.0)*np.cos(lat*np.pi/180.0)*

@@ -14,6 +14,8 @@ The available examples include:
     Plots a weekly forecast of tidal displacements at a given location
 - Harmonic Constants Solver |github solve| |nbviewer solve|
     Solves for the amplitude and phase of harmonic constituents at a given location
+- Antarctic Cotidal Chart Mapper |github cotidal| |nbviewer cotidal|
+    Plot the cotidal charts for selected constituents around Antarctica
 - Antarctic Tidal Amplitudes Mapper |github range| |nbviewer range|
     Plot the total combined tidal amplitude for all constituents around Antarctica
 - Arctic Ocean Tide Mapper |github arctic| |nbviewer arctic|
@@ -42,6 +44,12 @@ The available examples include:
 
 .. |nbviewer solve| image:: https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg
    :target: https://nbviewer.jupyter.org/github/tsutterley/pyTMD/blob/main/notebooks/Solve\ Synthetic\ Tides.ipynb
+
+.. |github cotidal| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github
+   :target: https://github.com/tsutterley/pyTMD/blob/main/notebooks/Plot\ Antarctic\ Cotidal\ Charts.ipynb
+
+.. |nbviewer cotidal| image:: https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg
+   :target: https://nbviewer.jupyter.org/github/tsutterley/pyTMD/blob/main/notebooks/Plot\ Antarctic\ Cotidal\ Charts.ipynb
 
 .. |github currents| image:: https://img.shields.io/badge/GitHub-view-6f42c1?style=flat&logo=Github
    :target: https://github.com/tsutterley/pyTMD/blob/main/notebooks/Plot\ Antarctic\ Tidal\ Currents.ipynb

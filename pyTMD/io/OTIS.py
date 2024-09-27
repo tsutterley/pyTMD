@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -17,7 +17,6 @@ INPUTS:
     ilat: latitude to interpolate
     grid_file: grid file for model
     model_file: model file containing each constituent
-    EPSG: projection of tide model data
 
 OPTIONS:
     type: tidal variable to run
@@ -59,6 +58,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 09/2024: using new JSON dictionary format for model projections
     Updated 08/2024: revert change and assume crop bounds are projected
     Updated 07/2024: added crop and bounds keywords for trimming model data
         convert the crs of bounds when cropping model data
@@ -126,7 +126,6 @@ import copy
 import struct
 import logging
 import pathlib
-import warnings
 import numpy as np
 import scipy.interpolate
 import pyTMD.crs
@@ -171,7 +170,7 @@ def extract_constants(
         ilat: np.ndarray,
         grid_file: str | pathlib.Path | None = None,
         model_file: str | pathlib.Path | list | None = None,
-        EPSG: str | int | None = None,
+        projection: dict | str | int | None = None,
         **kwargs
     ):
     """
@@ -191,7 +190,7 @@ def extract_constants(
         grid file for model
     model_file: str, pathlib.Path, list or NoneType, default None
         model file containing each constituent
-    EPSG: str or NoneType, default None,
+    projection: str or NoneType, default None,
         projection of tide model data
     type: str, default 'z'
         Tidal variable to read
@@ -250,8 +249,8 @@ def extract_constants(
         EXTRAPOLATE='extrapolate',CUTOFF='cutoff',GRID='grid')
     for old,new in deprecated_keywords.items():
         if old in kwargs.keys():
-            warnings.warn(f"""Deprecated keyword argument {old}.
-                Changed to '{new}'""", DeprecationWarning)
+            logging.warning(f"""Deprecated keyword argument {old}.
+                Changed to '{new}'""")
             # set renamed argument to not break workflows
             kwargs[new] = copy.copy(kwargs[old])
 
@@ -279,9 +278,9 @@ def extract_constants(
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
     # run wrapper function to convert coordinate systems of input lat/lon
-    transformer = pyTMD.crs().get(EPSG)
-    x,y = transformer.transform(ilon, ilat, direction='FORWARD')
-    is_geographic = transformer.is_geographic
+    crs = pyTMD.crs().get(projection)
+    x,y = crs.transform(ilon, ilat, direction='FORWARD')
+    is_geographic = crs.is_geographic
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
@@ -515,7 +514,7 @@ def extract_constants(
 def read_constants(
         grid_file: str | pathlib.Path | None = None,
         model_file: str | pathlib.Path | list | None = None,
-        EPSG: str | int | None = None,
+        projection: dict | str | int | None = None,
         **kwargs
     ):
     """
@@ -527,7 +526,7 @@ def read_constants(
         grid file for model
     model_file: str, pathlib.Path, list or NoneType, default None
         model file containing each constituent
-    EPSG: str or NoneType, default None,
+    projection: str, dict or NoneType, default None,
         projection of tide model data
     type: str, default 'z'
         Tidal variable to read
@@ -586,9 +585,9 @@ def read_constants(
     dy = yi[1] - yi[0]
 
     # run wrapper function to convert coordinate systems
-    transformer = pyTMD.crs().get(EPSG)
+    crs = pyTMD.crs().get(projection)
     # if global: extend limits
-    is_geographic = transformer.is_geographic
+    is_geographic = crs.is_geographic
     is_global = False
 
     # crop mask and bathymetry data to (buffered) bounds
@@ -653,9 +652,9 @@ def read_constants(
         cons = [read_constituents(m)[0].pop() for m in model_file]
     else:
         cons,_ = read_constituents(model_file, grid=kwargs['grid'])
-    # save output constituents
+    # save output constituents and coordinate reference system
     constituents = pyTMD.io.constituents(x=xi, y=yi,
-        bathymetry=bathymetry.data, mask=mask)
+        bathymetry=bathymetry.data, mask=mask, crs=crs)
 
     # read each model constituent
     for i,c in enumerate(cons):
@@ -720,7 +719,6 @@ def interpolate_constants(
         ilon: np.ndarray,
         ilat: np.ndarray,
         constituents,
-        EPSG: str | int | None = None,
         **kwargs
     ):
     """
@@ -737,8 +735,6 @@ def interpolate_constants(
         latitude to interpolate
     constituents: obj
         Tide model constituents (complex form)
-    EPSG: str or NoneType, default None,
-        projection of tide model data
     type: str, default 'z'
         Tidal variable to read
 
@@ -782,10 +778,9 @@ def interpolate_constants(
     # adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
-    # run wrapper function to convert coordinate systems of input lat/lon
-    transformer = pyTMD.crs().get(EPSG)
-    x,y = transformer.transform(ilon, ilat)
-    is_geographic = transformer.is_geographic
+    # convert coordinate systems of input lat/lon
+    x,y = constituents.crs.transform(ilon, ilat)
+    is_geographic = constituents.crs.is_geographic
     # adjust longitudinal convention of input latitude and longitude
     # to fit tide model convention
     if (np.min(x) < np.min(xi)) & is_geographic:

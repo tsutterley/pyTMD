@@ -11,7 +11,7 @@ CALLING SEQUENCE:
 INPUTS:
     i1: longitude ('F') or projection easting x ('B')
     i2: latitude ('F') or projection northing y ('B')
-    PROJ: spatial reference system code for coordinate transformations
+    PROJ: spatial reference system for coordinate transformations
     BF: backwards ('B') or forward ('F') translations
 
 OPTIONS:
@@ -31,6 +31,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2024: added function for idealized Arctic Azimuthal projection
+        complete refactor to use JSON dictionary format for model projections
     Updated 07/2024: added function to get the CRS transform
     Updated 05/2024: make subscriptable and allow item assignment
     Updated 04/2024: use wrapper to importlib for optional dependencies
@@ -83,7 +84,7 @@ class crs:
     def convert(self,
             i1: np.ndarray,
             i2: np.ndarray,
-            PROJ: str,
+            PROJ: str | dict,
             BF: str,
             EPSG: int | str = 4326
         ):
@@ -96,8 +97,8 @@ class crs:
             Input x-coordinates
         i2: np.ndarray
             Input y-coordinates
-        PROJ: str
-            Spatial reference system code for coordinate transformations
+        PROJ: str or dict
+            Spatial reference system for coordinate transformations
         BF: str
             Direction of transformation
 
@@ -115,65 +116,37 @@ class crs:
         """
         # name of the projection
         self.name = PROJ
-        # set the transform and transform direction
-        self.get(PROJ, EPSG=EPSG)
+        # get the CRS and transform direction
+        self.get(PROJ)
         self._direction = BF[0].upper()
         # run conversion program and return values
-        return self.transform(i1, i2)
+        return self.transform(i1, i2, EPSG=EPSG)
 
     # PURPOSE: try to get the projection information
-    def get(self, PROJ: str, EPSG: int | str = 4326):
+    def get(self, PROJ: str | dict):
         """
-        Tries to get the CRS transformer for given values
+        Tries to get the coordinate reference system
 
         Parameters
         ----------
-        PROJ: str
-            Spatial reference system code for coordinate transformations
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-
-        Returns
-        -------
-        o1: np.ndarray
-            Output transformed x-coordinates
-        o2: np.ndarray
-            Output transformed y-coordinates
+        PROJ: str or dict
+            Spatial reference system for coordinate transformations
         """
-        # name of the projection
-        self.name = PROJ
-        # python dictionary with named conversion functions
-        transforms = {}
-        transforms['3031'] = self._EPSG3031
-        transforms['3413'] = self._EPSG3413
-        transforms['CATS2008'] = self._CATS2008
-        transforms['3976'] = self._EPSG3976
-        transforms['PSNorth'] = self._PSNorth
-        transforms['AEDNorth'] = self._AEDNorth
-        transforms['4326'] = self._EPSG4326
-        # check that PROJ for conversion was entered correctly
-        # run named conversion program and return values
+        # get the coordinate reference system
         try:
-            transforms[PROJ](EPSG)
-        except KeyError as exc:
-            pass
-        else:
-            # return the output variables
-            return self
-        # try changing the projection using a custom projection
-        # run custom conversion program and return values
-        try:
-            self._custom(PROJ, EPSG=EPSG)
+            self.crs = self.from_input(PROJ)
+            self.name = self.crs.name
         except Exception as exc:
             pass
         else:
             return self
         # projection not found or available
-        raise Exception(f'PROJ: {PROJ} conversion function not found')
+        raise pyproj.exceptions.CRSError
 
     def transform(self,
             i1: np.ndarray,
             i2: np.ndarray,
+            EPSG: int | str = 4326,
             **kwargs):
         """
         Performs Coordinates Reference System (CRS) transformations
@@ -184,6 +157,8 @@ class crs:
             Input x-coordinates
         i2: np.ndarray
             Input y-coordinates
+        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
+            input (``'F'``) or output (``'B'``) coordinate system
         kwargs: dict
             Keyword arguments for the transformation
 
@@ -196,38 +171,32 @@ class crs:
         """
         # set the direction of the transformation
         kwargs.setdefault('direction', self.direction)
-        if (self.name == 'PSNorth') and (self.direction.name == 'FORWARD'):
-            # convert input coordinate reference system to lat/lon
-            lon, lat = self.transformer.transform(i1, i2, **kwargs)
-            # convert lat/lon to (idealized) Polar-Stereographic x/y
-            o1 = (90.0 - lat)*111.7*np.cos(lon/180.0*np.pi)
-            o2 = (90.0 - lat)*111.7*np.sin(lon/180.0*np.pi)
-        elif (self.name == 'PSNorth') and (self.direction.name == 'INVERSE'):
-            # convert (idealized) Polar-Stereographic x/y to lat/lon
-            lon = np.arctan2(i2, i1)*180.0/np.pi
-            lat = 90.0 - np.sqrt(i1**2 + i2**2)/111.7
-            # adjust longitudes to be -180:180
-            ii, = np.nonzero(lon < 0)
-            lon[ii] += 360.0
-            # convert to output coordinate reference system
-            o1, o2 = self.transformer.transform(lon, lat, **kwargs)
-        else:
-            # convert coordinate reference system
-            o1, o2 = self.transformer.transform(i1, i2, **kwargs)
+        # get the coordinate reference system and transform
+        source_crs = self.from_input(EPSG)
+        self.transformer = pyproj.Transformer.from_crs(
+            source_crs, self.crs, always_xy=True)
+        # convert coordinate reference system
+        o1, o2 = self.transformer.transform(i1, i2, **kwargs)
         # return the transformed coordinates
         return (o1, o2)
 
     # PURPOSE: try to get the projection information
-    def from_input(self, PROJECTION: int | str):
+    def from_input(self, PROJECTION: int | str | dict):
         """
         Attempt to retrieve the Coordinate Reference System
-        for an input code
 
         Parameters
         ----------
-        PROJECTION: int or str
-            Coordinate Reference System code
+        PROJECTION: int, str or dict
+            Coordinate Reference System
         """
+        # coordinate reference system dictoinary
+        try:
+            CRS = pyproj.CRS.from_user_input(PROJECTION)
+        except (ValueError, pyproj.exceptions.CRSError):
+            pass
+        else:
+            return CRS
         # EPSG projection code
         try:
             CRS = pyproj.CRS.from_epsg(int(PROJECTION))
@@ -244,153 +213,6 @@ class crs:
             return CRS
         # no projection can be made
         raise pyproj.exceptions.CRSError
-
-    def _EPSG3031(self, EPSG: int | str = 4326):
-        """
-        Transform for models in EPSG:3031 (Antarctic Polar Stereographic)
-
-        Parameters
-        ----------
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # coordinate reference system information
-        crs1 = self.from_input(EPSG)
-        crs2 = pyproj.CRS.from_user_input({'proj':'stere',
-            'lat_0':-90, 'lat_ts':-71, 'lon_0':0, 'x_0':0., 'y_0':0.,
-            'ellps':'WGS84', 'datum':'WGS84', 'units':'km'})
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # wrapper function for models in EPSG 3413 (Sea Ice Polar Stereographic North)
-    def _EPSG3413(self, EPSG: int | str = 4326):
-        """
-        Transform for models in EPSG:3413 (Sea Ice Polar Stereographic North)
-
-        Parameters
-        ----------
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # coordinate reference system information
-        crs1 = self.from_input(EPSG)
-        crs2 = pyproj.CRS.from_user_input({'proj':'stere',
-            'lat_0':90, 'lat_ts':70, 'lon_0':-45, 'x_0':0., 'y_0':0.,
-            'ellps':'WGS84', 'datum':'WGS84', 'units':'km'})
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # wrapper function for CATS2008 tide models
-    def _CATS2008(self, EPSG: int | str = 4326):
-        """
-        Transform for Circum-Antarctic Tidal Simulation models
-
-        Parameters
-        ----------
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # coordinate reference system information
-        crs1 = self.from_input(EPSG)
-        crs2 = pyproj.CRS.from_user_input({'proj':'stere',
-            'lat_0':-90, 'lat_ts':-71, 'lon_0':-70, 'x_0':0., 'y_0':0.,
-            'ellps':'WGS84', 'datum':'WGS84', 'units':'km'})
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # wrapper function for models in EPSG 3976 (NSIDC Sea Ice Stereographic South)
-    def _EPSG3976(self, EPSG: int | str = 4326):
-        """
-        Transform for models in EPSG:3976 (Sea Ice Polar Stereographic South)
-
-        Parameters
-        ----------
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # coordinate reference system information
-        crs1 = self.from_input(EPSG)
-        crs2 = pyproj.CRS.from_user_input({'proj':'stere',
-            'lat_0':-90, 'lat_ts':-70, 'lon_0':0, 'x_0':0., 'y_0':0.,
-            'ellps':'WGS84', 'datum':'WGS84', 'units':'km'})
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # function for models in (idealized) PSNorth projection
-    def _PSNorth(self, EPSG: int | str = 4326):
-        """
-        Transform for idealized Arctic Polar Stereographic models
-
-        Parameters
-        ----------
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # projections for converting to and from input EPSG
-        crs1 = self.from_input(EPSG)
-        crs2 = pyproj.CRS.from_epsg(4326)
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # function for models in (idealized) Azimuthal Equidistant projection
-    def _AEDNorth(self, EPSG: int | str = 4326):
-        """
-        Transform for models in idealized Azimuthal Equidistant projections
-
-        Parameters
-        ----------
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # projections for converting to and from input EPSG
-        crs1 = self.from_input(EPSG)
-        R = 111700.0*180.0/np.pi
-        crs2 = pyproj.CRS.from_user_input({'proj':'aeqd','lat_0':90,
-            'lon_0':270,'x_0':0.,'y_0':0.,'ellps':'sphere',
-            'R':R,'units':'km'})
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # wrapper function to pass lat/lon values or convert if EPSG
-    def _EPSG4326(self, EPSG: int | str = 4326):
-        """
-        Transform for models in EPSG:4326 (WGS84 Latitude/Longitude)
-
-        Parameters
-        ----------
-        EPSG: int, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        crs1 = self.from_input(EPSG)
-        crs2 = pyproj.CRS.from_epsg(4326)
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
-
-    # wrapper function for using custom projections
-    def _custom(self, PROJ: int | str, EPSG: int | str = 4326):
-        """
-        Transform for models in a custom projection
-
-        Parameters
-        ----------
-        PROJ: int or str
-            Spatial reference system code for coordinate transformations
-        EPSG: int or str, default 4326 (WGS84 Latitude/Longitude)
-            input (``'F'``) or output (``'B'``) coordinate system
-        """
-        # coordinate reference system information
-        crs1 = self.from_input(EPSG)
-        crs2 = self.from_input(PROJ)
-        self.transformer = pyproj.Transformer.from_crs(crs1, crs2,
-            always_xy=True)
-        return self
 
     @property
     def direction(self):
@@ -409,10 +231,7 @@ class crs:
         """
         Check if the coordinate reference system is geographic
         """
-        if (self.name == 'PSNorth'):
-            return False
-        else:
-            return self.transformer.target_crs.is_geographic
+        return self.crs.is_geographic
 
     def __str__(self):
         """String representation of the ``crs`` object

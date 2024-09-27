@@ -21,6 +21,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 09/2024: drop support for the ascii definition file format
         use model class attributes for file format and corrections
+        using new JSON dictionary format for model projections
     Updated 07/2024: add parametrize over cropping the model fields
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored compute functions into compute.py
@@ -244,12 +245,9 @@ class Test_CATS2008:
     # PURPOSE: Tests that interpolated results are comparable to AntTG database
     def test_compare_CATS2008(self):
         # model parameters for CATS2008
-        modelpath = filepath.joinpath('CATS2008')
-        grid_file = modelpath.joinpath('grid_CATS2008')
-        model_file = modelpath.joinpath('hf.CATS2008.out')
-        GRID = 'OTIS'
-        EPSG = 'CATS2008'
-        TYPE = 'z'
+        model = pyTMD.io.model(filepath).elevation('CATS2008')
+        grid_file = model.grid_file
+        model_file = model.model_file
 
         # open Antarctic Tide Gauge (AntTG) database
         AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
@@ -295,8 +293,8 @@ class Test_CATS2008:
 
         # extract amplitude and phase from tide model
         amp,ph,D,cons = pyTMD.io.OTIS.extract_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, type=TYPE,
-            method='spline', grid=GRID)
+            station_lat, grid_file, model_file, model['projection'],
+            type=model['type'], method='spline', grid=model['format'])
         # reorder constituents of model and convert amplitudes to cm
         model_amp = np.ma.zeros((antarctic_stations,len(constituents)))
         model_ph = np.ma.zeros((antarctic_stations,len(constituents)))
@@ -333,19 +331,18 @@ class Test_CATS2008:
 
     # parameterize type: heights versus currents
     parameters = []
-    parameters.append(dict(type='z',model='hf.CATS2008.out',grid='grid_CATS2008'))
-    parameters.append(dict(type='U',model='uv.CATS2008.out',grid='grid_CATS2008'))
-    parameters.append(dict(type='V',model='uv.CATS2008.out',grid='grid_CATS2008'))
+    parameters.append(dict(type='z',model='hf.CATS2008.out'))
+    parameters.append(dict(type='U',model='uv.CATS2008.out'))
+    parameters.append(dict(type='V',model='uv.CATS2008.out'))
     @pytest.mark.parametrize("parameters", parameters)
     # PURPOSE: Tests that interpolated results are comparable to Matlab program
     def test_verify_CATS2008(self, parameters):
         # model parameters for CATS2008
-        modelpath = filepath.joinpath('CATS2008')
-        grid_file = modelpath.joinpath(parameters['grid'])
+        model = pyTMD.io.model(filepath).current('CATS2008')
+        modelpath = model.grid_file.parent
+        grid_file = model.grid_file
         model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
-        GRID = 'OTIS'
-        EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
         AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
@@ -392,8 +389,8 @@ class Test_CATS2008:
 
         # extract amplitude and phase from tide model
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, type=TYPE,
-            method='spline', grid=GRID)
+            station_lat, grid_file, model_file, model['projection'],
+            type=TYPE, method='spline', grid=model['format'])
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
 
@@ -436,9 +433,9 @@ class Test_CATS2008:
             # predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
             tide.data[:] = pyTMD.predict.time_series(tide_time, hc, c,
-                deltat=deltat, corrections=GRID)
+                deltat=deltat, corrections=model['corrections'])
             minor = pyTMD.predict.infer_minor(tide_time, hc, c,
-                deltat=deltat, corrections=GRID)
+                deltat=deltat, corrections=model['corrections'])
             tide.data[:] += minor.data[:]
 
             # calculate differences between matlab and python version
@@ -452,12 +449,11 @@ class Test_CATS2008:
     # PURPOSE: Tests that tidal ellipse results are comparable to Matlab program
     def test_tidal_ellipse(self):
         # model parameters for CATS2008
-        modelpath = filepath.joinpath('CATS2008')
-        grid_file = modelpath.joinpath('grid_CATS2008')
-        model_file = modelpath.joinpath('uv.CATS2008.out')
+        model = pyTMD.io.model(filepath).current('CATS2008')
+        modelpath = model.grid_file.parent
+        grid_file = model.grid_file
+        model_file = model.model_file['u']
         TYPES = ['U','V']
-        GRID = 'OTIS'
-        EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
         AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
@@ -521,8 +517,9 @@ class Test_CATS2008:
         for TYPE in TYPES:
             # extract amplitude and phase from tide model
             amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon[i],
-                station_lat[i], grid_file, model_file, EPSG, type=TYPE,
-                method='spline', grid=GRID)
+                station_lat[i], grid_file, model_file,
+                model['projection'], type=TYPE,
+                method='spline', grid=model.format)
             # calculate complex phase in radians for Euler's
             cph = -1j*ph*np.pi/180.0
             # calculate constituent oscillation for station
@@ -595,7 +592,7 @@ class Test_CATS2008:
         LAT,LON = (-76.0, -40.0)
         amp,ph,D = pyTMD.io.OTIS.interpolate_constants(
             np.atleast_1d(LON), np.atleast_1d(LAT),
-            constituents, model.projection, type=model.type,
+            constituents, type=model.type,
             method='spline', extrapolate=True)
 
         # calculate complex form of constituent oscillation
@@ -615,20 +612,19 @@ class Test_CATS2008:
     # parameterize type: heights versus currents
     # parameterize interpolation method
     parameters = []
-    parameters.append(dict(type='z',model='hf.CATS2008.out',grid='grid_CATS2008'))
-    parameters.append(dict(type='U',model='uv.CATS2008.out',grid='grid_CATS2008'))
-    parameters.append(dict(type='V',model='uv.CATS2008.out',grid='grid_CATS2008'))
+    parameters.append(dict(type='z',model='hf.CATS2008.out'))
+    parameters.append(dict(type='U',model='uv.CATS2008.out'))
+    parameters.append(dict(type='V',model='uv.CATS2008.out'))
     @pytest.mark.parametrize("parameters", parameters)
     @pytest.mark.parametrize("METHOD", ['spline'])
     # PURPOSE: Tests that interpolated results are comparable
     def test_compare_constituents(self, parameters, METHOD):
         # model parameters for CATS2008
-        modelpath = filepath.joinpath('CATS2008')
-        grid_file = modelpath.joinpath(parameters['grid'])
+        model = pyTMD.io.model(filepath).current('CATS2008')
+        modelpath = model.grid_file.parent
+        grid_file = model.grid_file
         model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
-        GRID = 'OTIS'
-        EPSG = 'CATS2008'
 
         # open Antarctic Tide Gauge (AntTG) database
         AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
@@ -676,18 +672,17 @@ class Test_CATS2008:
 
         # extract amplitude and phase from tide model
         amp1, ph1, D1, c = pyTMD.io.OTIS.extract_constants(station_lon[i],
-            station_lat[i], grid_file, model_file, EPSG, type=TYPE,
-            method=METHOD, grid=GRID)
+            station_lat[i], grid_file, model_file, model['projection'],
+            type=TYPE, method=METHOD, grid=model.format)
         # calculate complex form of constituent oscillation
         hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
         # read complex constituents from tide model
         constituents = pyTMD.io.OTIS.read_constants(grid_file, model_file,
-            EPSG, type=TYPE, grid=GRID)
+            model['projection'], type=TYPE, grid=model.format)
         # interpolate constituents to station coordinates
         amp2, ph2, D2 = pyTMD.io.OTIS.interpolate_constants(station_lon[i],
-            station_lat[i], constituents, EPSG, type=TYPE,
-            method=METHOD)
+            station_lat[i], constituents, type=TYPE, method=METHOD)
         # calculate complex form of constituent oscillation
         hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
@@ -822,19 +817,18 @@ class Test_AOTIM5_2018:
 
     # parameterize type: heights versus currents
     parameters = []
-    parameters.append(dict(type='z',model='h_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='U',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='V',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='z',model='h_Arc5km2018'))
+    parameters.append(dict(type='U',model='UV_Arc5km2018'))
+    parameters.append(dict(type='V',model='UV_Arc5km2018'))
     @pytest.mark.parametrize("parameters", parameters)
     # PURPOSE: Tests that interpolated results are comparable to Matlab program
     def test_verify_AOTIM5_2018(self, parameters):
         # model parameters for AOTIM-5-2018
-        modelpath = filepath.joinpath('Arc5km2018')
-        grid_file = modelpath.joinpath(parameters['grid'])
+        model = pyTMD.io.model(filepath).current('AOTIM-5-2018')
+        modelpath = model.grid_file.parent
+        grid_file = model.grid_file
         model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
-        GRID = 'OTIS'
-        EPSG = 'AEDNorth'
 
         # open Arctic Tidal Current Atlas list of records
         ATLAS = filepath.joinpath('List_of_records.txt')
@@ -869,8 +863,8 @@ class Test_AOTIM5_2018:
 
         # extract amplitude and phase from tide model
         amp,ph,D,c = pyTMD.io.OTIS.extract_constants(station_lon,
-            station_lat, grid_file, model_file, EPSG, type=TYPE,
-            method='spline', grid=GRID)
+            station_lat, grid_file, model_file, model['projection'],
+            type=TYPE, method='spline', grid=model['format'])
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
         # will verify differences between model outputs are within tolerance
@@ -908,9 +902,9 @@ class Test_AOTIM5_2018:
             # predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
             tide.data[:] = pyTMD.predict.time_series(tide_time, hc, c,
-                deltat=deltat, corrections=GRID)
+                deltat=deltat, corrections=model['corrections'])
             minor = pyTMD.predict.infer_minor(tide_time, hc, c,
-                deltat=deltat, corrections=GRID)
+                deltat=deltat, corrections=model['corrections'])
             tide.data[:] += minor.data[:]
 
             # calculate differences between matlab and python version
@@ -924,20 +918,19 @@ class Test_AOTIM5_2018:
     # parameterize type: heights versus currents
     # parameterize interpolation method
     parameters = []
-    parameters.append(dict(type='z',model='h_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='U',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
-    parameters.append(dict(type='V',model='UV_Arc5km2018',grid='grid_Arc5km2018'))
+    parameters.append(dict(type='z',model='h_Arc5km2018'))
+    parameters.append(dict(type='U',model='UV_Arc5km2018'))
+    parameters.append(dict(type='V',model='UV_Arc5km2018'))
     @pytest.mark.parametrize("parameters", parameters)
     @pytest.mark.parametrize("METHOD", ['spline'])
     # PURPOSE: Tests that interpolated results are comparable
     def test_compare_constituents(self, parameters, METHOD):
         # model parameters for AOTIM-5-2018
-        modelpath = filepath.joinpath('Arc5km2018')
-        grid_file = modelpath.joinpath(parameters['grid'])
+        model = pyTMD.io.model(filepath).current('AOTIM-5-2018')
+        modelpath = model.grid_file.parent
+        grid_file = model.grid_file
         model_file = modelpath.joinpath(parameters['model'])
         TYPE = parameters['type']
-        GRID = 'OTIS'
-        EPSG = 'AEDNorth'
 
         # open Arctic Tidal Current Atlas list of records
         ATLAS = filepath.joinpath('List_of_records.txt')
@@ -968,18 +961,17 @@ class Test_AOTIM5_2018:
 
         # extract amplitude and phase from tide model
         amp1,ph1,D1,c = pyTMD.io.OTIS.extract_constants(station_lon[i],
-            station_lat[i], grid_file, model_file, EPSG, type=TYPE,
-            method=METHOD, grid=GRID)
+            station_lat[i], grid_file, model_file, model['projection'],
+            type=TYPE, method=METHOD, grid=model['format'])
         # calculate complex form of constituent oscillation
         hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
         # read complex constituents from tide model
         constituents = pyTMD.io.OTIS.read_constants(grid_file, model_file,
-            EPSG, type=TYPE, grid=GRID)
+            model['projection'], type=TYPE, grid=model['format'])
         # interpolate constituents to station coordinates
         amp2,ph2,D2 = pyTMD.io.OTIS.interpolate_constants(station_lon[i],
-            station_lat[i], constituents, EPSG, type=TYPE,
-            method=METHOD)
+            station_lat[i], constituents, type=TYPE, method=METHOD)
         # calculate complex form of constituent oscillation
         hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
