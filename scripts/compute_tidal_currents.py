@@ -346,7 +346,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide[i], hc, c,
                         deltat=deltat[i], corrections=nodal_corrections,
-                        minor=minor_constituents, frequency=model.frequency)
+                        minor=minor_constituents)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components and reform grid
@@ -362,7 +362,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
             if INFER_MINOR:
                 minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                     deltat=deltat, corrections=nodal_corrections,
-                    minor=minor_constituents, frequency=model.frequency)
+                    minor=minor_constituents)
                 tide[t].data[:] += minor.data[:]
         elif (TYPE == 'time series'):
             tide[t] = np.ma.zeros((nstation,nt), fill_value=FILL_VALUE)
@@ -376,7 +376,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
                 if INFER_MINOR:
                     MINOR = pyTMD.predict.infer_minor(ts.tide, HC, c,
                         deltat=deltat, corrections=nodal_corrections,
-                        minor=minor_constituents, frequency=model.frequency)
+                        minor=minor_constituents)
                 else:
                     MINOR = np.ma.zeros_like(TIDE)
                 # add major and minor components

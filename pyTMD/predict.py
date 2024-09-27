@@ -57,6 +57,7 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
+import logging
 import numpy as np
 import pyTMD.arguments
 import pyTMD.astro
@@ -310,11 +311,8 @@ def infer_minor(
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
-    frequency: str, default 'short'
-        frequency of tidal constituents to infer
-
-            - 'short': diurnal and semidiurnal constituents
-            - 'long': long-period constituents
+    raise_exception: bool, default False
+        Raise a ``ValueError`` if major constituents are not found
     minor: list or None, default None
         tidal constituent IDs
 
@@ -343,14 +341,13 @@ def infer_minor(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
-    kwargs.setdefault('frequency', 'short')
+    kwargs.setdefault('raise_exception', False)
     # list of minor constituents
     kwargs.setdefault('minor', None)
     # infer the minor tidal constituents
-    if kwargs['frequency'] in ('short',):
-        dh = _infer_short_period(t, zmajor, constituents, **kwargs)
-    elif kwargs['frequency'] in ('long',):
-        dh = _infer_long_period(t, zmajor, constituents, **kwargs)
+    dh = 0.0
+    dh += _infer_short_period(t, zmajor, constituents, **kwargs)
+    dh += _infer_long_period(t, zmajor, constituents, **kwargs)
     # return the inferred values
     return dh
 
@@ -400,6 +397,7 @@ def _infer_short_period(
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('raise_exception', False)
     # list of minor constituents
     kwargs.setdefault('minor', None)
     # number of constituents
@@ -421,8 +419,11 @@ def _infer_short_period(
             z[:,i] = zmajor[:,j1]
             nz += 1
 
-    if (nz < 6):
+    # raise exception or log error
+    if (nz < 6) and kwargs['raise_exception']:
         raise Exception('Not enough constituents for inference')
+    elif (nz < 6):
+        logging.debug('Not enough constituents for inference')
 
     # complete list of minor constituents
     minor_constituents = ['2q1', 'sigma1', 'rho1', 'm1b', 'm1',
@@ -528,6 +529,7 @@ def _infer_long_period(
         `doi: 10.1002/2013JB010830 <https://doi.org/10.1002/2013JB010830>`_
     """
     # set default keyword arguments
+    kwargs.setdefault('raise_exception', False)
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
     # list of minor constituents
@@ -558,8 +560,11 @@ def _infer_long_period(
             z[:,i] = zmajor[:,j1]/amajor[i]
             nz += 1
 
-    if (nz < 3):
+    # raise exception or log error
+    if (nz < 3) and kwargs['raise_exception']:
         raise Exception('Not enough constituents for inference')
+    elif (nz < 3):
+        logging.debug('Not enough constituents for inference')
 
     # complete list of minor constituents
     minor_constituents = ['sa', 'ssa', 'sta', 'msm', 'msf',

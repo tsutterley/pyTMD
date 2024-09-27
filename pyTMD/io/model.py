@@ -11,7 +11,6 @@ UPDATE HISTORY:
         add file_format and nodal correction attributes
         export database as a dataclass for easier access
         added variable name and descriptions for long period tides
-        added attribute for model bulk frequencies for long period tides
     Updated 08/2024: added attribute for minor constituents to infer
         allow searching over iterable glob strings in definition files
         added option to try automatic detection of definition file format
@@ -301,16 +300,6 @@ class model:
             return 'perth3'
         else:
             return part1
-
-    @property
-    def frequency(self) -> str:
-        """
-        Returns the frequency type for the model
-        """
-        if self.variable in ('tide_lpe',):
-            return 'long'
-        else:
-            return 'short'
 
     @property
     def file_format(self) -> str:
