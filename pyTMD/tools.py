@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 tools.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (09/2024)
 Jupyter notebook, user interface and plotting tools
 
 PYTHON DEPENDENCIES:
@@ -17,6 +17,8 @@ PYTHON DEPENDENCIES:
         https://github.com/matplotlib/matplotlib
 
 UPDATE HISTORY:
+    Updated 09/2024: removed widget for ATLAS following database update
+        added widget for setting constituent to plot in a cotidal chart
     Updated 07/2024: renamed format for netcdf to ATLAS-netcdf
     Updated 04/2024: use wrapper to importlib for optional dependencies
     Updated 12/2023: pass through VBox and HBox
@@ -83,16 +85,15 @@ class widgets:
             style=self.style,
         )
 
-        # dropdown menu for setting ATLAS format model
-        atlas_list = ['OTIS','ATLAS-netcdf']
-        self.atlas = ipywidgets.Dropdown(
-            options=atlas_list,
-            value='ATLAS-netcdf',
-            description='ATLAS:',
+        # dropdown menu for setting model constituents
+        constituents_list = ['q1','o1','p1','k1','n2','m2','s2','k2','s1']
+        self.constituents = ipywidgets.Dropdown(
+            options=constituents_list,
+            value='m2',
+            description='Constituents:',
             disabled=False,
             style=self.style,
         )
-        self.atlas.layout.display = 'none'
 
         # checkbox for setting if tide files are compressed
         self.compress = ipywidgets.Checkbox(
@@ -109,16 +110,6 @@ class widgets:
             disabled=False,
             style=self.style,
         )
-
-        # watch widgets for changes
-        self.model.observe(self.set_atlas)
-
-    # function for setting available map layers
-    def set_atlas(self, sender):
-        """function for updating ATLAS widget visibility
-        """
-        if (self.model.value in pyTMD.io.model.ATLAS()):
-            self.atlas.layout.display = 'inline-flex'
 
 # define projections for ipyleaflet tiles
 projections = dict(

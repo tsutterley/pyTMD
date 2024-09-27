@@ -592,7 +592,7 @@ class Test_CATS2008:
         LAT,LON = (-76.0, -40.0)
         amp,ph,D = pyTMD.io.OTIS.interpolate_constants(
             np.atleast_1d(LON), np.atleast_1d(LAT),
-            constituents, model.projection, type=model.type,
+            constituents, type=model.type,
             method='spline', extrapolate=True)
 
         # calculate complex form of constituent oscillation
