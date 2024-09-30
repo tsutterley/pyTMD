@@ -34,7 +34,13 @@ Calling Sequence
 
 .. autofunction:: pyTMD.predict._infer_short_period
 
+.. autofunction:: pyTMD.predict._infer_semi_diurnal
+
+.. autofunction:: pyTMD.predict._infer_diurnal
+
 .. autofunction:: pyTMD.predict._infer_long_period
+
+.. autofunction:: pyTMD.predict._body_tide_love_numbers
 
 .. autofunction:: pyTMD.predict.equilibrium_tide
 
