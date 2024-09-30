@@ -485,9 +485,6 @@ def _infer_short_period(
         zmin[:,17] = t2[0]*z[:,7] + t2[1]*z[:,4] + t2[2]*z[:,5]# t2
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
-    elif kwargs['corrections'] in ('GOT',):
-        zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
-        zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 
     # load the nodal corrections for minor constituents
     # convert time to Modified Julian Days (MJD)
