@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (09/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,7 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
-    Updated 09/2024: add node to list of known constituent names
+    Updated 09/2024: add more known constituents to string parser function
     Updated 08/2024: add GOT prime nomenclature for 3rd degree constituents
     Updated 07/2024: add function to parse tidal constituents from strings
     Updated 05/2024: make subscriptable and allow item assignment
@@ -211,13 +211,13 @@ class constituents:
         # list of tidal constituents (not all are included in tidal program)
         # include negative look-behind and look-ahead for complex cases
         cindex = [r'(?<!s)sa','ssa','mm','msf',r'mt(?!m)(?!ide)','mf','alpha1',
-            '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)o1','tau1',
-            'm1','chi1','pi1','p1','s1','k1','psi1','phi1','theta1','j1',
+            '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)(?<!s)o1','tau1',
+            'm1','chi1','pi1','p1','s1','k1','psi1','phi1','beta1','theta1','j1',
             'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
             'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
-            'r2','k2','eta2','mns2','2sm2','m3','mk3','s3','mn4','m4',
-            'ms4','mk4',r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2',
-            'msqm','mtm',r'(?<!m)n4','eps2','z0','node']
+            'alpha2','beta2','delta2','r2','k2',r'(?<!b)eta2','mns2','2sm2','m3',
+            'mk3','s3','mn4','m4','ms4','mk4','so1',r'(?<!m)s4','s5','m6','s6',
+            's7','s8','m8','mks2','msqm','mtm',r'(?<!m)n4','eps2','ups1','z0','node']
         # compile regular expression
         # adding GOT prime nomenclature for 3rd degree constituents
         rx = re.compile(r'(' + '|'.join(cindex) + r')(\')?', re.IGNORECASE)
@@ -225,8 +225,11 @@ class constituents:
         if rx.search(constituent):
             return "".join(rx.findall(constituent)[0]).lower()
         # known remapped cases
-        mapping = [('2n','2n2'), ('e2','eps2'), ('la2','lambda2'),
-            ('sig1','sigma1')]
+        mapping = [('2n','2n2'), ('alp1', 'alpha1'), ('alp2', 'alpha2'),
+            ('bet1', 'beta1'), ('bet2', 'beta2'), ('e2','eps2'),
+            ('del2', 'delta2'), ('gam2', 'gamma2'),
+            ('la2','lambda2'), ('lam2','lambda2'),
+            ('sig1','sigma1'), ('the1', 'theta1')]
         # iterate over known remapped cases
         for m in mapping:
             # check if tide model is a remapped case

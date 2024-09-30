@@ -23,6 +23,7 @@ UPDATE HISTORY:
     Updated 09/2024: verify order of minor constituents to infer
         fix to use case insensitive assertions of string argument values
         split infer minor function into short and long period calculations
+        add two new functions to infer semi-diurnal and diurnal tides separately
     Updated 08/2024: minor nodal angle corrections in radians to match arguments
         include inference of eps2 and eta2 when predicting from GOT models
         add keyword argument to allow inferring specific minor constituents
@@ -70,7 +71,10 @@ __all__ = [
     "time_series",
     "infer_minor",
     "_infer_short_period",
+    "_infer_semi_diurnal",
+    "_infer_diurnal",
     "_infer_long_period",
+    "_body_tide_love_numbers",
     "equilibrium_tide",
     "load_pole_tide",
     "ocean_pole_tide",
@@ -314,7 +318,9 @@ def infer_minor(
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
     minor: list or None, default None
-        tidal constituent IDs
+        tidal constituent IDs of minor constituents for inferrence
+    raise_exception: bool, default False
+        Raise a ``ValueError`` if major constituents are not found
 
     Returns
     -------
@@ -346,7 +352,13 @@ def infer_minor(
     kwargs.setdefault('minor', None)
     # infer the minor tidal constituents
     dh = 0.0
-    dh += _infer_short_period(t, zmajor, constituents, **kwargs)
+    # infer short-period tides for minor constituents
+    if kwargs['corrections'] in ('GOT',):
+        dh += _infer_semi_diurnal(t, zmajor, constituents, **kwargs)
+        dh += _infer_diurnal(t, zmajor, constituents, **kwargs)
+    else:
+        dh += _infer_short_period(t, zmajor, constituents, **kwargs)
+    # infer long-period tides for minor constituents
     dh += _infer_long_period(t, zmajor, constituents, **kwargs)
     # return the inferred values
     return dh
@@ -375,7 +387,9 @@ def _infer_short_period(
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
     minor: list or None, default None
-        tidal constituent IDs
+        tidal constituent IDs of minor constituents for inferrence
+    raise_exception: bool, default False
+        Raise a ``ValueError`` if major constituents are not found
 
     Returns
     -------
@@ -471,9 +485,6 @@ def _infer_short_period(
         zmin[:,17] = t2[0]*z[:,7] + t2[1]*z[:,4] + t2[2]*z[:,5]# t2
         zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
         zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
-    elif kwargs['corrections'] in ('GOT',):
-        zmin[:,18] = 0.53285*z[:,8] - 0.03304*z[:,4]# eps2
-        zmin[:,19] = -0.0034925*z[:,5] + 0.0831707*z[:,7]# eta2
 
     # load the nodal corrections for minor constituents
     # convert time to Modified Julian Days (MJD)
@@ -490,16 +501,15 @@ def _infer_short_period(
     # return the inferred values
     return dh
 
-# PURPOSE: infer long-period tides for minor constituents
-def _infer_long_period(
+def _infer_semi_diurnal(
         t: float | np.ndarray,
         zmajor: np.ndarray,
         constituents: list | np.ndarray,
         **kwargs
     ):
     """
-    Infer the tidal values for long-period minor constituents
-    using their relation with major constituents [1]_ [2]_
+    Infer the tidal values for semi-diurnal minor constituents
+    using their relation with major constituents [1]_ [2]_ [3]_
 
     Parameters
     ----------
@@ -512,7 +522,301 @@ def _infer_long_period(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     minor: list or None, default None
+        tidal constituent IDs of minor constituents for inferrence
+    raise_exception: bool, default False
+        Raise a ``ValueError`` if major constituents are not found
+
+    Returns
+    -------
+    dh: np.ndarray
+        tidal time series for minor constituents
+
+    References
+    ----------
+    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
+        spectroscopy and prediction," *Philosophical Transactions of the
+        Royal Society of London. Series A, Mathematical and Physical
+        Sciences*, 259(1105), 533--581, (1966).
+        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
+    .. [2] R. D. Ray, "A global ocean tide model from
+        Topex/Poseidon altimetry: GOT99.2",
+        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
+    .. [3] D. E. Cartwright and A. C. Edden,
+        "Corrected Tables of Tidal Harmonics,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('raise_exception', False)
+    # list of minor constituents
+    kwargs.setdefault('minor', None)
+    # number of constituents
+    npts, nc = np.shape(zmajor)
+    nt = len(np.atleast_1d(t))
+    # number of data points to calculate if running time series/drift/map
+    n = nt if ((npts == 1) & (nt > 1)) else npts
+    # allocate for output elevation correction
+    dh = np.ma.zeros((n))
+    # major constituents used for inferring semi-diurnal minor tides
+    cindex = ['n2', 'm2', 's2']
+    # angular frequencies for major constituents
+    omajor = pyTMD.arguments.frequency(cindex, **kwargs)
+    # Cartwright and Edden potential amplitudes for major constituents
+    amajor = np.zeros((3))
+    amajor[0] = 0.121006# n2
+    amajor[1] = 0.631931# m2
+    amajor[2] = 0.294019# s2
+    # re-order major tides to correspond to order of cindex
+    z = np.ma.zeros((n,len(cindex)), dtype=np.complex64)
+    nz = 0
+    for i,c in enumerate(cindex):
+        j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
+        if j:
+            j1, = j
+            z[:,i] = zmajor[:,j1]/amajor[i]
+            nz += 1
+
+    # raise exception or log error
+    if (nz < 3) and kwargs['raise_exception']:
+        raise Exception('Not enough constituents for inference')
+    elif (nz < 3):
+        logging.debug('Not enough constituents for inference')
+        return 0.0
+
+    # complete list of minor constituents
+    minor_constituents = ['eps2', '2n2', 'mu2', 'nu2', 'gamma2',
+        'alpha2', 'beta2', 'delta2', 'lambda2', 'l2', 't2',
+        'r2', 'k2', 'eta2']
+    # possibly reduced list of minor constituents
+    minor = kwargs['minor'] or minor_constituents
+    # only add minor constituents that are not on the list of major values
+    minor_indices = [i for i,m in enumerate(minor_constituents)
+        if (m not in constituents) and (m in minor)]
+
+    # angular frequencies for inferred constituents
+    omega = pyTMD.arguments.frequency(minor_constituents, **kwargs)
+    # Cartwright and Edden potential amplitudes for inferred constituents
+    amin = np.zeros((14))
+    amin[0] = 0.004669# eps2
+    amin[1] = 0.016011# 2n2
+    amin[2] = 0.019316# mu2
+    amin[3] = 0.022983# nu2
+    amin[4] = 0.001902# gamma2
+    amin[5] = 0.002178# alpha2
+    amin[6] = 0.001921# beta2
+    amin[7] = 0.000714# delta2
+    amin[8] = 0.004662# lambda2
+    amin[9] = 0.017862# l2
+    amin[10] = 0.017180# t2
+    amin[11] = 0.002463# r2
+    amin[12] = 0.079924# k2
+    amin[13] = 0.004467# eta
+
+    # load the nodal corrections for minor constituents
+    # convert time to Modified Julian Days (MJD)
+    pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
+        minor_constituents,
+        deltat=kwargs['deltat'],
+        corrections=kwargs['corrections']
+    )
+
+    # sum over the minor tidal constituents of interest
+    for k in minor_indices:
+        # linearly interpolate between major constituents
+        if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
+            slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
+            zmin = amin[k]*(z[:,0] + slope*(omega[k] - omajor[0]))
+        else:
+            slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
+            zmin = amin[k]*(z[:,1] + slope*(omega[k] - omajor[1]))
+        # sum over all tides
+        th = G[:,k]*np.pi/180.0 + pu[:,k]
+        dh += zmin.real*pf[:,k]*np.cos(th) - \
+            zmin.imag*pf[:,k]*np.sin(th)
+    # return the inferred values
+    return dh
+
+def _infer_diurnal(
+        t: float | np.ndarray,
+        zmajor: np.ndarray,
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Infer the tidal values for diurnal minor constituents
+    using their relation with major constituents taking into
+    account resonance due to free core nutation [1]_ [2]_ [3]_ [4]_
+
+    Parameters
+    ----------
+    t: float or np.ndarray
+        days relative to 1992-01-01T00:00:00
+    zmajor: np.ndarray
+        Complex HC for given constituents/points
+    constituents: list
         tidal constituent IDs
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    minor: list or None, default None
+        tidal constituent IDs of minor constituents for inferrence
+    raise_exception: bool, default False
+        Raise a ``ValueError`` if major constituents are not found
+
+    Returns
+    -------
+    dh: np.ndarray
+        tidal time series for minor constituents
+
+    References
+    ----------
+    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
+        spectroscopy and prediction," *Philosophical Transactions of the
+        Royal Society of London. Series A, Mathematical and Physical
+        Sciences*, 259(1105), 533--581, (1966).
+        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
+    .. [2] R. D. Ray, "A global ocean tide model from
+        Topex/Poseidon altimetry: GOT99.2",
+        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
+    .. [3] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
+        tide and in the Earth's load response due to the resonant free
+        `core nutation`", *Geophysical Journal of the Royal Astronomical
+        Society*, 64(3), 747--765, (1981).
+        `doi: 10.1111/j.1365-246X.1981.tb02693.x
+        <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
+    .. [4] D. E. Cartwright and A. C. Edden,
+        "Corrected Tables of Tidal Harmonics,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+    """
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('raise_exception', False)
+    # list of minor constituents
+    kwargs.setdefault('minor', None)
+    # number of constituents
+    npts, nc = np.shape(zmajor)
+    nt = len(np.atleast_1d(t))
+    # number of data points to calculate if running time series/drift/map
+    n = nt if ((npts == 1) & (nt > 1)) else npts
+    # allocate for output elevation correction
+    dh = np.ma.zeros((n))
+    # major constituents used for inferring diurnal minor tides
+    cindex = ['q1', 'o1', 'k1']
+    # angular frequencies for major constituents
+    omajor = pyTMD.arguments.frequency(cindex, **kwargs)
+    # Cartwright and Edden potential amplitudes for major constituents
+    amajor = np.zeros((3))
+    amajor[0] = 0.050184# q1
+    amajor[1] = 0.262163# o1
+    amajor[2] = 0.368731# k1
+    # re-order major tides to correspond to order of cindex
+    z = np.ma.zeros((n,len(cindex)), dtype=np.complex64)
+    nz = 0
+    for i,c in enumerate(cindex):
+        j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
+        if j:
+            j1, = j
+            # Love numbers of degree 2 for constituent
+            h2, k2, l2 = _body_tide_love_numbers(omajor[i])
+            gamma_2 = (1.0 + k2 - h2)
+            # scaled tide
+            z[:,i] = zmajor[:,j1]/(amajor[i]*gamma_2)
+            nz += 1
+
+    # raise exception or log error
+    if (nz < 3) and kwargs['raise_exception']:
+        raise Exception('Not enough constituents for inference')
+    elif (nz < 3):
+        logging.debug('Not enough constituents for inference')
+        return 0.0
+
+    # complete list of minor constituents
+    minor_constituents = ['2q1', 'sigma1', 'rho1', 'tau1', 'beta1',
+        'm1a', 'm1b', 'chi1', 'pi1', 'p1', 'psi1', 'phi1',
+        'theta1', 'j1', 'so1', 'oo1', 'ups1']
+    # possibly reduced list of minor constituents
+    minor = kwargs['minor'] or minor_constituents
+    # only add minor constituents that are not on the list of major values
+    minor_indices = [i for i,m in enumerate(minor_constituents)
+        if (m not in constituents) and (m in minor)]
+
+    # angular frequencies for inferred constituents
+    omega = pyTMD.arguments.frequency(minor_constituents, **kwargs)
+    # Cartwright and Edden potential amplitudes for inferred constituents
+    amin = np.zeros((17))
+    amin[0] = 0.006638# 2q1
+    amin[1] = 0.008023# sigma1
+    amin[2] = 0.009540# rho1
+    amin[3] = 0.003430# tau1
+    amin[4] = 0.001941# beta1
+    amin[5] = 0.020604# m1a
+    amin[6] = 0.007420# m1b
+    amin[7] = 0.003925# chi1
+    amin[8] = 0.007125# pi1
+    amin[9] = 0.122008# p1
+    amin[10] = 0.002929# psi1
+    amin[11] = 0.005247# phi1
+    amin[12] = 0.003966# theta1
+    amin[13] = 0.020618# j1
+    amin[14] = 0.003417# so1
+    amin[15] = 0.011293# oo1
+    amin[16] = 0.002157# ups1
+
+    # load the nodal corrections for minor constituents
+    # convert time to Modified Julian Days (MJD)
+    pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
+        minor_constituents,
+        deltat=kwargs['deltat'],
+        corrections=kwargs['corrections']
+    )
+
+    # sum over the minor tidal constituents of interest
+    for k in minor_indices:
+        # Love numbers of degree 2 for constituent
+        h2, k2, l2 = _body_tide_love_numbers(omega[k])
+        gamma_2 = (1.0 + k2 - h2)
+        # linearly interpolate between major constituents
+        if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
+            slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
+            zmin = amin[k]*gamma_2*(z[:,0] + slope*(omega[k] - omajor[0]))
+        else:
+            slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
+            zmin = amin[k]*gamma_2*(z[:,1] + slope*(omega[k] - omajor[1]))
+        # sum over all tides
+        th = G[:,k]*np.pi/180.0 + pu[:,k]
+        dh += zmin.real*pf[:,k]*np.cos(th) - \
+            zmin.imag*pf[:,k]*np.sin(th)
+    # return the inferred values
+    return dh
+
+# PURPOSE: infer long-period tides for minor constituents
+def _infer_long_period(
+        t: float | np.ndarray,
+        zmajor: np.ndarray,
+        constituents: list | np.ndarray,
+        **kwargs
+    ):
+    """
+    Infer the tidal values for long-period minor constituents
+    using their relation with major constituents [1]_ [2]_ [3]_
+
+    Parameters
+    ----------
+    t: float or np.ndarray
+        days relative to 1992-01-01T00:00:00
+    zmajor: np.ndarray
+        Complex HC for given constituents/points
+    constituents: list
+        tidal constituent IDs
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    minor: list or None, default None
+        tidal constituent IDs of minor constituents for inferrence
+    raise_exception: bool, default False
+        Raise a ``ValueError`` if major constituents are not found
 
     Returns
     -------
@@ -528,11 +832,16 @@ def _infer_long_period(
         variations in the length of day", *Journal of Geophysical
         Research: Solid Earth*, 119, 1498--1509, (2013).
         `doi: 10.1002/2013JB010830 <https://doi.org/10.1002/2013JB010830>`_
+    .. [3] D. E. Cartwright and A. C. Edden,
+        "Corrected Tables of Tidal Harmonics,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # set default keyword arguments
-    kwargs.setdefault('raise_exception', False)
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('raise_exception', False)
     # list of minor constituents
     kwargs.setdefault('minor', None)
     # number of constituents
@@ -615,6 +924,69 @@ def _infer_long_period(
     # return the inferred values
     return dh
 
+def _body_tide_love_numbers(omega: np.ndarray):
+    """
+    Compute the body tide Love/Shida numbers for a given
+    frequency [1]_ [2]_
+
+    Parameters
+    ----------
+    omega: np.ndarray
+        angular frequency (radians per second)
+
+    Returns
+    -------
+    h2: float
+        Degree-2 Love number of vertical displacement
+    k2: float
+        Degree-2 Love number of gravitational potential
+    l2: float
+        Degree-2 Love (Shida) number of horizontal displacement
+
+    References
+    ----------
+    .. [1] J. M. Wahr, "Body tides on an elliptical, rotating, elastic
+        and oceanless Earth", *Geophysical Journal of the Royal
+        Astronomical Society*, 64(3), 677--703, (1981).
+        `doi: 10.1111/j.1365-246X.1981.tb02690.x
+        <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
+    .. [2] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
+        tide and in the Earth's load response due to the resonant free
+        `core nutation`", *Geophysical Journal of the Royal Astronomical
+        Society*, 64(3), 747--765, (1981).
+        `doi: 10.1111/j.1365-246X.1981.tb02693.x
+        <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
+    """
+    if (omega > 1e-4):
+        # tides in the semi-diurnal band
+        h2 = 0.609
+        k2 = 0.302
+        l2 = 0.0852
+    elif (omega < 2e-5):
+        # tides in the long period band
+        h2 = 0.606
+        k2 = 0.299
+        l2 = 0.0840
+    else:
+        # use resonance formula for tides in the diurnal band
+        # frequency of the o1 tides (radians/second)
+        omega_o1, = pyTMD.arguments.frequency('o1')
+        # frequency of free core nutation (radians/second)
+        # taken from Wahr (1981) table 6
+        omega_fcn = 1.0021714*7292115e-11
+        # love number values for model 1066A from Wahr (1981) table 6
+        h0, h1 = np.array([6.03e-1, -2.46e-3])
+        k0, k1 = np.array([2.98e-1, -1.23e-3])
+        l0, l1 = np.array([8.42e-2, 7.81e-5])
+        # load love numbers for frequency using equation 4.18 of Wahr (1981)
+        # (simplification to use only the free core nutation term)
+        ratio = (omega - omega_o1)/(omega_fcn - omega)
+        h2 = h0 + h1*ratio
+        k2 = k0 + k1*ratio
+        l2 = l0 + l1*ratio
+    # return the load love numbers for frequency
+    return (h2, k2, l2)
+
 # PURPOSE: estimate long-period equilibrium tides
 def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
     """
@@ -682,7 +1054,9 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
         0.24*np.cos(PH - 2.0*SHPN[1,:] + SHPN[2,:])
 
     # Multiply by gamma_2 * normalization * P20(lat)
-    gamma_2 = 0.693
+    k2 = 0.302
+    h2 = 0.609
+    gamma_2 = (1.0 + k2 - h2)
     P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)
     # calculate long-period equilibrium tide and convert to meters
     if (nlat != nt):
@@ -1251,7 +1625,7 @@ def _frequency_dependence_diurnal(
     nt = len(np.atleast_1d(MJD))
     # Corrections to Diurnal Tides for Frequency Dependence
     # of Love and Shida Number Parameters
-    # table 7.3a of IERS conventions
+    # reduced version of table 7.3a from IERS conventions
     table = np.array([
         [-3.0, 0.0, 2.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
         [-3.0, 2.0, 0.0, 0.0, 0.0, -0.01, 0.0, 0.0, 0.0],
@@ -1331,9 +1705,9 @@ def _frequency_dependence_long_period(
     """
     # number of time steps
     nt = len(np.atleast_1d(MJD))
-    # Corrections to Long-Peroid Tides for Frequency Dependence
+    # Corrections to Long-Period Tides for Frequency Dependence
     # of Love and Shida Number Parameters
-    # table 7.3b of IERS conventions
+    # reduced version of table 7.3b from IERS conventions
     table = np.array([
         [0.0, 0.0, 0.0, 1.0, 0.0, 0.47, 0.23, 0.16, 0.07],
         [0.0, 2.0, 0.0, 0.0, 0.0, -0.20, -0.12, -0.11, -0.05],
