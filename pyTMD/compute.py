@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 10/2024: compute delta times based on corrections type
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         use model class attributes for file format and corrections
@@ -357,22 +358,16 @@ def tide_elevations(
             model.model_file, model.projection, type=model.type,
             grid=model.file_format, crop=CROP, bounds=BOUNDS, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, apply_flexure=APPLY_FLEXURE)
-        # use delta time at 2000.0 to match TMD outputs
-        deltat = np.zeros((nt), dtype=np.float64)
     elif model.format in ('ATLAS-netcdf',):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
             model.model_file, type=model.type, crop=CROP, bounds=BOUNDS,
             method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
-        # use delta time at 2000.0 to match TMD outputs
-        deltat = np.zeros((nt), dtype=np.float64)
     elif model.format in ('GOT-ascii', 'GOT-netcdf'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
             grid=model.file_format, crop=CROP, bounds=BOUNDS, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
-        # delta time (TT - UT1)
-        deltat = ts.tt_ut1
     elif model.format in ('FES-ascii', 'FES-netcdf'):
         amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
             type=model.type, version=model.version, crop=CROP, bounds=BOUNDS,
@@ -380,8 +375,6 @@ def tide_elevations(
             scale=model.scale, compressed=model.compressed)
         # available model constituents
         c = model.constituents
-        # delta time (TT - UT1)
-        deltat = ts.tt_ut1
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -392,6 +385,15 @@ def tide_elevations(
     nodal_corrections = CORRECTIONS or model.corrections
     # minor constituents to infer
     minor_constituents = MINOR_CONSTITUENTS or model.minor
+    # delta time (TT - UT1) for tide model
+    if nodal_corrections in ('OTIS','ATLAS','TMD3','netcdf'):
+        # use delta time at 2000.0 to match TMD outputs
+        deltat = np.zeros_like(ts.tt_ut1)
+    else:
+        # use interpolated delta times
+        deltat = ts.tt_ut1
+
+    # calculate tide values for input data type
     if (TYPE.lower() == 'grid'):
         ny,nx = np.shape(x)
         tide = np.ma.zeros((ny,nx,nt),fill_value=FILL_VALUE)
@@ -596,15 +598,11 @@ def tide_currents(
                 model.model_file['u'], model.projection, type=t,
                 grid=model.file_format, crop=CROP, bounds=BOUNDS,
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF)
-            # use delta time at 2000.0 to match TMD outputs
-            deltat = np.zeros((nt), dtype=np.float64)
         elif model.format in ('ATLAS-netcdf',):
             amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
                 model.model_file[t], type=t, crop=CROP, bounds=BOUNDS,
                 method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
                 scale=model.scale, compressed=model.compressed)
-            # use delta time at 2000.0 to match TMD outputs
-            deltat = np.zeros((nt), dtype=np.float64)
         elif model.format in ('FES-ascii', 'FES-netcdf'):
             amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file[t],
                 type=t, version=model.version, crop=CROP, bounds=BOUNDS,
@@ -612,8 +610,6 @@ def tide_currents(
                 scale=model.scale, compressed=model.compressed)
             # available model constituents
             c = model.constituents
-            # delta time (TT - UT1)
-            deltat = ts.tt_ut1
 
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
@@ -624,6 +620,14 @@ def tide_currents(
         nodal_corrections = CORRECTIONS or model.corrections
         # minor constituents to infer
         minor_constituents = MINOR_CONSTITUENTS or model.minor
+        # delta time (TT - UT1) for tide model
+        if nodal_corrections in ('OTIS','ATLAS','TMD3','netcdf'):
+            # use delta time at 2000.0 to match TMD outputs
+            deltat = np.zeros_like(ts.tt_ut1)
+        else:
+            # use interpolated delta times
+            deltat = ts.tt_ut1
+
         # predict tidal currents at time
         if (TYPE.lower() == 'grid'):
             ny,nx = np.shape(x)

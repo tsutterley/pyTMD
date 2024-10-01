@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_elevations.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 Calculates tidal elevations for an input file
 
 Uses OTIS format tidal solutions provided by Oregon State University and ESR
@@ -101,6 +101,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 10/2024: compute delta times based on corrections type
     Updated 09/2024: use JSON database for known model parameters
         use model name in default output filename for definition file case
         drop support for the ascii definition file format
@@ -309,20 +310,16 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             model.grid_file, model.model_file, model.projection,
             type=model.type, grid=model.file_format, crop=CROP, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, apply_flexure=APPLY_FLEXURE)
-        deltat = np.zeros((nt))
     elif (model.format == 'ATLAS-netcdf'):
         amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(np.ravel(lon), np.ravel(lat),
             model.grid_file, model.model_file, type=model.type,
             crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
             scale=model.scale, compressed=model.compressed)
-        deltat = np.zeros((nt))
     elif model.format in ('GOT-ascii', 'GOT-netcdf'):
         amp,ph,c = pyTMD.io.GOT.extract_constants(np.ravel(lon), np.ravel(lat),
             model.model_file, grid=model.file_format, crop=CROP, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
             compressed=model.compressed)
-        # delta time (TT - UT1)
-        deltat = ts.tt_ut1
     elif (model.format == 'FES-netcdf'):
         amp,ph = pyTMD.io.FES.extract_constants(np.ravel(lon), np.ravel(lat),
             model.model_file, type=model.type, version=model.version,
@@ -330,8 +327,6 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
             scale=model.scale, compressed=model.compressed)
         # available model constituents
         c = model.constituents
-        # delta time (TT - UT1)
-        deltat = ts.tt_ut1
 
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -342,6 +337,14 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     nodal_corrections = CORRECTIONS or model.corrections
     # minor constituents to infer
     minor_constituents = MINOR_CONSTITUENTS or model.minor
+    # delta time (TT - UT1) for tide model
+    if nodal_corrections in ('OTIS','ATLAS','TMD3','netcdf'):
+        # use delta time at 2000.0 to match TMD outputs
+        deltat = np.zeros_like(ts.tt_ut1)
+    else:
+        # use interpolated delta times
+        deltat = ts.tt_ut1
+
     # predict tidal elevations at time
     if (TYPE == 'grid'):
         tide = np.ma.zeros((ny,nx,nt), fill_value=FILL_VALUE)

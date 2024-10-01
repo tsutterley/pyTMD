@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 10/2024: use PREM as the default Earth model for Love numbers
     Updated 09/2024: verify order of minor constituents to infer
         fix to use case insensitive assertions of string argument values
         split infer minor function into short and long period calculations
@@ -924,15 +925,25 @@ def _infer_long_period(
     # return the inferred values
     return dh
 
-def _body_tide_love_numbers(omega: np.ndarray):
+def _body_tide_love_numbers(
+        omega: np.ndarray,
+        model: str = 'PREM'
+    ):
     """
     Compute the body tide Love/Shida numbers for a given
-    frequency [1]_ [2]_
+    frequency [1]_ [2]_ [3]_
 
     Parameters
     ----------
     omega: np.ndarray
         angular frequency (radians per second)
+    model: str, default 'PREM'
+        Earth model to use for Love numbers
+
+            - '1066A'
+            - 'PEM-C'
+            - 'C2'
+            - 'PREM'
 
     Returns
     -------
@@ -956,7 +967,38 @@ def _body_tide_love_numbers(omega: np.ndarray):
         Society*, 64(3), 747--765, (1981).
         `doi: 10.1111/j.1365-246X.1981.tb02693.x
         <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
+    .. [3] P. M. Mathews, B. A. Buffett, and I. I. Shapiro,
+        "Love numbers for diurnal tides: Relation to wobble admittances
+        and resonance expansions", *Journal of Geophysical Research:
+        Solid Earth*, 100(B6), 9935--9948, (1995).
+        `doi: 10.1029/95jb00670 <https://doi.org/10.1029/95jb00670>`_
     """
+    # free core nutation frequencies (cycles per sidereal day) and
+    # Love number parameters from Wahr (1981) table 6
+    # and Mathews et al. (1995) table 3
+    if (model == '1066A'):
+        fcn = 1.0021714
+        h0, h1 = np.array([6.03e-1, -2.46e-3])
+        k0, k1 = np.array([2.98e-1, -1.23e-3])
+        l0, l1 = np.array([8.42e-2, 7.81e-5])
+    elif (model == 'PEM-C'):
+        fcn = 1.0021771
+        h0, h1 = np.array([6.02e-1, -2.46e-3])
+        k0, k1 = np.array([2.98e-1, -1.24e-3])
+        l0, l1 = np.array([8.39e-2, 7.69e-5])
+    elif (model == 'C2'):
+        fcn = 1.0021844
+        h0, h1 = np.array([6.02e-1, -2.45e-3])
+        k0, k1 = np.array([2.98e-1, -1.23e-3])
+        l0, l1 = np.array([8.46e-2, 7.58e-5])
+    elif (model == 'PREM'):
+        fcn = 1.0023214
+        h0, h1 = np.array([5.994e-1, -2.532e-3])
+        k0, k1 = np.array([2.962e-1, -1.271e-3])
+        l0, l1 = np.array([8.378e-2, 7.932e-5])
+    else:
+        raise ValueError(f'Unknown Earth model: {model}')
+    # Love numbers for different frequency bands
     if (omega > 1e-4):
         # tides in the semi-diurnal band
         h2 = 0.609
@@ -972,19 +1014,14 @@ def _body_tide_love_numbers(omega: np.ndarray):
         # frequency of the o1 tides (radians/second)
         omega_o1, = pyTMD.arguments.frequency('o1')
         # frequency of free core nutation (radians/second)
-        # taken from Wahr (1981) table 6
-        omega_fcn = 1.0021714*7292115e-11
-        # love number values for model 1066A from Wahr (1981) table 6
-        h0, h1 = np.array([6.03e-1, -2.46e-3])
-        k0, k1 = np.array([2.98e-1, -1.23e-3])
-        l0, l1 = np.array([8.42e-2, 7.81e-5])
-        # load love numbers for frequency using equation 4.18 of Wahr (1981)
+        omega_fcn = fcn*7292115e-11
+        # Love numbers for frequency using equation 4.18 of Wahr (1981)
         # (simplification to use only the free core nutation term)
         ratio = (omega - omega_o1)/(omega_fcn - omega)
         h2 = h0 + h1*ratio
         k2 = k0 + k1*ratio
         l2 = l0 + l1*ratio
-    # return the load love numbers for frequency
+    # return the Love numbers for frequency
     return (h2, k2, l2)
 
 # PURPOSE: estimate long-period equilibrium tides
