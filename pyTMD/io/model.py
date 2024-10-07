@@ -1013,7 +1013,8 @@ class model:
         elif self.format in ('ATLAS-netcdf',):
             # extract model file in case of currents
             if isinstance(self.model_file, dict):
-                model_file = self.model_file[kwargs['type']]
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
             else:
                 model_file = self.model_file
             # extract tidal constants for model type
@@ -1029,7 +1030,8 @@ class model:
         elif self.format in ('FES-ascii', 'FES-netcdf'):
             # extract model file in case of currents
             if isinstance(self.model_file, dict):
-                model_file = self.model_file[kwargs['type']]
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
             else:
                 model_file = self.model_file
             # extract tidal constants for model type
@@ -1071,7 +1073,8 @@ class model:
         elif self.format in ('ATLAS-netcdf',):
             # extract model file in case of currents
             if isinstance(self.model_file, dict):
-                model_file = self.model_file[kwargs['type']]
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
             else:
                 model_file = self.model_file
             # read tidal constants for model type
@@ -1085,7 +1088,8 @@ class model:
         elif self.format in ('FES-ascii','FES-netcdf'):
             # extract model file in case of currents
             if isinstance(self.model_file, dict):
-                model_file = self.model_file[kwargs['type']]
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
             else:
                 model_file = self.model_file
             # read tidal constants for model type
@@ -1094,7 +1098,7 @@ class model:
                 **kwargs)
         # return the tidal constituents
         self._constituents = c
-        return self
+        return c
 
     def interpolate_constants(self,
             lon: np.ndarray,

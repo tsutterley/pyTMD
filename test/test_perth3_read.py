@@ -132,9 +132,8 @@ def test_verify_GOT47(METHOD, CROP):
     deltat = ts.tt_ut1
 
     # extract amplitude and phase from tide model
-    amp,ph,cons = pyTMD.io.GOT.extract_constants(lon, lat,
-        model.model_file, grid=model.file_format, method=METHOD,
-        compressed=model.compressed, scale=model.scale, crop=CROP)
+    amp,ph,cons = model.extract_constants(lon, lat,
+        method=METHOD, crop=CROP)
     assert all(c in constituents for c in cons)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
@@ -192,18 +191,14 @@ def test_compare_GOT47(METHOD):
         lon[i] = np.float64(line_contents[1])
 
     # extract amplitude and phase from tide model
-    amp1, ph1, c1 = pyTMD.io.GOT.extract_constants(lon, lat,
-        model.model_file, grid=model.file_format, method=METHOD,
-        compressed=model.compressed, scale=model.scale)
+    amp1, ph1, c1 = model.extract_constants(lon, lat, method=METHOD)
     # calculate complex form of constituent oscillation
     hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
     # read and interpolate constituents from tide model
-    constituents = pyTMD.io.GOT.read_constants(model.model_file,
-        compressed=model.compressed)
-    amp2, ph2 = pyTMD.io.GOT.interpolate_constants(lon, lat,
-        constituents, grid=model.file_format, method=METHOD,
-        scale=model.scale)
+    constituents = model.read_constants()
+    assert (constituents.fields == model._constituents.fields)
+    amp2, ph2 = model.interpolate_constants(lon, lat, method=METHOD)
     # calculate complex form of constituent oscillation
     hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
