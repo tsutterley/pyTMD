@@ -292,7 +292,7 @@ def test_extend_array():
 
 # PURPOSE: test the catch in the correction wrapper function
 def test_unlisted_model():
-    ermsg = "Unlisted tide model"
-    with pytest.raises(Exception, match=ermsg):
+    msg = "Unlisted tide model"
+    with pytest.raises(Exception, match=msg):
         pyTMD.compute.tide_elevations(None, None, None,
             DIRECTORY=filepath, MODEL='invalid')

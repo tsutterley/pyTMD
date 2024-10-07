@@ -15,3 +15,9 @@ General Attributes and Methods
 
 .. autoclass:: pyTMD.io.model
    :members:
+
+.. autofunction:: pyTMD.io.extract_constants
+
+.. autofunction:: pyTMD.io.read_constants
+
+.. autofunction:: pyTMD.io.interpolate_constants
