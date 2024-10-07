@@ -7,4 +7,10 @@ from .GOT import *
 from .OTIS import *
 from .IERS import *
 from .constituents import constituents
-from .model import model, load_database
+from .model import (
+    model,
+    load_database,
+    extract_constants,
+    read_constants,
+    interpolate_constants
+)

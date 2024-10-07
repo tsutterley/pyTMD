@@ -52,13 +52,13 @@ def test_data_type():
     obs = pyTMD.spatial.data_type(x,y,t)
     assert (obs == exp)
     # test catch for unknown data type
-    ermsg = 'Unknown data type'
+    msg = 'Unknown data type'
     # number of data points
     npts = 30; ntime = 10
     x = np.random.rand(npts)
     y = np.random.rand(npts)
     t = np.random.rand(ntime)
-    with pytest.raises(ValueError, match=ermsg):
+    with pytest.raises(ValueError, match=msg):
         pyTMD.spatial.data_type(x,y,t)
 
 # PURPOSE: test the read and write of ascii files

@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2024: use PREM as the default Earth model for Love numbers
+        more descriptive error message if cannot infer minor constituents
     Updated 09/2024: verify order of minor constituents to infer
         fix to use case insensitive assertions of string argument values
         split infer minor function into short and long period calculations
@@ -319,7 +320,7 @@ def infer_minor(
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
     minor: list or None, default None
-        tidal constituent IDs of minor constituents for inferrence
+        tidal constituent IDs of minor constituents for inference
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -388,7 +389,7 @@ def _infer_short_period(
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
     minor: list or None, default None
-        tidal constituent IDs of minor constituents for inferrence
+        tidal constituent IDs of minor constituents for inference
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -435,10 +436,11 @@ def _infer_short_period(
             nz += 1
 
     # raise exception or log error
+    msg = 'Not enough constituents for inference of short-period tides'
     if (nz < 6) and kwargs['raise_exception']:
-        raise Exception('Not enough constituents for inference')
+        raise Exception(msg)
     elif (nz < 6):
-        logging.debug('Not enough constituents for inference')
+        logging.debug(msg)
         return 0.0
 
     # complete list of minor constituents
@@ -523,7 +525,7 @@ def _infer_semi_diurnal(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     minor: list or None, default None
-        tidal constituent IDs of minor constituents for inferrence
+        tidal constituent IDs of minor constituents for inference
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -580,10 +582,11 @@ def _infer_semi_diurnal(
             nz += 1
 
     # raise exception or log error
+    msg = 'Not enough constituents for inference of semi-diurnal tides'
     if (nz < 3) and kwargs['raise_exception']:
-        raise Exception('Not enough constituents for inference')
+        raise Exception(msg)
     elif (nz < 3):
-        logging.debug('Not enough constituents for inference')
+        logging.debug(msg)
         return 0.0
 
     # complete list of minor constituents
@@ -661,7 +664,7 @@ def _infer_diurnal(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     minor: list or None, default None
-        tidal constituent IDs of minor constituents for inferrence
+        tidal constituent IDs of minor constituents for inference
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -728,10 +731,11 @@ def _infer_diurnal(
             nz += 1
 
     # raise exception or log error
+    msg = 'Not enough constituents for inference of diurnal tides'
     if (nz < 3) and kwargs['raise_exception']:
-        raise Exception('Not enough constituents for inference')
+        raise Exception(msg)
     elif (nz < 3):
-        logging.debug('Not enough constituents for inference')
+        logging.debug(msg)
         return 0.0
 
     # complete list of minor constituents
@@ -815,7 +819,7 @@ def _infer_long_period(
     deltat: float or np.ndarray, default 0.0
         time correction for converting to Ephemeris Time (days)
     minor: list or None, default None
-        tidal constituent IDs of minor constituents for inferrence
+        tidal constituent IDs of minor constituents for inference
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -872,10 +876,11 @@ def _infer_long_period(
             nz += 1
 
     # raise exception or log error
+    msg = 'Not enough constituents for inference of long-period tides'
     if (nz < 3) and kwargs['raise_exception']:
-        raise Exception('Not enough constituents for inference')
+        raise Exception(msg)
     elif (nz < 3):
-        logging.debug('Not enough constituents for inference')
+        logging.debug(msg)
         return 0.0
 
     # complete list of minor constituents
