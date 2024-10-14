@@ -62,6 +62,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 10/2024: compute delta times based on corrections type
         simplify by using wrapper functions to read and interpolate constants
+        added option to append equilibrium amplitudes for node tides
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         use model class attributes for file format and corrections
@@ -225,6 +226,7 @@ def tide_elevations(
         CORRECTIONS: str | None = None,
         INFER_MINOR: bool = True,
         MINOR_CONSTITUENTS: list | None = None,
+        APPEND_NODE: bool = False,
         APPLY_FLEXURE: bool = False,
         FILL_VALUE: float = np.nan,
         **kwargs
@@ -291,6 +293,8 @@ def tide_elevations(
         Infer the height values for minor tidal constituents
     MINOR_CONSTITUENTS: list or None, default None
         Specify constituents to infer
+    APPEND_NODE: bool, default False
+        Append equilibrium amplitudes for node tides
     APPLY_FLEXURE: bool, default False
         Apply ice flexure scaling factor to height values
 
@@ -357,7 +361,7 @@ def tide_elevations(
     amp, ph, c = model.extract_constants(lon, lat, type=model.type,
         crop=CROP, bounds=BOUNDS, method=METHOD,
         extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-        apply_flexure=APPLY_FLEXURE)
+        append_node=APPEND_NODE, apply_flexure=APPLY_FLEXURE)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillation

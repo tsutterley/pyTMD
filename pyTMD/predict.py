@@ -22,6 +22,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 10/2024: use PREM as the default Earth model for Love numbers
         more descriptive error message if cannot infer minor constituents
+        updated calculation of long-period equilibrium tides
     Updated 09/2024: verify order of minor constituents to infer
         fix to use case insensitive assertions of string argument values
         split infer minor function into short and long period calculations
@@ -452,6 +453,11 @@ def _infer_short_period(
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor_constituents)
         if (m not in constituents) and (m in minor)]
+    # if there are no constituents to infer
+    msg = 'No short-period tidal constituents to infer'
+    if not np.any(minor_indices):
+        logging.debug(msg)
+        return 0.0
 
     # relationship between major and minor constituent amplitude and phase
     zmin = np.zeros((n, 20), dtype=np.complex64)
@@ -598,6 +604,11 @@ def _infer_semi_diurnal(
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor_constituents)
         if (m not in constituents) and (m in minor)]
+    # if there are no constituents to infer
+    msg = 'No semi-diurnal tidal constituents to infer'
+    if not np.any(minor_indices):
+        logging.debug(msg)
+        return 0.0
 
     # angular frequencies for inferred constituents
     omega = pyTMD.arguments.frequency(minor_constituents, **kwargs)
@@ -747,6 +758,11 @@ def _infer_diurnal(
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor_constituents)
         if (m not in constituents) and (m in minor)]
+    # if there are no constituents to infer
+    msg = 'No diurnal tidal constituents to infer'
+    if not np.any(minor_indices):
+        logging.debug(msg)
+        return 0.0
 
     # angular frequencies for inferred constituents
     omega = pyTMD.arguments.frequency(minor_constituents, **kwargs)
@@ -891,6 +907,11 @@ def _infer_long_period(
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor_constituents)
         if (m not in constituents) and (m in minor)]
+    # if there are no constituents to infer
+    msg = 'No long-period tidal constituents to infer'
+    if not np.any(minor_indices):
+        logging.debug(msg)
+        return 0.0
 
     # angular frequencies for inferred constituents
     omega = pyTMD.arguments.frequency(minor_constituents, **kwargs)
@@ -1049,6 +1070,8 @@ def equilibrium_tide(
         time correction for converting to Ephemeris Time (days)
     corrections: str, default 'OTIS'
         use nodal corrections from OTIS/ATLAS or GOT/FES models
+    constituents: list
+        long-period tidal constituent IDs
 
     Returns
     -------
@@ -1069,6 +1092,10 @@ def equilibrium_tide(
         <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # set default keyword arguments
+    cindex = ['node', 'sa', 'ssa', 'msm', '065.445', 'mm',
+        '065.465', 'msf', '075.355', 'mf', 'mf+', '075.575',
+        'mst', 'mt', '085.465']
+    kwargs.setdefault('constituents', cindex)
     kwargs.setdefault('deltat', 0.0)
     kwargs.setdefault('corrections', 'OTIS')
 
@@ -1091,27 +1118,39 @@ def equilibrium_tide(
 
     # Cartwright and Edden potential amplitudes (centimeters)
     # assemble long-period tide potential from 15 CTE terms greater than 1 mm
-    CTE = np.zeros((15))
+    amajor = np.zeros((15))
     # group 0,0
     # nodal term is included but not the constant term.
-    CTE[0] = 2.7929# node
-    CTE[1] = -0.4922# sa
-    CTE[2] = -3.0988# ssa
+    amajor[0] = 2.7929# node
+    amajor[1] = -0.4922# sa
+    amajor[2] = -3.0988# ssa
     # group 0,1
-    CTE[3] = -0.6728# msm
-    CTE[4] = 0.231
-    CTE[5] = -3.5184# mm
-    CTE[6] = 0.228
+    amajor[3] = -0.6728# msm
+    amajor[4] = 0.231
+    amajor[5] = -3.5184# mm
+    amajor[6] = 0.228
     # group 0,2
-    CTE[7] = -0.5837# msf
-    CTE[8] = -0.288
-    CTE[9] = -6.6607# mf
-    CTE[10] = -2.763# mf+
-    CTE[11] = -0.258
+    amajor[7] = -0.5837# msf
+    amajor[8] = -0.288
+    amajor[9] = -6.6607# mf
+    amajor[10] = -2.763# mf+
+    amajor[11] = -0.258
     # group 0,3
-    CTE[12] = -0.2422# mst
-    CTE[13] = -1.2753# mt
-    CTE[14] = -0.528
+    amajor[12] = -0.2422# mst
+    amajor[13] = -1.2753# mt
+    amajor[14] = -0.528
+
+    # set constituents to be iterable and lower case
+    if isinstance(kwargs['constituents'], str):
+        constituents = [kwargs['constituents'].lower()]
+    else:
+        constituents = [c.lower() for c in kwargs['constituents']]
+
+    # reduce potential amplitudes to constituents
+    CTE = np.zeros((15))
+    for i,c in enumerate(cindex):
+        if c in constituents:
+            CTE[i] = amajor[i]
 
     # Doodson coefficients for 15 long-period terms
     coef = np.zeros((5, 15))

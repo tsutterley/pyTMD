@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 10/2024: save latitude and longitude to output constituent object
     Updated 09/2024: using new JSON dictionary format for model projections
     Updated 08/2024: revert change and assume crop bounds are projected
     Updated 07/2024: added crop and bounds keywords for trimming model data
@@ -647,6 +648,10 @@ def read_constants(
         # y-coordinates for v transports
         yi -= dy/2.0
 
+    # calculate geographic coordinates of model grid
+    gridx, gridy = np.meshgrid(xi, yi)
+    lon, lat = crs.transform(gridx, gridy, direction='INVERSE')
+
     # read each constituent
     if isinstance(model_file, list):
         cons = [read_constituents(m)[0].pop() for m in model_file]
@@ -654,7 +659,8 @@ def read_constants(
         cons,_ = read_constituents(model_file, grid=kwargs['grid'])
     # save output constituents and coordinate reference system
     constituents = pyTMD.io.constituents(x=xi, y=yi,
-        bathymetry=bathymetry.data, mask=mask, crs=crs)
+        bathymetry=bathymetry.data, mask=mask, crs=crs,
+        longitude=lon, latitude=lat)
 
     # read each model constituent
     for i,c in enumerate(cons):

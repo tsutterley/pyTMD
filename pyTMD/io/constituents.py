@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 10/2024: added property for the shape of constituent fields
     Updated 09/2024: add more known constituents to string parser function
     Updated 08/2024: add GOT prime nomenclature for 3rd degree constituents
     Updated 07/2024: add function to parse tidal constituents from strings
@@ -196,6 +197,16 @@ class constituents:
             cartwright_numbers.append(n)
         # return the list of Cartwright numbers
         return cartwright_numbers
+
+    @property
+    def shape(self):
+        """Shape of constituent fields
+        """
+        try:
+            field = self.fields[0]
+            return getattr(self, field).shape
+        except:
+            return None
 
     @staticmethod
     def parse(constituent: str) -> str:

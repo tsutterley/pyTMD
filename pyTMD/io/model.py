@@ -12,6 +12,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2024: add wrapper functions to read and interpolate constants
+        add functions to append node tide equilibrium values to amplitudes
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         add file_format and nodal correction attributes
@@ -977,6 +978,8 @@ class model:
             Longitude point in degrees
         lat: np.ndarray
             Latitude point in degrees
+        append_node: bool, default False
+            Append equilibrium amplitudes for node tides
         kwargs: dict
             Keyword arguments for extracting constants
 
@@ -993,6 +996,7 @@ class model:
         from pyTMD.io import OTIS, ATLAS, GOT, FES
         # set default keyword arguments
         kwargs.setdefault('type', self.type)
+        kwargs.setdefault('append_node', False)
         kwargs.setdefault('crop', False)
         kwargs.setdefault('bounds', None)
         kwargs.setdefault('method', 'spline')
@@ -1041,6 +1045,15 @@ class model:
                 **kwargs)
             # available model constituents
             c = self.constituents
+        # append node equilibrium tide if not in constituents list
+        if kwargs['append_node'] and ('node' not in c):
+            # calculate node equilibrium tide
+            anode, pnode = self.node_equilibrium(lat)
+            # concatenate to output
+            amp = np.ma.concatenate((amp, anode[:,None]), axis=1)
+            ph = np.ma.concatenate((ph, pnode[:,None]), axis=1)
+            # convert to complex amplitude and append
+            c.append('node')
         # return the amplitude, phase, and constituents
         return (amp, ph, c)
 
@@ -1050,6 +1063,8 @@ class model:
 
         Parameters
         ----------
+        append_node: bool, default False
+            Append equilibrium amplitudes for node tides
         kwargs: dict
             Keyword arguments for reading constants
         """
@@ -1057,6 +1072,7 @@ class model:
         from pyTMD.io import OTIS, ATLAS, GOT, FES
         # set default keyword arguments
         kwargs.setdefault('type', self.type)
+        kwargs.setdefault('append_node', False)
         kwargs.setdefault('crop', False)
         kwargs.setdefault('bounds', None)
         kwargs.setdefault('apply_flexure', False)
@@ -1096,6 +1112,21 @@ class model:
             c = FES.read_constants(model_file,
                 version=self.version, compressed=self.compressed,
                 **kwargs)
+        # append node equilibrium tide if not in constituents list
+        if kwargs['append_node'] and ('node' not in c.fields):
+            # calculate node equilibrium tide
+            amp, ph = self.node_equilibrium(c.latitude)
+            # broadcast to shape of constituents
+            if (np.shape(c.latitude) != c.shape):
+                amp = np.broadcast_to(amp[:,None], c.shape, subok=True)
+                ph = np.broadcast_to(ph[:,None], c.shape, subok=True)
+                amp.mask = np.zeros_like(amp.data, dtype=bool)
+                ph.mask = np.zeros_like(ph.data, dtype=bool)
+            # calculate complex phase in radians for Euler's
+            cph = -1j*ph*np.pi/180.0
+            hc = amp*np.exp(cph)
+            # append constituent
+            c.append('node', hc)
         # return the tidal constituents
         self._constituents = c
         return c
@@ -1152,6 +1183,53 @@ class model:
                 **kwargs)
         # return the amplitude and phase
         return (amp, ph)
+
+    @staticmethod
+    def node_equilibrium(lat: np.ndarray):
+        """
+        Compute the complex amplitude of the 18.6 year equilibrium node tide
+        for inferrence when not supplied as a constituent [1]_ [2]_
+
+        Parameters
+        ----------
+        lat: np.ndarray
+            latitude (degrees north)
+
+        Returns
+        -------
+        amp: np.ndarray
+            Tidal amplitude in meters
+        phase: np.ndarray
+            Tidal phase in degrees
+
+        References
+        ----------
+        .. [1] D. E. Cartwright and R. J. Tayler,
+            "New Computations of the Tide-generating Potential,"
+            *Geophysical Journal of the Royal Astronomical Society*,
+            23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
+            <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+        .. [2] D. E. Cartwright and A. C. Edden,
+            "Corrected Tables of Tidal Harmonics,"
+            *Geophysical Journal of the Royal Astronomical Society*,
+            33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+            <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+        """
+        # Cartwright and Edden potential amplitude
+        amajor = 0.027929# node
+        # love numbers
+        k2 = 0.302
+        h2 = 0.609
+        gamma_2 = (1.0 + k2 - h2)
+        # 2nd degree Legendre polynomials
+        P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)
+        # calculate equilibrium node constants
+        amp = np.ma.zeros_like(lat, dtype=np.float64)
+        amp.data[:] = amajor*gamma_2*P20*np.sqrt((4.0 + 1.0)/(4.0*np.pi))
+        amp.mask = np.zeros_like(lat, dtype=bool)
+        phase = np.ma.zeros_like(amp)
+        phase.data[:] = 180.0
+        return (amp, phase)
 
     def __str__(self):
         """String representation of the ``io.model`` object
