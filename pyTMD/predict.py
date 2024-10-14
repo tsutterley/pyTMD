@@ -1030,7 +1030,11 @@ def _body_tide_love_numbers(
     return (h2, k2, l2)
 
 # PURPOSE: estimate long-period equilibrium tides
-def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
+def equilibrium_tide(
+        t: np.ndarray,
+        lat: np.ndarray,
+        **kwargs
+    ):
     """
     Compute the long-period equilibrium tides the summation of fifteen
     tidal spectral lines from Cartwright-Tayler-Edden tables [1]_ [2]_
@@ -1041,6 +1045,10 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
         time (days relative to January 1, 1992)
     lat: np.ndarray
         latitude (degrees north)
+    deltat: float or np.ndarray, default 0.0
+        time correction for converting to Ephemeris Time (days)
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS/ATLAS or GOT/FES models
 
     Returns
     -------
@@ -1060,40 +1068,76 @@ def equilibrium_tide(t: np.ndarray, lat: np.ndarray):
         33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
         <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
-    # longitude of moon
-    # longitude of sun
-    # longitude of lunar perigee
-    # longitude of ascending lunar node
-    PHC = np.array([290.21,280.12,274.35,343.51])
-    DPD = np.array([13.1763965,0.9856473,0.1114041,0.0529539])
+    # set default keyword arguments
+    kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'OTIS')
 
     # number of input points
     nt = len(np.atleast_1d(t))
     nlat = len(np.atleast_1d(lat))
-    # compute 4 principal mean longitudes in radians at delta time (SHPN)
-    SHPN = np.zeros((4,nt))
-    for N in range(4):
-        # convert time from days relative to 1992-01-01 to 1987-01-01
-        ANGLE = PHC[N] + (t + 1826.0)*DPD[N]
-        SHPN[N,:] = np.pi*pyTMD.astro.normalize_angle(ANGLE)/180.0
 
+    # set function for astronomical longitudes
+    # use ASTRO5 routines if not using an OTIS type model
+    ASTRO5 = kwargs['corrections'] not in ('OTIS','ATLAS','TMD3','netcdf')
+    # convert from Modified Julian Dates into Ephemeris Time
+    MJD = t + _mjd_tide
+    # compute principal mean longitudes
+    s, h, p, N, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
+        ASTRO5=ASTRO5)
+    # convert to negative mean longitude of the ascending node (N')
+    n = pyTMD.astro.normalize_angle(360.0 - N)
+    # determine equilibrium arguments
+    fargs = np.c_[s, h, p, n, pp]
+
+    # Cartwright and Edden potential amplitudes (centimeters)
     # assemble long-period tide potential from 15 CTE terms greater than 1 mm
+    CTE = np.zeros((15))
+    # group 0,0
     # nodal term is included but not the constant term.
-    PH = np.zeros((nt))
-    Z = np.zeros((nt))
-    Z += 2.79*np.cos(SHPN[3,:]) - 0.49*np.cos(SHPN[1,:] - \
-        283.0*np.pi/180.0) - 3.10*np.cos(2.0*SHPN[1,:])
-    PH += SHPN[0,:]
-    Z += -0.67*np.cos(PH - 2.0*SHPN[1,:] + SHPN[2,:]) - \
-        (3.52 - 0.46*np.cos(SHPN[3,:]))*np.cos(PH - SHPN[2,:])
-    PH += SHPN[0,:]
-    Z += - 6.66*np.cos(PH) - 2.76*np.cos(PH + SHPN[3,:]) - \
-        0.26 * np.cos(PH + 2.*SHPN[3,:]) - 0.58 * np.cos(PH - 2.*SHPN[1,:]) - \
-        0.29 * np.cos(PH - 2.*SHPN[2,:])
-    PH += SHPN[0,:]
-    Z += - 1.27*np.cos(PH - SHPN[2,:]) - \
-        0.53*np.cos(PH - SHPN[2,:] + SHPN[3,:]) - \
-        0.24*np.cos(PH - 2.0*SHPN[1,:] + SHPN[2,:])
+    CTE[0] = 2.7929# node
+    CTE[1] = -0.4922# sa
+    CTE[2] = -3.0988# ssa
+    # group 0,1
+    CTE[3] = -0.6728# msm
+    CTE[4] = 0.231
+    CTE[5] = -3.5184# mm
+    CTE[6] = 0.228
+    # group 0,2
+    CTE[7] = -0.5837# msf
+    CTE[8] = -0.288
+    CTE[9] = -6.6607# mf
+    CTE[10] = -2.763# mf+
+    CTE[11] = -0.258
+    # group 0,3
+    CTE[12] = -0.2422# mst
+    CTE[13] = -1.2753# mt
+    CTE[14] = -0.528
+
+    # Doodson coefficients for 15 long-period terms
+    coef = np.zeros((5, 15))
+    # group 0,0
+    coef[:,0] = [0.0, 0.0, 0.0, 1.0, 0.0]# node
+    coef[:,1] = [0.0, 1.0, 0.0, 0.0, -1.0]# sa
+    coef[:,2] = [0.0, 2.0, 0.0, 0.0, 0.0]# ssa
+    # group 0,1
+    coef[:,3] = [1.0, -2.0, 1.0, 0.0, 0.0]# msm
+    coef[:,4] = [1.0, 0.0, -1.0, -1.0, 0.0]
+    coef[:,5] = [1.0, 0.0, -1.0, 0.0, 0.0]# mm
+    coef[:,6] = [1.0, 0.0, -1.0, 1.0, 0.0]
+    # group 0,2
+    coef[:,7] = [2.0, -2.0, 0.0, 0.0, 0.0]# msf
+    coef[:,8] = [2.0, 0.0, -2.0, 0.0, 0.0]
+    coef[:,9] = [2.0, 0.0, 0.0, 0.0, 0.0]# mf
+    coef[:,10] = [2.0, 0.0, 0.0, 1.0, 0.0]# mf+
+    coef[:,11] = [2.0, 0.0, 0.0, 2.0, 0.0]
+    # group 0,3
+    coef[:,12] = [3.0, -2.0, 1.0, 0.0, 0.0]# mst
+    coef[:,13] = [3.0, 0.0, -1.0, 0.0, 0.0]# mt
+    coef[:,14] = [3.0, 0.0, -1.0, 1.0, 0.0]
+
+    # determine equilibrium arguments
+    G = np.dot(fargs, coef)
+    Z = np.inner(np.cos(G*np.pi/180.0), CTE)
 
     # Multiply by gamma_2 * normalization * P20(lat)
     k2 = 0.302
