@@ -226,9 +226,10 @@ class constituents:
             'm1','chi1','pi1','p1','s1','k1','psi1','phi1','beta1','theta1','j1',
             'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
             'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
-            'alpha2','beta2','delta2','r2','k2',r'(?<!b)eta2','mns2','2sm2','m3',
-            'mk3','s3','mn4','m4','ms4','mk4','so1',r'(?<!m)s4','s5','m6','s6',
-            's7','s8','m8','mks2','msqm','mtm',r'(?<!m)n4','eps2','ups1','z0','node']
+            'alpha2','beta2','delta2','gamma2','r2','k2',r'(?<!b)eta2',
+            'mns2','2sm2','m3','mk3','s3','mn4','m4','ms4','mk4','so1',
+            r'(?<!m)s4','s5','m6','s6','s7','s8','m8','mks2','msqm','mtm',
+            r'(?<!m)n4','eps2','ups1','z0','node']
         # compile regular expression
         # adding GOT prime nomenclature for 3rd degree constituents
         rx = re.compile(r'(' + '|'.join(cindex) + r')(\')?', re.IGNORECASE)
