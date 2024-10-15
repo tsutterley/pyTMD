@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
+PYTHON DEPENDENCIES:
+    numpy: Scientific Computing Tools For Python
+        https://numpy.org
+        https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
+
 UPDATE HISTORY:
+    Updated 10/2024: add wrapper functions to read and interpolate constants
+        add functions to append node tide equilibrium values to amplitudes
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         add file_format and nodal correction attributes
@@ -56,12 +63,11 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
-import re
 import io
 import copy
 import json
 import pathlib
-import pyTMD.io.constituents
+import numpy as np
 from pyTMD.utilities import get_data_path
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -943,11 +949,13 @@ class model:
         constituent: str or list
             constituent name
         """
+        # import constituents class
+        from pyTMD.io import constituents
         # convert to pathlib.Path
         model_file = pathlib.Path(model_file)
         # try to parse the constituent name from the file name
         try:
-            return pyTMD.io.constituents.parse(model_file.name)
+            return constituents.parse(model_file.name)
         except ValueError:
             pass
         # if no constituent name is found
@@ -955,6 +963,273 @@ class model:
             raise ValueError(f'Constituent not found in file {model_file}')
         else:
             return None
+
+    def extract_constants(self,
+            lon: np.ndarray,
+            lat: np.ndarray,
+            **kwargs
+        ):
+        """
+        Interpolate constants from tide models to input coordinates
+
+        Parameters
+        ----------
+        lon: np.ndarray
+            Longitude point in degrees
+        lat: np.ndarray
+            Latitude point in degrees
+        append_node: bool, default False
+            Append equilibrium amplitudes for node tides
+        kwargs: dict
+            Keyword arguments for extracting constants
+
+        Returns
+        -------
+        amp: np.ndarray
+            Tidal amplitude in meters
+        ph: np.ndarray
+            Tidal phase in degrees
+        c: list
+            Constituent list
+        """
+        # import tide model functions
+        from pyTMD.io import OTIS, ATLAS, GOT, FES
+        # set default keyword arguments
+        kwargs.setdefault('type', self.type)
+        kwargs.setdefault('append_node', False)
+        kwargs.setdefault('crop', False)
+        kwargs.setdefault('bounds', None)
+        kwargs.setdefault('method', 'spline')
+        kwargs.setdefault('extrapolate', False)
+        kwargs.setdefault('cutoff', None)
+        kwargs.setdefault('apply_flexure', False)
+        # read tidal constants and interpolate to grid points
+        if self.format in ('OTIS', 'ATLAS-compact', 'TMD3'):
+            # extract model file in case of currents
+            if isinstance(self.model_file, dict):
+                model_file = self.model_file['u']
+            else:
+                model_file = self.model_file
+            # extract tidal constants for model type
+            amp,ph,D,c = OTIS.extract_constants(lon, lat,
+                self.grid_file, model_file, self.projection,
+                grid=self.file_format, **kwargs)
+        elif self.format in ('ATLAS-netcdf',):
+            # extract model file in case of currents
+            if isinstance(self.model_file, dict):
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
+            else:
+                model_file = self.model_file
+            # extract tidal constants for model type
+            amp,ph,D,c = ATLAS.extract_constants(lon, lat,
+                self.grid_file, model_file, scale=self.scale,
+                compressed=self.compressed, **kwargs)
+        elif self.format in ('GOT-ascii', 'GOT-netcdf'):
+            # extract tidal constants for model type
+            amp,ph,c = GOT.extract_constants(lon, lat,
+                self.model_file, grid=self.file_format,
+                scale=self.scale, compressed=self.compressed,
+                **kwargs)
+        elif self.format in ('FES-ascii', 'FES-netcdf'):
+            # extract model file in case of currents
+            if isinstance(self.model_file, dict):
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
+            else:
+                model_file = self.model_file
+            # extract tidal constants for model type
+            amp,ph = FES.extract_constants(lon, lat,
+                self.model_file, version=self.version,
+                scale=self.scale, compressed=self.compressed,
+                **kwargs)
+            # available model constituents
+            c = self.constituents
+        # append node equilibrium tide if not in constituents list
+        if kwargs['append_node'] and ('node' not in c):
+            # calculate node equilibrium tide
+            anode, pnode = self.node_equilibrium(lat)
+            # concatenate to output
+            amp = np.ma.concatenate((amp, anode[:,None]), axis=1)
+            ph = np.ma.concatenate((ph, pnode[:,None]), axis=1)
+            # convert to complex amplitude and append
+            c.append('node')
+        # return the amplitude, phase, and constituents
+        return (amp, ph, c)
+
+    def read_constants(self, **kwargs):
+        """
+        Read constants from tide models
+
+        Parameters
+        ----------
+        append_node: bool, default False
+            Append equilibrium amplitudes for node tides
+        kwargs: dict
+            Keyword arguments for reading constants
+        """
+        # import tide model functions
+        from pyTMD.io import OTIS, ATLAS, GOT, FES
+        # set default keyword arguments
+        kwargs.setdefault('type', self.type)
+        kwargs.setdefault('append_node', False)
+        kwargs.setdefault('crop', False)
+        kwargs.setdefault('bounds', None)
+        kwargs.setdefault('apply_flexure', False)
+        # read tidal constants
+        if self.format in ('OTIS','ATLAS-compact','TMD3'):
+            # extract model file in case of currents
+            if isinstance(self.model_file, dict):
+                model_file = self.model_file['u']
+            else:
+                model_file = self.model_file
+            # read tidal constants for model type
+            c = OTIS.read_constants(self.grid_file,
+                model_file, self.projection, **kwargs)
+        elif self.format in ('ATLAS-netcdf',):
+            # extract model file in case of currents
+            if isinstance(self.model_file, dict):
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
+            else:
+                model_file = self.model_file
+            # read tidal constants for model type
+            c = ATLAS.read_constants(self.grid_file,
+                model_file, compressed=self.compressed, **kwargs)
+        elif self.format in ('GOT-ascii','GOT-netcdf'):
+            # read tidal constants for model type
+            c = GOT.read_constants(self.model_file,
+                compressed=self.compressed, grid=self.file_format,
+                **kwargs)
+        elif self.format in ('FES-ascii','FES-netcdf'):
+            # extract model file in case of currents
+            if isinstance(self.model_file, dict):
+                TYPE = kwargs['type'].lower()
+                model_file = self.model_file[TYPE]
+            else:
+                model_file = self.model_file
+            # read tidal constants for model type
+            c = FES.read_constants(model_file,
+                version=self.version, compressed=self.compressed,
+                **kwargs)
+        # append node equilibrium tide if not in constituents list
+        if kwargs['append_node'] and ('node' not in c.fields):
+            # calculate node equilibrium tide
+            amp, ph = self.node_equilibrium(c.latitude)
+            # broadcast to shape of constituents
+            if (np.shape(c.latitude) != c.shape):
+                amp = np.broadcast_to(amp[:,None], c.shape, subok=True)
+                ph = np.broadcast_to(ph[:,None], c.shape, subok=True)
+                amp.mask = np.zeros_like(amp.data, dtype=bool)
+                ph.mask = np.zeros_like(ph.data, dtype=bool)
+            # calculate complex phase in radians for Euler's
+            cph = -1j*ph*np.pi/180.0
+            hc = amp*np.exp(cph)
+            # append constituent
+            c.append('node', hc)
+        # return the tidal constituents
+        self._constituents = c
+        return c
+
+    def interpolate_constants(self,
+            lon: np.ndarray,
+            lat: np.ndarray,
+            **kwargs
+        ):
+        """
+        Interpolate tidal constants to input coordinates
+
+        Parameters
+        ----------
+        lon: np.ndarray
+            Longitude point in degrees
+        lat: np.ndarray
+            Latitude point in degrees
+        kwargs: dict
+            Keyword arguments for interpolating constants
+
+        Returns
+        -------
+        amp: np.ndarray
+            Tidal amplitude in meters
+        ph: np.ndarray
+            Tidal phase in degrees
+        """
+        # import tide model functions
+        from pyTMD.io import OTIS, ATLAS, GOT, FES
+        # set default keyword arguments
+        kwargs.setdefault('type', self.type)
+        kwargs.setdefault('method', 'spline')
+        kwargs.setdefault('extrapolate', False)
+        kwargs.setdefault('cutoff', 10.0)
+        # verify constituents have been read
+        if not hasattr(self, '_constituents'):
+            self.read_constants(**kwargs)
+        # interpolate tidal constants to grid points
+        if self.format in ('OTIS','ATLAS-compact','TMD3'):
+            amp,ph,D = OTIS.interpolate_constants(lon, lat,
+                self._constituents, **kwargs)
+        elif self.format in ('ATLAS-netcdf',):
+            amp,ph,D = ATLAS.interpolate_constants(lon, lat,
+                self._constituents, scale=self.scale,
+                **kwargs)
+        elif self.format in ('GOT-ascii','GOT-netcdf'):
+            amp,ph = GOT.interpolate_constants(lon, lat,
+                self._constituents, scale=self.scale,
+                **kwargs)
+        elif self.format in ('FES-ascii','FES-netcdf'):
+            amp,ph = FES.interpolate_constants(lon, lat,
+                self._constituents, scale=self.scale,
+                **kwargs)
+        # return the amplitude and phase
+        return (amp, ph)
+
+    @staticmethod
+    def node_equilibrium(lat: np.ndarray):
+        """
+        Compute the equilibrium amplitude and phase of the 18.6 year
+        node tide [1]_ [2]_
+
+        Parameters
+        ----------
+        lat: np.ndarray
+            latitude (degrees north)
+
+        Returns
+        -------
+        amp: np.ndarray
+            Tidal amplitude in meters
+        phase: np.ndarray
+            Tidal phase in degrees
+
+        References
+        ----------
+        .. [1] D. E. Cartwright and R. J. Tayler,
+            "New Computations of the Tide-generating Potential,"
+            *Geophysical Journal of the Royal Astronomical Society*,
+            23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
+            <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+        .. [2] D. E. Cartwright and A. C. Edden,
+            "Corrected Tables of Tidal Harmonics,"
+            *Geophysical Journal of the Royal Astronomical Society*,
+            33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+            <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+        """
+        # Cartwright and Edden potential amplitude
+        amajor = 0.027929# node
+        # love numbers
+        k2 = 0.302
+        h2 = 0.609
+        gamma_2 = (1.0 + k2 - h2)
+        # 2nd degree Legendre polynomials
+        P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)
+        # calculate equilibrium node constants
+        amp = np.ma.zeros_like(lat, dtype=np.float64)
+        amp.data[:] = amajor*gamma_2*P20*np.sqrt((4.0 + 1.0)/(4.0*np.pi))
+        amp.mask = np.zeros_like(lat, dtype=bool)
+        phase = np.ma.zeros_like(amp)
+        phase.data[:] = 180.0
+        return (amp, phase)
 
     def __str__(self):
         """String representation of the ``io.model`` object
@@ -968,3 +1243,101 @@ class model:
 
     def __setitem__(self, key, value):
         setattr(self, key, value)
+
+def extract_constants(lon: np.ndarray, lat: np.ndarray, m, **kwargs):
+    """
+    Interpolate constants from tide models to input coordinates
+
+    Parameters
+    ----------
+    lon: np.ndarray
+        Longitude point in degrees
+    lat: np.ndarray
+        Latitude point in degrees
+    m: obj
+        ``model`` class object
+    kwargs: dict
+        Keyword arguments for extracting constants
+
+    Returns
+    -------
+    amp: np.ndarray
+        Tidal amplitude in meters
+    ph: np.ndarray
+        Tidal phase in degrees
+    c: list
+        Constituent list
+    """
+    # verify that constituents are valid class instance
+    assert isinstance(m, model)
+    # set default keyword arguments
+    kwargs.setdefault('type', m.type)
+    kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
+    kwargs.setdefault('method', 'spline')
+    kwargs.setdefault('extrapolate', False)
+    kwargs.setdefault('cutoff', None)
+    kwargs.setdefault('apply_flexure', False)
+    # extract tidal constants
+    amp, ph, c = m.extract_constants(lon, lat, **kwargs)
+    # return the amplitude, phase, and constituents
+    return (amp, ph, c)
+
+def read_constants(m, **kwargs):
+    """
+    Read constants from tide models
+
+    Parameters
+    ----------
+    m: obj
+        ``model`` class object
+    kwargs: dict
+        Keyword arguments for reading constants
+
+    Returns
+    -------
+    c: obj
+        ``constituents`` class object
+    """
+    # verify that constituents are valid class instance
+    assert isinstance(m, model)
+    # set default keyword arguments
+    kwargs.setdefault('type', m.type)
+    kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
+    kwargs.setdefault('apply_flexure', False)
+    # read tidal constants
+    m.read_constants(**kwargs)
+    # return the tidal constituents
+    return m._constituents
+
+def interpolate_constants(lon: np.ndarray, lat: np.ndarray, m, **kwargs):
+    """
+    Interpolate tidal constants to input coordinates
+
+    Parameters
+    ----------
+    lon: np.ndarray
+        Longitude point in degrees
+    lat: np.ndarray
+        Latitude point in degrees
+    m: obj
+        ``model`` class object
+    kwargs: dict
+        Keyword arguments for extracting constants
+
+    Returns
+    -------
+    amp: np.ndarray
+        Tidal amplitude in meters
+    ph: np.ndarray
+        Tidal phase in degrees
+    """
+    # set default keyword arguments
+    kwargs.setdefault('method', 'spline')
+    kwargs.setdefault('extrapolate', False)
+    kwargs.setdefault('cutoff', None)
+    # extract tidal constants
+    amp, ph = m.interpolate_constants(lon, lat, **kwargs)
+    # return the amplitude and phase
+    return (amp, ph)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (10/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -38,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 10/2024: can convert Doodson numbers formatted as strings
     Updated 09/2024: add function to calculate tidal angular frequencies
     Updated 08/2024: add support for constituents in PERTH5 tables
         add back nodal arguments from PERTH3 for backwards compatibility
@@ -1993,13 +1994,13 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
         DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
         return np.round(DO, decimals=3)
 
-def _from_doodson_number(DO: float | np.ndarray):
+def _from_doodson_number(DO: str | float | np.ndarray):
     """
     Converts Doodson numbers into Cartwright numbers
 
     Parameters
     ----------
-    DO: float or np.ndarray
+    DO: str, float or np.ndarray
         Doodson number for constituent
 
     Returns
@@ -2008,6 +2009,8 @@ def _from_doodson_number(DO: float | np.ndarray):
         Doodson coefficients (Cartwright numbers) for constituent
     """
     # convert from Doodson number to Cartwright numbers
+    # verify Doodson numbers are floating point variables
+    DO = np.array(DO).astype(float)
     # multiply by 1000 to prevent floating point errors
     coef = np.array([np.mod(1e3*DO, 10**(6-o))//10**(5-o) for o in range(6)])
     # remove 5 from values following Doodson convention

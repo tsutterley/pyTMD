@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 u"""
-test_arguments.py (08/2024)
+test_arguments.py (10/2024)
 Verify arguments table matches prior arguments array
 Verify nodal corrections match prior estimates
 
 UPDATE HISTORY:
+    Updated 10/2024: add comparisons for formatted Doodson numbers
     Updated 08/2024: add comparisons for nodal corrections
     Written 01/2024
 """
@@ -690,12 +691,13 @@ def test_doodson():
     exp['2q1'] = 125.755
     exp['p1'] = 163.555
     # long-period species
-    exp['mm'] = 65.455
-    exp['ssa'] = 57.555
-    exp['msf'] = 73.555
-    exp['mf'] = 75.555
-    exp['msqm'] = 93.555
-    exp['mtm'] = 85.455
+    exp['mm'] = '065.455'
+    exp['ssa'] = '057.555'
+    exp['msf'] = '073.555'
+    exp['mf'] = '075.555'
+    exp['msqm'] = '093.555'
+    exp['mtm'] = '085.455'
+    exp['node'] = '055.565'
     # short-period species
     exp['m3'] = 355.555
     exp['m4'] = 455.555
@@ -706,14 +708,14 @@ def test_doodson():
     cartwright = doodson_number(exp.keys(), formalism='Cartwright')
     # check values
     for key,val in exp.items():
-        assert val == obs[key]
+        assert float(val) == obs[key]
         # check values when entered as string
         test = doodson_number(key)
-        assert val == test
+        assert float(val) == test
         # check conversion to and from Doodson numbers
         doodson = _to_doodson_number(cartwright[key])
         # check values when entered as Cartwright
-        assert val == doodson
+        assert float(val) == doodson
         # check values when entered as Doodson
         coefficients = _from_doodson_number(val)
         assert np.all(cartwright[key] == coefficients)

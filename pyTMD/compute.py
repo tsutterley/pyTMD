@@ -61,6 +61,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2024: compute delta times based on corrections type
+        simplify by using wrapper functions to read and interpolate constants
+        added option to append equilibrium amplitudes for node tides
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         use model class attributes for file format and corrections
@@ -224,6 +226,7 @@ def tide_elevations(
         CORRECTIONS: str | None = None,
         INFER_MINOR: bool = True,
         MINOR_CONSTITUENTS: list | None = None,
+        APPEND_NODE: bool = False,
         APPLY_FLEXURE: bool = False,
         FILL_VALUE: float = np.nan,
         **kwargs
@@ -290,6 +293,8 @@ def tide_elevations(
         Infer the height values for minor tidal constituents
     MINOR_CONSTITUENTS: list or None, default None
         Specify constituents to infer
+    APPEND_NODE: bool, default False
+        Append equilibrium amplitudes for node tides
     APPLY_FLEXURE: bool, default False
         Apply ice flexure scaling factor to height values
 
@@ -353,29 +358,10 @@ def tide_elevations(
     nt = len(ts)
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS', 'ATLAS-compact', 'TMD3'):
-        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
-            model.model_file, model.projection, type=model.type,
-            grid=model.file_format, crop=CROP, bounds=BOUNDS, method=METHOD,
-            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, apply_flexure=APPLY_FLEXURE)
-    elif model.format in ('ATLAS-netcdf',):
-        amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
-            model.model_file, type=model.type, crop=CROP, bounds=BOUNDS,
-            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            scale=model.scale, compressed=model.compressed)
-    elif model.format in ('GOT-ascii', 'GOT-netcdf'):
-        amp,ph,c = pyTMD.io.GOT.extract_constants(lon, lat, model.model_file,
-            grid=model.file_format, crop=CROP, bounds=BOUNDS, method=METHOD,
-            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
-            compressed=model.compressed)
-    elif model.format in ('FES-ascii', 'FES-netcdf'):
-        amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file,
-            type=model.type, version=model.version, crop=CROP, bounds=BOUNDS,
-            method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            scale=model.scale, compressed=model.compressed)
-        # available model constituents
-        c = model.constituents
-
+    amp, ph, c = model.extract_constants(lon, lat, type=model.type,
+        crop=CROP, bounds=BOUNDS, method=METHOD,
+        extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
+        append_node=APPEND_NODE, apply_flexure=APPLY_FLEXURE)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillation
@@ -593,24 +579,9 @@ def tide_currents(
     # iterate over u and v currents
     for t in model.type:
         # read tidal constants and interpolate to grid points
-        if model.format in ('OTIS', 'ATLAS-compact', 'TMD3'):
-            amp,ph,D,c = pyTMD.io.OTIS.extract_constants(lon, lat, model.grid_file,
-                model.model_file['u'], model.projection, type=t,
-                grid=model.file_format, crop=CROP, bounds=BOUNDS,
-                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF)
-        elif model.format in ('ATLAS-netcdf',):
-            amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(lon, lat, model.grid_file,
-                model.model_file[t], type=t, crop=CROP, bounds=BOUNDS,
-                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-                scale=model.scale, compressed=model.compressed)
-        elif model.format in ('FES-ascii', 'FES-netcdf'):
-            amp,ph = pyTMD.io.FES.extract_constants(lon, lat, model.model_file[t],
-                type=t, version=model.version, crop=CROP, bounds=BOUNDS,
-                method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-                scale=model.scale, compressed=model.compressed)
-            # available model constituents
-            c = model.constituents
-
+        amp, ph, c = model.extract_constants(lon, lat, type=t,
+            crop=CROP, bounds=BOUNDS, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF)
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
         # calculate constituent oscillation

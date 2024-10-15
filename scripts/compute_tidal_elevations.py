@@ -60,6 +60,7 @@ COMMAND LINE OPTIONS:
         set to inf to extrapolate for all points
     --infer-minor: Infer values for minor constituents
     --minor-constituents: Minor constituents to infer
+    --append-node: Append equilibrium amplitudes for node tides
     --apply-flexure: Apply ice flexure scaling factor to height values
         Only valid for models containing flexure fields
     -f X, --fill-value X: Invalid value for spatial fields
@@ -102,6 +103,8 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2024: compute delta times based on corrections type
+        simplify by using wrapper functions to read and interpolate constants
+        added option to append equilibrium amplitudes for node tides
     Updated 09/2024: use JSON database for known model parameters
         use model name in default output filename for definition file case
         drop support for the ascii definition file format
@@ -234,6 +237,7 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     CORRECTIONS=None,
     INFER_MINOR=False,
     MINOR_CONSTITUENTS=None,
+    APPEND_NODE=False,
     APPLY_FLEXURE=False,
     FILL_VALUE=-9999.0,
     MODE=0o775):
@@ -305,29 +309,9 @@ def compute_tidal_elevations(tide_dir, input_file, output_file,
     nt = len(ts)
 
     # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS-compact','TMD3'):
-        amp,ph,D,c = pyTMD.io.OTIS.extract_constants(np.ravel(lon), np.ravel(lat),
-            model.grid_file, model.model_file, model.projection,
-            type=model.type, grid=model.file_format, crop=CROP, method=METHOD,
-            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, apply_flexure=APPLY_FLEXURE)
-    elif (model.format == 'ATLAS-netcdf'):
-        amp,ph,D,c = pyTMD.io.ATLAS.extract_constants(np.ravel(lon), np.ravel(lat),
-            model.grid_file, model.model_file, type=model.type,
-            crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            scale=model.scale, compressed=model.compressed)
-    elif model.format in ('GOT-ascii', 'GOT-netcdf'):
-        amp,ph,c = pyTMD.io.GOT.extract_constants(np.ravel(lon), np.ravel(lat),
-            model.model_file, grid=model.file_format, crop=CROP, method=METHOD,
-            extrapolate=EXTRAPOLATE, cutoff=CUTOFF, scale=model.scale,
-            compressed=model.compressed)
-    elif (model.format == 'FES-netcdf'):
-        amp,ph = pyTMD.io.FES.extract_constants(np.ravel(lon), np.ravel(lat),
-            model.model_file, type=model.type, version=model.version,
-            crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
-            scale=model.scale, compressed=model.compressed)
-        # available model constituents
-        c = model.constituents
-
+    amp, ph, c = model.extract_constants(np.ravel(lon), np.ravel(lat),
+        type=model.type, crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE,
+        cutoff=CUTOFF, append_node=APPEND_NODE, apply_flexure=APPLY_FLEXURE)
     # calculate complex phase in radians for Euler's
     cph = -1j*ph*np.pi/180.0
     # calculate constituent oscillation
@@ -563,6 +547,10 @@ def arguments():
     parser.add_argument('--minor-constituents',
         metavar='MINOR', type=str, nargs='+',
         help='Minor constituents to infer')
+    # append equilibrium amplitudes for node tides
+    parser.add_argument('--append-node',
+        default=False, action='store_true',
+        help='Append equilibrium amplitudes for node tides')
     # apply flexure scaling factors to height values
     parser.add_argument('--apply-flexure',
         default=False, action='store_true',
@@ -628,6 +616,7 @@ def main():
             CORRECTIONS=args.nodal_corrections,
             INFER_MINOR=args.infer_minor,
             MINOR_CONSTITUENTS=args.minor_constituents,
+            APPEND_NODE=args.append_node,
             APPLY_FLEXURE=args.apply_flexure,
             FILL_VALUE=args.fill_value,
             MODE=args.mode)
