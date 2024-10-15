@@ -39,13 +39,16 @@ Glossary
         see :term:`Harmonic Constituents`
 
     Declination
-        angular distance of an astronomical body north or south of the celestial equator
+        angular distance of an astronomical body north or south of the celestial equator, with north being positive and south negative
 
     Descending Node
         point of an orbit where a celestial body intersects the ecliptic, and the latitude coordinate is decreasing
 
     Diurnal Tide
         tidal oscillations with a near-daily period
+
+    Earth Tide
+        tidal variations of the surface of the solid Earth, frequently split into the :term:`Body Tide` and the :term:`Load Tide`
 
     Ecliptic
         plane of the orbit of the Earth around the sun
@@ -60,10 +63,16 @@ Glossary
         fixed point in time used as a reference value
 
     Equilibrium Tide
-        hypothetical tide produced solely by lunisolar gravitational forces under equilibrium theory
+        hypothetical tide produced solely by lunisolar gravitational forces under equilibrium theory, in the absence of inertia and currents
+
+    Equinox
+        the ascending node of the Earth's orbit about the sun, and the point on the equatorial plane where it meets the ecliptic plane
 
     Frequency
         number of cycles in a unit time
+
+    Geocentric Tide
+        Tidal variation relative to the Earth's center of figure, which is equal to the sum of the :term:`Ocean Tide` and :term:`Earth Tide`
 
     Geoid
         equipotential surface coinciding with the ocean surface in the absence of astronomical or dynamical effects
@@ -75,22 +84,40 @@ Glossary
         amplitude and phase of the :term:`Harmonic Constituents`
 
     Harmonic Constituents
-        harmonic elements of the tide-producing force  corresponding with a periodic change of relative position of the Earth, Sun and Moon
+        harmonic elements of the tide-producing force corresponding with a periodic change of relative position of the Earth, Sun and Moon
 
     Harmonic Prediction
-        Method of estimating tidal elevations and currents through a combination of the :term:`Harmonic Constituents`
+        method of estimating tidal elevations and currents through a combination of the :term:`Harmonic Constituents`
+
+    High Water Height
+        height of the maximum vertical elevation of the tide relative to a fixed datum
+
+        see :term:`Low Water Height`
+
+    King Tide
+        see :term:`Spring Tide`
 
     Load Tide
         elastic deformation of the solid Earth due to ocean and atmospheric tides
 
     Long Period Tide
-        tidal oscillations with periods much greater than one day
+        tidal oscillations with periods much greater than one day (typically 9.1 days to 18.6 years)
 
     Love and Shida Numbers
         dimensionless parameters relating the vertical (`h`), horizontal (`l`) and gravitational (`k`) elastic responses to tidal loading
 
+    Low Water Height
+        height of the minimum vertical elevation of the tide relative to a fixed datum
+
+        see :term:`High Water Height`
+
     Mean Tide
         model with both direct and indirect permanent tidal effects retained
+
+    Neap Tide
+        tides of the least amplitude within a 15-day cycle
+
+        see :term:`Spring Tide`
 
     Nodal Corrections
         adjustments to the amplitudes and phases of harmonic constituents to allow for periodic modulations
@@ -125,11 +152,19 @@ Glossary
     Pole Tide
         apparent tide due to variations in the Earth's figure axis about its mean
 
+    Range
+        Height difference between the :term:`High Water Height` and the :term:`Low Water Height`
+
     Semi-diurnal Tide
         tidal oscillations with an approximate half-day period
 
     Solid Earth Tide
         deformation of the solid Earth due to gravitational forces
+
+    Spring Tide
+        tides of the greatest amplitude within a 15-day cycle, sometimes called a :term:`King Tide`
+
+        see :term:`Neap Tide`
 
     Tidal Current
         horizontal movement of water due to periodic forces

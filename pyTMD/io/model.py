@@ -1187,8 +1187,8 @@ class model:
     @staticmethod
     def node_equilibrium(lat: np.ndarray):
         """
-        Compute the complex amplitude of the 18.6 year equilibrium node tide
-        for inferrence when not supplied as a constituent [1]_ [2]_
+        Compute the equilibrium amplitude and phase of the 18.6 year
+        node tide [1]_ [2]_
 
         Parameters
         ----------
