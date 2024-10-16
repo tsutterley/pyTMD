@@ -68,6 +68,11 @@ Glossary
     Equinox
         the ascending node of the Earth's orbit about the sun, and the point on the equatorial plane where it meets the ecliptic plane
 
+    Free Core Nutation
+        Nearly diurnal deviations in the motion of the pole of rotation due to the resonant motion of the Earth's core relative to the mantle
+
+        see :term:`Nutation`
+
     Frequency
         number of cycles in a unit time
 

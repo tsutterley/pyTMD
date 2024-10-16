@@ -1,0 +1,44 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: pyTMD
+message: Python-based tidal prediction software
+type: software
+authors:
+  - given-names: Tyler
+    family-names: Sutterley
+    affiliation: University of Washington, Applied Physics Laboratory
+  - given-names: Karen
+    family-names: Alley
+    affiliation: University of Manitoba
+  - given-names: Robbi
+    family-names: Bishop-Taylor
+    affiliation: Geoscience Australia
+  - given-names: Kelly
+    family-names: Brunt
+    affiliation: NASA Goddard Space Flight Center
+  - given-names: Susan
+    family-names: Howard
+    affiliation: Earth & Space Research
+  - given-names: Laurie
+    family-names: Padman
+    affiliation: Earth & Space Research
+  - given-names: Matthew
+    family-names: Siegfried
+    affiliation: Colorado School of Mines
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.5555395
+    description: Zenodo Archive
+repository-code: 'https://github.com/tsutterley/pyTMD'
+url: 'https://pytmd.readthedocs.io'
+repository: 'https://pypi.org/project/pyTMD'
+repository-artifact: 'https://anaconda.org/conda-forge/pytmd'
+keywords:
+  - Ocean Tides
+  - Load Tides
+  - Pole Tides
+  - Solid Earth Tides
+  - Tidal Prediction
+license: MIT
