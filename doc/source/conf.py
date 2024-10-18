@@ -83,7 +83,14 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_logo = "_assets/pyTMD_logo.png"
 html_static_path = ['_static']
-repository_url = metadata['Home-page']
+# fetch the project urls
+project_urls = {}
+for project_url in metadata.get_all('Project-URL'):
+    name, _, url = project_url.partition(', ')
+    project_urls[name.lower()] = url
+# fetch the repository url
+repository_url = project_urls.get('repository')
+# add html context
 html_context = {
     "menu_links": [
         (
@@ -93,6 +100,10 @@ html_context = {
         (
             '<i class="fa fa-book fa-fw"></i> License',
             f"{repository_url}/blob/main/LICENSE",
+        ),
+        (
+            '<i class="fa fa-comment fa-fw"></i> Discussions',
+            f"{repository_url}/discussions",
         ),
     ],
 }
