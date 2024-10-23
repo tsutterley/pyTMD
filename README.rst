@@ -2,31 +2,27 @@
 pyTMD
 =====
 
-|Language|
 |License|
-|PyPI Version|
-|Anaconda-Server|
 |Documentation Status|
-|codecov|
+|Coverage Status|
+|PyPI|
+|conda-forge|
 |zenodo|
-
-.. |Language| image:: https://img.shields.io/pypi/pyversions/pyTMD?color=green
-   :target: https://www.python.org/
 
 .. |License| image:: https://img.shields.io/github/license/tsutterley/pyTMD
    :target: https://github.com/tsutterley/pyTMD/blob/main/LICENSE
 
-.. |PyPI Version| image:: https://img.shields.io/pypi/v/pyTMD.svg
-   :target: https://pypi.python.org/pypi/pyTMD/
-
-.. |Anaconda-Server| image:: https://img.shields.io/conda/vn/conda-forge/pytmd
-   :target: https://anaconda.org/conda-forge/pytmd
-
 .. |Documentation Status| image:: https://readthedocs.org/projects/pytmd/badge/?version=latest
    :target: https://pytmd.readthedocs.io/en/latest/?badge=latest
 
-.. |codecov| image:: https://codecov.io/gh/tsutterley/pyTMD/branch/main/graph/badge.svg
+.. |Coverage Status| image:: https://codecov.io/gh/tsutterley/pyTMD/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/tsutterley/pyTMD
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/pyTMD.svg
+   :target: https://pypi.python.org/pypi/pyTMD/
+
+.. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pytmd
+   :target: https://anaconda.org/conda-forge/pytmd
 
 .. |zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5555395.svg
    :target: https://doi.org/10.5281/zenodo.5555395

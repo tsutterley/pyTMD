@@ -23,6 +23,11 @@ Glossary
 
         see :term:`Perihelion`
 
+    Apsides
+        points of an orbit where a celestial body is closest and furthest from the center of attraction
+
+        see :term:`Perihelion`, :term:`Aphelion`, :term:`Perigee` and :term:`Apogee`
+
     Ascending Node
         point of an orbit where a celestial body intersects the ecliptic, and the latitude coordinate is increasing
 
@@ -34,6 +39,9 @@ Glossary
 
     Chandler Wobble
         small, semi-periodic deviations in the motion of the pole of rotation
+
+    Compount Tide
+        harmonic constituent with a speed equal to the sum or difference of the speeds of two or more elementary constituents
 
     Constituent
         see :term:`Harmonic Constituents`
@@ -62,8 +70,11 @@ Glossary
     Epoch
         fixed point in time used as a reference value
 
+    Equilibrium Theory
+        model under which the ocean of a uniformly covered Earth responds instantaneously to lunisolar gravitational forces and forms an equilibrium under these forces, in the absence of inertia, currents and the irregular distribution of land
+
     Equilibrium Tide
-        hypothetical tide produced solely by lunisolar gravitational forces under equilibrium theory, in the absence of inertia and currents
+        hypothetical tide produced solely by lunisolar gravitational forces under :term:`Equilibrium Theory`, in the absence of ocean dynamics or terrestrial constraints
 
     Equinox
         the ascending node of the Earth's orbit about the sun, and the point on the equatorial plane where it meets the ecliptic plane
@@ -77,7 +88,10 @@ Glossary
         number of cycles in a unit time
 
     Geocentric Tide
-        Tidal variation relative to the Earth's center of figure, which is equal to the sum of the :term:`Ocean Tide` and :term:`Earth Tide`
+        tidal variation relative to the Earth's center of figure, which is equal to the sum of the :term:`Ocean Tide` and :term:`Earth Tide`
+
+    Geopotential
+        the Earth's gravitational potential
 
     Geoid
         equipotential surface coinciding with the ocean surface in the absence of astronomical or dynamical effects
@@ -116,6 +130,9 @@ Glossary
 
         see :term:`High Water Height`
 
+    Lunisolar Tide
+        tidal constituent induced from a combination of lunar and solar gravitational forces
+
     Mean Tide
         model with both direct and indirect permanent tidal effects retained
 
@@ -125,7 +142,7 @@ Glossary
         see :term:`Spring Tide`
 
     Nodal Corrections
-        adjustments to the amplitudes and phases of harmonic constituents to allow for periodic modulations
+        adjustments to the amplitudes and phases of harmonic constituents to allow for periodic modulations over the 18.6-year nodal period
 
     Nutation
         short-period oscillations in the motion of the pole of rotation
@@ -155,16 +172,27 @@ Glossary
         see :term:`Mean Tide`, :term:`Tide-Free`, and :term:`Zero Tide`
 
     Pole Tide
-        apparent tide due to variations in the Earth's figure axis about its mean
+        apparent tide due to variations in the Earth's axis of rotation about its mean
 
     Range
-        Height difference between the :term:`High Water Height` and the :term:`Low Water Height`
+        height difference between the :term:`High Water Height` and the :term:`Low Water Height`
+
+    Residuals
+        differences between the observed sea level and the tidal predictions for a given location
 
     Semi-diurnal Tide
         tidal oscillations with an approximate half-day period
 
+    Sidereal day
+        time it takes for a celestial body to make one complete rotation relative to the stars
+
     Solid Earth Tide
         deformation of the solid Earth due to gravitational forces
+
+    Species
+        classification of tidal constituents based on approximate period
+
+        see :term:`Semi-diurnal Tide`, :term:`Diurnal Tide`, and :term:`Long Period Tide`
 
     Spring Tide
         tides of the greatest amplitude within a 15-day cycle, sometimes called a :term:`King Tide`
@@ -174,10 +202,13 @@ Glossary
     Tidal Current
         horizontal movement of water due to periodic forces
 
-    Tidal Species
-        classification of tidal constituents based on period
+    Tidal Datum
+        reference level to which a phase of the tides are measured
 
-        see :term:`Semi-diurnal Tide`, :term:`Diurnal Tide`, and :term:`Long Period Tide`
+        see :term:`High Water Height` and :term:`Low Water Height`
+
+    Tidal Species
+        see :term:`Species`
 
     Tidal Stream
         see :term:`Tidal Current`
