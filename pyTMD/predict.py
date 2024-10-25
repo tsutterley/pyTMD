@@ -23,6 +23,7 @@ UPDATE HISTORY:
     Updated 10/2024: use PREM as the default Earth model for Love numbers
         more descriptive error message if cannot infer minor constituents
         updated calculation of long-period equilibrium tides
+        added option to use Munk-Cartwright admittance interpolation for minor
     Updated 09/2024: verify order of minor constituents to infer
         fix to use case insensitive assertions of string argument values
         split infer minor function into short and long period calculations
@@ -532,6 +533,11 @@ def _infer_semi_diurnal(
         time correction for converting to Ephemeris Time (days)
     minor: list or None, default None
         tidal constituent IDs of minor constituents for inference
+    method: str, default 'linear'
+        method for interpolating between major constituents
+
+            * 'linear': linear interpolation
+            * 'admittance': Munk-Cartwright admittance interpolation
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -558,9 +564,12 @@ def _infer_semi_diurnal(
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('method', 'linear')
     kwargs.setdefault('raise_exception', False)
     # list of minor constituents
     kwargs.setdefault('minor', None)
+    # validate interpolation method
+    assert kwargs['method'].lower() in ('linear', 'admittance')
     # number of constituents
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
@@ -569,6 +578,7 @@ def _infer_semi_diurnal(
     # allocate for output elevation correction
     dh = np.ma.zeros((n))
     # major constituents used for inferring semi-diurnal minor tides
+    # pivot waves listed in Table 6.7 of the 2010 IERS Conventions
     cindex = ['n2', 'm2', 's2']
     # angular frequencies for major constituents
     omajor = pyTMD.arguments.frequency(cindex, **kwargs)
@@ -584,6 +594,7 @@ def _infer_semi_diurnal(
         j = [j for j,val in enumerate(constituents) if (val.lower() == c)]
         if j:
             j1, = j
+            # "normalize" tide values
             z[:,i] = zmajor[:,j1]/amajor[i]
             nz += 1
 
@@ -639,13 +650,27 @@ def _infer_semi_diurnal(
 
     # sum over the minor tidal constituents of interest
     for k in minor_indices:
-        # linearly interpolate between major constituents
-        if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
-            slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
-            zmin = amin[k]*(z[:,0] + slope*(omega[k] - omajor[0]))
-        else:
-            slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
-            zmin = amin[k]*(z[:,1] + slope*(omega[k] - omajor[1]))
+        # interpolate from major constituents
+        if (kwargs['method'].lower() == 'linear'):
+            # linearly interpolate between major constituents
+            if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
+                slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
+                zmin = amin[k]*(z[:,0] + slope*(omega[k] - omajor[0]))
+            else:
+                slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
+                zmin = amin[k]*(z[:,1] + slope*(omega[k] - omajor[1]))
+        elif (kwargs['method'].lower() == 'admittance'):
+            # admittance interpolation using Munk-Cartwright approach
+            Ainv = np.array([[3.3133, -4.2538, 1.9405],
+                [-3.3133, 4.2538, -0.9405],
+                [1.5018, -3.2579, 1.7561]])
+            coef = np.inner(Ainv, z)
+            # convert frequency to cycles per day
+            f = 2.0*omega[k]*86400.0
+            # calculate interpolated values for constituent
+            interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
+            # rescale tide values
+            zmin = amin[k]*interp
         # sum over all tides
         th = G[:,k]*np.pi/180.0 + pu[:,k]
         dh += zmin.real*pf[:,k]*np.cos(th) - \
@@ -676,6 +701,11 @@ def _infer_diurnal(
         time correction for converting to Ephemeris Time (days)
     minor: list or None, default None
         tidal constituent IDs of minor constituents for inference
+    method: str, default 'linear'
+        method for interpolating between major constituents
+
+            * 'linear': linear interpolation
+            * 'admittance': Munk-Cartwright admittance interpolation
     raise_exception: bool, default False
         Raise a ``ValueError`` if major constituents are not found
 
@@ -691,9 +721,10 @@ def _infer_diurnal(
         Royal Society of London. Series A, Mathematical and Physical
         Sciences*, 259(1105), 533--581, (1966).
         `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
-    .. [2] R. D. Ray, "A global ocean tide model from
-        Topex/Poseidon altimetry: GOT99.2",
-        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
+    .. [2] R. D. Ray, "On Tidal Inference in the Diurnal Band",
+        Journal of Atmospheric and Oceanic Technology, 34(2), 437--446,
+        (2017). `doi: 10.1175/jtech-d-16-0142.1
+        <https://doi.org/10.1175/jtech-d-16-0142.1>`_
     .. [3] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
         tide and in the Earth's load response due to the resonant free
         `core nutation`", *Geophysical Journal of the Royal Astronomical
@@ -708,9 +739,12 @@ def _infer_diurnal(
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('method', 'linear')
     kwargs.setdefault('raise_exception', False)
     # list of minor constituents
     kwargs.setdefault('minor', None)
+    # validate interpolation method
+    assert kwargs['method'].lower() in ('linear', 'admittance')
     # number of constituents
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
@@ -719,6 +753,7 @@ def _infer_diurnal(
     # allocate for output elevation correction
     dh = np.ma.zeros((n))
     # major constituents used for inferring diurnal minor tides
+    # pivot waves listed in Table 6.7 of the 2010 IERS Conventions
     cindex = ['q1', 'o1', 'k1']
     # angular frequencies for major constituents
     omajor = pyTMD.arguments.frequency(cindex, **kwargs)
@@ -737,7 +772,7 @@ def _infer_diurnal(
             # Love numbers of degree 2 for constituent
             h2, k2, l2 = _body_tide_love_numbers(omajor[i])
             gamma_2 = (1.0 + k2 - h2)
-            # scaled tide
+            # "normalize" tide values
             z[:,i] = zmajor[:,j1]/(amajor[i]*gamma_2)
             nz += 1
 
@@ -799,13 +834,27 @@ def _infer_diurnal(
         # Love numbers of degree 2 for constituent
         h2, k2, l2 = _body_tide_love_numbers(omega[k])
         gamma_2 = (1.0 + k2 - h2)
-        # linearly interpolate between major constituents
-        if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
-            slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
-            zmin = amin[k]*gamma_2*(z[:,0] + slope*(omega[k] - omajor[0]))
-        else:
-            slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
-            zmin = amin[k]*gamma_2*(z[:,1] + slope*(omega[k] - omajor[1]))
+        # interpolate from major constituents
+        if (kwargs['method'].lower() == 'linear'):
+            # linearly interpolate between major constituents
+            if (omajor[0] < omajor[1]) and (omega[k] < omajor[1]):
+                slope = (z[:,1] - z[:,0])/(omajor[1] - omajor[0])
+                zmin = amin[k]*gamma_2*(z[:,0] + slope*(omega[k] - omajor[0]))
+            else:
+                slope = (z[:,2] - z[:,1])/(omajor[2] - omajor[1])
+                zmin = amin[k]*gamma_2*(z[:,1] + slope*(omega[k] - omajor[1]))
+        elif (kwargs['method'].lower() == 'admittance'):
+            # admittance interpolation using Munk-Cartwright approach
+            Ainv = np.array([[3.1214, -3.8494, 1.728],
+                [-3.1727, 3.9559, -0.7832],
+                [1.438, -3.0297, 1.5917]])
+            coef = np.inner(Ainv, z)
+            # convert frequency to cycles per day
+            f = 2.0*omega[k]*86400.0
+            # calculate interpolated values for constituent
+            interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
+            # rescale tide values
+            zmin = amin[k]*gamma_2*interp
         # sum over all tides
         th = G[:,k]*np.pi/180.0 + pu[:,k]
         dh += zmin.real*pf[:,k]*np.cos(th) - \
@@ -873,6 +922,7 @@ def _infer_long_period(
     # allocate for output elevation correction
     dh = np.ma.zeros((n))
     # major constituents used for inferring long period minor tides
+    # pivot waves listed in Table 6.7 of the 2010 IERS Conventions
     cindex = ['node', 'mm', 'mf']
     # angular frequencies for major constituents
     omajor = pyTMD.arguments.frequency(cindex, **kwargs)

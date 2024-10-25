@@ -57,6 +57,11 @@ COMMAND LINE OPTIONS:
     -E X, --extrapolate X: Extrapolate with nearest-neighbors
     -c X, --cutoff X: Extrapolation cutoff in kilometers
         set to inf to extrapolate for all points
+    --nodal-corrections: Nodal corrections to apply
+        OTIS
+        FES
+        GOT
+        perth3
     --infer-minor: Infer values for minor constituents
     --minor-constituents: Minor constituents to infer
     -f X, --fill-value X: Invalid value for spatial fields
