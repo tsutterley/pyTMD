@@ -23,6 +23,27 @@ If you have used ``pyTMD`` in your work, please consider citing our library:
     "pyTMD: Python-based tidal prediction software", (2017).
     `doi: 10.5281/zenodo.5555395 <https://doi.org/10.5281/zenodo.5555395>`_
 
+Data Citations
+##############
+
+Internally, ``pyTMD`` includes datasets from the following:
+
+    D. E. Cartwright and R. J. Tayler, "New Computations of the Tide-generating Potential,"
+    *Geophysical Journal of the Royal Astronomical Society*, 23(1), 45--73. (1971).
+    `doi: 10.1111/j.1365-246X.1971.tb01803.x <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+
+    D. E. Cartwright and A. C. Edden, "Corrected Tables of Tidal Harmonics,"
+    *Geophysical Journal of the Royal Astronomical Society*, 33(3), 253--264, (1973).
+    `doi: 10.1111/j.1365-246X.1973.tb03420.x <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+    
+    S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from satellite altimetry",
+    *Journal of Geodesy*, 89(12), p1233-1243, (2015).
+    `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
+    
+    *IERS Conventions (2010)*, G. Petit and B. Luzum (eds.), (IERS Technical Note; 36),
+    Frankfurt am Main: Verlag des Bundesamts f\ |uuml|\ r Kartographie und Geod\ |auml|\ sie, 179 pp. (2010).
+    `ISBN 3-89888-989-6 <https://www.iers.org/IERS/EN/Publications/TechnicalNotes/tn36.html>`_
+
 Contributors
 ############
 
@@ -89,3 +110,7 @@ of Washington Applied Physics Laboratory (UW-APL).
 It is not sponsored or maintained by the Universities Space Research Association (USRA), AVISO or NASA.
 Outputs from this software should be used for scientific or technical purposes only.
 This software should not be used for coastal navigation or any application that may risk life or property.
+
+.. |auml|    unicode:: U+00E4 .. LATIN SMALL LETTER A WITH DIAERESIS
+.. |uuml|    unicode:: U+00FC .. LATIN SMALL LETTER U WITH DIAERESIS
+
