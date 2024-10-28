@@ -39,6 +39,9 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 10/2024: can convert Doodson numbers formatted as strings
+        update Doodson number conversions to follow Cartwright X=10 convention
+        add function to parse Cartwright/Tayler/Edden tables
+        add functions to calculate UKHO Extended Doodson numbers for constituents
     Updated 09/2024: add function to calculate tidal angular frequencies
     Updated 08/2024: add support for constituents in PERTH5 tables
         add back nodal arguments from PERTH3 for backwards compatibility
@@ -71,8 +74,11 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
+import re
+import pathlib
 import numpy as np
 import pyTMD.astro
+from pyTMD.utilities import get_data_path
 
 __all__ = [
     "arguments",
@@ -84,8 +90,11 @@ __all__ = [
     "_arguments_table",
     "_minor_table",
     "_constituent_parameters",
+    "_parse_tide_potential_table",
     "_to_doodson_number",
-    "_from_doodson_number"
+    "_to_extended_doodson",
+    "_from_doodson_number",
+    "_from_extended_doodson"
 ]
 
 def arguments(
@@ -952,6 +961,7 @@ def doodson_number(
 
             - ``'Cartwright'``
             - ``'Doodson'``
+            - ``'Extended'``
     raise_error: bool, default True
         Raise exception if constituent is unsupported
 
@@ -973,7 +983,7 @@ def doodson_number(
     kwargs.setdefault('formalism', 'Doodson')
     kwargs.setdefault('raise_error', True)
     # validate inputs
-    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
+    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson','Extended'), \
         f'Unknown formalism {kwargs["formalism"]}'
     # get the coefficients of coefficients
     if isinstance(constituents, str):
@@ -992,6 +1002,9 @@ def doodson_number(
         elif (kwargs['formalism'] == 'Doodson'):
             # convert from coefficients to Doodson number
             numbers = _to_doodson_number(coefficients[:,0], **kwargs)
+        elif (kwargs['formalism'] == 'Extended'):
+            # convert to extended Doodson number in UKHO format
+            numbers = _to_extended_doodson(coefficients[:,0], **kwargs)
     else:
         # output dictionary with Doodson numbers
         numbers = {}
@@ -1013,6 +1026,9 @@ def doodson_number(
             elif (kwargs['formalism'] == 'Doodson'):
                 # convert from coefficients to Doodson number
                 numbers[c] = _to_doodson_number(coefficients[:,0], **kwargs)
+            elif (kwargs['formalism'] == 'Extended'):
+                # convert to extended Doodson number in UKHO format
+                numbers[c] = _to_extended_doodson(coefficients[:,0], **kwargs)
     # return the Doodson or Cartwright number
     return numbers
 
@@ -1962,6 +1978,64 @@ def _constituent_parameters(c: str, **kwargs):
     # return the values for the constituent
     return (amplitude, phase, omega, alpha, species)
 
+# Cartright and Tayler (1971) table with 3rd-degree values
+_ct1971_table_5 = get_data_path(['data','ct1971_tab5.txt'])
+# Cartwright and Edden (1973) table with updated values
+_ce1973_table_1 = get_data_path(['data','ce1973_tab1.txt'])
+
+def _parse_tide_potential_table(table: str | pathlib.Path):
+    """Parse tables of tide-generating potential from [1]_ and [2]_
+
+    Parameters
+    ----------
+    table: str or pathlib.Path
+        table of tide-generating potentials
+
+    Returns
+    -------
+    CTE: float
+        Cartwright-Tayler-Edden table values
+
+    References
+    ----------
+    .. [1] D. E. Cartwright and R. J. Tayler,
+        "New Computations of the Tide-generating Potential,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
+        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+    .. [2] D. E. Cartwright and A. C. Edden,
+        "Corrected Tables of Tidal Harmonics,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+    """
+    # verify table path
+    table = pathlib.Path(table).expanduser().absolute()
+    with table.open(mode='r', encoding='utf8') as f:
+        file_contents = f.readlines()
+    # number of lines in the file
+    file_lines = len(file_contents)
+    # tau: coefficient for mean lunar time
+    # s: coefficient for mean longitude of moon
+    # h: coefficient for mean longitude of sun
+    # p: coefficient for mean longitude of lunar perigee
+    # n: coefficient for mean longitude of ascending lunar node
+    # pp: coefficient for mean longitude of solar perigee
+    # Hs1: amplitude for epoch span 1 (1861-09-21 to 1879-09-22)
+    # Hs2: amplitude for epoch span 2 (1915-05-16 to 1933-05-22)
+    # Hs3: amplitude for epoch span 2 (1951-05-23 to 1969-05-22)
+    # DO: Doodson number for coefficient
+    # Hs0: Doodson scaled amplitude for 1900
+    names = ('tau','s','h','p','n','pp','Hs1','Hs2','Hs3','DO','Hs0')
+    formats = ('i','i','i','i','i','i','f','f','f','U7','f')
+    dtype = np.dtype({'names':names, 'formats':formats})
+    CTE = np.zeros((file_lines), dtype=dtype)
+    for i,line in enumerate(file_contents):
+        # drop last column with values from Doodson (1921)
+        CTE[i] = np.array(tuple(line.split()[:11]), dtype=dtype)
+    # return the table values
+    return CTE
+
 def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     """
     Converts Cartwright numbers into a Doodson number
@@ -1975,13 +2049,13 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
 
     Returns
     -------
-    DO: float
+    DO: float or string
         Doodson number for constituent
     """
     # default keyword arguments
     kwargs.setdefault('raise_error', True)
     # assert length and verify array
-    coef = np.array(coef[:6])
+    coef = np.array(coef[:6]).astype(int)
     # add 5 to values following Doodson convention (prevent negatives)
     coef[1:] += 5
     # check for unsupported constituents
@@ -1989,12 +2063,41 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
         raise ValueError('Unsupported constituent')
     elif (np.any(coef < 0) or np.any(coef > 10)):
         return None
+    elif np.any(coef == 10):
+        # convert to string and replace 10 with X (Cartwright convention)
+        DO = [str(v).replace('10','X') for v in coef]
+        # convert to Doodson number
+        return np.str_('{0}{1}{2}.{3}{4}{5}'.format(*DO))
     else:
         # convert to single number and round off floating point errors
         DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
         return np.round(DO, decimals=3)
 
-def _from_doodson_number(DO: str | float | np.ndarray):
+def _to_extended_doodson(coef: list | np.ndarray, **kwargs):
+    """
+    Converts Cartwright numbers into an UKHO Extended Doodson number
+
+    Parameters
+    ----------
+    coef: list or np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+
+    Returns
+    -------
+    XDO: string
+        Extended Doodson number for constituent
+    """
+    # assert length and verify array
+    coef = np.array(coef).astype(int)
+    # digits for UKHO Extended Doodson number
+    # Z = 0
+    # A - P = 1 to 15
+    # R - Y = -8 to -1
+    digits = 'RSTUVWXYZABCDEFGHIJKLMNOP'
+    XDO = ''.join([digits[v+8] for v in coef])
+    return np.str_(XDO)
+
+def _from_doodson_number(DO: str | float | np.ndarray, **kwargs):
     """
     Converts Doodson numbers into Cartwright numbers
 
@@ -2009,10 +2112,31 @@ def _from_doodson_number(DO: str | float | np.ndarray):
         Doodson coefficients (Cartwright numbers) for constituent
     """
     # convert from Doodson number to Cartwright numbers
-    # verify Doodson numbers are floating point variables
-    DO = np.array(DO).astype(float)
-    # multiply by 1000 to prevent floating point errors
-    coef = np.array([np.mod(1e3*DO, 10**(6-o))//10**(5-o) for o in range(6)])
+    coef = [c.replace('X', '10') for c in re.findall(r'\w', str(DO).zfill(7))]
+    coef = np.array(coef, dtype=int)
     # remove 5 from values following Doodson convention
     coef[1:] -= 5
+    return coef
+
+def _from_extended_doodson(XDO: str | np.str_, **kwargs):
+    """
+    Converts UKHO Extended Doodson number into Cartwright numbers
+
+    Parameters
+    ----------
+    XDO: string
+        Extended Doodson number for constituent
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+    """
+    # digits for UKHO Extended Doodson number
+    # Z = 0
+    # A - P = 1 to 15
+    # R - Y = -8 to -1
+    digits = 'RSTUVWXYZABCDEFGHIJKLMNOP'
+    # convert from extended Doodson number to Cartwright numbers
+    coef = np.array([(digits.index(c)-8) for c in str(XDO)], dtype=int)
     return coef

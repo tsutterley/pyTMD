@@ -6,6 +6,7 @@ Verify nodal corrections match prior estimates
 
 UPDATE HISTORY:
     Updated 10/2024: add comparisons for formatted Doodson numbers
+        add function to parse tide potential tables
     Updated 08/2024: add comparisons for nodal corrections
     Written 01/2024
 """
@@ -17,8 +18,13 @@ from pyTMD.arguments import (
     doodson_number,
     _arguments_table,
     _minor_table,
+    _parse_tide_potential_table,
     _to_doodson_number,
-    _from_doodson_number
+    _to_extended_doodson,
+    _from_doodson_number,
+    _from_extended_doodson,
+    _ct1971_table_5,
+    _ce1973_table_1
 )
 
 @pytest.mark.parametrize("corrections", ['OTIS', 'GOT'])
@@ -714,11 +720,33 @@ def test_doodson():
         assert float(val) == test
         # check conversion to and from Doodson numbers
         doodson = _to_doodson_number(cartwright[key])
+        XDO = _to_extended_doodson(cartwright[key])
         # check values when entered as Cartwright
         assert float(val) == doodson
         # check values when entered as Doodson
         coefficients = _from_doodson_number(val)
+        extended = _from_extended_doodson(XDO)
         assert np.all(cartwright[key] == coefficients)
+        assert np.all(cartwright[key] == extended)
+
+def test_parse_tables():
+    """
+    Tests the parsing of tables for tide potential coefficients
+    """
+    # Cartright and Tayler (1971) table with 3rd-degree values
+    # Cartwright and Edden (1973) table with updated values
+    for table in [_ct1971_table_5, _ce1973_table_1]:
+        # parse table
+        CTE = _parse_tide_potential_table(table)
+        for i, line in enumerate(CTE):
+            # convert Doodson number to Cartwright numbers
+            tau, s, h, p, n, pp = _from_doodson_number(line['DO'])
+            assert tau == line['tau'], line
+            assert s == line['s'], line
+            assert h == line['h'], line
+            assert p == line['p'], line
+            assert n == line['n'], line
+            assert pp == line['pp'], line
 
 def test_normalize_angle():
     """
