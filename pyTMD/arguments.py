@@ -1460,7 +1460,7 @@ def _constituent_parameters(c: str, **kwargs):
     # return the values for the constituent
     return (amplitude, phase, omega, alpha, species)
 
-# Cartright and Tayler (1971) table with 3rd-degree values
+# Cartwright and Tayler (1971) table with 3rd-degree values
 _ct1971_table_5 = get_data_path(['data','ct1971_tab5.txt'])
 # Cartwright and Edden (1973) table with updated values
 _ce1973_table_1 = get_data_path(['data','ce1973_tab1.txt'])
