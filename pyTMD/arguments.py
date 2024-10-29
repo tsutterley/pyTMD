@@ -39,6 +39,9 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 10/2024: can convert Doodson numbers formatted as strings
+        update Doodson number conversions to follow Cartwright X=10 convention
+        add function to parse Cartwright/Tayler/Edden tables
+        add functions to calculate UKHO Extended Doodson numbers for constituents
     Updated 09/2024: add function to calculate tidal angular frequencies
     Updated 08/2024: add support for constituents in PERTH5 tables
         add back nodal arguments from PERTH3 for backwards compatibility
@@ -71,8 +74,12 @@ UPDATE HISTORY:
 """
 from __future__ import annotations
 
+import re
+import json
+import pathlib
 import numpy as np
 import pyTMD.astro
+from pyTMD.utilities import get_data_path
 
 __all__ = [
     "arguments",
@@ -84,8 +91,11 @@ __all__ = [
     "_arguments_table",
     "_minor_table",
     "_constituent_parameters",
+    "_parse_tide_potential_table",
     "_to_doodson_number",
-    "_from_doodson_number"
+    "_to_extended_doodson",
+    "_from_doodson_number",
+    "_from_extended_doodson"
 ]
 
 def arguments(
@@ -339,6 +349,9 @@ def minor_arguments(
     # return values as tuple
     return (u, f, arg)
 
+# JSON file of Doodson coefficients
+_coefficients_table = get_data_path(['data','doodson.json'])
+
 def coefficients_table(
         constituents: list | tuple | np.ndarray | str,
         **kwargs
@@ -352,6 +365,8 @@ def coefficients_table(
         tidal constituent IDs
     corrections: str, default 'OTIS'
         use coefficients from OTIS, FES or GOT models
+    file: str or pathlib.Path, default `coefficients.json`
+        JSON file of Doodson coefficients
 
     Returns
     -------
@@ -370,7 +385,10 @@ def coefficients_table(
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
+    kwargs.setdefault('file', _coefficients_table)
 
+    # verify coefficients table path
+    table = pathlib.Path(kwargs['file']).expanduser().absolute()
     # modified Doodson coefficients for constituents
     # using 7 index variables: tau, s, h, p, n, pp, k
     # tau: mean lunar time
@@ -380,542 +398,15 @@ def coefficients_table(
     # n: mean longitude of ascending lunar node
     # pp: mean longitude of solar perigee
     # k: 90-degree phase
-    coefficients = {}
-    coefficients['z0'] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['node'] = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0]
-    coefficients['omega0'] = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0]
-    # With p'
-    coefficients['sa'] = [0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0]
+    with table.open(mode='r', encoding='utf8') as fid:
+        coefficients = json.load(fid)
+
     # # Without p'
     # coefficients['sa'] = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['ssa'] = [0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    # With p'
-    coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, -1.0, 0.0]
-    # # Without p'
     # coefficients['sta'] = [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['st'] = [0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['msm'] = [0.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mm'] = [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    # annual sideline
-    coefficients['msfa'] = [0.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['msf'] = [0.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    # annual sideline
-    coefficients['msfb'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mfa'] = [0.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mf-'] = [0.0, 2.0, 0.0, 0.0, -1.0, 0.0, 0.0]
-    coefficients['mf'] = [0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    # nodal line
-    coefficients['mf+'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0]
-    # nodal line
-    coefficients['mfn'] = [0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0]
-    coefficients['mfb'] = [0.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['sn0'] = [0.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mst'] = [0.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mt'] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mtm'] = [0.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['msqm'] = [0.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mq'] = [0.0, 4.0, 0.0, -2.0, 0.0, 0.0, 0.0]
-    coefficients['2smn0'] = [0.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['msp'] = [0.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mp'] = [0.0, 5.0, 0.0, -3.0, 0.0, 0.0, 0.0]
-    coefficients['2qj1'] = [1.0, -6.0, 0.0, 3.0, 0.0, 0.0, 1.0]
-    coefficients['2qk1'] = [1.0, -5.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['2qs1'] = [1.0, -5.0, 1.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['2qp1'] = [1.0, -5.0, 2.0, 2.0, 0.0, 0.0, -1.0]
-    coefficients['2oj1'] = [1.0, -4.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['alpha1'] = [1.0, -4.0, 2.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['2ok1'] = [1.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    # 3rd degree terms
-    coefficients["2q1'"] = [1.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['2q1'] = [1.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
-    coefficients['sigma1'] = [1.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0]
-    # 3rd degree terms
-    coefficients["q1'"] = [1.0, -2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['q1'] = [1.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['rho1'] = [1.0, -2.0, 2.0, -1.0, 0.0, 0.0, -1.0]
-    coefficients['np1'] = [1.0, -2.0, 2.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['opk1'] = [1.0, -1.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['oa1'] = [1.0, -1.0, -1.0, 0.0, 0.0, 0.0, -1.0]
-    # O1 nodal line
-    coefficients['o1n'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
-    # O1 nodal line
-    coefficients['o1-'] = [1.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
-    coefficients['o1'] = [1.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    # conjugate to nodal line
-    coefficients['o1+'] = [1.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0]
-    # 3rd degree terms
-    coefficients["o1'"] = [1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['ob1'] = [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['ms1'] = [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['mp1'] = [1.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['tau1'] = [1.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['beta1'] = [1.0, 0.0, -2.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['pqo1'] = [1.0, 0.0, -2.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['2oq1'] = [1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
-    # 3rd degree terms
-    coefficients["m1'"] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['m1'] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['m1a'] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['m1b'] = [1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['no1'] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['chi1'] = [1.0, 0.0, 2.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['2pk1'] = [1.0, 1.0, -4.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['pi1'] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0]
-    coefficients['tk1'] = [1.0, 1.0, -3.0, 0.0, 0.0, 1.0, -1.0]
-    coefficients['s1-1'] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['p1'] = [1.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['s1-'] = [1.0, 1.0, -1.0, 0.0, 0.0, -1.0, 1.0]
+    # set s1 coefficients
     if kwargs['corrections'] in ('OTIS','ATLAS','TMD3','netcdf'):
         coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0]
-    else:
-        # Doodson's phase
-        coefficients['s1'] = [1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['s1+'] = [1.0, 1.0, -1.0, 0.0, 0.0, 1.0, 1.0]
-    coefficients['ojm1'] = [1.0, 1.0, 0.0, -2.0, 0.0, 0.0, -1.0]
-    # 3rd degree terms
-    coefficients["k1'"] = [1.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['k1-'] = [1.0, 1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
-    coefficients['k1'] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['s1+1'] = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['k1+'] = [1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0]
-    coefficients['k1n'] = [1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0]
-    coefficients['k1++'] = [1.0, 1.0, 0.0, 0.0, 2.0, 0.0, -1.0]
-    coefficients['psi1'] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, 1.0]
-    coefficients['rp1'] = [1.0, 1.0, 1.0, 0.0, 0.0, -1.0, -1.0]
-    coefficients['phi1'] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['kp1'] = [1.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['opq1'] = [1.0, 2.0, -2.0, -1.0, 0.0, 0.0, -1.0]
-    coefficients['the1'] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['theta1'] = [1.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['mq1'] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['j1'] = [1.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    # 3rd degree terms
-    coefficients["j1'"] = [1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['2po1'] = [1.0, 3.0, -4.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['so1'] = [1.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['oo1'] = [1.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['kpq1'] = [1.0, 4.0, -2.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['ups1'] = [1.0, 4.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['kq1'] = [1.0, 4.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['2jo1'] = [1.0, 5.0, 0.0, -2.0, 0.0, 0.0, -1.0]
-    coefficients['kjq1'] = [1.0, 5.0, 0.0, -2.0, 0.0, 0.0, -1.0]
-    coefficients['2ook1'] = [1.0, 5.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2oop1'] = [1.0, 5.0, 2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2jq1'] = [1.0, 6.0, 0.0, -3.0, 0.0, 0.0, -1.0]
-    coefficients['2mn2s2'] = [2.0, -5.0, 4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2nk2'] = [2.0, -4.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['3m(sk)2'] = [2.0, -4.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3mks2'] = [2.0, -4.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2ns2'] = [2.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['3m2s2'] = [2.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['oq2'] = [2.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['mnk2'] = [2.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3n2'] = [2.0, -3.0, 0.0, 3.0, 0.0, 0.0, 0.0]
-    coefficients['eps2'] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mns2'] = [2.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    # coefficients['mns2'] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mnus2'] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2ml2s2'] = [2.0, -3.0, 4.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['mnk2s2'] = [2.0, -3.0, 4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2ms2k2'] = [2.0, -2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mk2'] = [2.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['o2'] = [2.0, -2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    # 3rd degree terms
-    coefficients["2n2'"] = [2.0, -2.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['2n2'] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['2nm2'] = [2.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['2ms2'] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mu2'] = [2.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mk2s2'] = [2.0, -2.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['omg2'] = [2.0, -2.0, 3.0, 0.0, 0.0, -1.0, 0.0]
-    coefficients['nsk2'] = [2.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['snk2'] = [2.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['na2'] = [2.0, -1.0, -1.0, 1.0, 0.0, 0.0, 0.0]
-    # 3rd degree terms
-    coefficients["n2'"] = [2.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['n2'] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2ml2'] = [2.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['nb2'] = [2.0, -1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['nu2'] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mmun2'] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['3m(sn)2'] = [2.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['nks2'] = [2.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['nkp2'] = [2.0, -1.0, 2.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['mkl2s2'] = [2.0, -1.0, 4.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2kn2s2'] = [2.0, -1.0, 4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['msk2'] = [2.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['op2'] = [2.0, 0.0, -2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['m2-2'] = [2.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['gamma2'] = [2.0, 0.0, -2.0, 2.0, 0.0, 0.0, 2.0]
-    coefficients['gam2'] = [2.0, 0.0, -2.0, 2.0, 0.0, 0.0, 2.0]
-    coefficients['alp2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 2.0]
-    coefficients['alpha2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 2.0]
-    coefficients['m2a'] = [2.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0]
-    coefficients['m2-1'] = [2.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['ma2'] = [2.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    # M2 nodal line
-    coefficients['m2-'] = [2.0, 0.0, 0.0, 0.0, -1.0, 0.0, 2.0]
-    coefficients['m2'] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['ko2'] = [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    # conjugate to nodal
-    coefficients['m2+'] = [2.0, 0.0, 0.0, 0.0, 1.0, 0.0, 2.0]
-    # 3rd degree terms
-    coefficients["m2'"] = [2.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['mb2'] = [2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m2+1'] = [2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m2b'] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0]
-    coefficients['beta2'] = [2.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0]
-    coefficients['delta2'] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m2+2'] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mks2'] = [2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m2(ks)2'] = [2.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2snmk2'] = [2.0, 1.0, -4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2sn(mk)2'] = [2.0, 1.0, -4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['snm2'] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['lambda2'] = [2.0, 1.0, -2.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['2mn2'] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['l2'] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['l2a'] = [2.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    # 3rd degree terms
-    coefficients["l2'"] = [2.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['nkm2'] = [2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['l2b'] = [2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['lb2'] = [2.0, 1.0, 1.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2sk2'] = [2.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2t2'] = [2.0, 2.0, -4.0, 0.0, 0.0, 2.0, 0.0]
-    coefficients['s2-2'] = [2.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s2-1'] = [2.0, 2.0, -3.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['t2'] = [2.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
-    coefficients['kp2'] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s2r'] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s2'] = [2.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['r2'] = [2.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0]
-    coefficients['s2+1'] = [2.0, 2.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s2+2'] = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['k2'] = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['kb2'] = [2.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2ks2'] = [2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2pmn2'] = [2.0, 3.0, -4.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['msnu2'] = [2.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['msn2'] = [2.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['zeta2'] = [2.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['eta2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mkn2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['kj2'] = [2.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2kmsn2'] = [2.0, 3.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2km(sn)2'] = [2.0, 3.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2sm2'] = [2.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2ms2n2'] = [2.0, 4.0, -2.0, -2.0, 0.0, 0.0, 0.0]
-    coefficients['skm2'] = [2.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2j2'] = [2.0, 4.0, 0.0, -2.0, 0.0, 0.0, 2.0]
-    coefficients['2k2'] = [2.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2snu2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3(sm)n2'] = [2.0, 5.0, -6.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2sn2'] = [2.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['skn2'] = [2.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2kn2'] = [2.0, 5.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['3s2m2'] = [2.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2sk2m2'] = [2.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2oq3'] = [3.0, -4.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    # compound 3 O1
-    coefficients['o3'] = [3.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['nq3'] = [3.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
-    coefficients['muo3'] = [3.0, -3.0, 2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['mq3'] = [3.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['no3'] = [3.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['mnp3'] = [3.0, -2.0, 2.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['2op3'] = [3.0, -1.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['2os3'] = [3.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    # Q1+M1+S1
-    coefficients['qms3'] = [3.0, -1.0, -1.0, 2.0, 0.0, 0.0, 2.0]
-    coefficients['mo3-'] = [3.0, -1.0, 0.0, 0.0, -1.0, 0.0, -1.0]
-    coefficients['mo3'] = [3.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['mo3+'] = [3.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0]
-    coefficients['2mk3'] = [3.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['e3n'] = [3.0, -1.0, 0.0, 1.0, -1.0, 0.0, 0.0]
-    # 3rd degree terms
-    coefficients['e3'] = [3.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['2no3'] = [3.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['2nkm3'] = [3.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['2ms3'] = [3.0, -1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['2mp3'] = [3.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['ns3'] = [3.0, 0.0, -1.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['2oj3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
-    # 2M2 - M1
-    coefficients['2mm3'] = [3.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0]
-    coefficients['m3'] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    # 3rd degree terms
-    coefficients["m3'"] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['nk3'] = [3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mp3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['so3'] = [3.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    # 3rd degree terms
-    coefficients['lambda3'] = [3.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['ms3'] = [3.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['pjrho3'] = [3.0, 1.0, 0.0, -2.0, 0.0, 0.0, -1.0]
-    # 3rd degree terms
-    coefficients['l3'] = [3.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mk3-'] = [3.0, 1.0, 0.0, 0.0, -1.0, 0.0, 1.0]
-    coefficients['mk3'] = [3.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['mk3+'] = [3.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0]
-    # 3rd degree terms
-    coefficients['l3b'] = [3.0, 1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['mks3'] = [3.0, 1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['mkp3'] = [3.0, 1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['nso3'] = [3.0, 2.0, -2.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['2mq3'] = [3.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    # 3rd degree terms
-    coefficients['f3'] = [3.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    # 3rd degree terms
-    coefficients['j3'] = [3.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    # s3 perturbation
-    coefficients['2t3'] = [3.0, 3.0, -5.0, 0.0, 0.0, 0.0, 2.0]
-    # s3 perturbation
-    coefficients['t3'] = [3.0, 3.0, -4.0, 0.0, 0.0, 0.0, 2.0]
-    # = 2SK3
-    coefficients['sp3'] = [3.0, 3.0, -4.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['s3'] = [3.0, 3.0, -3.0, 0.0, 0.0, 0.0, 0.0]
-    # 3rd degree terms
-    coefficients["s3'"] = [3.0, 3.0, -3.0, 0.0, 0.0, 0.0, 2.0]
-    # s3 perturbation
-    coefficients['r3'] = [3.0, 3.0, -2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['sk3'] = [3.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    # s3 perturbation
-    coefficients['2r3'] = [3.0, 3.0, -1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['k3'] = [3.0, 3.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2so3'] = [3.0, 5.0, -4.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['2jp3'] = [3.0, 5.0, -2.0, -2.0, 0.0, 0.0, 1.0]
-    coefficients['kso3'] = [3.0, 5.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['2jk3'] = [3.0, 5.0, -1.0, -2.0, 0.0, 0.0, 0.0]
-    coefficients['2ko3'] = [3.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['2sq3'] = [3.0, 6.0, -4.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['o4'] = [4.0, -4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2qm4'] = [4.0, -4.0, 0.0, 2.0, 0.0, 0.0, 2.0]
-    coefficients['4ms4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4m2s4'] = [4.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mnk4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['moq4'] = [4.0, -3.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['2mns4'] = [4.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2mns4'] = [4.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2mnus4'] = [4.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['3mk4'] = [4.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2om4'] = [4.0, -2.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['n4'] = [4.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['3ms4'] = [4.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['msnk4'] = [4.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mpq4'] = [4.0, -1.0, -2.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['mn4'] = [4.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mnu4'] = [4.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2mls4'] = [4.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['mnks4'] = [4.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2msk4'] = [4.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mop4'] = [4.0, 0.0, -2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['ma4'] = [4.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m4'] = [4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mb4'] = [4.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mks4'] = [4.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['sn4'] = [4.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3mn4'] = [4.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['ml4'] = [4.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['nk4'] = [4.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2smk4'] = [4.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2pm4'] = [4.0, 2.0, -4.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['mt4'] = [4.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
-    coefficients['ms4'] = [4.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mr4'] = [4.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0]
-    coefficients['mk4'] = [4.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2snm4'] = [4.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2msn4'] = [4.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['sl4'] = [4.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2mkn4'] = [4.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['mkj4'] = [4.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2t4'] = [4.0, 4.0, -6.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['t4'] = [4.0, 4.0, -5.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['st4'] = [4.0, 4.0, -5.0, 0.0, 0.0, 1.0, 0.0]
-    coefficients['s4'] = [4.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['r4'] = [4.0, 4.0, -3.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2r4'] = [4.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['sk4'] = [4.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3ks4'] = [4.0, 4.0, -1.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['k4'] = [4.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3sm4'] = [4.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2(kj)4'] = [4.0, 6.0, 0.0, -2.0, 0.0, 0.0, 2.0]
-    coefficients['2no5'] = [5.0, -3.0, 0.0, 2.0, 0.0, 0.0, -1.0]
-    coefficients['mno5'] = [5.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['2mq5'] = [5.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['2nkms5'] = [5.0, -2.0, 2.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['2mo5'] = [5.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['mnm5'] = [5.0, -1.0, 0.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['2nk5'] = [5.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['3ms5'] = [5.0, -1.0, 1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['3mp5'] = [5.0, -1.0, 2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['nso5'] = [5.0, 0.0, -2.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['m5'] = [5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['mnk5'] = [5.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['mb5'] = [5.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['mso5'] = [5.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2mp5'] = [5.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2ms5'] = [5.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['2mk5'] = [5.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    # N2 + K2 + S1
-    coefficients['nks5'] = [5.0, 2.0, -1.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['nsk5'] = [5.0, 2.0, -2.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['msm5'] = [5.0, 2.0, -2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['snk5'] = [5.0, 2.0, -2.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['3mq5'] = [5.0, 2.0, 0.0, -1.0, 0.0, 0.0, 1.0]
-    coefficients['msp5'] = [5.0, 3.0, -4.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['msk5'] = [5.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['3km5'] = [5.0, 3.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2sp5'] = [5.0, 5.0, -6.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['t5'] = [5.0, 5.0, -6.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s5'] = [5.0, 5.0, -5.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['r5'] = [5.0, 5.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2sk5'] = [5.0, 5.0, -4.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['k5'] = [5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['o6'] = [6.0, -6.0, 0.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['2(mn)k6'] = [6.0, -4.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['5mks6'] = [6.0, -4.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2(mn)s6'] = [6.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['5m2s6'] = [6.0, -4.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3mnk6'] = [6.0, -3.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['n6'] = [6.0, -3.0, 0.0, 3.0, 0.0, 0.0, 0.0]
-    coefficients['3mns6'] = [6.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2nmls6'] = [6.0, -3.0, 2.0, 1.0, 0.0, 0.0, 2.0]
-    coefficients['3nks6'] = [6.0, -3.0, 2.0, 3.0, 0.0, 0.0, 0.0]
-    coefficients['3mnus6'] = [6.0, -3.0, 4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['4mk6'] = [6.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2nm6'] = [6.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['m2n6'] = [6.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['4ms6'] = [6.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mlns6'] = [6.0, -2.0, 2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['2mnls6'] = [6.0, -2.0, 2.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['2nmks6'] = [6.0, -2.0, 2.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['2msnk6'] = [6.0, -1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2mn6'] = [6.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2mnu6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2mn6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['3mls6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2mno6'] = [6.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2mnks6'] = [6.0, -1.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3msk6'] = [6.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['ma6'] = [6.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m6'] = [6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2nk6'] = [6.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['mb6'] = [6.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3mks6'] = [6.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['msn6'] = [6.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['4mn6'] = [6.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2ml6'] = [6.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['mnk6'] = [6.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mkn6'] = [6.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mknu6'] = [6.0, 1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2(ms)k6'] = [6.0, 2.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mt6'] = [6.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
-    coefficients['2ms6'] = [6.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mr6'] = [6.0, 2.0, -1.0, 0.0, 0.0, -1.0, 2.0]
-    coefficients['2mk6'] = [6.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2sn6'] = [6.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3msn6'] = [6.0, 3.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['msl6'] = [6.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['snk6'] = [6.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['mkl6'] = [6.0, 3.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['3mkn6'] = [6.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2sm6'] = [6.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['msk6'] = [6.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2km6'] = [6.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2(ms)n6'] = [6.0, 5.0, -4.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2mskn6'] = [6.0, 5.0, -2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2t6'] = [6.0, 6.0, -8.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['t6'] = [6.0, 6.0, -7.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s6'] = [6.0, 6.0, -6.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['r6'] = [6.0, 6.0, -5.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2r6'] = [6.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2sk6'] = [6.0, 6.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['k6'] = [6.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4sm6'] = [6.0, 8.0, -8.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mno7'] = [7.0, -2.0, 0.0, 1.0, 0.0, 0.0, -1.0]
-    coefficients['4mk7'] = [7.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['3mo7'] = [7.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2nmk7'] = [7.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    # = 2MNK7 = MNKO7
-    coefficients['m7'] = [7.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['3mp7'] = [7.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2mso7'] = [7.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['3mk7'] = [7.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    # = MSKO7 (noaa)
-    coefficients['2msk7'] = [7.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['msko7'] = [7.0, 3.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2t7'] = [7.0, 7.0, -9.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3sp7'] = [7.0, 7.0, -8.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['t7'] = [7.0, 7.0, -8.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s7'] = [7.0, 7.0, -7.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['r7'] = [7.0, 7.0, -6.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3sk7'] = [7.0, 7.0, -6.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['2r7'] = [7.0, 7.0, -5.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3r7'] = [7.0, 7.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4r7'] = [7.0, 7.0, -3.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['k7'] = [7.0, 7.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['3m2ns8'] = [8.0, -4.0, 2.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['4mns8'] = [8.0, -3.0, 2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['5mk8'] = [8.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2mn8'] = [8.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['2(mn)8'] = [8.0, -2.0, 0.0, 2.0, 0.0, 0.0, 0.0]
-    coefficients['5ms8'] = [8.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3mn8'] = [8.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3mnu8'] = [8.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['3mn8'] = [8.0, -1.0, 2.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['4mls8'] = [8.0, -1.0, 2.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['ma8'] = [8.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m8'] = [8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['mb8'] = [8.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2msn8'] = [8.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3ml8'] = [8.0, 1.0, 0.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['2mnk8'] = [8.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['3mt8'] = [8.0, 2.0, -3.0, 0.0, 0.0, 1.0, 0.0]
-    coefficients['3ms8'] = [8.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3mk8'] = [8.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2smn8'] = [8.0, 3.0, -4.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['2msl8'] = [8.0, 3.0, -2.0, -1.0, 0.0, 0.0, 2.0]
-    coefficients['msnk8'] = [8.0, 3.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['4msn8'] = [8.0, 3.0, 0.0, -1.0, 0.0, 0.0, 0.0]
-    coefficients['2(ms)8'] = [8.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2msk8'] = [8.0, 4.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['2(mk)8'] = [8.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s8'] = [8.0, 8.0, -8.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['k8'] = [8.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4mo9'] = [9.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['2(mn)k9'] = [9.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['2m2nk9'] = [9.0, -1.0, 0.0, 2.0, 0.0, 0.0, 1.0]
-    coefficients['3mnk9'] = [9.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
-    coefficients['4mp9'] = [9.0, 1.0, -2.0, 0.0, 0.0, 0.0, -1.0]
-    coefficients['4ms9'] = [9.0, 1.0, -1.0, 0.0, 0.0, 0.0, 2.0]
-    coefficients['4mk9'] = [9.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['3msk9'] = [9.0, 3.0, -2.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['s9'] = [9.0, 9.0, -9.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['k9'] = [9.0, 9.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    coefficients['4mn10'] = [10.0, -1, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['m10'] = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3msn10'] = [10.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
-    coefficients['4ms10'] = [10.0, 2.0, -2, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4mk10'] = [10.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3msl10'] = [10.0, 3.0, -2, -1.0, 0.0, 0.0, 2.0]
-    coefficients['3m2s10'] = [10.0, 4.0, -4, 0.0, 0.0, 0.0, 0.0]
-    coefficients['3msk10'] = [10.0, 4.0, -2, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s10'] = [10.0, 10.0, -10.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4msk11'] = [11.0, 3.0, -2, 0.0, 0.0, 0.0, 1.0]
-    coefficients['s11'] = [11.0, 11.0, -11.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['5mn12'] = [12.0, -1, 0.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['m12'] = [12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4msn12'] = [12.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
-    coefficients['4mns12'] = [12.0, 1.0, -2, 1.0, 0.0, 0.0, 0.0]
-    coefficients['5ms12'] = [12.0, 2.0, -2, 0.0, 0.0, 0.0, 0.0]
-    coefficients['4msl12'] = [12.0, 3.0, -2, -1.0, 0.0, 0.0, 2.0]
-    coefficients['4m2s12'] = [12.0, 4.0, -4, 0.0, 0.0, 0.0, 0.0]
-    coefficients['s12'] = [12.0, 12.0, -12.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['m14'] = [14.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['5msn14'] = [14.0, 1.0, -2.0, 1.0, 0.0, 0.0, 0.0]
-    coefficients['6ms14'] = [14.0, 2.0, -2.0, 0.0, 0.0, 0.0, 0.0]
-    coefficients['5m2s14'] = [14.0, 4.0, -4.0, 0.0, 0.0, 0.0, 0.0]
 
     # set constituents to be iterable
     if isinstance(constituents, str):
@@ -952,6 +443,7 @@ def doodson_number(
 
             - ``'Cartwright'``
             - ``'Doodson'``
+            - ``'Extended'``
     raise_error: bool, default True
         Raise exception if constituent is unsupported
 
@@ -973,7 +465,7 @@ def doodson_number(
     kwargs.setdefault('formalism', 'Doodson')
     kwargs.setdefault('raise_error', True)
     # validate inputs
-    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson'), \
+    assert kwargs['formalism'].title() in ('Cartwright', 'Doodson','Extended'), \
         f'Unknown formalism {kwargs["formalism"]}'
     # get the coefficients of coefficients
     if isinstance(constituents, str):
@@ -992,6 +484,9 @@ def doodson_number(
         elif (kwargs['formalism'] == 'Doodson'):
             # convert from coefficients to Doodson number
             numbers = _to_doodson_number(coefficients[:,0], **kwargs)
+        elif (kwargs['formalism'] == 'Extended'):
+            # convert to extended Doodson number in UKHO format
+            numbers = _to_extended_doodson(coefficients[:,0], **kwargs)
     else:
         # output dictionary with Doodson numbers
         numbers = {}
@@ -1013,6 +508,9 @@ def doodson_number(
             elif (kwargs['formalism'] == 'Doodson'):
                 # convert from coefficients to Doodson number
                 numbers[c] = _to_doodson_number(coefficients[:,0], **kwargs)
+            elif (kwargs['formalism'] == 'Extended'):
+                # convert to extended Doodson number in UKHO format
+                numbers[c] = _to_extended_doodson(coefficients[:,0], **kwargs)
     # return the Doodson or Cartwright number
     return numbers
 
@@ -1962,6 +1460,64 @@ def _constituent_parameters(c: str, **kwargs):
     # return the values for the constituent
     return (amplitude, phase, omega, alpha, species)
 
+# Cartwright and Tayler (1971) table with 3rd-degree values
+_ct1971_table_5 = get_data_path(['data','ct1971_tab5.txt'])
+# Cartwright and Edden (1973) table with updated values
+_ce1973_table_1 = get_data_path(['data','ce1973_tab1.txt'])
+
+def _parse_tide_potential_table(table: str | pathlib.Path):
+    """Parse tables of tide-generating potential from [1]_ and [2]_
+
+    Parameters
+    ----------
+    table: str or pathlib.Path
+        table of tide-generating potentials
+
+    Returns
+    -------
+    CTE: float
+        Cartwright-Tayler-Edden table values
+
+    References
+    ----------
+    .. [1] D. E. Cartwright and R. J. Tayler,
+        "New Computations of the Tide-generating Potential,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
+        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
+    .. [2] D. E. Cartwright and A. C. Edden,
+        "Corrected Tables of Tidal Harmonics,"
+        *Geophysical Journal of the Royal Astronomical Society*,
+        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
+        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+    """
+    # verify table path
+    table = pathlib.Path(table).expanduser().absolute()
+    with table.open(mode='r', encoding='utf8') as f:
+        file_contents = f.readlines()
+    # number of lines in the file
+    file_lines = len(file_contents)
+    # tau: coefficient for mean lunar time
+    # s: coefficient for mean longitude of moon
+    # h: coefficient for mean longitude of sun
+    # p: coefficient for mean longitude of lunar perigee
+    # n: coefficient for mean longitude of ascending lunar node
+    # pp: coefficient for mean longitude of solar perigee
+    # Hs1: amplitude for epoch span 1 (1861-09-21 to 1879-09-22)
+    # Hs2: amplitude for epoch span 2 (1915-05-16 to 1933-05-22)
+    # Hs3: amplitude for epoch span 2 (1951-05-23 to 1969-05-22)
+    # DO: Doodson number for coefficient
+    # Hs0: Doodson scaled amplitude for 1900
+    names = ('tau','s','h','p','n','pp','Hs1','Hs2','Hs3','DO','Hs0')
+    formats = ('i','i','i','i','i','i','f','f','f','U7','f')
+    dtype = np.dtype({'names':names, 'formats':formats})
+    CTE = np.zeros((file_lines), dtype=dtype)
+    for i,line in enumerate(file_contents):
+        # drop last column with values from Doodson (1921)
+        CTE[i] = np.array(tuple(line.split()[:11]), dtype=dtype)
+    # return the table values
+    return CTE
+
 def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     """
     Converts Cartwright numbers into a Doodson number
@@ -1975,13 +1531,13 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
 
     Returns
     -------
-    DO: float
+    DO: float or string
         Doodson number for constituent
     """
     # default keyword arguments
     kwargs.setdefault('raise_error', True)
     # assert length and verify array
-    coef = np.array(coef[:6])
+    coef = np.array(coef[:6]).astype(int)
     # add 5 to values following Doodson convention (prevent negatives)
     coef[1:] += 5
     # check for unsupported constituents
@@ -1989,12 +1545,41 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
         raise ValueError('Unsupported constituent')
     elif (np.any(coef < 0) or np.any(coef > 10)):
         return None
+    elif np.any(coef == 10):
+        # convert to string and replace 10 with X (Cartwright convention)
+        DO = [str(v).replace('10','X') for v in coef]
+        # convert to Doodson number
+        return np.str_('{0}{1}{2}.{3}{4}{5}'.format(*DO))
     else:
         # convert to single number and round off floating point errors
         DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
         return np.round(DO, decimals=3)
 
-def _from_doodson_number(DO: str | float | np.ndarray):
+def _to_extended_doodson(coef: list | np.ndarray, **kwargs):
+    """
+    Converts Cartwright numbers into an UKHO Extended Doodson number
+
+    Parameters
+    ----------
+    coef: list or np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+
+    Returns
+    -------
+    XDO: string
+        Extended Doodson number for constituent
+    """
+    # assert length and verify array
+    coef = np.array(coef).astype(int)
+    # digits for UKHO Extended Doodson number
+    # Z = 0
+    # A - P = 1 to 15
+    # R - Y = -8 to -1
+    digits = 'RSTUVWXYZABCDEFGHIJKLMNOP'
+    XDO = ''.join([digits[v+8] for v in coef])
+    return np.str_(XDO)
+
+def _from_doodson_number(DO: str | float | np.ndarray, **kwargs):
     """
     Converts Doodson numbers into Cartwright numbers
 
@@ -2009,10 +1594,31 @@ def _from_doodson_number(DO: str | float | np.ndarray):
         Doodson coefficients (Cartwright numbers) for constituent
     """
     # convert from Doodson number to Cartwright numbers
-    # verify Doodson numbers are floating point variables
-    DO = np.array(DO).astype(float)
-    # multiply by 1000 to prevent floating point errors
-    coef = np.array([np.mod(1e3*DO, 10**(6-o))//10**(5-o) for o in range(6)])
+    coef = [c.replace('X', '10') for c in re.findall(r'\w', str(DO).zfill(7))]
+    coef = np.array(coef, dtype=int)
     # remove 5 from values following Doodson convention
     coef[1:] -= 5
+    return coef
+
+def _from_extended_doodson(XDO: str | np.str_, **kwargs):
+    """
+    Converts UKHO Extended Doodson number into Cartwright numbers
+
+    Parameters
+    ----------
+    XDO: string
+        Extended Doodson number for constituent
+
+    Returns
+    -------
+    coef: np.ndarray
+        Doodson coefficients (Cartwright numbers) for constituent
+    """
+    # digits for UKHO Extended Doodson number
+    # Z = 0
+    # A - P = 1 to 15
+    # R - Y = -8 to -1
+    digits = 'RSTUVWXYZABCDEFGHIJKLMNOP'
+    # convert from extended Doodson number to Cartwright numbers
+    coef = np.array([(digits.index(c)-8) for c in str(XDO)], dtype=int)
     return coef

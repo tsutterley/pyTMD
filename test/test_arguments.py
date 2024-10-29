@@ -6,6 +6,7 @@ Verify nodal corrections match prior estimates
 
 UPDATE HISTORY:
     Updated 10/2024: add comparisons for formatted Doodson numbers
+        add function to parse tide potential tables
     Updated 08/2024: add comparisons for nodal corrections
     Written 01/2024
 """
@@ -17,8 +18,13 @@ from pyTMD.arguments import (
     doodson_number,
     _arguments_table,
     _minor_table,
+    _parse_tide_potential_table,
     _to_doodson_number,
-    _from_doodson_number
+    _to_extended_doodson,
+    _from_doodson_number,
+    _from_extended_doodson,
+    _ct1971_table_5,
+    _ce1973_table_1
 )
 
 @pytest.mark.parametrize("corrections", ['OTIS', 'GOT'])
@@ -691,34 +697,131 @@ def test_doodson():
     exp['2q1'] = 125.755
     exp['p1'] = 163.555
     # long-period species
-    exp['mm'] = '065.455'
-    exp['ssa'] = '057.555'
-    exp['msf'] = '073.555'
-    exp['mf'] = '075.555'
-    exp['msqm'] = '093.555'
-    exp['mtm'] = '085.455'
-    exp['node'] = '055.565'
+    exp['mm'] = 065.455
+    exp['ssa'] = 057.555
+    exp['msf'] = 073.555
+    exp['mf'] = 075.555
+    exp['msqm'] = 093.555
+    exp['mtm'] = 085.455
+    exp['node'] = 055.565
     # short-period species
     exp['m3'] = 355.555
     exp['m4'] = 455.555
     exp['m6'] = 655.555
     exp['m8'] = 855.555
+    # shallow water species
+    exp['2so3'] = '3X1.555'
+    exp['2jp3'] = '3X3.355'
+    exp['kso3'] = '3X3.555'
+    exp['2jk3'] = '3X4.355'
+    exp['2ko3'] = '3X5.555'
+    # 3rd degree terms
+    exp["2q1'"] = 125.655
+    exp["q1'"] = 135.555
+    exp["o1'"] = 145.655
+    exp["m1'"] = 155.555
+    exp["k1'"] = 165.455
+    exp["j1'"] = 175.555
+    exp["2n2'"] = 235.655
+    exp["n2'"] = 245.555
+    exp["m2'"] = 255.655
+    exp["l2'"] = 265.555
+    exp["m3'"] = 355.555
+    exp['lambda3'] = 363.655
+    exp["l3"] = 365.455
+    exp["l3b"] = 365.655
+    exp["f3"] = 375.555
+    exp["j3"] = 375.555
+    exp["s3'"] = 382.555
     # get observed values for constituents
     obs = doodson_number(exp.keys())
     cartwright = doodson_number(exp.keys(), formalism='Cartwright')
     # check values
     for key,val in exp.items():
-        assert float(val) == obs[key]
+        assert val == obs[key]
         # check values when entered as string
         test = doodson_number(key)
-        assert float(val) == test
-        # check conversion to and from Doodson numbers
+        assert val == test
+        # check conversion to Doodson numbers
         doodson = _to_doodson_number(cartwright[key])
         # check values when entered as Cartwright
-        assert float(val) == doodson
+        assert val == doodson
         # check values when entered as Doodson
         coefficients = _from_doodson_number(val)
         assert np.all(cartwright[key] == coefficients)
+
+def test_extended():
+    """
+    Tests the calculation of UKHO Extended Doodson numbers
+    """
+    # expected values
+    exp = {}
+    # semi-diurnal species
+    exp['m2'] = 'BZZZZZZ'
+    exp['s2'] = 'BBXZZZZ'
+    exp['n2'] = 'BYZAZZZ'
+    exp['nu2'] = 'BYBYZZZ'
+    exp['mu2'] = 'BXBZZZZ'
+    exp['2n2'] = 'BXZBZZZ'
+    exp['lambda2'] = 'BAXAZZB'
+    exp['l2'] = 'BAZYZZB'
+    exp['k2'] = 'BBZZZZZ'
+    # diurnal species
+    exp['m1'] = 'AZZZZZA'
+    exp['s1'] = 'AAYZZZA'
+    exp['o1'] = 'AYZZZZY'
+    exp['oo1'] = 'ACZZZZA'
+    exp['k1'] = 'AAZZZZA'
+    exp['q1'] = 'AXZAZZY'
+    exp['2q1'] = 'AWZBZZY'
+    exp['p1'] = 'AAXZZZY'
+    # long-period species
+    exp['mm'] = 'ZAZYZZZ'
+    exp['ssa'] = 'ZZBZZZZ'
+    exp['msf'] = 'ZBXZZZZ'
+    exp['mf'] = 'ZBZZZZZ'
+    exp['msqm'] = 'ZDXZZZZ'
+    exp['mtm'] = 'ZCZYZZZ'
+    exp['node'] = 'ZZZZAZB'
+    # short-period species
+    exp['m3'] = 'CZZZZZZ'
+    exp['m4'] = 'DZZZZZZ'
+    exp['n4'] = 'DXZBZZZ'
+    exp['m6'] = 'FZZZZZZ'
+    exp['n6'] = 'FWZCZZZ'
+    exp['m8'] = 'HZZZZZZ'
+    exp['m10'] = 'JZZZZZZ'
+    exp['m12'] = 'LZZZZZZ'
+    # shallow water species
+    exp['2so3'] = 'CEVZZZA'
+    exp['2jp3'] = 'CEXXZZA'
+    exp['kso3'] = 'CEXZZZA'
+    exp['2jk3'] = 'CEYXZZZ'
+    exp['2ko3'] = 'CEZZZZA'
+    # get observed values for constituents
+    obs = doodson_number(exp.keys(), formalism='Extended')
+    # check values
+    for key,val in exp.items():
+        assert val == obs[key]
+
+def test_parse_tables():
+    """
+    Tests the parsing of tables for tide potential coefficients
+    """
+    # Cartwright and Tayler (1971) table with 3rd-degree values
+    # Cartwright and Edden (1973) table with updated values
+    for table in [_ct1971_table_5, _ce1973_table_1]:
+        # parse table
+        CTE = _parse_tide_potential_table(table)
+        for i, line in enumerate(CTE):
+            # convert Doodson number to Cartwright numbers
+            tau, s, h, p, n, pp = _from_doodson_number(line['DO'])
+            assert tau == line['tau'], line
+            assert s == line['s'], line
+            assert h == line['h'], line
+            assert p == line['p'], line
+            assert n == line['n'], line
+            assert pp == line['pp'], line
 
 def test_normalize_angle():
     """

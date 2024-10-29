@@ -92,6 +92,7 @@ omit = [
     "pyTMD/convert_ll_xy.py",
     "pyTMD/load_constituent.py",
     "pyTMD/load_nodal_corrections.py",
+    "test/_coefficients_to_json.py",
     "test/_def_to_json.py",
     "providers/*.py",
 ]

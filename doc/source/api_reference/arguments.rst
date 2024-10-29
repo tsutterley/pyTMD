@@ -36,6 +36,12 @@ Calling Sequence
 
 .. autofunction:: pyTMD.arguments._constituent_parameters
 
+.. autofunction:: pyTMD.arguments._parse_tide_potential_table
+
 .. autofunction:: pyTMD.arguments._to_doodson_number
 
+.. autofunction:: pyTMD.arguments._to_extended_doodson
+
 .. autofunction:: pyTMD.arguments._from_doodson_number
+
+.. autofunction:: pyTMD.arguments._from_extended_doodson
