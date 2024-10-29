@@ -350,7 +350,7 @@ def minor_arguments(
     return (u, f, arg)
 
 # JSON file of Doodson coefficients
-_coefficients_table = get_data_path(['data','coefficients.json'])
+_coefficients_table = get_data_path(['data','doodson.json'])
 
 def coefficients_table(
         constituents: list | tuple | np.ndarray | str,
