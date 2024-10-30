@@ -13,6 +13,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 10/2024: add wrapper functions to read and interpolate constants
         add functions to append node tide equilibrium values to amplitudes
+        remove redundant default keyword arguments to readers and interpolators
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
         add file_format and nodal correction attributes
@@ -997,12 +998,7 @@ class model:
         # set default keyword arguments
         kwargs.setdefault('type', self.type)
         kwargs.setdefault('append_node', False)
-        kwargs.setdefault('crop', False)
-        kwargs.setdefault('bounds', None)
-        kwargs.setdefault('method', 'spline')
-        kwargs.setdefault('extrapolate', False)
-        kwargs.setdefault('cutoff', None)
-        kwargs.setdefault('apply_flexure', False)
+        kwargs.setdefault('scale', self.scale)
         # read tidal constants and interpolate to grid points
         if self.format in ('OTIS', 'ATLAS-compact', 'TMD3'):
             # extract model file in case of currents
@@ -1023,14 +1019,13 @@ class model:
                 model_file = self.model_file
             # extract tidal constants for model type
             amp,ph,D,c = ATLAS.extract_constants(lon, lat,
-                self.grid_file, model_file, scale=self.scale,
+                self.grid_file, model_file,
                 compressed=self.compressed, **kwargs)
         elif self.format in ('GOT-ascii', 'GOT-netcdf'):
             # extract tidal constants for model type
             amp,ph,c = GOT.extract_constants(lon, lat,
                 self.model_file, grid=self.file_format,
-                scale=self.scale, compressed=self.compressed,
-                **kwargs)
+                compressed=self.compressed, **kwargs)
         elif self.format in ('FES-ascii', 'FES-netcdf'):
             # extract model file in case of currents
             if isinstance(self.model_file, dict):
@@ -1041,8 +1036,7 @@ class model:
             # extract tidal constants for model type
             amp,ph = FES.extract_constants(lon, lat,
                 self.model_file, version=self.version,
-                scale=self.scale, compressed=self.compressed,
-                **kwargs)
+                compressed=self.compressed, **kwargs)
             # available model constituents
             c = self.constituents
         # append node equilibrium tide if not in constituents list
@@ -1073,9 +1067,6 @@ class model:
         # set default keyword arguments
         kwargs.setdefault('type', self.type)
         kwargs.setdefault('append_node', False)
-        kwargs.setdefault('crop', False)
-        kwargs.setdefault('bounds', None)
-        kwargs.setdefault('apply_flexure', False)
         # read tidal constants
         if self.format in ('OTIS','ATLAS-compact','TMD3'):
             # extract model file in case of currents
@@ -1159,9 +1150,7 @@ class model:
         from pyTMD.io import OTIS, ATLAS, GOT, FES
         # set default keyword arguments
         kwargs.setdefault('type', self.type)
-        kwargs.setdefault('method', 'spline')
-        kwargs.setdefault('extrapolate', False)
-        kwargs.setdefault('cutoff', 10.0)
+        kwargs.setdefault('scale', self.scale)
         # verify constituents have been read
         if not hasattr(self, '_constituents'):
             self.read_constants(**kwargs)
@@ -1171,16 +1160,13 @@ class model:
                 self._constituents, **kwargs)
         elif self.format in ('ATLAS-netcdf',):
             amp,ph,D = ATLAS.interpolate_constants(lon, lat,
-                self._constituents, scale=self.scale,
-                **kwargs)
+                self._constituents, **kwargs)
         elif self.format in ('GOT-ascii','GOT-netcdf'):
             amp,ph = GOT.interpolate_constants(lon, lat,
-                self._constituents, scale=self.scale,
-                **kwargs)
+                self._constituents, **kwargs)
         elif self.format in ('FES-ascii','FES-netcdf'):
             amp,ph = FES.interpolate_constants(lon, lat,
-                self._constituents, scale=self.scale,
-                **kwargs)
+                self._constituents, **kwargs)
         # return the amplitude and phase
         return (amp, ph)
 
@@ -1272,12 +1258,6 @@ def extract_constants(lon: np.ndarray, lat: np.ndarray, m, **kwargs):
     assert isinstance(m, model)
     # set default keyword arguments
     kwargs.setdefault('type', m.type)
-    kwargs.setdefault('crop', False)
-    kwargs.setdefault('bounds', None)
-    kwargs.setdefault('method', 'spline')
-    kwargs.setdefault('extrapolate', False)
-    kwargs.setdefault('cutoff', None)
-    kwargs.setdefault('apply_flexure', False)
     # extract tidal constants
     amp, ph, c = m.extract_constants(lon, lat, **kwargs)
     # return the amplitude, phase, and constituents
@@ -1303,9 +1283,6 @@ def read_constants(m, **kwargs):
     assert isinstance(m, model)
     # set default keyword arguments
     kwargs.setdefault('type', m.type)
-    kwargs.setdefault('crop', False)
-    kwargs.setdefault('bounds', None)
-    kwargs.setdefault('apply_flexure', False)
     # read tidal constants
     m.read_constants(**kwargs)
     # return the tidal constituents
@@ -1333,10 +1310,6 @@ def interpolate_constants(lon: np.ndarray, lat: np.ndarray, m, **kwargs):
     ph: np.ndarray
         Tidal phase in degrees
     """
-    # set default keyword arguments
-    kwargs.setdefault('method', 'spline')
-    kwargs.setdefault('extrapolate', False)
-    kwargs.setdefault('cutoff', None)
     # extract tidal constants
     amp, ph = m.interpolate_constants(lon, lat, **kwargs)
     # return the amplitude and phase
