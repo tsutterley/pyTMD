@@ -10,7 +10,6 @@ The available examples include:
 
 .. toctree::
    :maxdepth: 1
-   :caption: Examples
 
    ../notebooks/Check-Tide-Map
    ../notebooks/Plot-Antarctic-Cotidal-Charts
