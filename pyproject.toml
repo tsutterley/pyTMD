@@ -59,7 +59,7 @@ Repository = "https://github.com/tsutterley/pyTMD"
 Issues = "https://github.com/tsutterley/pyTMD/issues"
 
 [project.optional-dependencies]
-doc = ["docutils", "fontconfig", "freetype", "graphviz", "numpydoc", "sphinx", "sphinx-argparse>=0.4", "sphinx_rtd_theme"]
+doc = ["docutils", "fontconfig", "freetype", "graphviz", "myst-nb", "numpydoc", "sphinx", "sphinx-argparse>=0.4", "sphinx_rtd_theme"]
 all = ["cartopy", "gdal", "h5py", "ipyleaflet", "ipywidgets", "jplephem", "matplotlib", "mpi4py", "notebook", "pandas", "pyyaml"]
 dev = ["flake8", "pytest>=4.6", "pytest-cov", "oct2py", "boto3"]
 

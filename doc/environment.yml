@@ -7,6 +7,7 @@ dependencies:
   - freetype
   - graphviz
   - lxml
+  - myst-nb
   - netCDF4
   - numpy
   - numpydoc

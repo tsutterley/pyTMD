@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (10/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 10/2024: fix error when using default bounds in extract_constants
     Updated 07/2024: added crop and bounds keywords for trimming model data
     Updated 02/2024: changed variable for setting global grid flag to is_global
     Updated 10/2023: add generic wrapper function for reading constituents
@@ -194,6 +195,7 @@ def extract_constants(
     # set default keyword arguments
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
@@ -227,10 +229,10 @@ def extract_constants(
     # adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
-    # set default bounds if cropping
+    # default bounds if cropping
     xmin, xmax = np.min(ilon), np.max(ilon)
     ymin, ymax = np.min(ilat), np.max(ilat)
-    kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
+    bounds = kwargs['bounds'] or [xmin, xmax, ymin, ymax]
     # grid step size of tide model
     dlon = lon[1] - lon[0]
     # if global: extend limits
@@ -238,10 +240,10 @@ def extract_constants(
 
     # crop bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
-    if kwargs['crop'] and np.any(kwargs['bounds']):
+    if kwargs['crop'] and np.any(bounds):
         mlon, mlat = np.copy(lon), np.copy(lat)
         bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
-            bounds=kwargs['bounds'],
+            bounds=bounds,
             buffer=4*dlon
         )
     elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
@@ -315,9 +317,9 @@ def extract_constants(
         # append constituent to list
         constituents.append(cons)
         # crop tide model data to (buffered) bounds
-        if kwargs['crop'] and np.any(kwargs['bounds']):
+        if kwargs['crop'] and np.any(bounds):
             hc, _, _ = _crop(hc, mlon, mlat,
-                bounds=kwargs['bounds'],
+                bounds=bounds,
                 buffer=4*dlon
             )
         # replace original values with extend matrices
