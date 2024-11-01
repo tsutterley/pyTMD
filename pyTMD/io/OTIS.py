@@ -59,6 +59,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2024: save latitude and longitude to output constituent object
+        fix error when using default bounds in extract_constants
     Updated 09/2024: using new JSON dictionary format for model projections
     Updated 08/2024: revert change and assume crop bounds are projected
     Updated 07/2024: added crop and bounds keywords for trimming model data
@@ -241,6 +242,7 @@ def extract_constants(
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('grid', 'OTIS')
     kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
@@ -285,18 +287,18 @@ def extract_constants(
     # grid step size of tide model
     dx = xi[1] - xi[0]
     dy = yi[1] - yi[0]
-    # set default bounds if cropping data
+    # default bounds if cropping data
     xmin, xmax = np.min(x), np.max(x)
     ymin, ymax = np.min(y), np.max(y)
-    kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
+    bounds = kwargs['bounds'] or [xmin, xmax, ymin, ymax]
 
     # crop mask and bathymetry data to (buffered) bounds
     # or adjust longitudinal convention to fit tide model
-    if kwargs['crop'] and np.any(kwargs['bounds']):
+    if kwargs['crop'] and np.any(bounds):
         mx, my = np.copy(xi), np.copy(yi)
-        mz, xi, yi = _crop(mz, mx, my, bounds=kwargs['bounds'],
+        mz, xi, yi = _crop(mz, mx, my, bounds=bounds,
             buffer=4*dx, is_geographic=is_geographic)
-        hz, xi, yi = _crop(hz, mx, my, bounds=kwargs['bounds'],
+        hz, xi, yi = _crop(hz, mx, my, bounds=bounds,
             buffer=4*dx, is_geographic=is_geographic)
     elif (np.min(x) < np.min(xi)) & is_geographic:
         # input points convention (-180:180)
@@ -441,9 +443,9 @@ def extract_constants(
                 u,hc = read_otis_transport(model_file, i)
 
         # crop tide model data to (buffered) bounds
-        if kwargs['crop'] and np.any(kwargs['bounds']):
+        if kwargs['crop'] and np.any(bounds):
             hc, _, _ = _crop(hc, mx, my,
-                bounds=kwargs['bounds'], buffer=4*dx,
+                bounds=bounds, buffer=4*dx,
                 is_geographic=is_geographic)
         # replace original values with extend matrices
         if is_global:

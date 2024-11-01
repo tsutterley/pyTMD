@@ -329,7 +329,7 @@
         },
         "TPXO10-atlas-v2": {
             "format": "OTIS",
-            "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
+            "grid_file": "TPXO10_atlas_v2/grid_tpxo10_atlas_30_v2",
             "model_file": {
                 "u": [
                     "TPXO10_atlas_v2/u_2n2_tpxo10_atlas_30_v2",
@@ -1756,7 +1756,7 @@
         },
         "TPXO10-atlas-v2": {
             "format": "OTIS",
-            "grid_file": "TPXO10_atlas_v2/grid_tpxo10atlas_v2",
+            "grid_file": "TPXO10_atlas_v2/grid_tpxo10_atlas_30_v2",
             "model_file": [
                 "TPXO10_atlas_v2/h_2n2_tpxo10_atlas_30_v2",
                 "TPXO10_atlas_v2/h_k1_tpxo10_atlas_30_v2",

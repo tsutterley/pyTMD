@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (10/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 10/2024: fix error when using default bounds in extract_constants
     Updated 07/2024: added new FES2022 to available known model versions
         FES2022 have masked longitudes, only extract longitude data
         FES2022 extrapolated data have zeroed out inland water bodies
@@ -201,6 +202,7 @@ def extract_constants(
     kwargs.setdefault('version', None)
     kwargs.setdefault('compressed', False)
     kwargs.setdefault('crop', False)
+    kwargs.setdefault('bounds', None)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
@@ -224,10 +226,10 @@ def extract_constants(
     # adjust dimensions of input coordinates to be iterable
     ilon = np.atleast_1d(np.copy(ilon))
     ilat = np.atleast_1d(np.copy(ilat))
-    # set default bounds if cropping
+    # default bounds if cropping
     xmin, xmax = np.min(ilon), np.max(ilon)
     ymin, ymax = np.min(ilat), np.max(ilat)
-    kwargs.setdefault('bounds', [xmin, xmax, ymin, ymax])
+    bounds = kwargs['bounds'] or [xmin, xmax, ymin, ymax]
     # number of points
     npts = len(ilon)
     # number of constituents
@@ -255,9 +257,9 @@ def extract_constants(
         dlon = lon[1] - lon[0]
         # crop tide model data to (buffered) bounds
         # or adjust longitudinal convention to fit tide model
-        if kwargs['crop'] and np.any(kwargs['bounds']):
+        if kwargs['crop'] and np.any(bounds):
             hc, lon, lat = _crop(hc, lon, lat,
-                bounds=kwargs['bounds'],
+                bounds=bounds,
                 buffer=4*dlon
             )
         elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):

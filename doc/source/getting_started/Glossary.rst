@@ -40,7 +40,7 @@ Glossary
     Chandler Wobble
         small, semi-periodic deviations in the motion of the pole of rotation
 
-    Compount Tide
+    Compound Tide
         harmonic constituent with a speed equal to the sum or difference of the speeds of two or more elementary constituents
 
     Constituent

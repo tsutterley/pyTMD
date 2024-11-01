@@ -40,10 +40,18 @@ release = f"v{version}"
 extensions = [
     "sphinx.ext.autodoc",
     "numpydoc",
+    "myst_nb",
     "sphinx.ext.graphviz",
     "sphinx.ext.viewcode",
     "sphinxarg.ext"
 ]
+
+# use myst for notebooks
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".ipynb": "myst-nb",
+}
+nb_execution_mode = "off"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
