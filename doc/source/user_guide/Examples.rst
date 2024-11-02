@@ -23,7 +23,7 @@ The available examples include:
    ../notebooks/Plot-Tide-Forecasts
    ../notebooks/Solve-Synthetic-Tides
 
-.. grid:: 1 2 3 4
+.. grid:: 1 2 4 4
 
     .. grid-item-card::  Check Tide Map
       :text-align: center
@@ -49,7 +49,7 @@ The available examples include:
       :link: ../notebooks/Plot-Antarctic-Tide-Range.html
       :link-alt: Plots the total combined tidal amplitude for all constituents around Antarctica
 
-.. grid:: 1 2 3 4
+.. grid:: 1 2 4 4
 
     .. grid-item-card::  Plot Arctic Ocean Map
       :text-align: center
@@ -76,7 +76,7 @@ The available examples include:
       :link: ../notebooks/Plot-Ross-Ice-Shelf-Map.html
       :link-alt: Creates an animation of hourly tidal elevations for the Ross Ice Shelf
 
-.. grid:: 1 2 3 4
+.. grid:: 1 2 4 4
 
     .. grid-item-card::  Plot Tide Forecasts
       :text-align: center
