@@ -18,8 +18,9 @@ dependencies:
   - scipy
   - setuptools_scm
   - sphinx
+  - sphinx-argparse>=0.4
+  - sphinx-design
   - sphinx_rtd_theme
   - timescale>=0.0.3
   - pip:
-    - sphinx-argparse>=0.4
     - ..
