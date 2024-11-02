@@ -38,11 +38,12 @@ release = f"v{version}"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",
-    "numpydoc",
     "myst_nb",
+    "numpydoc",
+    "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
     "sphinx.ext.viewcode",
+    "sphinx_design",
     "sphinxarg.ext"
 ]
 
