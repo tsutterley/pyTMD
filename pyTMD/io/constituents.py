@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 11/2024: added property for Extended Doodson numbers
     Updated 10/2024: added property for the shape of constituent fields
     Updated 09/2024: add more known constituents to string parser function
     Updated 08/2024: add GOT prime nomenclature for 3rd degree constituents
@@ -166,7 +167,7 @@ class constituents:
 
     @property
     def doodson_number(self):
-        """constituent Doodson number
+        """Doodson number for constituents
         """
         doodson_numbers = []
         # for each constituent ID
@@ -183,7 +184,7 @@ class constituents:
 
     @property
     def cartwright_number(self):
-        """constituent Cartwright numbers
+        """Cartwright numbers for constituents
         """
         cartwright_numbers = []
         # for each constituent ID
@@ -197,6 +198,23 @@ class constituents:
             cartwright_numbers.append(n)
         # return the list of Cartwright numbers
         return cartwright_numbers
+
+    @property
+    def extended_doodson(self):
+        """Extended Doodson numbers for constituents
+        """
+        extended_numbers = []
+        # for each constituent ID
+        for f in self.fields:
+            try:
+                # try to get the Extended Doodson number
+                XDO = pyTMD.arguments.doodson_number(f, formalism='Extended')
+            except (AssertionError, ValueError) as exc:
+                XDO = None
+            # add Extended Doodson number to the combined list
+            extended_numbers.append(XDO)
+        # return the list of Extended Doodson numbers
+        return extended_numbers
 
     @property
     def shape(self):

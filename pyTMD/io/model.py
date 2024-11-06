@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
@@ -11,6 +11,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 11/2024: use Love numbers for long-period tides in node equilibrium
     Updated 10/2024: add wrapper functions to read and interpolate constants
         add functions to append node tide equilibrium values to amplitudes
         remove redundant default keyword arguments to readers and interpolators
@@ -421,7 +422,7 @@ class model:
         elif (self.type == 'z') and (self.variable == 'tide_load'):
             return 'load_tide_elevation'
         elif (self.type == 'z') and (self.variable == 'tide_lpe'):
-            return 'Equilibrium_Tide'
+            return 'equilibrium_tide_elevation'
         elif (self.type == ['u','v']):
             return dict(u='zonal_tidal_current', v='meridional_tidal_current')
         else:
@@ -1203,9 +1204,10 @@ class model:
         """
         # Cartwright and Edden potential amplitude
         amajor = 0.027929# node
-        # love numbers
-        k2 = 0.302
-        h2 = 0.609
+        # Love numbers for long-period tides (Wahr, 1981)
+        k2 = 0.299
+        h2 = 0.606
+        # tilt factor: response with respect to the solid earth
         gamma_2 = (1.0 + k2 - h2)
         # 2nd degree Legendre polynomials
         P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)

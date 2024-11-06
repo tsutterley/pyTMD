@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 11/2024: use Love numbers for long-period tides when inferring
     Updated 10/2024: use PREM as the default Earth model for Love numbers
         more descriptive error message if cannot infer minor constituents
         updated calculation of long-period equilibrium tides
@@ -771,6 +772,7 @@ def _infer_diurnal(
             j1, = j
             # Love numbers of degree 2 for constituent
             h2, k2, l2 = _body_tide_love_numbers(omajor[i])
+            # tilt factor: response with respect to the solid earth
             gamma_2 = (1.0 + k2 - h2)
             # "normalize" tide values
             z[:,i] = zmajor[:,j1]/(amajor[i]*gamma_2)
@@ -833,6 +835,7 @@ def _infer_diurnal(
     for k in minor_indices:
         # Love numbers of degree 2 for constituent
         h2, k2, l2 = _body_tide_love_numbers(omega[k])
+        # tilt factor: response with respect to the solid earth
         gamma_2 = (1.0 + k2 - h2)
         # interpolate from major constituents
         if (kwargs['method'].lower() == 'linear'):
@@ -1228,12 +1231,15 @@ def equilibrium_tide(
     G = np.dot(fargs, coef)
     Z = np.inner(np.cos(G*np.pi/180.0), CTE)
 
-    # Multiply by gamma_2 * normalization * P20(lat)
-    k2 = 0.302
-    h2 = 0.609
+    # Love numbers for long-period tides (Wahr, 1981)
+    k2 = 0.299
+    h2 = 0.606
+    # tilt factor: response with respect to the solid earth
     gamma_2 = (1.0 + k2 - h2)
+    # 2nd degree Legendre polynomials
     P20 = 0.5*(3.0*np.sin(lat*np.pi/180.0)**2 - 1.0)
     # calculate long-period equilibrium tide and convert to meters
+    # Multiply by gamma_2 * normalization * P20(lat)
     if (nlat != nt):
         lpet = gamma_2*np.sqrt((4.0+1.0)/(4.0*np.pi))*np.outer(P20,Z/100.0)
     else:

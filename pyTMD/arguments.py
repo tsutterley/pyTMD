@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -38,6 +38,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 11/2024: allow variable case for Doodson number formalisms
     Updated 10/2024: can convert Doodson numbers formatted as strings
         update Doodson number conversions to follow Cartwright X=10 convention
         add function to parse Cartwright/Tayler/Edden tables
@@ -478,13 +479,13 @@ def doodson_number(
             else:
                 return None
         # extract identifier in formalism
-        if (kwargs['formalism'] == 'Cartwright'):
+        if (kwargs['formalism'].title() == 'Cartwright'):
             # extract Cartwright number
             numbers = np.array(coefficients[:6,0])
-        elif (kwargs['formalism'] == 'Doodson'):
+        elif (kwargs['formalism'].title() == 'Doodson'):
             # convert from coefficients to Doodson number
             numbers = _to_doodson_number(coefficients[:,0], **kwargs)
-        elif (kwargs['formalism'] == 'Extended'):
+        elif (kwargs['formalism'].title() == 'Extended'):
             # convert to extended Doodson number in UKHO format
             numbers = _to_extended_doodson(coefficients[:,0], **kwargs)
     else:
@@ -502,13 +503,13 @@ def doodson_number(
                     numbers[c] = None
                     continue
             # convert from coefficients to Doodson number
-            if (kwargs['formalism'] == 'Cartwright'):
+            if (kwargs['formalism'].title() == 'Cartwright'):
                 # extract Cartwright number
                 numbers[c] = np.array(coefficients[:6,0])
-            elif (kwargs['formalism'] == 'Doodson'):
+            elif (kwargs['formalism'].title() == 'Doodson'):
                 # convert from coefficients to Doodson number
                 numbers[c] = _to_doodson_number(coefficients[:,0], **kwargs)
-            elif (kwargs['formalism'] == 'Extended'):
+            elif (kwargs['formalism'].title() == 'Extended'):
                 # convert to extended Doodson number in UKHO format
                 numbers[c] = _to_extended_doodson(coefficients[:,0], **kwargs)
     # return the Doodson or Cartwright number
