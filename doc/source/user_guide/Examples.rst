@@ -21,6 +21,7 @@ The available examples include:
    ../notebooks/Plot-Ocean-Pole-Tide-Map
    ../notebooks/Plot-Ross-Ice-Shelf-Map
    ../notebooks/Plot-Tide-Forecasts
+   ../notebooks/Plot-Tide-Form-Factor
    ../notebooks/Solve-Synthetic-Tides
 
 .. grid:: 1 2 4 4
@@ -82,6 +83,11 @@ The available examples include:
       :text-align: center
       :img-top: ../_assets/tide_forecasts.png
       :link: ../notebooks/Plot-Tide-Forecasts.html
+
+    .. grid-item-card::  Plot Tide Form Factor
+      :text-align: center
+      :img-top: ../_assets/tide_form_factor.png
+      :link: ../notebooks/Plot-Tide-Form-Factor.html
 
     .. grid-item-card::  Solve Synthetic Tides
       :text-align: center
