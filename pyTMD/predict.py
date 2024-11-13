@@ -67,6 +67,7 @@ import logging
 import numpy as np
 import pyTMD.arguments
 import pyTMD.astro
+import pyTMD.math
 from pyTMD.crs import datum
 import timescale.time
 
@@ -1165,7 +1166,7 @@ def equilibrium_tide(
     s, h, p, N, pp = pyTMD.astro.mean_longitudes(MJD + kwargs['deltat'],
         ASTRO5=ASTRO5)
     # convert to negative mean longitude of the ascending node (N')
-    n = pyTMD.astro.normalize_angle(360.0 - N)
+    n = pyTMD.math.normalize_angle(360.0 - N)
     # determine equilibrium arguments
     fargs = np.c_[s, h, p, n, pp]
 

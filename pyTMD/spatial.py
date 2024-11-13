@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (11/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 11/2024: added function to calculate the altitude and azimuth
     Updated 09/2024: deprecation fix case where an array is output to scalars
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
         added functions to convert to and from East-North-Up coordinates
@@ -155,6 +156,7 @@ __all__ = [
     "_zhu_closed_form",
     "to_ENU",
     "from_ENU",
+    "to_horizontal",
     "scale_areas",
     "scale_factors",
 ]
@@ -1519,18 +1521,20 @@ def convert_ellipsoid(
     return (phi2, h2)
 
 def compute_delta_h(
+        lat: np.ndarray,
         a1: float,
         f1: float,
         a2: float,
-        f2: float,
-        lat: np.ndarray
+        f2: float
     ):
     """
     Compute difference in elevation for two ellipsoids at a given
-        latitude using a simplified empirical equation
+        latitude using a simplified empirical relation
 
     Parameters
     ----------
+    lat: np.ndarray
+        latitudes (degrees north)
     a1: float
         semi-major axis of input ellipsoid
     f1: float
@@ -1539,8 +1543,6 @@ def compute_delta_h(
         semi-major axis of output ellipsoid
     f2: float
         flattening of output ellipsoid
-    lat: np.ndarray
-        latitudes (degrees north)
 
     Returns
     -------
@@ -1551,18 +1553,16 @@ def compute_delta_h(
     ----------
     .. [1] J Meeus, *Astronomical Algorithms*, pp. 77--82, (1991).
     """
-    # force phi into range -90 <= phi <= 90
-    gt90, = np.nonzero((lat < -90.0) | (lat > 90.0))
-    lat[gt90] = np.sign(lat[gt90])*90.0
-    # semiminor axis of input and output ellipsoid
+    # force latitudes to be within -90 to 90 and convert to radians
+    phi = np.clip(lat, -90.0, 90.0)*np.pi/180.0
+    # semi-minor axis of input and output ellipsoid
     b1 = (1.0 - f1)*a1
     b2 = (1.0 - f2)*a2
-    # compute delta_a and delta_b coefficients
+    # compute differences in semi-major and semi-minor axes
     delta_a = a2 - a1
     delta_b = b2 - b1
     # compute differences between ellipsoids
     # delta_h = -(delta_a * cos(phi)^2 + delta_b * sin(phi)^2)
-    phi = lat * np.pi/180.0
     delta_h = -(delta_a*np.cos(phi)**2 + delta_b*np.sin(phi)**2)
     return delta_h
 
@@ -1740,11 +1740,11 @@ def to_geodetic(
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1807,11 +1807,11 @@ def _moritz_iterative(
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1874,11 +1874,11 @@ def _bowring_iterative(
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -1951,11 +1951,11 @@ def _zhu_closed_form(
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -2015,9 +2015,9 @@ def to_ENU(
         x: np.ndarray,
         y: np.ndarray,
         z: np.ndarray,
-        lon0: float = 0.0,
-        lat0: float = 0.0,
-        h0: float = 0.0,
+        lon0: float | np.ndarray = 0.0,
+        lat0: float | np.ndarray = 0.0,
+        h0: float | np.ndarray = 0.0,
         a_axis: float = _wgs84.a_axis,
         flat: float = _wgs84.flat,
     ):
@@ -2027,17 +2027,17 @@ def to_ENU(
 
     Parameters
     ----------
-    x, float
+    x, np.ndarray
         cartesian x-coordinates
-    y, float
+    y, np.ndarray
         cartesian y-coordinates
-    z, float
+    z, np.ndarray
         cartesian z-coordinates
-    lon0: float, default 0.0
+    lon0: float or np.ndarray, default 0.0
         reference longitude (degrees east)
-    lat0: float, default 0.0
+    lat0: float or np.ndarray, default 0.0
         reference latitude (degrees north)
-    h0: float, default 0.0
+    h0: float or np.ndarray, default 0.0
         reference height (meters)
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -2086,9 +2086,9 @@ def from_ENU(
         E: np.ndarray,
         N: np.ndarray,
         U: np.ndarray,
-        lon0: float = 0.0,
-        lat0: float = 0.0,
-        h0: float = 0.0,
+        lon0: float | np.ndarray = 0.0,
+        lat0: float | np.ndarray = 0.0,
+        h0: float | np.ndarray = 0.0,
         a_axis: float = _wgs84.a_axis,
         flat: float = _wgs84.flat,
     ):
@@ -2098,17 +2098,17 @@ def from_ENU(
 
     Parameters
     ----------
-    E, float
+    E, np.ndarray
         east coordinates
-    N, float
+    N, np.ndarray
         north coordinates
-    U, float
+    U, np.ndarray
         up coordinates
-    lon0: float, default 0.0
+    lon0: float or np.ndarray, default 0.0
         reference longitude (degrees east)
-    lat0: float, default 0.0
+    lat0: float or np.ndarray, default 0.0
         reference latitude (degrees north)
-    h0: float, default 0.0
+    h0: float or np.ndarray, default 0.0
         reference height (meters)
     a_axis: float, default 6378137.0
         semimajor axis of the ellipsoid
@@ -2156,6 +2156,42 @@ def from_ENU(
         return (x[0], y[0], z[0])
     else:
         return (x, y, z)
+
+def to_horizontal(
+        E: np.ndarray,
+        N: np.ndarray,
+        U: np.ndarray,
+    ):
+    """
+    Convert from East-North-Up coordinates (ENU) to a
+    celestial horizontal coordinate system (alt-az)
+
+    Parameters
+    ----------
+    E: np.ndarray
+        east coordinates
+    N: np.ndarray
+        north coordinates
+    U: np.ndarray
+        up coordinates
+
+    Returns
+    -------
+    alpha: np.ndarray
+        altitude (elevation) angle in degrees
+    phi: np.ndarray
+        azimuth angle in degrees
+    D: np.ndarray
+        distance from observer to object in meters
+    """
+    # calculate distance to object
+    # convert coordinates to unit vectors
+    D = np.sqrt(E**2 + N**2 + U**2)
+    # altitude (elevation) angle in degrees
+    alpha = np.arcsin(U/D)*180.0/np.pi
+    # azimuth angle in degrees (fixed to 0 to 360)
+    phi = np.mod(np.arctan2(E/D, N/D)*180.0/np.pi, 360.0)
+    return (alpha, phi, D)
 
 def scale_areas(*args, **kwargs):
     warnings.warn("Deprecated. Please use pyTMD.spatial.scale_factors instead",

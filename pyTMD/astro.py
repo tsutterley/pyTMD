@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 astro.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (11/2024)
 Astronomical and nutation routines
 
 PYTHON DEPENDENCIES:
@@ -16,6 +16,7 @@ REFERENCES:
     Oliver Montenbruck, Practical Ephemeris Calculations, 1989.
 
 UPDATE HISTORY:
+    Updated 11/2024: moved three generic mathematical functions to math.py
     Updated 07/2024: made a wrapper function for normalizing angles
         make number of days to convert days since an epoch to MJD variables
     Updated 04/2024: use wrapper to importlib for optional dependencies
@@ -53,6 +54,11 @@ import warnings
 import numpy as np
 import timescale.eop
 import timescale.time
+from pyTMD.math import (
+    polynomial_sum,
+    normalize_angle,
+    rotate
+)
 from pyTMD.utilities import (
     get_data_path,
     import_dependency,
@@ -62,9 +68,6 @@ from pyTMD.utilities import (
 jplephem_spk = import_dependency('jplephem.spk')
 
 __all__ = [
-    "polynomial_sum",
-    "normalize_angle",
-    "rotate",
     "mean_longitudes",
     "phase_angles",
     "doodson_arguments",
@@ -100,74 +103,6 @@ _mjd_j2000 = 51544.5
 _jd_j2000 = _jd_mjd + _mjd_j2000
 # Julian century
 _century = 36525.0
-
-# PURPOSE: calculate the sum of a polynomial function of time
-def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
-    """
-    Calculates the sum of a polynomial function using Horner's method
-
-    Parameters
-    ----------
-    coefficients: list or np.ndarray
-        leading coefficient of polynomials of increasing order
-    t: np.ndarray
-        delta time in units for a given astronomical longitudes calculation
-    """
-    # convert time to array if importing a single value
-    t = np.atleast_1d(t)
-    return np.sum([c * (t ** i) for i, c in enumerate(coefficients)], axis=0)
-
-def normalize_angle(theta: float | np.ndarray, circle: float = 360.0):
-    """
-    Normalize an angle to a single rotation
-
-    Parameters
-    ----------
-    theta: float or np.ndarray
-        Angle to normalize
-    circle: float, default 360.0
-        Circle of the angle
-    """
-    return np.mod(theta, circle)
-
-def rotate(theta: float | np.ndarray, axis: str = 'x'):
-    """
-    Rotate a 3-dimensional matrix about a given axis
-
-    Parameters
-    ----------
-    theta: float or np.ndarray
-        Angle of rotation in radians
-    axis: str
-        Axis of rotation (``'x'``, ``'y'``, or ``'z'``)
-    """
-    # allocate for output rotation matrix
-    R = np.zeros((3, 3, len(np.atleast_1d(theta))))
-    if (axis.lower() == 'x'):
-        # rotate about x-axis
-        R[0,0,:] = 1.0
-        R[1,1,:] = np.cos(theta)
-        R[1,2,:] = np.sin(theta)
-        R[2,1,:] = -np.sin(theta)
-        R[2,2,:] = np.cos(theta)
-    elif (axis.lower() == 'y'):
-        # rotate about y-axis
-        R[0,0,:] = np.cos(theta)
-        R[0,2,:] = -np.sin(theta)
-        R[1,1,:] = 1.0
-        R[2,0,:] = np.sin(theta)
-        R[2,2,:] = np.cos(theta)
-    elif (axis.lower() == 'z'):
-        # rotate about z-axis
-        R[0,0,:] = np.cos(theta)
-        R[0,1,:] = np.sin(theta)
-        R[1,0,:] = -np.sin(theta)
-        R[1,1,:] = np.cos(theta)
-        R[2,2,:] = 1.0
-    else:
-        raise ValueError(f'Invalid axis {axis}')
-    # return the rotation matrix
-    return R
 
 # PURPOSE: compute the basic astronomical mean longitudes
 def mean_longitudes(
@@ -352,8 +287,9 @@ def doodson_arguments(
         # Equinox method converted to degrees
         TAU = 360.0*ts.st + 180.0 - S
     else:
-        TAU = ((hour*15.0) - S + polynomial_sum(np.array([280.4606184,
-            36000.7700536, 3.8793e-4, -2.58e-8]), T))
+        LAMBDA = polynomial_sum(np.array([280.4606184,
+            36000.7700536, 3.8793e-4, -2.58e-8]), T)
+        TAU = (hour*15.0) - S + LAMBDA
     # calculate correction for mean lunar longitude (degrees)
     if apply_correction:
         PR = polynomial_sum(np.array([0.0, 1.396971278,

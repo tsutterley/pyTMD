@@ -17,12 +17,6 @@ Calling Sequence
 
 .. __: https://github.com/tsutterley/pyTMD/blob/main/pyTMD/astro.py
 
-.. autofunction:: pyTMD.astro.polynomial_sum
-
-.. autofunction:: pyTMD.astro.normalize_angle
-
-.. autofunction:: pyTMD.astro.rotate
-
 .. autofunction:: pyTMD.astro.mean_longitudes
 
 .. autofunction:: pyTMD.astro.doodson_arguments

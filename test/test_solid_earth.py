@@ -1,5 +1,5 @@
 """
-test_solid_earth.py (07/2024)
+test_solid_earth.py (11/2024)
 Tests the steps for calculating the solid earth tides
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/timescale/
 
 UPDATE HISTORY:
+    Updated 11/2024: moved normalize_angle and polynomial_sum to math.py
     Updated 07/2024: use normalize_angle from pyTMD astro module
     Updated 04/2024: use timescale for temporal operations
     Updated 01/2024: refactored lunisolar ephemerides functions
@@ -22,6 +23,7 @@ import numpy as np
 import pyTMD.astro
 import pyTMD.compute
 import pyTMD.predict
+import pyTMD.math
 import pyTMD.utilities
 import timescale.time
 
@@ -137,7 +139,7 @@ def test_phase_angles():
     # convert from MJD to centuries relative to 2000-01-01T12:00:00
     T = (MJD - 51544.5)/36525.0
     s, h, p, N, PP = pyTMD.astro.mean_longitudes(MJD, ASTRO5=True)
-    PR = dtr*pyTMD.astro.polynomial_sum(np.array([0.0, 1.396971278,
+    PR = dtr*pyTMD.math.polynomial_sum(np.array([0.0, 1.396971278,
         3.08889e-4, 2.1e-8, 7.0e-9]), T)
     TAU, S, H, P, ZNS, PS = pyTMD.astro.doodson_arguments(MJD)
     assert np.isclose(dtr*s + PR, S)
@@ -353,7 +355,7 @@ def test_greenwich():
     ts = timescale.time.Timescale(MJD=55414.0)
     # Meeus approximation
     hour_angle = 280.46061837504 + 360.9856473662862*(ts.T*36525.0)
-    GHA = pyTMD.astro.normalize_angle(hour_angle)
+    GHA = pyTMD.math.normalize_angle(hour_angle)
     # compare with pyTMD calculation
     assert np.isclose(GHA, ts.gha)
 

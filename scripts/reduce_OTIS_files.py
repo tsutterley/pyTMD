@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 reduce_OTIS_files.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (11/2024)
 Read OTIS-format tidal files and reduce to a regional subset
 
 COMMAND LINE OPTIONS:
@@ -28,6 +28,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 11/2024: use "stem" instead of "basename"
     Updated 07/2024: renamed format for ATLAS to ATLAS-compact
     Updated 04/2024: add debug mode printing input arguments
         use wrapper to importlib for optional dependencies
@@ -204,10 +205,10 @@ def make_regional_OTIS_files(tide_dir, TIDE_MODEL,
 def create_unique_filename(filename):
     # split filename into parts
     filename = pathlib.Path(filename)
-    basename = filename.stem
+    stem = filename.stem
     suffix = '' if (filename.suffix in ('.out','.oce')) else filename.suffix
     # replace extension with reduced flag
-    filename = filename.with_name(f'{basename}{suffix}.reduced')
+    filename = filename.with_name(f'{stem}{suffix}.reduced')
     # create counter to add to the end of the filename if existing
     counter = 1
     while counter:
@@ -220,8 +221,8 @@ def create_unique_filename(filename):
             # close the file descriptor and return the filename
             fd.close()
             return filename
-        # new filename adds counter
-        filename = filename.with_name(f'{basename}{suffix}.reduced_{counter:d}')
+        # new filename adds counter before the file extension
+        filename = filename.with_name(f'{stem}{suffix}.reduced_{counter:d}')
         counter += 1
 
 # PURPOSE: create argument parser

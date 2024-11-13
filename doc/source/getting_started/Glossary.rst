@@ -174,6 +174,9 @@ Glossary
     Pole Tide
         apparent tide due to variations in the Earth's axis of rotation about its mean
 
+    Radiational Tide
+        tidal constituents or components induced by the absorption and re-emission of solar radiation
+
     Range
         height difference between the :term:`High Water Height` and the :term:`Low Water Height`
 

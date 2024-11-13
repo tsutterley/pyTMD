@@ -1,5 +1,5 @@
 """
-test_solid_earth.py (10/2024)
+test_equilibrium_tide.py (11/2024)
 Tests the calculation of long-period equilibrium tides with respect
 to the LPEQMT subroutine
 
@@ -11,11 +11,13 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/timescale/
 
 UPDATE HISTORY:
+    Updated 11/2024: moved normalize_angle to math.py
     Written 10/2024
 """
 import pytest
 import numpy as np
 import pyTMD.predict
+import pyTMD.math
 import timescale.time
 
 # PURPOSE: test the estimation of long-period equilibrium tides
@@ -72,7 +74,7 @@ def test_equilibrium_tide(TYPE):
     for N in range(4):
         # convert time from days relative to 1992-01-01 to 1987-01-01
         ANGLE = PHC[N] + (t.tide + 1826.0)*DPD[N]
-        SHPN[N,:] = np.pi*pyTMD.astro.normalize_angle(ANGLE)/180.0
+        SHPN[N,:] = np.pi*pyTMD.math.normalize_angle(ANGLE)/180.0
 
     # assemble long-period tide potential from 15 CTE terms greater than 1 mm
     # nodal term is included but not the constant term.
