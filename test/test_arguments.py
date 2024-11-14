@@ -5,7 +5,7 @@ Verify arguments table matches prior arguments array
 Verify nodal corrections match prior estimates
 
 UPDATE HISTORY:
-    Updated 11/2024: moved normalize_angle to math.py
+    Updated 11/2024: moved normalize_angle test to test_math.py
     Updated 10/2024: add comparisons for formatted Doodson numbers
         add function to parse tide potential tables
     Updated 08/2024: add comparisons for nodal corrections
@@ -14,7 +14,6 @@ UPDATE HISTORY:
 import pytest
 import numpy as np
 import pyTMD.astro
-import pyTMD.math
 from pyTMD.arguments import (
     nodal,
     doodson_number,
@@ -824,15 +823,3 @@ def test_parse_tables():
             assert p == line['p'], line
             assert n == line['n'], line
             assert pp == line['pp'], line
-
-def test_normalize_angle():
-    """
-    Tests the normalization of angles to between 0 and 360 degrees
-    """
-    # test angles
-    angles = np.array([-180, -90, 0, 90, 180, 270, 360, 450])
-    # expected values
-    exp = np.array([180, 270, 0, 90, 180, 270, 0, 90])
-    # test normalization of angles
-    test = pyTMD.math.normalize_angle(angles)
-    assert np.all(exp == test)

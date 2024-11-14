@@ -152,8 +152,8 @@ def legendre(
     # complete matrix of associated legendre functions
     # up to degree and order 3
     Plm = np.zeros((4, 4, nx), dtype=np.float64)
-    # since tides only use low-degree harmonics: rather than use
-    # a recursion relation, we'll just hard-code the functions
+    # since tides only use low-degree harmonics:
+    # functions are hard coded rather than using a recursion relation
     Plm[0, 0, :] = 1.0
     Plm[1, 0, :] = x
     Plm[1, 1, :] = u
@@ -166,9 +166,9 @@ def legendre(
     Plm[3, 3, :] = 15.0*u**3
     # return values
     if singular_values:
-        return Plm[l, m, 0]
+        return np.pow(-1.0, m)*Plm[l, m, 0]
     else:
-        return Plm[l, m, :]
+        return np.pow(-1.0, m)*Plm[l, m, :]
 
 def sph_harm(
         l: int,
@@ -219,7 +219,7 @@ def sph_harm(
     Plm = norm*legendre(l, np.cos(theta), m=m)
     # spherical harmonics of degree l and order m
     dfactor = np.sqrt((2.0*l + 1.0)/(4.0*np.pi))
-    Ylm = np.pow(-1.0, m)*dfactor*Plm*np.sin(theta)*np.exp(1j*m*phi)
+    Ylm = dfactor*Plm*np.sin(theta)*np.exp(1j*m*phi)
     # return values
     if singular_values:
         return Ylm[0]
