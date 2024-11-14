@@ -455,3 +455,32 @@ def test_ECEF_to_ENU():
     assert np.isclose(X, Xexp)
     assert np.isclose(Y, Yexp)
     assert np.isclose(Z, Zexp)
+
+# PURPOSE: test the conversion of ECEF to celestial horizontal coordinates
+def test_ECEF_to_horizontal():
+    # US Naval Observatory (USNO)
+    lon0 = -77.0669
+    lat0 = 38.9215
+    h0 = 92.0
+    # solar ephemerides at J2000
+    SX =  1.353631936e11
+    SY =  1.938584775e9
+    SZ = -5.755477511e10
+    # lunar ephemerides at J2000
+    LX =  2.09322658e8
+    LY = -3.35161630e8
+    LZ = -7.60803221e7
+    # convert from ECEF to east-north-up (ENU) coordinates
+    SE, SN, SU = pyTMD.spatial.to_ENU(SX, SY, SZ,
+        lon0=lon0, lat0=lat0, h0=h0)
+    LE, LN, LU = pyTMD.spatial.to_ENU(LX, LY, LZ,
+        lon0=lon0, lat0=lat0, h0=h0)
+    # convert from ENU to horizontal coordinates
+    salt, saz, sdist = pyTMD.spatial.to_horizontal(SE, SN, SU)
+    lalt, laz, ldist = pyTMD.spatial.to_horizontal(LE, LN, LU)
+    # check solar azimuth and elevation
+    assert np.isclose(salt, -5.486, atol=0.001)
+    assert np.isclose(saz, 115.320, atol=0.001)
+    # check lunar azimuth and elevation
+    assert np.isclose(lalt, 36.381, atol=0.001)
+    assert np.isclose(laz, 156.297, atol=0.001)
