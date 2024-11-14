@@ -97,4 +97,6 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.from_ENU
 
+.. autofunction:: pyTMD.spatial.to_horizontal
+
 .. autofunction:: pyTMD.spatial.scale_factors

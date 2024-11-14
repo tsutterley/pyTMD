@@ -15,7 +15,7 @@
 * ``docs``: add citations to included data `(#353) <https://github.com/tsutterley/pyTMD/pull/353>`_
 * ``fix``: remove default bounds being ``None`` for `#356 <https://github.com/tsutterley/pyTMD/issues/356>`_ `(#357) <https://github.com/tsutterley/pyTMD/pull/357>`_
 * ``docs``: move notebooks to docs and use myst to render `(#359) <https://github.com/tsutterley/pyTMD/pull/359>`_
-* ``fix``: correct error when using default bounds in `extract_constants` for `#356 <https://github.com/tsutterley/pyTMD/issues/356>`_ `(#359) <https://github.com/tsutterley/pyTMD/pull/359>`_
+* ``fix``: correct error when using default bounds in ``extract_constants`` for `#356 <https://github.com/tsutterley/pyTMD/issues/356>`_ `(#359) <https://github.com/tsutterley/pyTMD/pull/359>`_
 * ``fix``: correct ``TPXO10-atlas-v2`` binary grid filename for `#358 <https://github.com/tsutterley/pyTMD/issues/358>`_ `(#359) <https://github.com/tsutterley/pyTMD/pull/359>`_
 * ``fix``: some `Cartwright and Edden (1973) <http://dx.doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_ table entries `(#359) <https://github.com/tsutterley/pyTMD/pull/359>`_
 * ``docs``: use cards for notebook examples page `(#360) <https://github.com/tsutterley/pyTMD/pull/360>`_
