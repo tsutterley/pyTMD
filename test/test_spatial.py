@@ -478,9 +478,20 @@ def test_ECEF_to_horizontal():
     # convert from ENU to horizontal coordinates
     salt, saz, sdist = pyTMD.spatial.to_horizontal(SE, SN, SU)
     lalt, laz, ldist = pyTMD.spatial.to_horizontal(LE, LN, LU)
+    # calculate zenith angle from ECEF coordinates
+    solar_zenith = pyTMD.spatial.to_zenith(SX, SY, SZ,
+        lon0=lon0, lat0=lat0, h0=h0)
+    lunar_zenith = pyTMD.spatial.to_zenith(LX, LY, LZ,
+        lon0=lon0, lat0=lat0, h0=h0)
     # check solar azimuth and elevation
     assert np.isclose(salt, -5.486, atol=0.001)
     assert np.isclose(saz, 115.320, atol=0.001)
     # check lunar azimuth and elevation
     assert np.isclose(lalt, 36.381, atol=0.001)
     assert np.isclose(laz, 156.297, atol=0.001)
+    # check solar and lunar zenith angles
+    assert np.isclose(solar_zenith, 95.486, atol=0.001)
+    assert np.isclose(lunar_zenith, 53.619, atol=0.001)
+    # verify relation between altitudes and zenith angles
+    assert solar_zenith == (90.0 - salt)
+    assert lunar_zenith == (90.0 - lalt)

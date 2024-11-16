@@ -99,4 +99,6 @@ General Methods
 
 .. autofunction:: pyTMD.spatial.to_horizontal
 
+.. autofunction:: pyTMD.spatial.to_zenith
+
 .. autofunction:: pyTMD.spatial.scale_factors
