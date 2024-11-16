@@ -11,3 +11,4 @@ Solve functions for estimating ocean tides
     forward.rst
     grid.rst
     model.rst
+    response.rst
