@@ -26,7 +26,10 @@ __all__ = [
 ]
 
 # PURPOSE: calculate the sum of a polynomial function of time
-def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
+def polynomial_sum(
+        coefficients: list | np.ndarray,
+        t: np.ndarray
+    ):
     """
     Calculates the sum of a polynomial function using Horner's method [1]_
 
@@ -48,7 +51,10 @@ def polynomial_sum(coefficients: list | np.ndarray, t: np.ndarray):
     t = np.atleast_1d(t)
     return np.sum([c * (t ** i) for i, c in enumerate(coefficients)], axis=0)
 
-def normalize_angle(theta: float | np.ndarray, circle: float = 360.0):
+def normalize_angle(
+        theta: float | np.ndarray,
+        circle: float = 360.0
+    ):
     """
     Normalize an angle to a single rotation
 
@@ -61,7 +67,10 @@ def normalize_angle(theta: float | np.ndarray, circle: float = 360.0):
     """
     return np.mod(theta, circle)
 
-def rotate(theta: float | np.ndarray, axis: str = 'x'):
+def rotate(
+        theta: float | np.ndarray,
+        axis: str = 'x'
+    ):
     """
     Rotate a 3-dimensional matrix about a given axis
 
@@ -69,7 +78,7 @@ def rotate(theta: float | np.ndarray, axis: str = 'x'):
     ----------
     theta: float or np.ndarray
         Angle of rotation in radians
-    axis: str
+    axis: str, default 'x'
         Axis of rotation (``'x'``, ``'y'``, or ``'z'``)
     """
     # allocate for output rotation matrix
@@ -112,13 +121,13 @@ def legendre(
     Parameters
     ----------
     l: int
-        degree of Legrendre polynomials (0 to 3)
+        degree of the Legrendre polynomials (0 to 3)
     x: np.ndarray
         elements ranging from -1 to 1
 
         Typically ``cos(theta)``, where ``theta`` is the colatitude in radians
-    m: int, default = 0
-        order of the Legendre polynomial
+    m: int, default 0
+        order of the Legendre polynomials (0 to ``l``)
 
     Returns
     -------
@@ -183,13 +192,13 @@ def sph_harm(
     Parameters
     ----------
     l: int
-        degree of spherical harmonics (0 to 3)
+        degree of the spherical harmonics (0 to 3)
     theta: np.ndarray
         colatitude in radians
     phi: np.ndarray
         longitude in radians
     m: int, default 0
-        order of the spherical harmonics (0 to l)
+        order of the spherical harmonics (0 to ``l``)
 
     Returns
     -------

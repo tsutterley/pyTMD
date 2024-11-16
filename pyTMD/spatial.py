@@ -157,6 +157,7 @@ __all__ = [
     "to_ENU",
     "from_ENU",
     "to_horizontal",
+    "to_zenith",
     "scale_areas",
     "scale_factors",
 ]
@@ -2192,6 +2193,54 @@ def to_horizontal(
     # azimuth angle in degrees (fixed to 0 to 360)
     phi = np.mod(np.arctan2(E/D, N/D)*180.0/np.pi, 360.0)
     return (alpha, phi, D)
+
+def to_zenith(
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        lon0: float | np.ndarray = 0.0,
+        lat0: float | np.ndarray = 0.0,
+        h0: float | np.ndarray = 0.0,
+        a_axis: float = _wgs84.a_axis,
+        flat: float = _wgs84.flat,
+    ):
+    """
+    Calculate zenith angle of an object from Earth-Centered
+    Earth-Fixed (ECEF) cartesian coordinates
+
+    Parameters
+    ----------
+    x, np.ndarray
+        cartesian x-coordinates
+    y, np.ndarray
+        cartesian y-coordinates
+    z, np.ndarray
+        cartesian z-coordinates
+    lon0: float or np.ndarray, default 0.0
+        reference longitude (degrees east)
+    lat0: float or np.ndarray, default 0.0
+        reference latitude (degrees north)
+    h0: float or np.ndarray, default 0.0
+        reference height (meters)
+    a_axis: float, default 6378137.0
+        semimajor axis of the ellipsoid
+    flat: float, default 1.0/298.257223563
+        ellipsoidal flattening
+
+    Returns
+    -------
+    zenith: np.ndarray
+        zenith angle of object in degrees
+    """
+    # convert from ECEF to ENU
+    E, N, U = to_ENU(x, y, z, lon0=lon0, lat0=lat0, h0=h0,
+        a_axis=a_axis, flat=flat)
+    # convert from ENU to horizontal coordinates
+    alpha, phi, D = to_horizontal(E, N, U)
+    # calculate zenith angle in degrees
+    zenith = 90.0 - alpha
+    # return zenith angle
+    return zenith
 
 def scale_areas(*args, **kwargs):
     warnings.warn("Deprecated. Please use pyTMD.spatial.scale_factors instead",
