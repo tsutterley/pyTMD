@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 ATLAS.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -55,6 +55,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 11/2024: expose buffer distance for cropping tide model data
     Updated 10/2024: fix error when using default bounds in extract_constants
     Updated 07/2024: added crop and bounds keywords for trimming model data
     Updated 02/2024: changed variable for setting global grid flag to is_global
@@ -164,6 +165,8 @@ def extract_constants(
         Crop tide model data to (buffered) bounds
     bounds: list or NoneType, default None
         Boundaries for cropping tide model data
+    buffer: int, float or NoneType, default None
+        Buffer angle for cropping tide model data
     method: str, default 'spline'
         Interpolation method
 
@@ -196,6 +199,7 @@ def extract_constants(
     kwargs.setdefault('type', 'z')
     kwargs.setdefault('crop', False)
     kwargs.setdefault('bounds', None)
+    kwargs.setdefault('buffer', None)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
@@ -235,6 +239,8 @@ def extract_constants(
     bounds = kwargs['bounds'] or [xmin, xmax, ymin, ymax]
     # grid step size of tide model
     dlon = lon[1] - lon[0]
+    # default buffer if cropping data
+    buffer = kwargs['buffer'] or 4*dlon
     # if global: extend limits
     is_global = False
 
@@ -244,7 +250,7 @@ def extract_constants(
         mlon, mlat = np.copy(lon), np.copy(lat)
         bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
             bounds=bounds,
-            buffer=4*dlon
+            buffer=buffer
         )
     elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
         # input points convention (-180:180)
@@ -320,7 +326,7 @@ def extract_constants(
         if kwargs['crop'] and np.any(bounds):
             hc, _, _ = _crop(hc, mlon, mlat,
                 bounds=bounds,
-                buffer=4*dlon
+                buffer=buffer
             )
         # replace original values with extend matrices
         if is_global:
@@ -412,6 +418,8 @@ def read_constants(
         Crop tide model data to (buffered) bounds
     bounds: list or NoneType, default None
         Boundaries for cropping tide model data
+    buffer: int or float, default 0
+        Buffer angle for cropping tide model data
 
     Returns
     -------
@@ -423,6 +431,7 @@ def read_constants(
     kwargs.setdefault('compressed', True)
     kwargs.setdefault('crop', False)
     kwargs.setdefault('bounds', None)
+    kwargs.setdefault('buffer', 0)
 
     # raise warning if model files are entered as a string or path
     if isinstance(model_files, (str, pathlib.Path)):
@@ -444,6 +453,7 @@ def read_constants(
         mlon, mlat = np.copy(lon), np.copy(lat)
         bathymetry, lon, lat = _crop(bathymetry, mlon, mlat,
             bounds=kwargs['bounds'],
+            buffer=kwargs['buffer'],
         )
     # grid step size of tide model
     dlon = lon[1] - lon[0]
@@ -473,6 +483,7 @@ def read_constants(
         if kwargs['crop'] and np.any(kwargs['bounds']):
             hc, lon, lat = _crop(hc, mlon, mlat,
                 bounds=kwargs['bounds'],
+                buffer=kwargs['buffer'],
             )
         # replace original values with extend matrices
         if is_global:

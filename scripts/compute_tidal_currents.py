@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute_tidal_currents.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 Calculates zonal and meridional tidal currents for an input file
 
 Uses OTIS format tidal solutions provided by Oregon State University and ESR
@@ -23,6 +23,7 @@ COMMAND LINE OPTIONS:
     --gzip, -G: Tide model files are gzip compressed
     --definition-file X: Model definition file for use in calculating currents
     -C, --crop: Crop tide model to (buffered) bounds of data
+    -B X, --buffer X: Buffer for cropping tide model
     --format X: input and output data format
         csv (default)
         netCDF4
@@ -103,6 +104,7 @@ PROGRAM DEPENDENCIES:
     predict.py: predict tidal values using harmonic constants
 
 UPDATE HISTORY:
+    Updated 11/2024: add option for buffer distance to crop tide model data
     Updated 10/2024: compute delta times based on corrections type
         simplify by using wrapper functions to read and interpolate constants
     Updated 09/2024: use JSON database for known model parameters
@@ -221,6 +223,7 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     GZIP=True,
     DEFINITION_FILE=None,
     CROP=False,
+    BUFFER=None,
     FORMAT='csv',
     VARIABLES=[],
     HEADER=0,
@@ -311,8 +314,8 @@ def compute_tidal_currents(tide_dir, input_file, output_file,
     for t in model.type:
         # read tidal constants and interpolate to grid points
         amp, ph, c = model.extract_constants(np.ravel(lon), np.ravel(lat),
-            type=t, crop=CROP, method=METHOD, extrapolate=EXTRAPOLATE,
-            cutoff=CUTOFF)
+            type=t, crop=CROP, buffer=BUFFER, method=METHOD,
+            extrapolate=EXTRAPOLATE, cutoff=CUTOFF)
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
         # calculate constituent oscillation
@@ -490,6 +493,9 @@ def arguments():
     parser.add_argument('--crop', '-C',
         default=False, action='store_true',
         help='Crop tide model to bounds of data')
+    parser.add_argument('--buffer', '-B',
+        type=float, default=None,
+        help='Buffer for cropping tide model')
     # input and output data format
     parser.add_argument('--format','-F',
         type=str, default='csv',
@@ -604,6 +610,7 @@ def main():
             GZIP=args.gzip,
             DEFINITION_FILE=args.definition_file,
             CROP=args.crop,
+            BUFFER=args.buffer,
             FORMAT=args.format,
             VARIABLES=args.variables,
             HEADER=args.header,

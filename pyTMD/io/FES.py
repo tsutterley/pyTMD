@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 FES.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from the
@@ -57,6 +57,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 11/2024: expose buffer distance for cropping tide model data
     Updated 10/2024: fix error when using default bounds in extract_constants
     Updated 07/2024: added new FES2022 to available known model versions
         FES2022 have masked longitudes, only extract longitude data
@@ -175,6 +176,8 @@ def extract_constants(
         Crop tide model data to (buffered) bounds
     bounds: list or NoneType, default None
         Boundaries for cropping tide model data
+    buffer: float or NoneType, default None
+        Buffer angle for cropping tide model data
     method: str, default 'spline'
         Interpolation method
 
@@ -203,6 +206,7 @@ def extract_constants(
     kwargs.setdefault('compressed', False)
     kwargs.setdefault('crop', False)
     kwargs.setdefault('bounds', None)
+    kwargs.setdefault('buffer', None)
     kwargs.setdefault('method', 'spline')
     kwargs.setdefault('extrapolate', False)
     kwargs.setdefault('cutoff', 10.0)
@@ -255,12 +259,14 @@ def extract_constants(
             hc, lon, lat = read_netcdf_file(model_file, **kwargs)
         # grid step size of tide model
         dlon = lon[1] - lon[0]
+        # default buffer if cropping data
+        buffer = kwargs['buffer'] or 4*dlon
         # crop tide model data to (buffered) bounds
         # or adjust longitudinal convention to fit tide model
         if kwargs['crop'] and np.any(bounds):
             hc, lon, lat = _crop(hc, lon, lat,
                 bounds=bounds,
-                buffer=4*dlon
+                buffer=buffer,
             )
         elif (np.min(ilon) < 0.0) & (np.max(lon) > 180.0):
             # input points convention (-180:180)
@@ -372,6 +378,8 @@ def read_constants(
         Crop tide model data to (buffered) bounds
     bounds: list or NoneType, default None
         Boundaries for cropping tide model data
+    buffer: int or float, default 0
+        Buffer angle for cropping tide model data
 
     Returns
     -------
@@ -384,6 +392,7 @@ def read_constants(
     kwargs.setdefault('compressed', False)
     kwargs.setdefault('crop', False)
     kwargs.setdefault('bounds', None)
+    kwargs.setdefault('buffer', 0)
 
     # raise warning if model files are entered as a string or path
     if isinstance(model_files, (str, pathlib.Path)):
@@ -414,6 +423,7 @@ def read_constants(
         if kwargs['crop'] and np.any(kwargs['bounds']):
             hc, lon, lat = _crop(hc, lon, lat,
                 bounds=kwargs['bounds'],
+                buffer=kwargs['buffer'],
             )
         # grid step size of tide model
         dlon = lon[1] - lon[0]
