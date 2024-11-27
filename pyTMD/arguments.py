@@ -39,6 +39,7 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 11/2024: allow variable case for Doodson number formalisms
+        fix species in constituent parameters for complex tides
     Updated 10/2024: can convert Doodson numbers formatted as strings
         update Doodson number conversions to follow Cartwright X=10 convention
         add function to parse Cartwright/Tayler/Edden tables
@@ -1408,7 +1409,7 @@ def _constituent_parameters(c: str, **kwargs):
         'msf', 'sa', 'mt', '2q1']
     # species type (spherical harmonic dependence of quadrupole potential)
     _species = np.array([2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 1, 1,
-        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+        1, 1, 0, 0, 0, 4, 4, 4, 6, 8, 3, 6, 2, 3, 0, 0, 0, 1])
     # Load Love numbers
     # alpha = correction factor for first order load tides
     _alpha = np.array([0.693, 0.693, 0.736, 0.695, 0.693, 0.706, 0.693,

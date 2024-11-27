@@ -17,8 +17,11 @@ import pyTMD.astro
 from pyTMD.arguments import (
     nodal,
     doodson_number,
+    frequency,
+    coefficients_table,
     _arguments_table,
     _minor_table,
+    _constituent_parameters,
     _parse_tide_potential_table,
     _to_doodson_number,
     _to_extended_doodson,
@@ -672,6 +675,43 @@ def test_nodal(corrections, M1):
             urad = u[:,i]*dtr
             assert np.all(np.isclose(urad, pu[:,i], rtol=1e-2, atol=1e-2))
 
+def test_parameters():
+    """
+    Test constituent parameter values
+    """
+    # parametrized constituents (sans m1 and 2mk3)
+    cindex = ['m2', 's2', 'k1', 'o1', 'n2', 'p1', 'k2', 'q1', '2n2', 'mu2',
+        'nu2', 'l2', 'j1', 'oo1', 'rho1', 'mf', 'mm', 'ssa',
+        'm4', 'ms4', 'mn4', 'm6', 'm8', 'mk3', 's6', '2sm2', 
+        'msf', 'sa', 'mt', '2q1']
+    # number of days between MJD and the tide epoch (1992-01-01T00:00:00)
+    MJD = np.atleast_1d(48622.0)
+    # convert from Modified Julian Dates into Ephemeris Time
+    s, h, p, n, pp = pyTMD.astro.mean_longitudes(MJD,
+        ASTRO5=False)
+    # initial time conversions
+    hour = 24.0*np.mod(MJD, 1)
+    # convert from hours solar time into mean lunar time in degrees
+    tau = 15.0*hour - s + h
+    # variable for multiples of 90 degrees (Ray technical note 2017)
+    k = 90.0 + np.zeros_like(MJD)
+    fargs = np.c_[tau, s, h, p, n, pp, k]
+    G = np.mod(np.dot(fargs, coefficients_table(cindex)), 360.0)
+    # angular frequency of each constituent
+    omegas = frequency(cindex)
+    # for each constituent
+    for i, c in enumerate(cindex):
+        # get constituent parameters
+        amp, ph, omega, alpha, species = _constituent_parameters(c)
+        # check species
+        cartwright = doodson_number(c, formalism='Cartwright')
+        assert species == cartwright[0]
+        # check frequency calculation
+        assert np.isclose(omega, omegas[i])
+        # assert phase calculation
+        phase = np.mod(180.0*ph/np.pi, 360.0)
+        assert np.isclose(phase, G[0,i])
+        
 def test_doodson():
     """
     Tests the calculation of Doodson numbers

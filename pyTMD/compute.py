@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (10/2024)
+Written by Tyler Sutterley (11/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 11/2024: expose buffer distance for cropping tide model data
     Updated 10/2024: compute delta times based on corrections type
         simplify by using wrapper functions to read and interpolate constants
         added option to append equilibrium amplitudes for node tides
@@ -216,6 +217,7 @@ def tide_elevations(
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
+        BUFFER: int | float | None = None,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -255,6 +257,8 @@ def tide_elevations(
         Crop tide model data to (buffered) bounds
     BOUNDS: list, np.ndarray or NoneType, default None
         Boundaries for cropping tide model data
+    BUFFER: int, float or NoneType, default None
+        Buffer distance for cropping tide model data
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -359,7 +363,7 @@ def tide_elevations(
 
     # read tidal constants and interpolate to grid points
     amp, ph, c = model.extract_constants(lon, lat, type=model.type,
-        crop=CROP, bounds=BOUNDS, method=METHOD,
+        crop=CROP, bounds=BOUNDS, buffer=BUFFER, method=METHOD,
         extrapolate=EXTRAPOLATE, cutoff=CUTOFF,
         append_node=APPEND_NODE, apply_flexure=APPLY_FLEXURE)
     # calculate complex phase in radians for Euler's
@@ -441,6 +445,7 @@ def tide_currents(
         DEFINITION_FILE: str | pathlib.Path | IOBase | None = None,
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
+        BUFFER: int | float | None = None,
         EPSG: str | int = 3031,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
@@ -478,6 +483,8 @@ def tide_currents(
         Crop tide model data to (buffered) bounds
     BOUNDS: list, np.ndarray or NoneType, default None
         Boundaries for cropping tide model data
+    BUFFER: int, float or NoneType, default None
+        Buffer distance for cropping tide model data
     EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
@@ -580,7 +587,7 @@ def tide_currents(
     for t in model.type:
         # read tidal constants and interpolate to grid points
         amp, ph, c = model.extract_constants(lon, lat, type=t,
-            crop=CROP, bounds=BOUNDS, method=METHOD,
+            crop=CROP, bounds=BOUNDS, buffer=BUFFER, method=METHOD,
             extrapolate=EXTRAPOLATE, cutoff=CUTOFF)
         # calculate complex phase in radians for Euler's
         cph = -1j*ph*np.pi/180.0
