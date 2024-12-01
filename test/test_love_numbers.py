@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 u"""
-test_love_numbers.py (09/2024)
+test_love_numbers.py (11/2024)
 Verify Love numbers correspond to those from Wahr et al. (1981)
 
 UPDATE HISTORY:
+    Updated 11/2024: moved love number calculator to arguments
     Written 09/2024
 """
 import pytest
 import numpy as np
 import pyTMD.arguments
-import pyTMD.predict
 
 def test_love_numbers():
     """
@@ -46,7 +46,7 @@ def test_love_numbers():
     for c, v in exp.items():
         # calculate Love numbers
         omega, = pyTMD.arguments.frequency(c)
-        h2, k2, l2 = pyTMD.predict._body_tide_love_numbers(
+        h2, k2, l2 = pyTMD.arguments._love_numbers(
             omega, model='1066A')
         # check Love numbers
         assert np.isclose(h2, v[0], atol=15e-4)

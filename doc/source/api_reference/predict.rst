@@ -40,8 +40,6 @@ Calling Sequence
 
 .. autofunction:: pyTMD.predict._infer_long_period
 
-.. autofunction:: pyTMD.predict._body_tide_love_numbers
-
 .. autofunction:: pyTMD.predict.equilibrium_tide
 
 .. autofunction:: pyTMD.predict.load_pole_tide

@@ -21,6 +21,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 11/2024: use Love numbers for long-period tides when inferring
+        move body tide Love/Shida numbers to arguments module
     Updated 10/2024: use PREM as the default Earth model for Love numbers
         more descriptive error message if cannot infer minor constituents
         updated calculation of long-period equilibrium tides
@@ -80,7 +81,6 @@ __all__ = [
     "_infer_semi_diurnal",
     "_infer_diurnal",
     "_infer_long_period",
-    "_body_tide_love_numbers",
     "equilibrium_tide",
     "load_pole_tide",
     "ocean_pole_tide",
@@ -772,7 +772,7 @@ def _infer_diurnal(
         if j:
             j1, = j
             # Love numbers of degree 2 for constituent
-            h2, k2, l2 = _body_tide_love_numbers(omajor[i])
+            h2, k2, l2 = pyTMD.arguments._love_numbers(omajor[i])
             # tilt factor: response with respect to the solid earth
             gamma_2 = (1.0 + k2 - h2)
             # "normalize" tide values
@@ -835,7 +835,7 @@ def _infer_diurnal(
     # sum over the minor tidal constituents of interest
     for k in minor_indices:
         # Love numbers of degree 2 for constituent
-        h2, k2, l2 = _body_tide_love_numbers(omega[k])
+        h2, k2, l2 = pyTMD.arguments._love_numbers(omega[k])
         # tilt factor: response with respect to the solid earth
         gamma_2 = (1.0 + k2 - h2)
         # interpolate from major constituents
@@ -1004,105 +1004,6 @@ def _infer_long_period(
             zmin.imag*pf[:,k]*np.sin(th)
     # return the inferred values
     return dh
-
-def _body_tide_love_numbers(
-        omega: np.ndarray,
-        model: str = 'PREM'
-    ):
-    """
-    Compute the body tide Love/Shida numbers for a given
-    frequency [1]_ [2]_ [3]_
-
-    Parameters
-    ----------
-    omega: np.ndarray
-        angular frequency (radians per second)
-    model: str, default 'PREM'
-        Earth model to use for Love numbers
-
-            - '1066A'
-            - 'PEM-C'
-            - 'C2'
-            - 'PREM'
-
-    Returns
-    -------
-    h2: float
-        Degree-2 Love number of vertical displacement
-    k2: float
-        Degree-2 Love number of gravitational potential
-    l2: float
-        Degree-2 Love (Shida) number of horizontal displacement
-
-    References
-    ----------
-    .. [1] J. M. Wahr, "Body tides on an elliptical, rotating, elastic
-        and oceanless Earth", *Geophysical Journal of the Royal
-        Astronomical Society*, 64(3), 677--703, (1981).
-        `doi: 10.1111/j.1365-246X.1981.tb02690.x
-        <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
-    .. [2] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
-        tide and in the Earth's load response due to the resonant free
-        `core nutation`", *Geophysical Journal of the Royal Astronomical
-        Society*, 64(3), 747--765, (1981).
-        `doi: 10.1111/j.1365-246X.1981.tb02693.x
-        <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
-    .. [3] P. M. Mathews, B. A. Buffett, and I. I. Shapiro,
-        "Love numbers for diurnal tides: Relation to wobble admittances
-        and resonance expansions", *Journal of Geophysical Research:
-        Solid Earth*, 100(B6), 9935--9948, (1995).
-        `doi: 10.1029/95jb00670 <https://doi.org/10.1029/95jb00670>`_
-    """
-    # free core nutation frequencies (cycles per sidereal day) and
-    # Love number parameters from Wahr (1981) table 6
-    # and Mathews et al. (1995) table 3
-    if (model == '1066A'):
-        fcn = 1.0021714
-        h0, h1 = np.array([6.03e-1, -2.46e-3])
-        k0, k1 = np.array([2.98e-1, -1.23e-3])
-        l0, l1 = np.array([8.42e-2, 7.81e-5])
-    elif (model == 'PEM-C'):
-        fcn = 1.0021771
-        h0, h1 = np.array([6.02e-1, -2.46e-3])
-        k0, k1 = np.array([2.98e-1, -1.24e-3])
-        l0, l1 = np.array([8.39e-2, 7.69e-5])
-    elif (model == 'C2'):
-        fcn = 1.0021844
-        h0, h1 = np.array([6.02e-1, -2.45e-3])
-        k0, k1 = np.array([2.98e-1, -1.23e-3])
-        l0, l1 = np.array([8.46e-2, 7.58e-5])
-    elif (model == 'PREM'):
-        fcn = 1.0023214
-        h0, h1 = np.array([5.994e-1, -2.532e-3])
-        k0, k1 = np.array([2.962e-1, -1.271e-3])
-        l0, l1 = np.array([8.378e-2, 7.932e-5])
-    else:
-        raise ValueError(f'Unknown Earth model: {model}')
-    # Love numbers for different frequency bands
-    if (omega > 1e-4):
-        # tides in the semi-diurnal band
-        h2 = 0.609
-        k2 = 0.302
-        l2 = 0.0852
-    elif (omega < 2e-5):
-        # tides in the long period band
-        h2 = 0.606
-        k2 = 0.299
-        l2 = 0.0840
-    else:
-        # use resonance formula for tides in the diurnal band
-        # frequency of the o1 tides (radians/second)
-        omega_o1, = pyTMD.arguments.frequency('o1')
-        # frequency of free core nutation (radians/second)
-        omega_fcn = fcn*7292115e-11
-        # Love numbers for frequency using equation 4.18 of Wahr (1981)
-        # (simplification to use only the free core nutation term)
-        ratio = (omega - omega_o1)/(omega_fcn - omega)
-        h2 = h0 + h1*ratio
-        k2 = k0 + k1*ratio
-        l2 = l0 + l1*ratio
-    # return the Love numbers for frequency
-    return (h2, k2, l2)
 
 # PURPOSE: estimate long-period equilibrium tides
 def equilibrium_tide(
