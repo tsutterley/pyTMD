@@ -112,7 +112,7 @@ def test_ascii():
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of netCDF4 files
 @pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
@@ -180,7 +180,7 @@ def test_netCDF4(TYPE):
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of HDF5 files
 @pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
@@ -247,7 +247,7 @@ def test_HDF5(TYPE):
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: Download IODEM3 from NSIDC
 @pytest.fixture(scope="module", autouse=False)
@@ -266,7 +266,7 @@ def nsidc_IODEM3(username, password):
     # run tests
     yield
     # clean up
-    granule.unlink()
+    granule.unlink(missing_ok=True)
 
 # PURPOSE: Download IODEM3 from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
@@ -291,7 +291,7 @@ def AWS_IODEM3(aws_access_key_id, aws_secret_access_key, aws_region_name):
     # run tests
     yield
     # clean up
-    granule.unlink()
+    granule.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of geotiff files
 def test_geotiff():
@@ -322,7 +322,7 @@ def test_geotiff():
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
     # remove the test files
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the default field mapping function
 def test_field_mapping():

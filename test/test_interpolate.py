@@ -35,7 +35,7 @@ def download_nodes(N=324):
         verbose=True)
     yield
     # remove the node file
-    filepath.joinpath(matfile).unlink()
+    filepath.joinpath(matfile).unlink(missing_ok=True)
 
 # Franke's 3D evaluation function
 def franke_3d(x,y,z):

@@ -126,7 +126,7 @@ class Test_CATS2008:
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        CFname.unlink()
+        CFname.unlink(missing_ok=True)
 
     # PURPOSE: Download CATS2008 from AWS S3 bucket
     @pytest.fixture(scope="class", autouse=True)
@@ -174,7 +174,7 @@ class Test_CATS2008:
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        CFname.unlink()
+        CFname.unlink(missing_ok=True)
 
     # PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
     @pytest.fixture(scope="class", autouse=False)
@@ -188,7 +188,7 @@ class Test_CATS2008:
         # run tests
         yield
         # clean up
-        local.unlink()
+        local.unlink(missing_ok=True)
 
     # PURPOSE: Download Antarctic Tide Gauge Database from AWS
     @pytest.fixture(scope="class", autouse=True)
@@ -211,7 +211,7 @@ class Test_CATS2008:
         # run tests
         yield
         # clean up
-        local.unlink()
+        local.unlink(missing_ok=True)
 
     # PURPOSE: create verification from Matlab program
     @pytest.fixture(scope="class", autouse=False)
@@ -938,7 +938,7 @@ class Test_AOTIM5_2018:
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        CFname.unlink()
+        CFname.unlink(missing_ok=True)
 
     # PURPOSE: Download Arctic Tidal Current Atlas list of records
     @pytest.fixture(scope="class", autouse=True)
@@ -951,7 +951,7 @@ class Test_AOTIM5_2018:
         # run tests
         yield
         # clean up
-        local.unlink()
+        local.unlink(missing_ok=True)
 
     # PURPOSE: create verification from Matlab program
     @pytest.fixture(scope="class", autouse=False)
