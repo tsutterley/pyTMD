@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-test_download_and_read.py (09/2024)
+test_download_and_read.py (12/2024)
 Tests that CATS2008 data can be downloaded from the US Antarctic Program (USAP)
 Tests that AOTIM-5-2018 data can be downloaded from the NSF ArcticData server
 Tests the read program to verify that constituents are being extracted
@@ -19,6 +19,7 @@ PYTHON DEPENDENCIES:
         https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
 
 UPDATE HISTORY:
+    Updated 12/2024: create test files from matlab program for comparison
     Updated 09/2024: drop support for the ascii definition file format
         use model class attributes for file format and corrections
         using new JSON dictionary format for model projections
@@ -46,6 +47,8 @@ UPDATE HISTORY:
 """
 import re
 import io
+import copy
+import gzip
 import json
 import boto3
 import shutil
@@ -53,7 +56,6 @@ import pytest
 import inspect
 import pathlib
 import zipfile
-import warnings
 import posixpath
 import numpy as np
 import pyTMD.io
@@ -65,7 +67,10 @@ import pyTMD.check_points
 import pyTMD.ellipse
 import pyTMD.solve
 import timescale.time
-from oct2py import octave
+
+# attempt imports
+pd = pyTMD.utilities.import_dependency('pandas')
+oct2py = pyTMD.utilities.import_dependency('oct2py')
 
 # current file path
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -121,7 +126,7 @@ class Test_CATS2008:
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        CFname.unlink()
+        CFname.unlink(missing_ok=True)
 
     # PURPOSE: Download CATS2008 from AWS S3 bucket
     @pytest.fixture(scope="class", autouse=True)
@@ -169,7 +174,7 @@ class Test_CATS2008:
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        CFname.unlink()
+        CFname.unlink(missing_ok=True)
 
     # PURPOSE: Download Antarctic Tide Gauge Database from US Antarctic Program
     @pytest.fixture(scope="class", autouse=False)
@@ -183,7 +188,7 @@ class Test_CATS2008:
         # run tests
         yield
         # clean up
-        local.unlink()
+        local.unlink(missing_ok=True)
 
     # PURPOSE: Download Antarctic Tide Gauge Database from AWS
     @pytest.fixture(scope="class", autouse=True)
@@ -206,7 +211,179 @@ class Test_CATS2008:
         # run tests
         yield
         # clean up
-        local.unlink()
+        local.unlink(missing_ok=True)
+
+    # PURPOSE: create verification from Matlab program
+    @pytest.fixture(scope="class", autouse=False)
+    def update_verify_CATS2008(self):
+        # compute validation data from Matlab TMD program using octave
+        # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
+        octave = copy.copy(oct2py.octave)
+        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
+        octave.addpath(octave.genpath(str(TMDpath)))
+        octave.addpath(str(filepath))
+        # turn off octave warnings
+        octave.warning('off', 'all')
+        # iterate over type: heights versus currents
+        for TYPE in ['z', 'U', 'V']:
+            # model parameters for CATS2008
+            if (TYPE == 'z'):
+                model = pyTMD.io.model(filepath).elevation('CATS2008')
+            else:
+                model = pyTMD.io.model(filepath).current('CATS2008')
+            # path to tide model files
+            modelpath = model.grid_file.parent
+            octave.addpath(str(modelpath))
+            # input control file for model
+            CFname = filepath.joinpath('Model_CATS2008')
+            assert CFname.exists()
+
+            # open Antarctic Tide Gauge (AntTG) database
+            AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
+            with AntTG.open(mode='r', encoding='utf8') as f:
+                file_contents = f.read().splitlines()
+            # counts the number of lines in the header
+            count = 0
+            HEADER = True
+            # Reading over header text
+            while HEADER:
+                # check if file line at count starts with matlab comment string
+                HEADER = file_contents[count].startswith('%')
+                # add 1 to counter
+                count += 1
+            # rewind 1 line
+            count -= 1
+            # iterate over number of stations
+            antarctic_stations = (len(file_contents) - count)//10
+            stations = [None]*antarctic_stations
+            shortname = [None]*antarctic_stations
+            station_type = [None]*antarctic_stations
+            station_lon = np.zeros((antarctic_stations))
+            station_lat = np.zeros((antarctic_stations))
+            for s in range(antarctic_stations):
+                i = count + s*10
+                stations[s] = file_contents[i + 1].strip()
+                shortname[s] = file_contents[i + 3].strip()
+                lat,lon,_,_ = file_contents[i + 4].split()
+                station_type[s] = file_contents[i + 6].strip()
+                station_lon[s] = np.float64(lon)
+                station_lat[s] = np.float64(lat)
+
+            # calculate daily results for a time period
+            # serial dates for matlab program (days since 0000-01-01T00:00:00)
+            SDtime = np.arange(convert_calendar_serial(2000,1,1),
+                convert_calendar_serial(2000,12,31)+1)
+
+            # run Matlab TMD program with octave
+            # MODE: OB time series
+            validation,_ = octave.tmd_tide_pred_plus(str(CFname), SDtime,
+                station_lat, station_lon,
+                TYPE, nout=2)
+            
+            # create dataframe for validation data
+            df = pd.DataFrame(data=validation, index=SDtime, columns=shortname)
+
+            # add attributes for each valid station
+            for i,s in enumerate(shortname):
+                df[s].attrs['station'] = stations[i]
+                df[s].attrs['type'] = station_type[i]
+                df[s].attrs['latitude'] = station_lat[i]
+                df[s].attrs['longitude'] = station_lon[i]
+
+            # save to (gzipped) csv
+            output_file = filepath.joinpath(f'TMDv2.5_CATS2008_{TYPE}.csv.gz')
+            with gzip.open(output_file, 'wb') as f:
+                df.to_csv(f, index_label='time')
+
+    # PURPOSE: create ellipse verification from Matlab program
+    @pytest.fixture(scope="class", autouse=False)
+    def update_tidal_ellipse(self):
+        # model parameters for CATS2008
+        model = pyTMD.io.model(filepath).current('CATS2008')
+        modelpath = model.grid_file.parent
+        TYPES = ['U','V']
+
+        # compute validation data from Matlab TMD program using octave
+        # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
+        octave = copy.copy(oct2py.octave)
+        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
+        octave.addpath(octave.genpath(str(TMDpath)))
+        octave.addpath(str(filepath))
+        octave.addpath(str(modelpath))
+        # turn off octave warnings
+        octave.warning('off', 'all')
+        # input control file for model
+        CFname = filepath.joinpath('Model_CATS2008')
+        assert CFname.exists()
+
+        # open Antarctic Tide Gauge (AntTG) database
+        AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
+        with AntTG.open(mode='r', encoding='utf8') as f:
+            file_contents = f.read().splitlines()
+        # counts the number of lines in the header
+        count = 0
+        HEADER = True
+        # Reading over header text
+        while HEADER:
+            # check if file line at count starts with matlab comment string
+            HEADER = file_contents[count].startswith('%')
+            # add 1 to counter
+            count += 1
+        # rewind 1 line
+        count -= 1
+        # iterate over number of stations
+        antarctic_stations = (len(file_contents) - count)//10
+        stations = [None]*antarctic_stations
+        shortname = [None]*antarctic_stations
+        station_type = [None]*antarctic_stations
+        station_lon = np.zeros((antarctic_stations))
+        station_lat = np.zeros((antarctic_stations))
+        for s in range(antarctic_stations):
+            i = count + s*10
+            stations[s] = file_contents[i + 1].strip()
+            shortname[s] = file_contents[i + 3].strip()
+            lat,lon,_,_ = file_contents[i + 4].split()
+            station_type[s] = file_contents[i + 6].strip()
+            station_lon[s] = np.float64(lon)
+            station_lat[s] = np.float64(lat)
+
+        # save complex amplitude for each current
+        hc = {}
+        # iterate over zonal and meridional currents
+        for TYPE in TYPES:
+            # extract tidal harmonic constants out of a tidal model
+            amp,ph,D,cons = octave.tmd_extract_HC(str(CFname),
+                station_lat, station_lon, TYPE, nout=4)
+            # calculate complex phase in radians for Euler's
+            cph = -1j*ph*np.pi/180.0
+            # calculate constituent oscillation for station
+            hc[TYPE] = amp*np.exp(cph)
+
+        # compute tidal ellipse parameters for TMD matlab program
+        umajor,uminor,uincl,uphase = octave.TideEl(hc['U'],hc['V'],nout=4)
+        # build matrix of ellipse parameters
+        ellipse = np.r_[umajor,uminor,uincl,uphase]
+        # build index for dataframe
+        index = []
+        for i,c in enumerate(cons):
+            c = c.strip()
+            cindex = [f'{c}_umajor',f'{c}_uminor',f'{c}_uincl',f'{c}_uphase']
+            index.extend(cindex)
+
+        # create dataframe for validation data
+        df = pd.DataFrame(data=ellipse, index=index, columns=shortname)
+
+        # add attributes for each valid station
+        for i,s in enumerate(shortname):
+            df[s].attrs['station'] = stations[i]
+            df[s].attrs['type'] = station_type[i]
+            df[s].attrs['latitude'] = station_lat[i]
+            df[s].attrs['longitude'] = station_lon[i]
+
+        # save to (gzipped) csv
+        output_file = filepath.joinpath(f'TMDv2.5_CATS2008_ellipse.csv.gz')
+        with gzip.open(output_file, 'wb') as f:
+            df.to_csv(f, index_label='ellipse')
 
     # PURPOSE: Test read program that grids and constituents are as expected
     def test_read_CATS2008(self, ny=2026, nx=1663):
@@ -334,8 +511,6 @@ class Test_CATS2008:
             model = pyTMD.io.model(filepath).elevation('CATS2008')
         else:
             model = pyTMD.io.model(filepath).current('CATS2008')
-        # path to tide model files
-        modelpath = model.grid_file.parent
 
         # open Antarctic Tide Gauge (AntTG) database
         AntTG = filepath.joinpath('AntTG_ocean_height_v1.txt')
@@ -368,18 +543,6 @@ class Test_CATS2008:
             station_lon[s] = np.float64(lon)
             station_lat[s] = np.float64(lat)
 
-        # calculate daily results for a time period
-        # convert time to days since 1992-01-01T00:00:00
-        tide_time = np.arange(timescale.time.convert_calendar_dates(2000,1,1),
-            timescale.time.convert_calendar_dates(2000,12,31)+1)
-        # serial dates for matlab program (days since 0000-01-01T00:00:00)
-        SDtime = np.arange(convert_calendar_serial(2000,1,1),
-            convert_calendar_serial(2000,12,31)+1)
-        # presently not converting times to dynamic times for model comparisons
-        deltat = np.zeros_like(tide_time)
-        # number of days
-        ndays = len(tide_time)
-
         # extract amplitude and phase from tide model
         amp,ph,c = model.extract_constants(station_lon, station_lat,
             type=TYPE, method='spline')
@@ -399,42 +562,39 @@ class Test_CATS2008:
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
 
-        # compute validation data from Matlab TMD program using octave
+        # read validation data from Matlab TMD program
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        octave.addpath(octave.genpath(str(TMDpath)))
-        octave.addpath(str(filepath))
-        octave.addpath(str(modelpath))
-        # turn off octave warnings
-        octave.warning('off', 'all')
-        # input control file for model
-        CFname = filepath.joinpath('Model_CATS2008')
-        assert CFname.exists()
-        # run Matlab TMD program with octave
-        # MODE: OB time series
-        validation,_ = octave.tmd_tide_pred_plus(str(CFname), SDtime,
-            station_lat[valid_stations], station_lon[valid_stations],
-            TYPE, nout=2)
+        validation_file = filepath.joinpath(f'TMDv2.5_CATS2008_{TYPE}.csv.gz')
+        df = pd.read_csv(validation_file)
+        # number of days
+        ndays = len(df.time.values)
+        # presently not converting times to dynamic times for model comparisons
+        deltat = np.zeros((ndays))
+        # calculate daily results for a time period
+        # convert time to days since 1992-01-01T00:00:00
+        ts = timescale.from_julian(df.time.values + 1721058.5)
 
         # for each valid station
         for i,s in enumerate(valid_stations):
             # calculate constituent oscillation for station
             hc = amp[s,None,:]*np.exp(cph[s,None,:])
+        
             # allocate for out tides at point
             tide = np.ma.zeros((ndays))
             tide.mask = np.zeros((ndays),dtype=bool)
             # predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
-            tide.data[:] = pyTMD.predict.time_series(tide_time, hc, c,
+            tide.data[:] = pyTMD.predict.time_series(ts.tide, hc, c,
                 deltat=deltat, corrections=model['corrections'])
-            minor = pyTMD.predict.infer_minor(tide_time, hc, c,
+            minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                 deltat=deltat, corrections=model['corrections'])
             tide.data[:] += minor.data[:]
 
             # calculate differences between matlab and python version
+            station = shortname[s]
             difference = np.ma.zeros((ndays))
-            difference.data[:] = tide.data - validation[:,i]
-            difference.mask = (tide.mask | np.isnan(validation[:,i]))
+            difference.data[:] = tide.data - df[station].values
+            difference.mask = (tide.mask | np.isnan(df[station].values))
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
@@ -443,7 +603,6 @@ class Test_CATS2008:
     def test_tidal_ellipse(self):
         # model parameters for CATS2008
         model = pyTMD.io.model(filepath).current('CATS2008')
-        modelpath = model.grid_file.parent
         TYPES = ['U','V']
 
         # open Antarctic Tide Gauge (AntTG) database
@@ -485,73 +644,64 @@ class Test_CATS2008:
             'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
             'Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
-        i = [i for i,s in enumerate(shortname) if s not in invalid_list]
-        valid_stations = len(i)
+        valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
+        ns = len(valid_stations)
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
 
-        # compute validation data from Matlab TMD program using octave
+        # read validation data from Matlab TMD program
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        octave.addpath(octave.genpath(str(TMDpath)))
-        octave.addpath(str(filepath))
-        octave.addpath(str(modelpath))
-        # turn off octave warnings
-        octave.warning('off', 'all')
-        # input control file for model
-        CFname = filepath.joinpath('Model_CATS2008')
-        assert CFname.exists()
+        validation_file = filepath.joinpath(f'TMDv2.5_CATS2008_ellipse.csv.gz')
+        df = pd.read_csv(validation_file, index_col='ellipse')
 
         # save complex amplitude for each current
-        hc1,hc2 = ({},{})
+        hc = {}
         # iterate over zonal and meridional currents
         for TYPE in TYPES:
             # extract amplitude and phase from tide model
-            amp,ph,c = model.extract_constants(station_lon[i],
-                station_lat[i], type=TYPE, method='spline')
+            amp,ph,c = model.extract_constants(station_lon[valid_stations],
+                station_lat[valid_stations], type=TYPE, method='spline')
             # calculate complex phase in radians for Euler's
             cph = -1j*ph*np.pi/180.0
             # calculate constituent oscillation for station
-            hc1[TYPE] = amp*np.exp(cph)
-
-            # extract tidal harmonic constants out of a tidal model
-            amp,ph,D,cons = octave.tmd_extract_HC(str(CFname),
-                station_lat[i], station_lon[i], TYPE, nout=4)
-            # calculate complex phase in radians for Euler's
-            cph = -1j*ph*np.pi/180.0
-            # calculate constituent oscillation for station
-            hc2[TYPE] = amp*np.exp(cph)
+            hc[TYPE] = amp*np.exp(cph)
 
         # number of constituents
         nc = len(c)
         # compute tidal ellipse parameters for python program
         test = {}
         test['umajor'],test['uminor'],test['uincl'],test['uphase'] = \
-            pyTMD.ellipse.ellipse(hc1['U'],hc1['V'])
+            pyTMD.ellipse.ellipse(hc['U'],hc['V'])
         # calculate currents using tidal ellipse inverse
         inverse = {}
         inverse['U'],inverse['V'] = pyTMD.ellipse.inverse(
             test['umajor'],test['uminor'],test['uincl'],test['uphase']
         )
-        # compute tidal ellipse parameters for TMD matlab program
-        valid = {}
-        valid['umajor'],valid['uminor'],valid['uincl'],valid['uphase'] = \
-            octave.TideEl(hc2['U'],hc2['V'],nout=4)
 
-        # calculate differences between matlab and python version
-        for key in ['umajor','uminor','uincl','uphase']:
-            difference = np.ma.zeros((valid_stations, nc))
-            difference.data[:] = test[key].data - valid[key].T
-            difference.mask = (test[key].mask | np.isnan(valid[key].T))
-            difference.data[difference.mask] = 0.0
-            if not np.all(difference.mask):
-                assert np.all(np.abs(difference) < eps)
+        # for each valid station
+        difference = np.ma.zeros((nc))
+        for i,s in enumerate(valid_stations):
+            station = shortname[s]
+            umajor,uminor,uincl,uphase = df[station].values.reshape(4,nc)
+            difference.mask = (test['umajor'].mask[i,:] | np.isnan(umajor))
+            # skip station if all masked
+            if np.all(difference.mask):
+                continue
+            # calculate differences between matlab and python version
+            difference.data[:] = test['umajor'].data[i,:] - umajor
+            assert np.all(np.abs(difference) < eps)
+            difference.data[:] = test['uminor'].data[i,:] - uminor
+            assert np.all(np.abs(difference) < eps)
+            difference.data[:] = test['uincl'].data[i,:] - uincl
+            assert np.all(np.abs(difference) < eps)
+            difference.data[:] = test['uphase'].data[i,:] - uphase
+            assert np.all(np.abs(difference) < eps)
 
         # calculate differences between forward and inverse functions
         for key in ['U', 'V']:
-            difference = np.ma.zeros((valid_stations, nc), dtype=np.complex128)
-            difference.data[:] = hc1[key].data - inverse[key].data
-            difference.mask = (hc1[key].mask | inverse[key].mask)
+            difference = np.ma.zeros((ns, nc), dtype=np.complex128)
+            difference.data[:] = hc[key].data - inverse[key].data
+            difference.mask = (hc[key].mask | inverse[key].mask)
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
@@ -566,17 +716,16 @@ class Test_CATS2008:
         minutes = np.arange(366*1440)
         # convert time to days relative to Jan 1, 1992 (48622 MJD)
         year, month, day = 2000, 1, 1
-        tide_time = timescale.time.convert_calendar_dates(year, month, day,
-            minute=minutes)
+        ts = timescale.from_calendar(year, month, day, minute=minutes)
 
         # read tidal constants and interpolate to coordinates
         constituents = model.read_constants(type=model.type)
         c = constituents.fields
         assert (c == model._constituents.fields)
-        DELTAT = np.zeros_like(tide_time)
+        DELTAT = np.zeros_like(ts.tide)
 
         # interpolate constants to a coordinate
-        LAT,LON = (-76.0, -40.0)
+        LAT, LON = (-76.0, -40.0)
         amp,ph = model.interpolate_constants(
             np.atleast_1d(LON), np.atleast_1d(LAT),
             method='spline', extrapolate=True)
@@ -584,10 +733,10 @@ class Test_CATS2008:
         # calculate complex form of constituent oscillation
         hc = amp*np.exp(-1j*ph*np.pi/180.0)
         # predict tidal elevations at times
-        TIDE = pyTMD.predict.time_series(tide_time, hc, c,
+        TIDE = pyTMD.predict.time_series(ts.tide, hc, c,
             deltat=DELTAT, corrections=model.corrections)
         # solve for amplitude and phase
-        famp, fph = pyTMD.solve.constants(tide_time, TIDE.data, c,
+        famp, fph = pyTMD.solve.constants(ts.tide, TIDE.data, c,
             solver=SOLVER)
         # calculate complex form of constituent oscillation
         fhc = famp*np.exp(-1j*fph*np.pi/180.0)
@@ -647,14 +796,16 @@ class Test_CATS2008:
             'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
             'Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
-        i = [i for i,s in enumerate(shortname) if s not in invalid_list]
-        valid_stations = len(i)
+        valid_stations = [i for i,s in enumerate(shortname) if s not in invalid_list]
+        ns = len(valid_stations)
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
 
         # extract amplitude and phase from tide model
-        amp1,ph1,c = pyTMD.io.extract_constants(station_lon[i],
-            station_lat[i], model, type=TYPE, method=METHOD)
+        amp1,ph1,c = pyTMD.io.extract_constants(station_lon[valid_stations],
+            station_lat[valid_stations], model, type=TYPE, method=METHOD)
+        # number of constituents
+        nc = len(c)
         # calculate complex form of constituent oscillation
         hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
 
@@ -662,13 +813,13 @@ class Test_CATS2008:
         constituents = pyTMD.io.read_constants(model, type=TYPE)
         assert (constituents.fields == model._constituents.fields)
         # interpolate constituents to station coordinates
-        amp2,ph2 = pyTMD.io.interpolate_constants(station_lon[i],
-            station_lat[i], model, type=TYPE, method=METHOD)
+        amp2,ph2 = pyTMD.io.interpolate_constants(station_lon[valid_stations],
+            station_lat[valid_stations], model, type=TYPE, method=METHOD)
         # calculate complex form of constituent oscillation
         hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
         # calculate differences between methods
-        difference = np.ma.zeros((valid_stations, len(c)), dtype=np.complex128)
+        difference = np.ma.zeros((ns, nc), dtype=np.complex128)
         difference.data[:] = hc1.data - hc2.data
         difference.mask = (hc1.mask | hc2.mask)
         difference.data[difference.mask] = 0.0
@@ -684,11 +835,14 @@ class Test_CATS2008:
         # create a drift track along the Ross Ice Shelf
         xlimits = np.array([-740000,520000])
         ylimits = np.array([-1430000,-300000])
+        # limits of x and y coordinates for region
+        xrange = xlimits[1] - xlimits[0]
+        yrange = ylimits[1] - ylimits[0]
         # x and y coordinates
-        x = np.linspace(xlimits[0],xlimits[1],24)
-        y = np.linspace(ylimits[0],ylimits[1],24)
+        x = xlimits[0] + xrange*np.random.random((100))
+        y = ylimits[0] + yrange*np.random.random((100))
         # time dimension
-        delta_time = np.zeros((24))*3600
+        delta_time = np.random.random((100))*86400
         # calculate tide drift corrections
         tide = pyTMD.compute.tide_elevations(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
@@ -705,11 +859,14 @@ class Test_CATS2008:
         # create a drift track along the Ross Ice Shelf
         xlimits = np.array([-740000,520000])
         ylimits = np.array([-1430000,-300000])
+        # limits of x and y coordinates for region
+        xrange = xlimits[1] - xlimits[0]
+        yrange = ylimits[1] - ylimits[0]
         # x and y coordinates
-        x = np.linspace(xlimits[0],xlimits[1],24)
-        y = np.linspace(ylimits[0],ylimits[1],24)
+        x = xlimits[0] + xrange*np.random.random((100))
+        y = ylimits[0] + yrange*np.random.random((100))
         # time dimension
-        delta_time = np.zeros((24))*3600
+        delta_time = np.random.random((100))*86400
         # calculate tide drift corrections
         tide = pyTMD.compute.tide_currents(x, y, delta_time,
             DIRECTORY=filepath, MODEL='CATS2008', GZIP=False,
@@ -781,7 +938,7 @@ class Test_AOTIM5_2018:
         # clean up model
         shutil.rmtree(modelpath)
         # clean up
-        CFname.unlink()
+        CFname.unlink(missing_ok=True)
 
     # PURPOSE: Download Arctic Tidal Current Atlas list of records
     @pytest.fixture(scope="class", autouse=True)
@@ -794,13 +951,77 @@ class Test_AOTIM5_2018:
         # run tests
         yield
         # clean up
-        local.unlink()
+        local.unlink(missing_ok=True)
+
+    # PURPOSE: create verification from Matlab program
+    @pytest.fixture(scope="class", autouse=False)
+    def update_AOTIM5_2018(self):
+        # compute validation data from Matlab TMD program using octave
+        # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
+        octave = copy.copy(oct2py.octave)
+        # TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
+        TMDpath = pathlib.Path.home().joinpath('github','TMD_Matlab_Toolbox_v2.5','TMD')
+        octave.addpath(octave.genpath(str(TMDpath)))
+        octave.addpath(str(filepath))
+        # turn off octave warnings
+        octave.warning('off', 'all')
+        # iterate over type: heights versus currents
+        for TYPE in ['z', 'U', 'V']:
+            # model parameters for AOTIM-5-2018
+            if (TYPE == 'z'):
+                model = pyTMD.io.model(filepath).elevation('AOTIM-5-2018')
+            else:
+                model = pyTMD.io.model(filepath).current('AOTIM-5-2018')
+            # path to tide model files
+            modelpath = model.grid_file.parent
+            octave.addpath(str(modelpath))
+            # input control file for model
+            CFname = filepath.joinpath('Model_Arc5km2018')
+            assert CFname.exists()
+
+            # open Arctic Tidal Current Atlas list of records
+            ATLAS = filepath.joinpath('List_of_records.txt')
+            with ATLAS.open(mode='r', encoding='utf8') as f:
+                file_contents = f.read().splitlines()
+            # skip 2 header rows
+            count = 2
+            # iterate over number of stations
+            arctic_stations = len(file_contents) - count
+            stations = [None]*arctic_stations
+            shortname = [None]*arctic_stations
+            station_lon = np.zeros((arctic_stations))
+            station_lat = np.zeros((arctic_stations))
+            for s in range(arctic_stations):
+                line_contents = file_contents[count+s].split()
+                stations[s] = line_contents[1]
+                shortname[s] = line_contents[2]
+                station_lat[s] = np.float64(line_contents[10])
+                station_lon[s] = np.float64(line_contents[11])
+
+            # serial dates for matlab program (days since 0000-01-01T00:00:00)
+            SDtime = np.arange(convert_calendar_serial(2000,1,1),
+                convert_calendar_serial(2000,12,31)+1)
+
+            # run Matlab TMD program with octave
+            # MODE: OB time series
+            validation,_ = octave.tmd_tide_pred_plus(str(CFname), SDtime,
+                station_lat, station_lon, TYPE, nout=2)
+
+            # create dataframe for validation data
+            df = pd.DataFrame(data=validation, index=SDtime, columns=shortname)
+
+            # add attributes for each valid station
+            for i,s in enumerate(shortname):
+                df[s].attrs['station'] = stations[i]
+                df[s].attrs['latitude'] = station_lat[i]
+                df[s].attrs['longitude'] = station_lon[i]
+
+            # save to (gzipped) csv
+            output_file = filepath.joinpath(f'TMDv2.5_Arc5km2018_{TYPE}.csv.gz')
+            with gzip.open(output_file, 'wb') as f:
+                df.to_csv(f, index_label='time')
 
     # parameterize type: heights versus currents
-    parameters = []
-    parameters.append(dict(type='z',model='h_Arc5km2018'))
-    parameters.append(dict(type='U',model='UV_Arc5km2018'))
-    parameters.append(dict(type='V',model='UV_Arc5km2018'))
     @pytest.mark.parametrize("TYPE", ['z', 'U', 'V'])
     # PURPOSE: Tests that interpolated results are comparable to Matlab program
     def test_verify_AOTIM5_2018(self, TYPE):
@@ -809,8 +1030,6 @@ class Test_AOTIM5_2018:
             model = pyTMD.io.model(filepath).elevation('AOTIM-5-2018')
         else:
             model = pyTMD.io.model(filepath).current('AOTIM-5-2018')
-        # path to tide model files
-        modelpath = model.grid_file.parent
 
         # open Arctic Tidal Current Atlas list of records
         ATLAS = filepath.joinpath('List_of_records.txt')
@@ -831,18 +1050,6 @@ class Test_AOTIM5_2018:
             station_lat[s] = np.float64(line_contents[10])
             station_lon[s] = np.float64(line_contents[11])
 
-        # calculate daily results for a time period
-        # convert time to days since 1992-01-01T00:00:00
-        tide_time = np.arange(timescale.time.convert_calendar_dates(2000,1,1),
-            timescale.time.convert_calendar_dates(2000,12,31)+1)
-        # serial dates for matlab program (days since 0000-01-01T00:00:00)
-        SDtime = np.arange(convert_calendar_serial(2000,1,1),
-            convert_calendar_serial(2000,12,31)+1)
-        # presently not converting times to dynamic times for model comparisons
-        deltat = np.zeros_like(tide_time)
-        # number of days
-        ndays = len(tide_time)
-
         # extract amplitude and phase from tide model
         amp,ph,c = model.extract_constants(station_lon,
             station_lat, type=TYPE, method='spline')
@@ -856,22 +1063,17 @@ class Test_AOTIM5_2018:
         # remove coastal stations from the list
         valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
 
-        # compute validation data from Matlab TMD program using octave
+        # read validation data from Matlab TMD program
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
-        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        octave.addpath(octave.genpath(str(TMDpath)))
-        octave.addpath(str(filepath))
-        octave.addpath(str(modelpath))
-        # turn off octave warnings
-        octave.warning('off', 'all')
-        # input control file for model
-        CFname = filepath.joinpath('Model_Arc5km2018')
-        assert CFname.exists()
-        # run Matlab TMD program with octave
-        # MODE: OB time series
-        validation,_ = octave.tmd_tide_pred_plus(str(CFname), SDtime,
-            station_lat[valid_stations], station_lon[valid_stations],
-            TYPE, nout=2)
+        validation_file = filepath.joinpath(f'TMDv2.5_Arc5km2018_{TYPE}.csv.gz')
+        df = pd.read_csv(validation_file)
+        # number of days
+        ndays = len(df.time.values)
+        # presently not converting times to dynamic times for model comparisons
+        deltat = np.zeros((ndays))
+        # calculate daily results for a time period
+        # convert time to days since 1992-01-01T00:00:00
+        ts = timescale.from_julian(df.time.values + 1721058.5)
 
         # for each valid station
         for i,s in enumerate(valid_stations):
@@ -882,16 +1084,18 @@ class Test_AOTIM5_2018:
             tide.mask = np.zeros((ndays),dtype=bool)
             # predict tidal elevations at time and infer minor corrections
             tide.mask[:] = np.any(hc.mask)
-            tide.data[:] = pyTMD.predict.time_series(tide_time, hc, c,
+            tide.data[:] = pyTMD.predict.time_series(ts.tide, hc, c,
                 deltat=deltat, corrections=model['corrections'])
-            minor = pyTMD.predict.infer_minor(tide_time, hc, c,
+            minor = pyTMD.predict.infer_minor(ts.tide, hc, c,
                 deltat=deltat, corrections=model['corrections'])
             tide.data[:] += minor.data[:]
 
             # calculate differences between matlab and python version
+            # non-unique station names (use dataframe columns)
+            station = df.columns[s+1]
             difference = np.ma.zeros((ndays))
-            difference.data[:] = tide.data - validation[:,i]
-            difference.mask = (tide.mask | np.isnan(validation[:,i]))
+            difference.data[:] = tide.data - df[station].values
+            difference.mask = (tide.mask | np.isnan(df[station].values))
             difference.data[difference.mask] = 0.0
             if not np.all(difference.mask):
                 assert np.all(np.abs(difference) < eps)
@@ -930,14 +1134,14 @@ class Test_AOTIM5_2018:
         # compare outputs at each station point
         invalid_list = ['BC1','KS12','KS14','BI3','BI4']
         # remove coastal stations from the list
-        i = [i for i,s in enumerate(shortname) if s not in invalid_list]
-        valid_stations = len(i)
+        valid_stations = [i for i,s in enumerate(shortname) if s not in invalid_list]
+        ns = len(valid_stations)
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
 
         # extract amplitude and phase from tide model
         amp1,ph1,c = model.extract_constants(
-            station_lon[i], station_lat[i],
+            station_lon[valid_stations], station_lat[valid_stations],
             type=TYPE, method=METHOD)
         # calculate complex form of constituent oscillation
         hc1 = amp1*np.exp(-1j*ph1*np.pi/180.0)
@@ -946,13 +1150,13 @@ class Test_AOTIM5_2018:
         constituents = model.read_constants(type=TYPE)
         assert (constituents.fields == model._constituents.fields)
         # interpolate constituents to station coordinates
-        amp2,ph2 = model.interpolate_constants(station_lon[i],
-            station_lat[i], type=TYPE, method=METHOD)
+        amp2,ph2 = model.interpolate_constants(station_lon[valid_stations],
+            station_lat[valid_stations], type=TYPE, method=METHOD)
         # calculate complex form of constituent oscillation
         hc2 = amp2*np.exp(-1j*ph2*np.pi/180.0)
 
         # calculate differences between methods
-        difference = np.ma.zeros((valid_stations, len(c)), dtype=np.complex128)
+        difference = np.ma.zeros((ns, len(c)), dtype=np.complex128)
         difference.data[:] = hc1.data - hc2.data
         difference.mask = (hc1.mask | hc2.mask)
         difference.data[difference.mask] = 0.0

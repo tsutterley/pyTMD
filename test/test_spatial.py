@@ -105,14 +105,14 @@ def test_ascii():
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # read test ascii file as bytes
-    fid = output_file.open(mode='r', encoding='utf8')
-    test = pyTMD.spatial.from_ascii(fid, compression='bytes', header='YAML',
-        columns=['time','y','x','data'])
+    with output_file.open(mode='r', encoding='utf8') as fid:
+        test = pyTMD.spatial.from_ascii(fid, compression='bytes',
+            header='YAML', columns=['time','y','x','data'])
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of netCDF4 files
 @pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
@@ -173,14 +173,14 @@ def test_netCDF4(TYPE):
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # read test netCDF4 file as bytes
-    fid = output_file.open(mode='rb')
-    test = pyTMD.spatial.from_netCDF4(fid, compression='bytes',
-        timename='time', xname='x', yname='y', varname='data')
+    with output_file.open(mode='rb') as fid:
+        test = pyTMD.spatial.from_netCDF4(fid, compression='bytes',
+            timename='time', xname='x', yname='y', varname='data')
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of HDF5 files
 @pytest.mark.parametrize("TYPE", ['drift','grid','time series'])
@@ -240,14 +240,14 @@ def test_HDF5(TYPE):
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # read test HDF5 file as bytes
-    fid = output_file.open(mode='rb')
-    test = pyTMD.spatial.from_HDF5(fid, compression='bytes',
-        timename='time', xname='x', yname='y', varname='data')
+    with output_file.open(mode='rb') as fid:
+        test = pyTMD.spatial.from_HDF5(fid, compression='bytes',
+            timename='time', xname='x', yname='y', varname='data')
     # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: Download IODEM3 from NSIDC
 @pytest.fixture(scope="module", autouse=False)
@@ -266,7 +266,7 @@ def nsidc_IODEM3(username, password):
     # run tests
     yield
     # clean up
-    granule.unlink()
+    granule.unlink(missing_ok=True)
 
 # PURPOSE: Download IODEM3 from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
@@ -291,7 +291,7 @@ def AWS_IODEM3(aws_access_key_id, aws_secret_access_key, aws_region_name):
     # run tests
     yield
     # clean up
-    granule.unlink()
+    granule.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of geotiff files
 def test_geotiff():
@@ -316,13 +316,14 @@ def test_geotiff():
     test = pyTMD.spatial.from_geotiff(output_file, verbose=True)
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
-    # check that data is valid from in-memory object
+    # read test geotiff file from in-memory object
     with granule.open(mode='rb') as fid:
         test = pyTMD.spatial.from_geotiff(fid, compression='bytes')
+    # check that data is valid
     eps = np.finfo(np.float32).eps
     assert np.all((np.abs(v-test[k]) < eps) for k,v in dinput.items())
     # remove the test files
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the default field mapping function
 def test_field_mapping():

@@ -679,10 +679,10 @@ def test_parameters():
     """
     Test constituent parameter values
     """
-    # parametrized constituents (sans m1 and 2mk3)
+    # parametrized constituents
     cindex = ['m2', 's2', 'k1', 'o1', 'n2', 'p1', 'k2', 'q1', '2n2', 'mu2',
-        'nu2', 'l2', 'j1', 'oo1', 'rho1', 'mf', 'mm', 'ssa',
-        'm4', 'ms4', 'mn4', 'm6', 'm8', 'mk3', 's6', '2sm2', 
+        'nu2', 'l2', 't2', 'j1', 'm1', 'oo1', 'rho1', 'mf', 'mm', 'ssa',
+        'm4', 'ms4', 'mn4', 'm6', 'm8', 'mk3', 's6', '2sm2', '2mk3',
         'msf', 'sa', 'mt', '2q1']
     # number of days between MJD and the tide epoch (1992-01-01T00:00:00)
     MJD = np.atleast_1d(48622.0)
@@ -703,13 +703,14 @@ def test_parameters():
     for i, c in enumerate(cindex):
         # get constituent parameters
         amp, ph, omega, alpha, species = _constituent_parameters(c)
+        # convert phase to degrees
+        phase = np.mod(180.0*ph/np.pi, 360.0)
         # check species
         cartwright = doodson_number(c, formalism='Cartwright')
         assert species == cartwright[0]
         # check frequency calculation
         assert np.isclose(omega, omegas[i])
         # assert phase calculation
-        phase = np.mod(180.0*ph/np.pi, 360.0)
         assert np.isclose(phase, G[0,i])
         
 def test_doodson():

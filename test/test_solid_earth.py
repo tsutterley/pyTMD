@@ -303,7 +303,7 @@ def download_jpl_ephemerides():
         # run tests
         yield
         # clean up
-        de440s.unlink()
+        de440s.unlink(missing_ok=True)
     else:
         # run tests
         yield

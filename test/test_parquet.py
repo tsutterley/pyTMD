@@ -72,7 +72,7 @@ def test_parquet():
     # check that data is valid
     assert np.all((np.abs(v-df[k].values) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)
 
 # PURPOSE: test the read and write of geoparquet files
 def test_geoparquet():
@@ -133,4 +133,4 @@ def test_geoparquet():
     # check that data is valid
     assert np.all((np.abs(v-gdf[k].values) < eps) for k,v in output.items())
     # remove the test file
-    output_file.unlink()
+    output_file.unlink(missing_ok=True)

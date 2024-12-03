@@ -40,6 +40,7 @@ REFERENCES:
 UPDATE HISTORY:
     Updated 11/2024: allow variable case for Doodson number formalisms
         fix species in constituent parameters for complex tides
+        move body tide Love/Shida numbers from predict module
     Updated 10/2024: can convert Doodson numbers formatted as strings
         update Doodson number conversions to follow Cartwright X=10 convention
         add function to parse Cartwright/Tayler/Edden tables
@@ -93,6 +94,7 @@ __all__ = [
     "_arguments_table",
     "_minor_table",
     "_constituent_parameters",
+    "_love_numbers",
     "_parse_tide_potential_table",
     "_to_doodson_number",
     "_to_extended_doodson",
@@ -1420,7 +1422,7 @@ def _constituent_parameters(c: str, **kwargs):
     _omega = np.array([1.405189e-04, 1.454441e-04, 7.292117e-05, 6.759774e-05,
         1.378797e-04, 7.252295e-05, 1.458423e-04, 6.495854e-05, 1.352405e-04,
         1.355937e-04, 1.382329e-04, 1.431581e-04, 1.452450e-04, 7.556036e-05,
-        7.028195e-05, 7.824458e-05, 6.531174e-05, 0.053234e-04, 0.026392e-04,
+        7.025945e-05, 7.824458e-05, 6.531174e-05, 0.053234e-04, 0.026392e-04,
         0.003982e-04, 2.810377e-04, 2.859630e-04, 2.783984e-04, 4.215566e-04,
         5.620755e-04, 2.134402e-04, 4.363323e-04, 1.503693e-04, 2.081166e-04,
         4.925200e-06, 1.990970e-07, 7.962619e-06, 6.231934e-05])
@@ -1429,10 +1431,10 @@ def _constituent_parameters(c: str, **kwargs):
     # the forcing for that constituent is zero on the Greenwich meridian
     _phase = np.array([1.731557546, 0.000000000, 0.173003674, 1.558553872,
         6.050721243, 6.110181633, 3.487600001, 5.877717569, 4.086699633,
-        3.463115091, 5.427136701, 0.553986502, 0.052841931, 2.137025284,
-        2.436575100, 1.929046130, 5.254133027, 1.756042456, 1.964021610,
+        3.463115091, 5.427136701, 0.553986502, 0.050398470, 2.137025284,
+        2.436575000, 1.929046130, 5.254133027, 1.756042456, 1.964021610,
         3.487600001, 3.463115091, 1.731557546, 1.499093481, 5.194672637,
-        6.926230184, 1.904561220, 0.000000000, 4.551627762, 3.809122439,
+        6.926230184, 1.904561220, 0.000000000, 4.551627762, 3.290111417,
         4.551627762, 6.232786837, 3.720064066, 3.91369596])
     # amplitudes of equilibrium tide in meters
     # _amplitude = np.array([0.242334,0.112743,0.141565,0.100661,0.046397,
@@ -1461,6 +1463,105 @@ def _constituent_parameters(c: str, **kwargs):
         species = 0
     # return the values for the constituent
     return (amplitude, phase, omega, alpha, species)
+
+def _love_numbers(
+        omega: np.ndarray,
+        model: str = 'PREM'
+    ):
+    """
+    Compute the body tide Love/Shida numbers for a given
+    frequency [1]_ [2]_ [3]_
+
+    Parameters
+    ----------
+    omega: np.ndarray
+        angular frequency (radians per second)
+    model: str, default 'PREM'
+        Earth model to use for Love numbers
+
+            - '1066A'
+            - 'PEM-C'
+            - 'C2'
+            - 'PREM'
+
+    Returns
+    -------
+    h2: float
+        Degree-2 Love number of vertical displacement
+    k2: float
+        Degree-2 Love number of gravitational potential
+    l2: float
+        Degree-2 Love (Shida) number of horizontal displacement
+
+    References
+    ----------
+    .. [1] J. M. Wahr, "Body tides on an elliptical, rotating, elastic
+        and oceanless Earth", *Geophysical Journal of the Royal
+        Astronomical Society*, 64(3), 677--703, (1981).
+        `doi: 10.1111/j.1365-246X.1981.tb02690.x
+        <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
+    .. [2] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
+        tide and in the Earth's load response due to the resonant free
+        `core nutation`", *Geophysical Journal of the Royal Astronomical
+        Society*, 64(3), 747--765, (1981).
+        `doi: 10.1111/j.1365-246X.1981.tb02693.x
+        <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
+    .. [3] P. M. Mathews, B. A. Buffett, and I. I. Shapiro,
+        "Love numbers for diurnal tides: Relation to wobble admittances
+        and resonance expansions", *Journal of Geophysical Research:
+        Solid Earth*, 100(B6), 9935--9948, (1995).
+        `doi: 10.1029/95jb00670 <https://doi.org/10.1029/95jb00670>`_
+    """
+    # free core nutation frequencies (cycles per sidereal day) and
+    # Love number parameters from Wahr (1981) table 6
+    # and Mathews et al. (1995) table 3
+    if (model == '1066A'):
+        fcn = 1.0021714
+        h0, h1 = np.array([6.03e-1, -2.46e-3])
+        k0, k1 = np.array([2.98e-1, -1.23e-3])
+        l0, l1 = np.array([8.42e-2, 7.81e-5])
+    elif (model == 'PEM-C'):
+        fcn = 1.0021771
+        h0, h1 = np.array([6.02e-1, -2.46e-3])
+        k0, k1 = np.array([2.98e-1, -1.24e-3])
+        l0, l1 = np.array([8.39e-2, 7.69e-5])
+    elif (model == 'C2'):
+        fcn = 1.0021844
+        h0, h1 = np.array([6.02e-1, -2.45e-3])
+        k0, k1 = np.array([2.98e-1, -1.23e-3])
+        l0, l1 = np.array([8.46e-2, 7.58e-5])
+    elif (model == 'PREM'):
+        fcn = 1.0023214
+        h0, h1 = np.array([5.994e-1, -2.532e-3])
+        k0, k1 = np.array([2.962e-1, -1.271e-3])
+        l0, l1 = np.array([8.378e-2, 7.932e-5])
+    else:
+        raise ValueError(f'Unknown Earth model: {model}')
+    # Love numbers for different frequency bands
+    if (omega > 1e-4):
+        # tides in the semi-diurnal band
+        h2 = 0.609
+        k2 = 0.302
+        l2 = 0.0852
+    elif (omega < 2e-5):
+        # tides in the long period band
+        h2 = 0.606
+        k2 = 0.299
+        l2 = 0.0840
+    else:
+        # use resonance formula for tides in the diurnal band
+        # frequency of the o1 tides (radians/second)
+        omega_o1, = frequency('o1')
+        # frequency of free core nutation (radians/second)
+        omega_fcn = fcn*7292115e-11
+        # Love numbers for frequency using equation 4.18 of Wahr (1981)
+        # (simplification to use only the free core nutation term)
+        ratio = (omega - omega_o1)/(omega_fcn - omega)
+        h2 = h0 + h1*ratio
+        k2 = k0 + k1*ratio
+        l2 = l0 + l1*ratio
+    # return the Love numbers for frequency
+    return (h2, k2, l2)
 
 # Cartwright and Tayler (1971) table with 3rd-degree values
 _ct1971_table_5 = get_data_path(['data','ct1971_tab5.txt'])
