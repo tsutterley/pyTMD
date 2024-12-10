@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 math.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (12/2024)
 Special functions of mathematical physics
 
 PYTHON DEPENDENCIES:
@@ -12,6 +12,7 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 12/2024: added function to calculate an aliasing frequency
     Written 11/2024
 """
 import numpy as np
@@ -21,6 +22,7 @@ __all__ = [
     "polynomial_sum",
     "normalize_angle",
     "rotate",
+    "aliasing",
     "legendre",
     "sph_harm"
 ]
@@ -108,6 +110,28 @@ def rotate(
         raise ValueError(f'Invalid axis {axis}')
     # return the rotation matrix
     return R
+
+def aliasing(
+        f: float,
+        fs: float
+    ) -> float:
+    """
+    Calculate the aliasing frequency of a signal
+
+    Parameters
+    ----------
+    f: float
+        Frequency of the signal
+    fs: float
+        Sampling frequency of the signal
+
+    Returns
+    -------
+    fa: float
+        Aliasing frequency of the signal
+    """
+    fa = np.abs(f - fs*np.round(f/fs))
+    return fa
 
 def legendre(
         l: int,

@@ -70,7 +70,6 @@ The available examples include:
       :link: ../notebooks/Plot-Ocean-Pole-Tide-Map.html
       :link-alt: Plots maps of the real and imaginary geocentric pole tide admittance functions
 
-
     .. grid-item-card::  Plot Ross Ice Shelf Map
       :text-align: center
       :img-top: ../_assets/ross_ice_shelf_map.png
@@ -83,14 +82,17 @@ The available examples include:
       :text-align: center
       :img-top: ../_assets/tide_forecasts.png
       :link: ../notebooks/Plot-Tide-Forecasts.html
+      :link-alt: Plots a weekly forecast of tidal displacements at a given location
 
     .. grid-item-card::  Plot Tide Form Factor
       :text-align: center
       :img-top: ../_assets/tide_form_factor.png
       :link: ../notebooks/Plot-Tide-Form-Factor.html
+      :link-alt: Plots maps of the dominant tidal species
 
     .. grid-item-card::  Solve Synthetic Tides
       :text-align: center
       :img-top: ../_assets/solve_synthetic_tides.png
       :link: ../notebooks/Solve-Synthetic-Tides.html
+      :link-alt: Solves for the amplitude and phase of harmonic constituents at a given location
 

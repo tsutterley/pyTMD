@@ -30,6 +30,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.arguments.frequency
 
+.. autofunction:: pyTMD.arguments.aliasing_period
+
 .. autofunction:: pyTMD.arguments._arguments_table
 
 .. autofunction:: pyTMD.arguments._minor_table
