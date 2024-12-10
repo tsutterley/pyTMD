@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (12/2024)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -27,6 +27,7 @@ PYTHON DEPENDENCIES:
 
 PROGRAM DEPENDENCIES:
     astro.py: computes the basic astronomical mean longitudes
+    math.py: Special functions of mathematical physics
 
 REFERENCES:
     A. T. Doodson and H. Warburg, "Admiralty Manual of Tides", HMSO, (1941).
@@ -38,6 +39,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 12/2024: added function to calculate tidal aliasing periods
     Updated 11/2024: allow variable case for Doodson number formalisms
         fix species in constituent parameters for complex tides
         move body tide Love/Shida numbers from predict module
@@ -91,6 +93,7 @@ __all__ = [
     "doodson_number",
     "nodal",
     "frequency",
+    "aliasing_period",
     "_arguments_table",
     "_minor_table",
     "_constituent_parameters",
@@ -1286,6 +1289,45 @@ def frequency(
     # convert to radians per second
     omega = 2.0*np.pi*fd/360.0
     return omega
+
+def aliasing_period(
+        constituents: list | np.ndarray,
+        sampling: float | np.ndarray,
+        **kwargs
+    ):
+    """
+    Calculates the tidal aliasing for a repeat period
+
+    Parameters
+    ----------
+    constituents: list
+        tidal constituent IDs
+    sampling: float
+        sampling repeat period in seconds
+    corrections: str, default 'OTIS'
+        use nodal corrections from OTIS, FES or GOT models
+    M1: str, default 'perth5'
+        coefficients to use for M1 tides
+
+                - ``'Doodson'``
+                - ``'Ray'``
+                - ``'perth5'``
+
+    Returns
+    -------
+    period: np.ndarray
+        tidal aliasing period in seconds
+    """
+    # get the angular frequency for tidal constituents
+    omega = frequency(constituents, **kwargs)
+    # convert to cycles per second
+    f = omega/(2.0*np.pi)
+    # calculate the sampling frequency
+    fs = 1.0/sampling
+    # calculate the aliasing period
+    period = 1.0/pyTMD.math.aliasing(f, fs)
+    # reutrn the aliasing period
+    return period
 
 def _arguments_table(**kwargs):
     """

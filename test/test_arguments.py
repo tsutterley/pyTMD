@@ -14,22 +14,7 @@ UPDATE HISTORY:
 import pytest
 import numpy as np
 import pyTMD.astro
-from pyTMD.arguments import (
-    nodal,
-    doodson_number,
-    frequency,
-    coefficients_table,
-    _arguments_table,
-    _minor_table,
-    _constituent_parameters,
-    _parse_tide_potential_table,
-    _to_doodson_number,
-    _to_extended_doodson,
-    _from_doodson_number,
-    _from_extended_doodson,
-    _ct1971_table_5,
-    _ce1973_table_1
-)
+import pyTMD.arguments
 
 @pytest.mark.parametrize("corrections", ['OTIS', 'GOT'])
 def test_arguments(corrections):
@@ -130,7 +115,8 @@ def test_arguments(corrections):
 
     # determine equilibrium arguments using table
     fargs = np.c_[tau, s, h, p, omega, pp, k]
-    test = np.dot(fargs, _arguments_table(corrections=corrections))
+    coef = pyTMD.arguments._arguments_table(corrections=corrections)
+    test = np.dot(fargs, coef)
 
     # validate arguments between methods
     assert np.all(arg == test)
@@ -257,7 +243,8 @@ def test_minor():
 
     # determine equilibrium arguments
     fargs = np.c_[tau, s, h, p, n, pp, k]
-    test = np.dot(fargs, _minor_table())
+    coef = pyTMD.arguments._minor_table()
+    test = np.dot(fargs, coef)
 
     # validate arguments between methods
     assert np.all(arg == test)
@@ -286,7 +273,8 @@ def test_nodal(corrections, M1):
         's6', 's7', 's8', 'm8', 'mks2', 'msqm', 'mtm', 'n4', 'eps2', 'z0']
 
     # get nodal corrections
-    pu, pf = nodal(n, p, cindex, corrections=corrections, M1=M1)
+    pu, pf = pyTMD.arguments.nodal(n, p, cindex,
+        corrections=corrections, M1=M1)
 
     # trigonometric factors for nodal corrections
     sinn = np.sin(n*dtr)
@@ -696,17 +684,20 @@ def test_parameters():
     # variable for multiples of 90 degrees (Ray technical note 2017)
     k = 90.0 + np.zeros_like(MJD)
     fargs = np.c_[tau, s, h, p, n, pp, k]
-    G = np.mod(np.dot(fargs, coefficients_table(cindex)), 360.0)
+    coef = pyTMD.arguments.coefficients_table(cindex)
+    G = np.mod(np.dot(fargs, coef), 360.0)
     # angular frequency of each constituent
-    omegas = frequency(cindex)
+    omegas = pyTMD.arguments.frequency(cindex)
     # for each constituent
     for i, c in enumerate(cindex):
         # get constituent parameters
-        amp, ph, omega, alpha, species = _constituent_parameters(c)
+        amp, ph, omega, alpha, species = \
+            pyTMD.arguments._constituent_parameters(c)
         # convert phase to degrees
         phase = np.mod(180.0*ph/np.pi, 360.0)
         # check species
-        cartwright = doodson_number(c, formalism='Cartwright')
+        cartwright = pyTMD.arguments.doodson_number(c,
+            formalism='Cartwright')
         assert species == cartwright[0]
         # check frequency calculation
         assert np.isclose(omega, omegas[i])
@@ -776,20 +767,21 @@ def test_doodson():
     exp["j3"] = 375.555
     exp["s3'"] = 382.555
     # get observed values for constituents
-    obs = doodson_number(exp.keys())
-    cartwright = doodson_number(exp.keys(), formalism='Cartwright')
+    obs = pyTMD.arguments.doodson_number(exp.keys())
+    cartwright = pyTMD.arguments.doodson_number(exp.keys(),
+        formalism='Cartwright')
     # check values
     for key,val in exp.items():
         assert val == obs[key]
         # check values when entered as string
-        test = doodson_number(key)
+        test = pyTMD.arguments.doodson_number(key)
         assert val == test
         # check conversion to Doodson numbers
-        doodson = _to_doodson_number(cartwright[key])
+        doodson = pyTMD.arguments._to_doodson_number(cartwright[key])
         # check values when entered as Cartwright
         assert val == doodson
         # check values when entered as Doodson
-        coefficients = _from_doodson_number(val)
+        coefficients = pyTMD.arguments._from_doodson_number(val)
         assert np.all(cartwright[key] == coefficients)
 
 def test_extended():
@@ -841,7 +833,8 @@ def test_extended():
     exp['2jk3'] = 'CEYXZZZ'
     exp['2ko3'] = 'CEZZZZA'
     # get observed values for constituents
-    obs = doodson_number(exp.keys(), formalism='Extended')
+    obs = pyTMD.arguments.doodson_number(exp.keys(),
+        formalism='Extended')
     # check values
     for key,val in exp.items():
         assert val == obs[key]
@@ -852,15 +845,30 @@ def test_parse_tables():
     """
     # Cartwright and Tayler (1971) table with 3rd-degree values
     # Cartwright and Edden (1973) table with updated values
-    for table in [_ct1971_table_5, _ce1973_table_1]:
+    tables = []
+    tables.append(pyTMD.arguments._ct1971_table_5)
+    tables.append(pyTMD.arguments._ce1973_table_1)
+    for table in tables:
         # parse table
-        CTE = _parse_tide_potential_table(table)
+        CTE = pyTMD.arguments._parse_tide_potential_table(table)
         for i, line in enumerate(CTE):
             # convert Doodson number to Cartwright numbers
-            tau, s, h, p, n, pp = _from_doodson_number(line['DO'])
+            tau, s, h, p, n, pp = pyTMD.arguments._from_doodson_number(line['DO'])
             assert tau == line['tau'], line
             assert s == line['s'], line
             assert h == line['h'], line
             assert p == line['p'], line
             assert n == line['n'], line
             assert pp == line['pp'], line
+
+def test_aliasing_period():
+    """
+    Tests the aliasing periods compared to SWOT cal/val phase
+    """
+    # SWOT cal/val phase repeat period (convert to seconds)
+    # from M. G. Hart-Davis et al. (2024)
+    repeat = 0.99349*86400.0
+    obs = pyTMD.arguments.aliasing_period(['m2','o1'], repeat)
+    # expected values in days
+    exp = np.array([12.4, 13.0])
+    assert np.isclose(obs/86400.0, exp, atol=0.03).all()

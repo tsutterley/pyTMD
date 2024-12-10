@@ -22,6 +22,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.math.rotate
 
+.. autofunction:: pyTMD.math.aliasing
+
 .. autofunction:: pyTMD.math.legendre
 
 .. autofunction:: pyTMD.math.sph_harm

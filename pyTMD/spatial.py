@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 spatial.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (12/2024)
 
 Utilities for reading, writing and operating on spatial data
 
@@ -30,6 +30,7 @@ PROGRAM DEPENDENCIES:
     crs.py: Coordinate Reference System (CRS) routines
 
 UPDATE HISTORY:
+    Updated 12/2024: add latitude and longitude as potential dimension names
     Updated 11/2024: added function to calculate the altitude and azimuth
     Updated 09/2024: deprecation fix case where an array is output to scalars
     Updated 08/2024: changed from 'geotiff' to 'GTiff' and 'cog' formats
@@ -979,7 +980,7 @@ def _grid_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         python dictionary of output attributes
     """
     # output data fields
-    dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
+    dimensions = ['t', 'time', 'lon', 'longitude', 'x', 'lat', 'latitude', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
@@ -1029,7 +1030,7 @@ def _time_series_netCDF4(fileID, output: dict, attributes: dict, **kwargs):
         python dictionary of output attributes
     """
     # output data fields
-    dimensions = ['time', 'lon', 'lat', 't', 'x', 'y']
+    dimensions = ['t', 'time', 'lon', 'longitude', 'x', 'lat', 'latitude', 'y']
     crs = ['crs', 'crs_wkt', 'crs_proj4', 'projection']
     fields = sorted(set(output.keys()) - set(dimensions) - set(crs))
     # Defining the NetCDF dimensions
@@ -1249,7 +1250,7 @@ def to_parquet(
     if kwargs['geoparquet'] and (kwargs['geometry_encoding'] == 'WKB'):
         # get geometry columns
         primary_column = kwargs['primary_column']
-        geometries = ['lon', 'x', 'lat', 'y']
+        geometries = ['lon', 'longitude', 'x', 'lat', 'latitude', 'y']
         geom_vars = [v for v in geometries if v in output.keys()]
         # convert to shapely geometry
         points = shapely.points(df[geom_vars[0]], df[geom_vars[1]])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 OTIS.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (12/2024)
 
 Reads files for a tidal model and makes initial calculations to run tide program
 Includes functions to extract tidal harmonic constants from OTIS tide models for
@@ -58,6 +58,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 12/2024: released version of TMD3 has different variable names
     Updated 11/2024: expose buffer distance for cropping tide model data
     Updated 10/2024: save latitude and longitude to output constituent object
         fix error when using default bounds in extract_constants
@@ -1731,11 +1732,11 @@ def read_netcdf_file(
         hc.data.real[:,:] = fileID.variables['hRe'][ic,::-1,:]
         hc.data.imag[:,:] = -fileID.variables['hIm'][ic,::-1,:]
     elif variable in ('U','u'):
-        hc.data.real[:,:] = fileID.variables['uRe'][ic,::-1,:]
-        hc.data.imag[:,:] = -fileID.variables['uIm'][ic,::-1,:]
+        hc.data.real[:,:] = fileID.variables['URe'][ic,::-1,:]
+        hc.data.imag[:,:] = -fileID.variables['UIm'][ic,::-1,:]
     elif variable in ('V','v'):
-        hc.data.real[:,:] = fileID.variables['vRe'][ic,::-1,:]
-        hc.data.imag[:,:] = -fileID.variables['vIm'][ic,::-1,:]
+        hc.data.real[:,:] = fileID.variables['VRe'][ic,::-1,:]
+        hc.data.imag[:,:] = -fileID.variables['VIm'][ic,::-1,:]
     # close the file
     fileID.close()
     # return output variables
