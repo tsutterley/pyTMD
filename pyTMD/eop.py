@@ -156,7 +156,7 @@ _conventions = ('2003', '2010', '2015', '2018')
 def iers_mean_pole(*args, **kwargs):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
-    or IERS Secular Pole (2018 convention)
+    or IERS Secular Pole (2018 convention) [Petit2010]_
 
     Parameters
     ----------
@@ -183,13 +183,6 @@ def iers_mean_pole(*args, **kwargs):
         Angular coordinate y of conventional mean pole or secular pole
     flag: np.ndarray
         epoch is valid for version and version number is valid
-
-    References
-    ----------
-    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     warnings.warn("Deprecated. Please use timescale.eop.iers_mean_pole",
         DeprecationWarning)
@@ -199,6 +192,7 @@ def iers_mean_pole(*args, **kwargs):
 def iers_daily_EOP(**kwargs):
     """
     Read daily earth orientation parameters (EOP) file from IERS
+    [Petit2010]_
 
     Parameters
     ----------
@@ -213,13 +207,6 @@ def iers_daily_EOP(**kwargs):
         Angular coordinate x [arcsec]
     y: np.ndarray
         Angular coordinate y [arcsec]
-
-    References
-    ----------
-    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     warnings.warn("Deprecated. Please use timescale.eop.iers_daily_EOP",
         DeprecationWarning)
@@ -228,6 +215,7 @@ def iers_daily_EOP(**kwargs):
 def iers_polar_motion(*args, **kwargs):
     """
     Interpolates daily earth orientation parameters (EOP) file from IERS
+    [Petit2010]_
 
     Parameters
     ----------
@@ -246,13 +234,6 @@ def iers_polar_motion(*args, **kwargs):
         Angular coordinate x [arcsec]
     py: np.ndarray
         Angular coordinate y [arcsec]
-
-    References
-    ----------
-    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     warnings.warn("Deprecated. Please use timescale.eop.iers_polar_motion",
         DeprecationWarning)

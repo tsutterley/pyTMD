@@ -56,13 +56,3 @@ Calling Sequence
 
     --cutoff -c : @after
         * set to ``'inf'`` to extrapolate for all points
-
-References
-##########
-
-.. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-    Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-    Technology*, 19(2), 183--204, (2002).
-    `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-.. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2

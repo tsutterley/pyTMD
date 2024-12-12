@@ -33,7 +33,8 @@ def polynomial_sum(
         t: np.ndarray
     ):
     """
-    Calculates the sum of a polynomial function using Horner's method [1]_
+    Calculates the sum of a polynomial function using Horner's method
+    [Horner1819]_
 
     Parameters
     ----------
@@ -41,13 +42,6 @@ def polynomial_sum(
         leading coefficient of polynomials of increasing order
     t: np.ndarray
         delta time in units for a given astronomical longitudes calculation
-
-    References
-    ----------
-    .. [1] W. G. Horner and D. Gilbert, "A new method of solving numerical
-        equations of all orders, by continuous approximation," *Philosophical
-        Transactions of the Royal Society of London*, 109, 308--335, (1819).
-        `doi: 10.1098/rstl.1819.0023 <https://doi.org/10.1098/rstl.1819.0023>`_
     """
     # convert time to array if importing a single value
     t = np.atleast_1d(t)
@@ -140,7 +134,7 @@ def legendre(
     ):
     """
     Computes associated Legendre functions for a particular degree
-    and order [1]_ [2]_
+    and order [Munk1966]_ [HofmannWellenhof2006]_
 
     Parameters
     ----------
@@ -157,17 +151,6 @@ def legendre(
     -------
     Plm: np.ndarray
         Legendre polynomials of degree ``l`` and order ``m``
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
-    .. [2] B. Hofmann-Wellenhof and H. Moritz, *Physical Geodesy*,
-        2nd Edition, 403 pp., (2006). `doi: 10.1007/978-3-211-33545-1
-        <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
     # verify values are integers
     l = np.int64(l)
@@ -211,7 +194,7 @@ def sph_harm(
     ):
     """
     Computes the spherical harmonics for a particular degree
-    and order [1]_ [2]_
+    and order [Munk1966]_ [HofmannWellenhof2006]_
 
     Parameters
     ----------
@@ -228,17 +211,6 @@ def sph_harm(
     -------
     Ylm: np.ndarray
         complex spherical harmonics of degree ``l`` and order ``m``
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
-    .. [2] B. Hofmann-Wellenhof and H. Moritz, *Physical Geodesy*,
-        2nd Edition, 403 pp., (2006). `doi: 10.1007/978-3-211-33545-1
-        <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
     # verify dimensions
     singular_values = (np.ndim(theta) == 0)

@@ -1175,7 +1175,7 @@ class model:
     def node_equilibrium(lat: np.ndarray):
         """
         Compute the equilibrium amplitude and phase of the 18.6 year
-        node tide [1]_ [2]_
+        node tide [Cartwright1971]_ [Cartwright1973]_
 
         Parameters
         ----------
@@ -1188,19 +1188,6 @@ class model:
             Tidal amplitude in meters
         phase: np.ndarray
             Tidal phase in degrees
-
-        References
-        ----------
-        .. [1] D. E. Cartwright and R. J. Tayler,
-            "New Computations of the Tide-generating Potential,"
-            *Geophysical Journal of the Royal Astronomical Society*,
-            23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
-            <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
-        .. [2] D. E. Cartwright and A. C. Edden,
-            "Corrected Tables of Tidal Harmonics,"
-            *Geophysical Journal of the Royal Astronomical Society*,
-            33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-            <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
         """
         # Cartwright and Edden potential amplitude
         amajor = 0.027929# node

@@ -112,7 +112,7 @@ def mean_longitudes(
     ):
     r"""
     Computes the basic astronomical mean longitudes:
-    `S`, `H`, `P`, `N` and `PP` [1]_ [2]_
+    `S`, `H`, `P`, `N` and `PP` [Meeus1998]_ [Simon1994]_
 
     Note `N` is not `N'`, i.e. `N` is decreasing with time.
 
@@ -137,18 +137,6 @@ def mean_longitudes(
         mean longitude of ascending lunar node (degrees)
     PP: np.ndarray
         longitude of solar perigee (degrees)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] J. L. Simon, P. Bretagnon, J. Chapront, M. Chapront-Touz\ |eacute|\,
-        G. Francou, and J. Laskar "Numerical expressions for precession
-        formulae and mean elements for the Moon and the planets",
-        *Astronomy and Astrophysics*, 282(2), 663--683, (1994).
-        `bibcode: 1994A%26A...282..663S
-        <https://ui.adsabs.harvard.edu/abs/1994A%26A...282..663S>`_
-
-    .. |eacute|    unicode:: U+00E9 .. LATIN SMALL LETTER E WITH ACUTE
     """
     if MEEUS:
         # convert from MJD to days relative to 2000-01-01T12:00:00
@@ -234,7 +222,7 @@ def doodson_arguments(
     """
     Computes astronomical phase angles for the six Doodson
     Arguments: `tau`, `S`, `H`, `P`, and `N'`, and `Ps`
-    [1]_ [2]_
+    [Doodson1921]_ [Meeus1998]_
 
     Parameters
     ----------
@@ -259,15 +247,6 @@ def doodson_arguments(
         negative mean longitude of the ascending node (radians)
     Ps: np.ndarray
         mean longitude of solar perigee (radians)
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
-        the tide-generating potential", *Proceedings of the Royal Society
-        of London. Series A, Containing Papers of a Mathematical and
-        Physical Character*, 100(704), 305--329, (1921).
-        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
-    .. [2] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     # degrees to radians
     dtr = np.pi/180.0
@@ -321,7 +300,8 @@ def doodson_arguments(
 def delaunay_arguments(MJD: np.ndarray):
     """
     Computes astronomical phase angles for the five primary Delaunay
-    Arguments of Nutation: `l`, `l'`, `F`, `D`, and `N` [1]_ [2]_ [3]_
+    Arguments of Nutation: `l`, `l'`, `F`, `D`, and `N`
+    [Meeus1998]_ [Petit2010]_ [Capitaine2003a]_
 
     Parameters
     ----------
@@ -340,19 +320,6 @@ def delaunay_arguments(MJD: np.ndarray):
         mean elongation of the moon from the sun (radians)
     N: np.ndarray
         mean longitude of ascending lunar node (radians)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
-    .. [3] N. Capitaine, P. T. Wallace, and J. Chapront,
-        "Expressions for IAU 2000 precession quantities",
-        *Astronomy & Astrophysics*, 412, 567--586, (2003).
-        `doi: 10.1051/0004-6361:20031539
-        <https://doi.org/10.1051/0004-6361:20031539>`_
     """
     # arcseconds to radians
     atr = np.pi/648000.0
@@ -386,26 +353,12 @@ def delaunay_arguments(MJD: np.ndarray):
     return (l, lp, F, D, N)
 
 def mean_obliquity(MJD: np.ndarray):
-    """Mean obliquity of the ecliptic
+    """Mean obliquity of the ecliptic [Capitaine2003a]_ [Capitaine2003b]_
 
     Parameters
     ----------
     MJD: np.ndarray
         Modified Julian Day (MJD) of input date
-
-    References
-    ----------
-    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
-        "Expressions for IAU 2000 precession quantities",
-        *Astronomy & Astrophysics*, 412, 567--586, (2003).
-        `doi: 10.1051/0004-6361:20031539
-        <https://doi.org/10.1051/0004-6361:20031539>`_
-    .. [1] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
-        "Expressions for the Celestial Intermediate Pole and
-        Celestial Ephemeris Origin consistent with the IAU 2000A
-        precession-nutation model", *Astronomy & Astrophysics*,
-        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
-        <https://doi.org/10.1051/0004-6361:20030077>`_
     """
     # arcseconds to radians
     atr = np.pi/648000.0
@@ -421,7 +374,7 @@ def solar_ecef(MJD: np.ndarray, **kwargs):
     """
     Wrapper function for calculating the positional coordinates
     of the sun in an Earth-centric, Earth-Fixed (ECEF) frame
-    [1]_ [2]_ [3]_
+    [Meeus1998]_ [Montenbruck1989]_ [Park2021]_
 
     Parameters
     ----------
@@ -439,17 +392,6 @@ def solar_ecef(MJD: np.ndarray, **kwargs):
     -------
     X, Y, Z: np.ndarray
         ECEF coordinates of the sun (meters)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
-        146 pp., (1989).
-    .. [3] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
-        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
-        *The Astronomical Journal*, 161(3), 105, (2021).
-        `doi: 10.3847/1538-3881/abd414
-        <https://doi.org/10.3847/1538-3881/abd414>`_
     """
     kwargs.setdefault('ephemerides', 'approximate')
     if (kwargs['ephemerides'].lower() == 'approximate'):
@@ -460,7 +402,7 @@ def solar_ecef(MJD: np.ndarray, **kwargs):
 def solar_approximate(MJD, **kwargs):
     """
     Computes approximate positional coordinates of the sun in an
-    Earth-centric, Earth-Fixed (ECEF) frame [1]_ [2]_
+    Earth-centric, Earth-Fixed (ECEF) frame [Meeus1998]_ [Montenbruck1989]_
 
     Parameters
     ----------
@@ -471,12 +413,6 @@ def solar_approximate(MJD, **kwargs):
     -------
     X, Y, Z: np.ndarray
         ECEF coordinates of the sun (meters)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
-        146 pp., (1989).
     """
     # create timescale from Modified Julian Day (MJD)
     ts = timescale.time.Timescale(MJD=MJD)
@@ -510,7 +446,7 @@ def solar_approximate(MJD, **kwargs):
 def solar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     Computes positional coordinates of the sun in an Earth-centric,
-    Earth-Fixed (ECEF) frame using JPL ephemerides [1]_ [2]_
+    Earth-Fixed (ECEF) frame using JPL ephemerides [Meeus1998]_ [Park2021]_
 
     Parameters
     ----------
@@ -523,15 +459,6 @@ def solar_ephemerides(MJD: np.ndarray, **kwargs):
     -------
     X, Y, Z: np.ndarray
         ECEF coordinates of the sun (meters)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
-        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
-        *The Astronomical Journal*, 161(3), 105, (2021).
-        `doi: 10.3847/1538-3881/abd414
-        <https://doi.org/10.3847/1538-3881/abd414>`_
     """
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
@@ -567,7 +494,7 @@ def lunar_ecef(MJD: np.ndarray, **kwargs):
     """
     Wrapper function for calculating the positional coordinates
     of the moon in an Earth-centric, Earth-Fixed (ECEF) frame
-    [1]_ [2]_ [3]_
+    [Meeus1998]_ [Montenbruck1989]_ [Park2021]_
 
     Parameters
     ----------
@@ -585,17 +512,6 @@ def lunar_ecef(MJD: np.ndarray, **kwargs):
     -------
     X, Y, Z: np.ndarray
         ECEF coordinates of the moon (meters)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
-        146 pp., (1989).
-    .. [3] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
-        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
-        *The Astronomical Journal*, 161(3), 105, (2021).
-        `doi: 10.3847/1538-3881/abd414
-        <https://doi.org/10.3847/1538-3881/abd414>`_
     """
     kwargs.setdefault('ephemerides', 'approximate')
     if (kwargs['ephemerides'].lower() == 'approximate'):
@@ -606,7 +522,7 @@ def lunar_ecef(MJD: np.ndarray, **kwargs):
 def lunar_approximate(MJD, **kwargs):
     """
     Computes approximate positional coordinates of the moon in an
-    Earth-centric, Earth-Fixed (ECEF) frame [1]_ [2]_
+    Earth-centric, Earth-Fixed (ECEF) frame [Meeus1998]_ [Montenbruck1989]_
 
     Parameters
     ----------
@@ -617,12 +533,6 @@ def lunar_approximate(MJD, **kwargs):
     -------
     X, Y, Z: np.ndarray
         ECEF coordinates of the moon (meters)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] O. Montenbruck, *Practical Ephemeris Calculations*,
-        146 pp., (1989).
     """
     # create timescale from Modified Julian Day (MJD)
     ts = timescale.time.Timescale(MJD=MJD)
@@ -690,7 +600,7 @@ def lunar_approximate(MJD, **kwargs):
 def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     Computes positional coordinates of the moon in an Earth-centric,
-    Earth-Fixed (ECEF) frame using JPL ephemerides [1]_ [2]_
+    Earth-Fixed (ECEF) frame using JPL ephemerides [Meeus1998]_ [Park2021]_
 
     Parameters
     ----------
@@ -703,15 +613,6 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     -------
     X, Y, Z: np.ndarray
         ECEF coordinates of the moon (meters)
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-    .. [2] R. S. Park, W. M. Folkner, and J. G. Williams, and D. H. Boggs,
-        "The JPL Planetary and Lunar Ephemerides DE440 and DE441",
-        *The Astronomical Journal*, 161(3), 105, (2021).
-        `doi: 10.3847/1538-3881/abd414
-        <https://doi.org/10.3847/1538-3881/abd414>`_
     """
     # set default keyword arguments
     kwargs.setdefault('kernel', _default_kernel)
@@ -741,30 +642,13 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     return (X, Y, Z)
 
 def gast(T: float | np.ndarray):
-    """Greenwich Apparent Sidereal Time (GAST) [1]_ [2]_ [3]_
+    """Greenwich Apparent Sidereal Time (GAST)
+    [Capitaine2003a]_ [Capitaine2003b]_ [Petit2010]_
 
     Parameters
     ----------
     T: np.ndarray
         Centuries since 2000-01-01T12:00:00
-
-    References
-    ----------
-    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
-        "Expressions for IAU 2000 precession quantities",
-        *Astronomy & Astrophysics*, 412, 567--586, (2003).
-        `doi: 10.1051/0004-6361:20031539
-        <https://doi.org/10.1051/0004-6361:20031539>`_
-    .. [2] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
-        "Expressions for the Celestial Intermediate Pole and
-        Celestial Ephemeris Origin consistent with the IAU 2000A
-        precession-nutation model", *Astronomy & Astrophysics*,
-        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
-        <https://doi.org/10.1051/0004-6361:20030077>`_
-    .. [3] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
@@ -781,7 +665,8 @@ def gast(T: float | np.ndarray):
 
 def itrs(T: float | np.ndarray):
     """
-    International Terrestrial Reference System (ITRS) [1]_ [2]_ [3]_:
+    International Terrestrial Reference System (ITRS)
+    [Capitaine2003a]_ [Capitaine2003b]_ [Petit2010]_:
     An Earth-centered Earth-fixed (ECEF) coordinate system
     combining the Earth's true equator and equinox of date,
     the Earth's rotation with respect to the stars, and the
@@ -791,24 +676,6 @@ def itrs(T: float | np.ndarray):
     ----------
     T: np.ndarray
         Centuries since 2000-01-01T12:00:00
-
-    References
-    ----------
-    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
-        "Expressions for IAU 2000 precession quantities",
-        *Astronomy & Astrophysics*, 412, 567--586, (2003).
-        `doi: 10.1051/0004-6361:20031539
-        <https://doi.org/10.1051/0004-6361:20031539>`_
-    .. [2] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
-        "Expressions for the Celestial Intermediate Pole and
-        Celestial Ephemeris Origin consistent with the IAU 2000A
-        precession-nutation model", *Astronomy & Astrophysics*,
-        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
-        <https://doi.org/10.1051/0004-6361:20030077>`_
-    .. [3] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
@@ -838,31 +705,13 @@ def itrs(T: float | np.ndarray):
 
 def _eqeq_complement(T: float | np.ndarray):
     """
-    Compute complementary terms of the equation of the
-    equinoxes [1]_ [2]_ [3]_
+    Compute complementary terms of the equation of the equinoxes
+    [Capitaine2003a]_ [Capitaine2003b]_ [Petit2010]_
 
     Parameters
     ----------
     T: np.ndarray
         Centuries since 2000-01-01T12:00:00
-
-    References
-    ----------
-    .. [1] N. Capitaine, P. T. Wallace, and J. Chapront,
-        "Expressions for IAU 2000 precession quantities",
-        *Astronomy & Astrophysics*, 412, 567--586, (2003).
-        `doi: 10.1051/0004-6361:20031539
-        <https://doi.org/10.1051/0004-6361:20031539>`_
-    .. [2] N. Capitaine, J. Chapront, S. Lambert, and P. T. Wallace,
-        "Expressions for the Celestial Intermediate Pole and
-        Celestial Ephemeris Origin consistent with the IAU 2000A
-        precession-nutation model", *Astronomy & Astrophysics*,
-        400, 1145--1154, (2003). `doi: 10.1051/0004-6361:20030077
-        <https://doi.org/10.1051/0004-6361:20030077>`_
-    .. [3] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
@@ -939,7 +788,7 @@ def _frame_bias_matrix():
 def _nutation_angles(T: float | np.ndarray):
     """
     Calculate nutation rotation angles using tables
-    from IERS Conventions [1]_
+    from IERS Conventions [Petit2010]_
 
     Parameters
     ----------
@@ -952,13 +801,6 @@ def _nutation_angles(T: float | np.ndarray):
         Nutation in longitude
     deps: np.ndarray
         Obliquity of the ecliptic
-
-    References
-    ----------
-    .. [1] G. Petit and B. Luzum (eds.), *IERS Conventions (2010)*,
-        International Earth Rotation and Reference Systems Service (IERS),
-        `IERS Technical Note No. 36
-        <https://iers-conventions.obspm.fr/content/tn36.pdf>`_
     """
     # create timescale from centuries relative to 2000-01-01T12:00:00
     ts = timescale.time.Timescale(MJD=T*_century + _mjd_j2000)
@@ -1103,8 +945,9 @@ def _precession_matrix(T: float | np.ndarray):
 
 def _parse_table_5_2e():
     """Parse table with expressions for Greenwich Sidereal Time
-    provided in `Chapter 5 of IERS Conventions
+    provided in `Chapter 5
     <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2e.txt>`_
+    of [Petit2010]_
     """
     table_5_2e = get_data_path(['data','tab5.2e.txt'])
     with table_5_2e.open(mode='r', encoding='utf8') as f:
@@ -1130,8 +973,9 @@ def _parse_table_5_2e():
 
 def _parse_table_5_3a():
     """Parse table with IAU 2000A lunisolar and planetary components
-    of nutation in longitude provided in `Chapter 5 of IERS Conventions
-    <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.3a.txt>`_
+    of nutation in longitude provided in `Chapter 5
+    <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2e.txt>`_
+    of [Petit2010]_
     """
     table_5_3a = get_data_path(['data','tab5.3a.txt'])
     with table_5_3a.open(mode='r', encoding='utf8') as f:
@@ -1157,8 +1001,9 @@ def _parse_table_5_3a():
 
 def _parse_table_5_3b():
     """Parse table with IAU 2000A lunisolar and planetary components
-    of nutation in obliquity provided in `Chapter 5 of IERS Conventions
-    <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.3b.txt>`_
+    of nutation in obliquity provided in `Chapter 5
+    <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2e.txt>`_
+    of [Petit2010]_
     """
     table_5_3b = get_data_path(['data','tab5.3b.txt'])
     with table_5_3b.open(mode='r', encoding='utf8') as f:

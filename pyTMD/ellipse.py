@@ -44,7 +44,7 @@ __all__ = [
 def ellipse(u: np.ndarray, v: np.ndarray):
     """
     Expresses the amplitudes and phases for the u and v components in terms of
-    four ellipse parameters using Foreman's formula [1]_
+    four ellipse parameters using Foreman's formula [Foreman1989]_
 
     Parameters
     ----------
@@ -64,13 +64,6 @@ def ellipse(u: np.ndarray, v: np.ndarray):
     uphase: np.ndarray
         phase lag of the maximum current behind the maximum tidal potential
         of the individual constituent
-
-    References
-    ----------
-    .. [1] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
-        model time series," *Advances in Water Resources*, 12(3), 109--120,
-        (1989). `doi: 10.1016/0309-1708(89)90017-1
-        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
     # validate inputs
     u = np.atleast_1d(u)
@@ -107,7 +100,7 @@ def inverse(
     ):
     """
     Calculates currents u, v using the four tidal ellipse
-    parameters from Foreman's formula [1]_
+    parameters from Foreman's formula [Foreman1989]_
 
     Parameters
     ----------
@@ -127,13 +120,6 @@ def inverse(
         zonal current (EW)
     v: np.ndarray
         meridional current (NS)
-
-    References
-    ----------
-    .. [1] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
-        model time series," *Advances in Water Resources*, 12(3), 109--120,
-        (1989). `doi: 10.1016/0309-1708(89)90017-1
-        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
     """
     # validate inputs
     umajor = np.atleast_1d(umajor)

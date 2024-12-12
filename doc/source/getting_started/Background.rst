@@ -23,13 +23,13 @@ Solid Earth Tides
 
 Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun [Agnew2015]_ [Doodson1921]_ [Meeus1998]_ [Montenbruck1989]_.
 However, while ocean tides are apparent to observers on the coast, solid Earth tides are typically more difficult to observe due to the reference frame of the observer moving.
-The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object [Agnew2015]_ [Wahr1981]_.
+The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object [Agnew2015]_ [Wahr1981a]_.
 Analytical approximate positions for the sun and moon can be calculated within ``pyTMD``, and high-resolution numerical ephemerides for the sun and moon can be downloaded from the `Jet Propulsion Laboratory <https://ssd.jpl.nasa.gov/planets/orbits.html>`_.
 
 Within ``pyTMD``, the tidal deformation of the Earth is modeled using the Load Love/Shida numbers formalism described in the `IERS Conventions <https://iers-conventions.obspm.fr/>`_, which are based on [Mathews1997]_.
 Love and Shida numbers describe the elastic response of the Earth in terms of vertical displacement (*h*), gravitational potential (*k*) and horizontal displacement (*l*).
-For a spherical, non-rotating Earth, the Love and Shida numbers are largely independent of tidal frequency [Wahr1981]_.
-However, for a rotating, ellipsoidal Earth, the Love and Shida numbers are dependent on tidal frequency, with resonances in the diurnal and semi-diurnal bands [Wahr1981]_.
+For a spherical, non-rotating Earth, the Love and Shida numbers are largely independent of tidal frequency [Wahr1981a]_.
+However, for a rotating, ellipsoidal Earth, the Love and Shida numbers are dependent on tidal frequency, with resonances in the diurnal and semi-diurnal bands [Wahr1981a]_.
 ``pyTMD`` computes these frequency-dependent corrections along with the dissipative mantle anelasticity corrections following [Mathews1997]_.
 
 In addition to the ups and downs of tides, there is a considerable portion of tidal potential and displacement that does not vary in time, a *permanent tide* that is due to the Earth being in the presence of the Sun and Moon (and other planetary bodies).
@@ -104,30 +104,3 @@ Time in Julian centuries (36525 days) are calculated relative to noon on January
     :label: 5
 
     T = \frac{JD - 2451545.0}{36525}
-
-References
-##########
-
-.. [Agnew2015] D. C. Agnew, "Earth Tides", *Treatise on Geophysics (Second Edition)*, 3.06, 151--178, (2015). `doi: 10.1016/B978-0-444-53802-4.00058-0 <https://doi.org/10.1016/B978-0-444-53802-4.00058-0>`_
-
-.. [Desai2002] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of Geophysical Research: Oceans*, 107(C11), (2002). `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
-
-.. [Desai2015] S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015). `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
-
-.. [Doodson1921] A. T. Doodson and H. Lamb, "The harmonic development of the tide-generating potential", *Proceedings of the Royal Society of London. Series A, Containing Papers of a Mathematical and Physical Character*, 100(704), 305--329, (1921). `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
-
-.. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of Barotropic Ocean Tides", *Journal of Atmospheric and Oceanic Technology*, 19(2), 183--204, (2002). `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-.. [Mathews1997] P. M. Mathews, V. Dehant and J. M. Gipson, "Tidal station displacements", *Journal of Geophysical Research: Solid Earth*, 102(B9), 20469--20477, (1997). `doi: 10.1029/97JB01515 <https://doi.org/10.1029/97JB01515>`_
-
-.. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-
-.. [Montenbruck1989] O. Montenbruck, *Practical Ephemeris Calculations*, 146 pp., (1989).
-
-.. [Stammer2014] D. Stammer et al., "Accuracy assessment of global barotropic ocean tide models", *Reviews of Geophysics*, 52, 243--282, (2014). `doi: 10.1002/2014RG000450 <https://doi.org/10.1002/2014RG000450>`_
-
-.. [Wahr1981] J. M. Wahr, "Body tides on an elliptical, rotating, elastic and oceanless Earth", *Geophysical Journal of the Royal Astronomical Society*, 64(3), 677--703, (1981). `doi: 10.1111/j.1365-246X.1981.tb02690.x <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
-
-.. [Wahr1985] J. M. Wahr, "Deformation induced by polar motion", *Journal of Geophysical Research: Solid Earth*, 90(B11), 9363--9368, (1985). `doi: 10.1029/JB090iB11p09363 <https://doi.org/10.1029/JB090iB11p09363>`_
-
-.. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
