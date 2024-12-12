@@ -48,7 +48,6 @@ import pyTMD.io.model
 import pyTMD.utilities
 import pyTMD.compute
 import pyTMD.predict
-import pyTMD.check_points
 import timescale.time
 
 # current file path
@@ -233,7 +232,7 @@ def test_compare_GOT47(METHOD):
 def test_check_GOT47():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
-    obs = pyTMD.check_points(lons, lats, DIRECTORY=filepath,
+    obs = pyTMD.compute.tide_masks(lons, lats, DIRECTORY=filepath,
         MODEL='GOT4.7', GZIP=True, EPSG=4326)
     exp = np.array([True, True, True, True, True,
         True, True, True, False, False])

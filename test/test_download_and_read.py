@@ -63,7 +63,6 @@ import pyTMD.io.model
 import pyTMD.compute
 import pyTMD.predict
 import pyTMD.utilities
-import pyTMD.check_points
 import pyTMD.ellipse
 import pyTMD.solve
 import timescale.time
@@ -413,7 +412,7 @@ class Test_CATS2008:
     def test_check_CATS2008(self):
         lons = np.zeros((10)) + 178.0
         lats = -45.0 - np.arange(10)*5.0
-        obs = pyTMD.check_points(lons, lats, DIRECTORY=filepath,
+        obs = pyTMD.compute.tide_masks(lons, lats, DIRECTORY=filepath,
             MODEL='CATS2008', EPSG=4326)
         exp = np.array([False, False, False, False, True,
             True, True, True, False, False])

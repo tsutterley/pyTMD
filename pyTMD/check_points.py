@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 check_points.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (12/2024)
 Check if points are within a tide model domain
 
 OTIS format tidal solutions provided by Oregon State University and ESR
@@ -51,6 +51,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 12/2024: deprecated in favor of compute.tide_masks
     Updated 09/2024: use JSON database for known model parameters
         drop support for the ascii definition file format
     Updated 07/2024: renamed format for ATLAS to ATLAS-compact
@@ -76,31 +77,12 @@ UPDATE HISTORY:
 """
 from __future__ import print_function, annotations
 
-import logging
 import pathlib
-import numpy as np
-import scipy.interpolate
-import pyTMD.crs
-import pyTMD.io
-import pyTMD.io.model
-import pyTMD.interpolate
-import pyTMD.utilities
-# attempt imports
-pyproj = pyTMD.utilities.import_dependency('pyproj')
-
-__all__ = [
-    'check_points'
-]
+import warnings
+import pyTMD.compute
 
 # PURPOSE: compute tides at points and times using tide model algorithms
-def check_points(x: np.ndarray, y: np.ndarray,
-        DIRECTORY: str | pathlib.Path | None = None,
-        MODEL: str | None = None,
-        GZIP: bool = False,
-        DEFINITION_FILE: str | pathlib.Path | None = None,
-        EPSG: str | int = 3031,
-        METHOD: str = 'spline'
-    ):
+def check_points(*args, **kwargs):
     """
     Check if points are within a tide model domain
 
@@ -132,93 +114,6 @@ def check_points(x: np.ndarray, y: np.ndarray,
     valid: bool
         array describing if input coordinate is within model domain
     """
-
-    # check that tide directory is accessible
-    if DIRECTORY is not None:
-        DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
-        if not DIRECTORY.exists():
-            raise FileNotFoundError("Invalid tide directory")
-
-    # get parameters for tide model
-    if DEFINITION_FILE is not None:
-        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
-    else:
-        model = pyTMD.io.model(DIRECTORY, compressed=GZIP).elevation(MODEL)
-
-    # input shape of data
-    idim = np.shape(x)
-    # converting x,y from input coordinate reference system
-    crs1 = pyTMD.crs().from_input(EPSG)
-    crs2 = pyproj.CRS.from_epsg(4326)
-    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-    lon, lat = transformer.transform(
-        np.atleast_1d(x).flatten(), np.atleast_1d(y).flatten()
-    )
-
-    # read tidal constants and interpolate to grid points
-    if model.format in ('OTIS','ATLAS-compact','TMD3'):
-        # if reading a single OTIS solution
-        xi, yi, hz, mz, iob, dt = pyTMD.io.OTIS.read_otis_grid(
-            pathlib.Path(model.grid_file).expanduser())
-        # invert model mask
-        mz = np.logical_not(mz)
-        # adjust dimensions of input coordinates to be iterable
-        # run wrapper function to convert coordinate systems of input lat/lon
-        X, Y = pyTMD.crs().convert(lon, lat, model.projection, 'F')
-    elif (model.format == 'ATLAS-netcdf'):
-        # if reading a netCDF OTIS atlas solution
-        xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(
-            pathlib.Path(model.grid_file).expanduser(),
-            compressed=model.compressed, type=model.type)
-        # copy bathymetry mask
-        mz = np.copy(hz.mask)
-        # copy latitude and longitude and adjust longitudes
-        X,Y = np.copy([lon,lat]).astype(np.float64)
-        lt0, = np.nonzero(X < 0)
-        X[lt0] += 360.0
-    elif model.format in ('GOT-ascii', 'GOT-netcdf'):
-        # if reading a NASA GOT solution
-        hc, xi, yi, c = pyTMD.io.GOT.read_ascii_file(
-            pathlib.Path(model.model_file[0]).expanduser(),
-            compressed=model.compressed)
-        # copy tidal constituent mask
-        mz = np.copy(hc.mask)
-        # copy latitude and longitude and adjust longitudes
-        X, Y = np.copy([lon,lat]).astype(np.float64)
-        lt0, = np.nonzero(X < 0)
-        X[lt0] += 360.0
-    elif (model.format == 'FES-netcdf'):
-        # if reading a FES netCDF solution
-        hc, xi, yi = pyTMD.io.FES.read_netcdf_file(
-            pathlib.Path(model.model_file[0]).expanduser(),
-            compressed=model.compressed, type=model.type,
-            version=model.version)
-        # copy tidal constituent mask
-        mz = np.copy(hc.mask)
-        # copy latitude and longitude and adjust longitudes
-        X, Y = np.copy([lon,lat]).astype(np.float64)
-        lt0, = np.nonzero(X < 0)
-        X[lt0] += 360.0
-
-    # interpolate masks
-    if (METHOD == 'bilinear'):
-        # replace invalid values with nan
-        mz1 = pyTMD.interpolate.bilinear(xi, yi, mz, X, Y)
-        mask = np.floor(mz1).astype(mz.dtype)
-    elif (METHOD == 'spline'):
-        f1 = scipy.interpolate.RectBivariateSpline(xi, yi, mz.T,
-            kx=1, ky=1)
-        mask = np.floor(f1.ev(X, Y)).astype(mz.dtype)
-    else:
-        # use scipy regular grid to interpolate values
-        r1 = scipy.interpolate.RegularGridInterpolator((yi, xi), mz,
-            method=METHOD, bounds_error=False, fill_value=1)
-        mask = np.floor(r1.__call__(np.c_[y, x])).astype(mz.dtype)
-
-    # reshape to original dimensions
-    valid = np.logical_not(mask).reshape(idim).astype(mz.dtype)
-    # replace points outside model domain with invalid
-    valid &= (X >= xi.min()) & (X <= xi.max())
-    valid &= (Y >= yi.min()) & (Y <= yi.max())
-    # return the valid mask
-    return valid
+    warnings.warn("Deprecated. Please use pyTMD.compute instead",
+        DeprecationWarning)
+    return pyTMD.compute.tide_masks(*args, **kwargs)
