@@ -32,7 +32,6 @@ ocean, load, solid Earth and pole tides
 
     api_reference/arguments.rst
     api_reference/astro.rst
-    api_reference/check_points.rst
     api_reference/compute.rst
     api_reference/crs.rst
     api_reference/ellipse.rst
@@ -67,6 +66,13 @@ ocean, load, solid Earth and pole tides
     api_reference/compute_SET_displacements.rst
     api_reference/compute_tidal_currents.rst
     api_reference/compute_tidal_elevations.rst
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Bibliography
+
+    getting_started/Bibliography.rst
 
 .. toctree::
     :maxdepth: 1

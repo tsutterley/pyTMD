@@ -76,8 +76,8 @@ def extract_coefficients(
         **kwargs
     ):
     """
-    Reads ocean pole tide file from [1]_ [2]_ and spatially interpolates
-    to input coordinates
+    Reads ocean pole tide file from :cite:p:`Desai:2002ev` :cite:p:`Desai:2015jr`
+    and spatially interpolates to input coordinates
 
     Parameters
     ----------
@@ -101,15 +101,6 @@ def extract_coefficients(
         north ocean pole tide coefficients
     ue: np.ndarray
         east ocean pole tide coefficients
-
-    References
-    ----------
-    .. [1] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of
-        Geophysical Research: Oceans*, 107(C11), (2002).
-        `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
-    .. [2] S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from
-        satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015).
-        `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
     """
     # default keyword arguments
     kwargs.setdefault('model_file', _ocean_pole_tide_file)
@@ -144,7 +135,8 @@ def extract_coefficients(
 # PURPOSE: read real and imaginary ocean pole tide coefficients
 def read_binary_file(**kwargs):
     """
-    Read real and imaginary ocean pole tide coefficients from [1]_ [2]_
+    Read real and imaginary ocean pole tide coefficients from
+    :cite:p:`Desai:2002ev` :cite:p:`Desai:2015jr`
 
     Parameters
     ----------
@@ -163,15 +155,6 @@ def read_binary_file(**kwargs):
         ocean grid longitude
     glat: np.ndarray
         ocean grid latitude
-
-    References
-    ----------
-    .. [1] S. Desai, "Observing the pole tide with satellite altimetry", *Journal of
-        Geophysical Research: Oceans*, 107(C11), (2002).
-        `doi: 10.1029/2001JC001224 <https://doi.org/10.1029/2001JC001224>`_
-    .. [2] S. Desai, J. Wahr and B. Beckley "Revisiting the pole tide for and from
-        satellite altimetry", *Journal of Geodesy*, 89(12), p1233-1243, (2015).
-        `doi: 10.1007/s00190-015-0848-7 <https://doi.org/10.1007/s00190-015-0848-7>`_
     """
     # default keyword arguments
     kwargs.setdefault('model_file', _ocean_pole_tide_file)

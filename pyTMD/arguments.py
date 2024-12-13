@@ -112,7 +112,7 @@ def arguments(
     ):
     """
     Calculates the nodal corrections for tidal constituents
-    [1]_ [2]_ [3]_ [4]_
+    :cite:p:`Doodson:1941td` :cite:p:`Schureman:1958ty` :cite:p:`Foreman:1989dt` :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -139,23 +139,6 @@ def arguments(
         nodal factor correction
     G: np.ndarray
         phase correction in degrees
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
-    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
-        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
-    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
-        model time series," *Advances in Water Resources*, 12(3), 109--120,
-        (1989). `doi: 10.1016/0309-1708(89)90017-1
-        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
-    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -195,7 +178,9 @@ def minor_arguments(
     ):
     """
     Calculates the nodal corrections for minor tidal constituents
-    in order to infer their values [1]_ [2]_ [3]_ [4]_
+    in order to infer their values :cite:p:`Doodson:1941td` :cite:p:`Schureman:1958ty`
+    :cite:p:`Foreman:1989dt` :cite:p:`Egbert:2002ge`
+
 
     Parameters
     ----------
@@ -214,23 +199,6 @@ def minor_arguments(
         nodal factor correction
     G: np.ndarray
         phase correction in degrees
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
-    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
-        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
-    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
-        model time series," *Advances in Water Resources*, 12(3), 109--120,
-        (1989). `doi: 10.1016/0309-1708(89)90017-1
-        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
-    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -364,7 +332,8 @@ def coefficients_table(
         **kwargs
     ):
     """
-    Doodson table coefficients for tidal constituents [1]_ [2]_
+    Doodson table coefficients for tidal constituents
+    :cite:p:`Doodson:1921kt` :cite:p:`Doodson:1941td`
 
     Parameters
     ----------
@@ -379,16 +348,6 @@ def coefficients_table(
     -------
     coef: np.ndarray
         Doodson coefficients (Cartwright numbers) for each constituent
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
-        the tide-generating potential", *Proceedings of the Royal Society
-        of London. Series A, Containing Papers of a Mathematical and
-        Physical Character*, 100(704), 305--329, (1921).
-        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
-    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
@@ -437,7 +396,7 @@ def doodson_number(
     ):
     """
     Calculates the Doodson or Cartwright number for
-    tidal constituents [1]_
+    tidal constituents :cite:p:`Doodson:1921kt`
 
     Parameters
     ----------
@@ -458,14 +417,6 @@ def doodson_number(
     -------
     numbers: float, np.ndarray or dict
         Doodson or Cartwright number for each constituent
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
-        the tide-generating potential", *Proceedings of the Royal Society
-        of London. Series A, Containing Papers of a Mathematical and
-        Physical Character*, 100(704), 305--329, (1921).
-        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
@@ -530,7 +481,7 @@ def nodal(
     ):
     """
     Calculates the nodal corrections for tidal constituents
-    [1]_ [2]_ [3]_ [4]_
+    :cite:p:`Doodson:1941td` :cite:p:`Schureman:1958ty` :cite:p:`Foreman:1989dt` :cite:p:`Ray:1999vm`
 
     Calculates factors for compound tides using recursion
 
@@ -557,20 +508,6 @@ def nodal(
         nodal factor correction
     u: np.ndarray
         nodal angle correction
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
-    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
-        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
-    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
-        model time series," *Advances in Water Resources*, 12(3), 109--120,
-        (1989). `doi: 10.1016/0309-1708(89)90017-1
-        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
-    .. [4] R. D. Ray, "A global ocean tide model from
-        Topex/Poseidon altimetry: GOT99.2",
-        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
@@ -1234,7 +1171,7 @@ def frequency(
         **kwargs
     ):
     """
-    Calculates the angular frequency for tidal constituents [1]_
+    Calculates the angular frequency for tidal constituents :cite:p:`Ray:1999vm`
 
     Parameters
     ----------
@@ -1253,12 +1190,6 @@ def frequency(
     -------
     omega: np.ndarray
         angular frequency in radians per second
-
-    References
-    ----------
-    .. [1] R. D. Ray, "A global ocean tide model from
-        Topex/Poseidon altimetry: GOT99.2",
-        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
@@ -1331,7 +1262,7 @@ def aliasing_period(
 
 def _arguments_table(**kwargs):
     """
-    Arguments table for tidal constituents [1]_ [2]_
+    Arguments table for tidal constituents :cite:p:`Doodson:1921kt` :cite:p:`Doodson:1941td`
 
     Parameters
     ----------
@@ -1342,16 +1273,6 @@ def _arguments_table(**kwargs):
     -------
     coef: np.ndarray
         Doodson coefficients (Cartwright numbers) for each constituent
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
-        the tide-generating potential", *Proceedings of the Royal Society
-        of London. Series A, Containing Papers of a Mathematical and
-        Physical Character*, 100(704), 305--329, (1921).
-        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
-    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
     """
     # set default keyword arguments
     kwargs.setdefault('corrections', 'OTIS')
@@ -1378,22 +1299,12 @@ def _arguments_table(**kwargs):
 
 def _minor_table(**kwargs):
     """
-    Arguments table for minor tidal constituents [1]_ [2]_
+    Arguments table for minor tidal constituents :cite:p:`Doodson:1921kt` :cite:p:`Doodson:1941td`
 
     Returns
     -------
     coef: np.ndarray
         Doodson coefficients (Cartwright numbers) for each constituent
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. Lamb, "The harmonic development of
-        the tide-generating potential", *Proceedings of the Royal Society
-        of London. Series A, Containing Papers of a Mathematical and
-        Physical Character*, 100(704), 305--329, (1921).
-        `doi: 10.1098/rspa.1921.0088 <https://doi.org/10.1098/rspa.1921.0088>`_
-    .. [2] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
     """
     # modified Doodson coefficients for constituents
     # using 7 index variables: tau, s, h, p, n, pp, k
@@ -1413,7 +1324,7 @@ def _minor_table(**kwargs):
 
 def _constituent_parameters(c: str, **kwargs):
     """
-    Loads parameters for a given tidal constituent
+    Loads parameters for a given tidal constituent :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -1434,15 +1345,6 @@ def _constituent_parameters(c: str, **kwargs):
         load love number of tidal constituent
     species: float
         spherical harmonic dependence of quadrupole potential
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # default keyword arguments
     kwargs.setdefault('raise_error', False)
@@ -1512,7 +1414,7 @@ def _love_numbers(
     ):
     """
     Compute the body tide Love/Shida numbers for a given
-    frequency [1]_ [2]_ [3]_
+    frequency :cite:p:`Wahr:1981ea` :cite:p:`Wahr:1981if` :cite:p:`Mathews:1995go`
 
     Parameters
     ----------
@@ -1534,25 +1436,6 @@ def _love_numbers(
         Degree-2 Love number of gravitational potential
     l2: float
         Degree-2 Love (Shida) number of horizontal displacement
-
-    References
-    ----------
-    .. [1] J. M. Wahr, "Body tides on an elliptical, rotating, elastic
-        and oceanless Earth", *Geophysical Journal of the Royal
-        Astronomical Society*, 64(3), 677--703, (1981).
-        `doi: 10.1111/j.1365-246X.1981.tb02690.x
-        <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
-    .. [2] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
-        tide and in the Earth's load response due to the resonant free
-        `core nutation`", *Geophysical Journal of the Royal Astronomical
-        Society*, 64(3), 747--765, (1981).
-        `doi: 10.1111/j.1365-246X.1981.tb02693.x
-        <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
-    .. [3] P. M. Mathews, B. A. Buffett, and I. I. Shapiro,
-        "Love numbers for diurnal tides: Relation to wobble admittances
-        and resonance expansions", *Journal of Geophysical Research:
-        Solid Earth*, 100(B6), 9935--9948, (1995).
-        `doi: 10.1029/95jb00670 <https://doi.org/10.1029/95jb00670>`_
     """
     # free core nutation frequencies (cycles per sidereal day) and
     # Love number parameters from Wahr (1981) table 6
@@ -1611,7 +1494,8 @@ _ct1971_table_5 = get_data_path(['data','ct1971_tab5.txt'])
 _ce1973_table_1 = get_data_path(['data','ce1973_tab1.txt'])
 
 def _parse_tide_potential_table(table: str | pathlib.Path):
-    """Parse tables of tide-generating potential from [1]_ and [2]_
+    """Parse tables of tide-generating potential from
+    :cite:p:`Cartwright:1971iz` and :cite:p:`Cartwright:1973em`
 
     Parameters
     ----------
@@ -1622,19 +1506,6 @@ def _parse_tide_potential_table(table: str | pathlib.Path):
     -------
     CTE: float
         Cartwright-Tayler-Edden table values
-
-    References
-    ----------
-    .. [1] D. E. Cartwright and R. J. Tayler,
-        "New Computations of the Tide-generating Potential,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
-        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
-    .. [2] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # verify table path
     table = pathlib.Path(table).expanduser().absolute()

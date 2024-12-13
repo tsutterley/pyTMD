@@ -2,7 +2,7 @@
 compute_tidal_elevations.py
 ===========================
 
-- Calculates tidal elevations for an input file following [Egbert2002]_
+- Calculates tidal elevations for an input file following :cite:p:`Egbert:2002ge`
 - Can use OTIS format tidal solutions provided by Oregon State University and ESR
 - Can use Global Tide Model (GOT) solutions provided by Richard Ray at GSFC
 - Can use Finite Element Solution (FES) models provided by AVISO
@@ -60,14 +60,3 @@ Calling Sequence
 
     --apply-flexure : @after
         Only valid for models containing flexure fields
-
-References
-##########
-
-.. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-    Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-    Technology*, 19(2), 183--204, (2002).
-    `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-.. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 compute.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (12/2024)
 Calculates tidal elevations for correcting elevation or imagery data
 Calculates tidal currents at locations and times
 
@@ -60,6 +60,7 @@ PROGRAM DEPENDENCIES:
     interpolate.py: interpolation routines for spatial data
 
 UPDATE HISTORY:
+    Updated 12/2024: moved check points function as compute.tide_masks
     Updated 11/2024: expose buffer distance for cropping tide model data
     Updated 10/2024: compute delta times based on corrections type
         simplify by using wrapper functions to read and interpolate constants
@@ -658,6 +659,137 @@ def tide_currents(
 
     # return the ocean tide currents
     return tide
+
+# PURPOSE: check if points are within a tide model domain
+def tide_masks(x: np.ndarray, y: np.ndarray,
+        DIRECTORY: str | pathlib.Path | None = None,
+        MODEL: str | None = None,
+        GZIP: bool = False,
+        DEFINITION_FILE: str | pathlib.Path | None = None,
+        EPSG: str | int = 3031,
+        METHOD: str = 'spline'
+    ):
+    """
+    Check if points are within a tide model domain
+
+    Parameters
+    ----------
+    x: np.ndarray
+        x-coordinates in projection EPSG
+    y: np.ndarray
+        y-coordinates in projection EPSG
+    DIRECTORY: str or NoneType, default None
+        working data directory for tide models
+    MODEL: str or NoneType, default None
+        Tide model to use
+    GZIP: bool, default False
+        Tide model files are gzip compressed
+    DEFINITION_FILE: str or NoneType, default None
+        Tide model definition file for use
+    EPSG: str or int, default: 3031 (Polar Stereographic South, WGS84)
+        Input coordinate system
+    METHOD: str, default 'spline'
+        interpolation method
+
+            - ```bilinear```: quick bilinear interpolation
+            - ```spline```: scipy bivariate spline interpolation
+            - ```linear```, ```nearest```: scipy regular grid interpolations
+
+    Returns
+    -------
+    valid: bool
+        array describing if input coordinate is within model domain
+    """
+
+    # check that tide directory is accessible
+    if DIRECTORY is not None:
+        DIRECTORY = pathlib.Path(DIRECTORY).expanduser()
+        if not DIRECTORY.exists():
+            raise FileNotFoundError("Invalid tide directory")
+
+    # get parameters for tide model
+    if DEFINITION_FILE is not None:
+        model = pyTMD.io.model(DIRECTORY).from_file(DEFINITION_FILE)
+    else:
+        model = pyTMD.io.model(DIRECTORY, compressed=GZIP).elevation(MODEL)
+
+    # input shape of data
+    idim = np.shape(x)
+    # converting x,y from input coordinate reference system
+    crs1 = pyTMD.crs().from_input(EPSG)
+    crs2 = pyproj.CRS.from_epsg(4326)
+    transformer = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+    lon, lat = transformer.transform(
+        np.atleast_1d(x).flatten(), np.atleast_1d(y).flatten()
+    )
+
+    # read tidal constants and interpolate to grid points
+    if model.format in ('OTIS','ATLAS-compact','TMD3'):
+        # if reading a single OTIS solution
+        xi, yi, hz, mz, iob, dt = pyTMD.io.OTIS.read_otis_grid(
+            pathlib.Path(model.grid_file).expanduser())
+        # invert model mask
+        mz = np.logical_not(mz)
+        # adjust dimensions of input coordinates to be iterable
+        # run wrapper function to convert coordinate systems of input lat/lon
+        X, Y = pyTMD.crs().convert(lon, lat, model.projection, 'F')
+    elif (model.format == 'ATLAS-netcdf'):
+        # if reading a netCDF OTIS atlas solution
+        xi, yi, hz = pyTMD.io.ATLAS.read_netcdf_grid(
+            pathlib.Path(model.grid_file).expanduser(),
+            compressed=model.compressed, type=model.type)
+        # copy bathymetry mask
+        mz = np.copy(hz.mask)
+        # copy latitude and longitude and adjust longitudes
+        X,Y = np.copy([lon,lat]).astype(np.float64)
+        lt0, = np.nonzero(X < 0)
+        X[lt0] += 360.0
+    elif model.format in ('GOT-ascii', 'GOT-netcdf'):
+        # if reading a NASA GOT solution
+        hc, xi, yi, c = pyTMD.io.GOT.read_ascii_file(
+            pathlib.Path(model.model_file[0]).expanduser(),
+            compressed=model.compressed)
+        # copy tidal constituent mask
+        mz = np.copy(hc.mask)
+        # copy latitude and longitude and adjust longitudes
+        X, Y = np.copy([lon,lat]).astype(np.float64)
+        lt0, = np.nonzero(X < 0)
+        X[lt0] += 360.0
+    elif (model.format == 'FES-netcdf'):
+        # if reading a FES netCDF solution
+        hc, xi, yi = pyTMD.io.FES.read_netcdf_file(
+            pathlib.Path(model.model_file[0]).expanduser(),
+            compressed=model.compressed, type=model.type,
+            version=model.version)
+        # copy tidal constituent mask
+        mz = np.copy(hc.mask)
+        # copy latitude and longitude and adjust longitudes
+        X, Y = np.copy([lon,lat]).astype(np.float64)
+        lt0, = np.nonzero(X < 0)
+        X[lt0] += 360.0
+
+    # interpolate masks
+    if (METHOD == 'bilinear'):
+        # replace invalid values with nan
+        mz1 = pyTMD.interpolate.bilinear(xi, yi, mz, X, Y)
+        mask = np.floor(mz1).astype(mz.dtype)
+    elif (METHOD == 'spline'):
+        f1 = scipy.interpolate.RectBivariateSpline(xi, yi, mz.T,
+            kx=1, ky=1)
+        mask = np.floor(f1.ev(X, Y)).astype(mz.dtype)
+    else:
+        # use scipy regular grid to interpolate values
+        r1 = scipy.interpolate.RegularGridInterpolator((yi, xi), mz,
+            method=METHOD, bounds_error=False, fill_value=1)
+        mask = np.floor(r1.__call__(np.c_[y, x])).astype(mz.dtype)
+
+    # reshape to original dimensions
+    valid = np.logical_not(mask).reshape(idim).astype(mz.dtype)
+    # replace points outside model domain with invalid
+    valid &= (X >= xi.min()) & (X <= xi.max())
+    valid &= (Y >= yi.min()) & (Y <= yi.max())
+    # return the valid mask
+    return valid
 
 # PURPOSE: compute long-period equilibrium tidal elevations
 def LPET_elevations(

@@ -40,10 +40,10 @@ import posixpath
 import numpy as np
 import pyTMD.io
 import pyTMD.io.model
+import pyTMD.compute
 import pyTMD.utilities
 import pyTMD.predict
 import pyTMD.arguments
-import pyTMD.check_points
 import timescale.time
 
 # current file path
@@ -87,7 +87,7 @@ def download_model(aws_access_key_id,aws_secret_access_key,aws_region_name):
 def test_check_FES2014():
     lons = np.zeros((10)) + 178.0
     lats = -45.0 - np.arange(10)*5.0
-    obs = pyTMD.check_points(lons, lats, DIRECTORY=filepath,
+    obs = pyTMD.compute.tide_masks(lons, lats, DIRECTORY=filepath,
         MODEL='FES2014', GZIP=True, EPSG=4326)
     exp = np.array([True, True, True, True, True,
         True, True, True, False, False])

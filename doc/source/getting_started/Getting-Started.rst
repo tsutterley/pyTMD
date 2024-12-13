@@ -40,14 +40,14 @@ Directories
 This structure was chosen based on the different formats of each tide model.
 Presently, the following models and their directories are parameterized within ``pyTMD``.
 
-- Circum-Antarctic Tidal Simulations [Padman2008]_
+- Circum-Antarctic Tidal Simulations :cite:p:`Padman:2008ec`
 
     * CATS0201: ``<path_to_tide_models>/cats0201_tmd/``
     * `CATS2008 <https://doi.org/10.15784/601235>`_: ``<path_to_tide_models>/CATS2008/``
     * CATS2008_load: ``<path_to_tide_models>/CATS2008a_SPOTL_Load/``
     * `CATS2008-v2023 <https://doi.org/10.15784/601772>`_: ``<path_to_tide_models>/CATS2008_v2023/``
 
-- Arctic Ocean and Greenland Coast Tidal Simulations [Padman2004]_
+- Arctic Ocean and Greenland Coast Tidal Simulations :cite:p:`Padman:2004hv`
 
     * `AODTM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2901ZG3N>`_: ``<path_to_tide_models>/aodtm5_tmd/``
     * `AOTIM-5 <https://arcticdata.io/catalog/view/doi:10.18739/A2S17SS80>`_: ``<path_to_tide_models>/aotim5_tmd/``
@@ -55,7 +55,7 @@ Presently, the following models and their directories are parameterized within `
     * `Arc2kmTM <https://arcticdata.io/catalog/view/doi:10.18739/A2D21RK6K>`_: ``<path_to_tide_models>/Arc2kmTM/``
     * Gr1km-v2: ``<path_to_tide_models>/greenlandTMD_v2/``
 
-- TOPEX/POSEIDON global tide models [Egbert2002]_
+- TOPEX/POSEIDON global tide models :cite:p:`Egbert:2002ge`
 
     * TPXO7.2: ``<path_to_tide_models>/TPXO7.2_tmd/``
     * TPXO7.2_load: ``<path_to_tide_models>/TPXO7.2_load/``
@@ -68,7 +68,7 @@ Presently, the following models and their directories are parameterized within `
     * `TPXO9-atlas-v5 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO9_atlas_v5/``
     * `TPXO10-atlas-v2 <https://www.tpxo.net/tpxo-products-and-registration>`_: ``<path_to_tide_models>/TPXO10_atlas_v2/``
 
-- Global Ocean Tide models [Ray1999]_
+- Global Ocean Tide models :cite:p:`Ray:1999vm`
 
     * GOT4.7: ``<path_to_tide_models>/GOT4.7/grids_oceantide/``
     * GOT4.7_load: ``<path_to_tide_models>/GOT4.7/grids_loadtide/``
@@ -81,19 +81,19 @@ Presently, the following models and their directories are parameterized within `
     * `GOT5.6 <https://earth.gsfc.nasa.gov/sites/default/files/2024-07/GOT5.6.tar%201.gz>`_: ``<path_to_tide_models>/GOT5.6/ocean_tides/``
     * `RE14 <https://earth.gsfc.nasa.gov/sites/default/files/2022-07/re14_longperiodtides_rel.tar>`_: ``<path_to_tide_models>/RE14_LongPeriodTides_rel/oceantides/``
 
-- Finite Element Solution tide models [Lyard2020]_
+- Finite Element Solution tide models :cite:p:`Lyard:2021fk`
 
     * `FES2014 <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/ocean_tide/``
     * `FES2014_load <https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes/description-fes2014.html>`_: ``<path_to_tide_models>/fes2014/load_tide/``
     * `FES2022 <https://doi.org/10.24400/527896/A01-2024.004>`_: ``<path_to_tide_models>/fes2022b/ocean_tide/``
     * `FES2022_load <https://doi.org/10.24400/527896/A01-2024.004>`_: ``<path_to_tide_models>/fes2022b/load_tide/``
 
-- Empirical Ocean Tide models [HartDavis2020]_
+- Empirical Ocean Tide models :cite:p:`HartDavis:2021dx`
 
     * `EOT20 <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/ocean_tides/``
     * `EOT20_load <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/load_tides/``
 
-- Hamburg direct data Assimilation Methods for Tides models [Taguchi2014]_
+- Hamburg direct data Assimilation Methods for Tides models :cite:p:`Taguchi:2014ht`
 
     * `HAMTIDE11 <https://www.cen.uni-hamburg.de/en/icdc/data/ocean/hamtide.html>`_: ``<path_to_tide_models>/hamtide/``
 
@@ -205,7 +205,7 @@ For pole tide programs, the epoch is 1858-11-17T00:00:00 (Modified Julian Days).
 - LORAN time: Atomic timing system for the Loran-C chain transmitter sites used in terrestrial radionavigation. LORAN time and UTC time were equal on January 1, 1958. TAI time is ahead of LORAN time by 10 seconds.
 
 ``timescale`` also keeps updated `tables of delta times <https://github.com/tsutterley/timescale/blob/main/timescale/data/merged_deltat.data>`_ for converting between dynamic (TT) and universal (UT1) times.
-Delta times (TT - UT1) are the differences between Dynamic Time (TT) and Universal Time (UT1) [Meeus1998]_.
+Delta times (TT - UT1) are the differences between Dynamic Time (TT) and Universal Time (UT1) :cite:p:`Meeus:1991vh`.
 Universal Time (UT1) is based on the rotation of the Earth,
 which varies irregularly, and so UT1 is adjusted periodically.
 Dynamic Time (TT) is a uniform, monotonically increasing time standard based on atomic clocks that is
@@ -235,29 +235,4 @@ For coastal or near-grounded points, the model can be extrapolated using a
 `nearest-neighbor <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/interpolate.py>`_ routine.
 The default maximum extrapolation distance is 10 kilometers.
 This default distance may not be a large enough extrapolation for some applications and models.
-The extrapolation cutoff can be set to any distance in kilometers, but should be used with caution in cases such as narrow fjords or ice sheet grounding zones [Padman2018]_.
-
-References
-##########
-
-.. [Egbert2002] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of Barotropic Ocean Tides", *Journal of Atmospheric and Oceanic Technology*, 19(2), 183--204, (2002). `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-.. [HartDavis2020] M. G. Hart-Davis, G. Piccioni, D. Dettmering, C. Schwatke, M. Passaro, and F. Seitz, "EOT20: a global ocean tide model from multi-mission satellite altimetry", *Earth System Science Data*, 13(8), 3869--3884, (2020). `doi: 10.5194/essd-13-3869-2021 <https://doi.org/10.5194/essd-13-3869-2021>`_
-
-.. [Lyard2020] F. H. Lyard, D. J. Allain, M. Cancet, L. Carr\ |egrave|\ re, and N. Picot, "FES2014 global ocean tides atlas: design and performances", *Ocean Science Discussions*, in review, (2020). `doi: 10.5194/os-2020-96 <https://doi.org/10.5194/os-2020-96>`_
-
-.. [Meeus1998] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
-
-.. [Padman2004] L. Padman and S. Y. Erofeeva, "A barotropic inverse tidal model for the Arctic Ocean", *Geophysical Research Letters*, 31(2), L02303. (2004). `doi: 10.1029/2003GL019003 <https://doi.org/10.1029/2003GL019003>`_
-
-.. [Padman2008] L. Padman, S. Y. Erofeeva, and H. A. Fricker, "Improving Antarctic tide models by assimilation of ICESat laser altimetry over ice shelves", *Geophysical Research Letters*, 35, L22504, (2008). `doi: 10.1029/2008GL035592 <https://doi.org/10.1029/2008GL035592>`_
-
-.. [Padman2018] L. Padman, M. R. Siegfried, and H. A. Fricker, "Ocean Tide Inﬂuences on the Antarctic and Greenland Ice Sheets", *Reviews of Geophysics*, 56, (2018). `doi: 10.1002/2016RG000546 <https://doi.org/10.1002/2016RG000546>`_
-
-.. [Ray1999] R. D. Ray, "A Global Ocean Tide Model From TOPEX/POSEIDON Altimetry: GOT99.2", *NASA Technical Memorandum*, `NASA/TM--1999-209478 <https://ntrs.nasa.gov/citations/19990089548>`_.
-
-.. [Taguchi2014] E. Taguchi, D. Stammer, and W. Zahel, "Inferring deep ocean tidal energy dissipation from the global high-resolution data-assimilative HAMTIDE model", *Journal of Geophysical Research: Oceans*, 119, 4573--4592, (2014). `doi: 10.1002/2013JC009766 <https://doi.org/10.1002/2013JC009766>`_
-
-.. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
-
-.. |egrave|    unicode:: U+00E8 .. LATIN SMALL LETTER E WITH GRAVE
+The extrapolation cutoff can be set to any distance in kilometers, but should be used with caution in cases such as narrow fjords or ice sheet grounding zones :cite:p:`Padman:2018cv`.

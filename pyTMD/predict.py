@@ -108,7 +108,7 @@ def map(t: float | np.ndarray,
         corrections: str = 'OTIS'
     ):
     """
-    Predict tides at a single time using harmonic constants [1]_
+    Predict tides at a single time using harmonic constants :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -127,15 +127,6 @@ def map(t: float | np.ndarray,
     -------
     ht: np.ndarray
         tide values reconstructed using the nodal corrections
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # number of points and number of constituents
     npts, nc = np.shape(hc)
@@ -175,7 +166,7 @@ def drift(t: float | np.ndarray,
     ):
     """
     Predict tides at multiple times and locations using harmonic
-    constants [1]_
+    constants :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -194,15 +185,6 @@ def drift(t: float | np.ndarray,
     -------
     ht: np.ndarray
         tidal time series reconstructed using the nodal corrections
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     nt = len(t)
     # load the nodal corrections
@@ -241,7 +223,7 @@ def time_series(t: float | np.ndarray,
     ):
     """
     Predict tidal time series at a single location using harmonic
-    constants [1]_
+    constants :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -260,15 +242,6 @@ def time_series(t: float | np.ndarray,
     -------
     ht: np.ndarray
         tidal time series reconstructed using the nodal corrections
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     nt = len(t)
     # load the nodal corrections
@@ -307,7 +280,8 @@ def infer_minor(
     ):
     """
     Infer the tidal values for minor constituents using their
-    relation with major constituents [1]_ [2]_ [3]_ [4]_
+    relation with major constituents :cite:p:`Doodson:1941td` :cite:p:`Schureman:1958ty`
+    :cite:p:`Foreman:1989dt` :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -332,23 +306,6 @@ def infer_minor(
     -------
     dh: np.ndarray
         tidal time series for minor constituents
-
-    References
-    ----------
-    .. [1] A. T. Doodson and H. D. Warburg, "Admiralty Manual of Tides",
-        HMSO, London, (1941).
-    .. [2] P. Schureman, "Manual of Harmonic Analysis and Prediction of Tides,"
-        *US Coast and Geodetic Survey*, Special Publication, 98, (1958).
-    .. [3] M. G. G. Foreman and R. F. Henry, "The harmonic analysis of tidal
-        model time series," *Advances in Water Resources*, 12(3), 109--120,
-        (1989). `doi: 10.1016/0309-1708(89)90017-1
-        <https://doi.org/10.1016/0309-1708(89)90017-1>`_
-    .. [4] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -378,7 +335,8 @@ def _infer_short_period(
     ):
     """
     Infer the tidal values for short-period minor constituents
-    using their relation with major constituents [1]_ [2]_
+    using their relation with major constituents
+    :cite:p:`Egbert:2002ge` :cite:p:`Ray:1999vm`
 
     Parameters
     ----------
@@ -401,18 +359,6 @@ def _infer_short_period(
     -------
     dh: np.ndarray
         tidal time series for minor constituents
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-    .. [2] R. D. Ray, "A global ocean tide model from
-        Topex/Poseidon altimetry: GOT99.2",
-        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -521,7 +467,8 @@ def _infer_semi_diurnal(
     ):
     """
     Infer the tidal values for semi-diurnal minor constituents
-    using their relation with major constituents [1]_ [2]_ [3]_
+    using their relation with major constituents :cite:p:`Munk:1966go`
+    :cite:p:`Ray:1999vm` :cite:p:`Cartwright:1971iz`
 
     Parameters
     ----------
@@ -547,22 +494,6 @@ def _infer_semi_diurnal(
     -------
     dh: np.ndarray
         tidal time series for minor constituents
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
-    .. [2] R. D. Ray, "A global ocean tide model from
-        Topex/Poseidon altimetry: GOT99.2",
-        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
-    .. [3] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -689,7 +620,8 @@ def _infer_diurnal(
     """
     Infer the tidal values for diurnal minor constituents
     using their relation with major constituents taking into
-    account resonance due to free core nutation [1]_ [2]_ [3]_ [4]_
+    account resonance due to free core nutation
+    :cite:p:`Munk:1966go` :cite:p:`Ray:2017jx` :cite:p:`Wahr:1981if` :cite:p:`Cartwright:1973em`
 
     Parameters
     ----------
@@ -715,29 +647,6 @@ def _infer_diurnal(
     -------
     dh: np.ndarray
         tidal time series for minor constituents
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
-    .. [2] R. D. Ray, "On Tidal Inference in the Diurnal Band",
-        Journal of Atmospheric and Oceanic Technology, 34(2), 437--446,
-        (2017). `doi: 10.1175/jtech-d-16-0142.1
-        <https://doi.org/10.1175/jtech-d-16-0142.1>`_
-    .. [3] J. M. Wahr and T. Sasao, "A diurnal resonance in the ocean
-        tide and in the Earth's load response due to the resonant free
-        `core nutation`", *Geophysical Journal of the Royal Astronomical
-        Society*, 64(3), 747--765, (1981).
-        `doi: 10.1111/j.1365-246X.1981.tb02693.x
-        <https://doi.org/10.1111/j.1365-246X.1981.tb02693.x>`_
-    .. [4] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -875,7 +784,8 @@ def _infer_long_period(
     ):
     """
     Infer the tidal values for long-period minor constituents
-    using their relation with major constituents [1]_ [2]_ [3]_
+    using their relation with major constituents
+    :cite:p:`Ray:1999vm` :cite:p:`Ray:2014fu` :cite:p:`Cartwright:1973em`
 
     Parameters
     ----------
@@ -896,21 +806,6 @@ def _infer_long_period(
     -------
     dh: np.ndarray
         tidal time series for minor constituents
-
-    References
-    ----------
-    .. [1] R. D. Ray, "A global ocean tide model from
-        Topex/Poseidon altimetry: GOT99.2",
-        NASA Goddard Space Flight Center, TM-1999-209478, (1999).
-    .. [2] R. D. Ray and S. Y. Erofeeva, "Long-period tidal
-        variations in the length of day", *Journal of Geophysical
-        Research: Solid Earth*, 119, 1498--1509, (2013).
-        `doi: 10.1002/2013JB010830 <https://doi.org/10.1002/2013JB010830>`_
-    .. [3] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
@@ -1013,7 +908,8 @@ def equilibrium_tide(
     ):
     """
     Compute the long-period equilibrium tides the summation of fifteen
-    tidal spectral lines from Cartwright-Tayler-Edden tables [1]_ [2]_
+    tidal spectral lines from Cartwright-Tayler-Edden tables
+    :cite:p:`Cartwright:1971iz` :cite:p:`Cartwright:1973em`
 
     Parameters
     ----------
@@ -1032,19 +928,6 @@ def equilibrium_tide(
     -------
     lpet: np.ndarray
         long-period equilibrium tide in meters
-
-    References
-    ----------
-    .. [1] D. E. Cartwright and R. J. Tayler,
-        "New Computations of the Tide-generating Potential,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
-        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
-    .. [2] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # set default keyword arguments
     cindex = ['node', 'sa', 'ssa', 'msm', '065.445', 'mm',
@@ -1162,7 +1045,7 @@ def load_pole_tide(
     ):
     """
     Estimate load pole tide displacements in Cartesian coordinates
-    following IERS Convention (2010) guidelines
+    :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -1273,7 +1156,7 @@ def ocean_pole_tide(
     ):
     """
     Estimate ocean pole tide displacements in Cartesian coordinates
-    following IERS Convention (2010) guidelines
+    :cite:p:`Desai:2002ev` :cite:p:`Desai:2015jr` :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -1375,8 +1258,8 @@ def solid_earth_tide(
         **kwargs
     ):
     """
-    Compute the solid Earth tides due to the gravitational attraction
-    of the moon and sun [1]_ [2]_ [3]_ [4]_
+    Compute the solid Earth tides due to the gravitational attraction of
+    the moon and sun :cite:p:`Mathews:1991kv` :cite:p:`Mathews:1997js` :cite:p:`Ries:1992ip` :cite:p:`Wahr:1981ea`
 
     Parameters
     ----------
@@ -1400,28 +1283,6 @@ def solid_earth_tide(
     -------
     dxt: np.ndarray
         Solid Earth tide in meters in Cartesian coordinates
-
-    References
-    ----------
-    .. [1] P. M. Mathews, B. A. Buffett, T. A. Herring and I. I Shapiro,
-        "Forced nutations of the Earth: Influence of inner core dynamics:
-        1. Theory", *Journal of Geophysical Research: Solid Earth*,
-        96(B5), 8219--8242, (1991). `doi: 10.1029/90JB01955
-        <https://doi.org/10.1029/90JB01955>`_
-    .. [2] P. M. Mathews, V. Dehant and J. M. Gipson,
-        "Tidal station displacements", *Journal of Geophysical
-        Research: Solid Earth*, 102(B9), 20469--20477, (1997).
-        `doi: 10.1029/97JB01515 <https://doi.org/10.1029/97JB01515>`_
-    .. [3] J. C. Ries, R. J. Eanes, C. K. Shum and M. M. Watkins,
-        "Progress in the determination of the gravitational
-        coefficient of the Earth", *Geophysical Research Letters*,
-        19(6), 529--531, (1992). `doi: 10.1029/92GL00259
-        <https://doi.org/10.1029/92GL00259>`_
-    .. [4] J. M. Wahr, "Body tides on an elliptical, rotating, elastic
-        and oceanless Earth", *Geophysical Journal of the Royal
-        Astronomical Society*, 64(3), 677--703, (1981).
-        `doi: 10.1111/j.1365-246X.1981.tb02690.x
-        <https://doi.org/10.1111/j.1365-246X.1981.tb02690.x>`_
     """
     # set default keyword arguments
     # nominal Love and Shida numbers

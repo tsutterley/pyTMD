@@ -26,20 +26,7 @@ def test_equilibrium_tide(TYPE):
     """
     Test the computation of the long-period equilibrium tides
     from the summation of fifteen tidal spectral lines from
-    Cartwright-Tayler-Edden tables [1]_ [2]_
-
-    References
-    ----------
-    .. [1] D. E. Cartwright and R. J. Tayler,
-        "New Computations of the Tide-generating Potential,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
-        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
-    .. [2] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
+    Cartwright-Tayler-Edden tables
     """
     # create a test dataset for data type
     if (TYPE == 'drift'):
@@ -112,19 +99,6 @@ def test_equilibrium_tide(TYPE):
 def test_node_tide():
     """
     Test the computation of the equilibrium node tides
-
-    References
-    ----------
-    .. [1] D. E. Cartwright and R. J. Tayler,
-        "New Computations of the Tide-generating Potential,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        23(1), 45--73. (1971). `doi: 10.1111/j.1365-246X.1971.tb01803.x
-        <https://doi.org/10.1111/j.1365-246X.1971.tb01803.x>`_
-    .. [2] D. E. Cartwright and A. C. Edden,
-        "Corrected Tables of Tidal Harmonics,"
-        *Geophysical Journal of the Royal Astronomical Society*,
-        33(3), 253--264, (1973). `doi: 10.1111/j.1365-246X.1973.tb03420.x
-        <https://doi.org/10.1111/j.1365-246X.1973.tb03420.x>`_
     """
     # create a test dataset for data type
     # number of data points

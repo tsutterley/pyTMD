@@ -47,6 +47,8 @@ Calling Sequence
 
 .. autofunction:: pyTMD.compute.tide_currents
 
+.. autofunction:: pyTMD.compute.tide_masks
+
 .. autofunction:: pyTMD.compute.LPET_elevations
 
 .. autofunction:: pyTMD.compute.LPT_displacements

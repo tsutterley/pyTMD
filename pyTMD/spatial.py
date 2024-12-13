@@ -1381,7 +1381,8 @@ def convert_ellipsoid(
         itmax: int = 10
     ):
     """
-    Convert latitudes and heights to a different ellipsoid using Newton-Raphson
+    Convert latitudes and heights to a different ellipsoid using
+    Newton-Raphson :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
@@ -1409,10 +1410,6 @@ def convert_ellipsoid(
         latitude of output ellipsoid in degrees
     h2: np.ndarray
         height above output ellipsoid in meters
-
-    References
-    ----------
-    .. [1] J. Meeus, *Astronomical Algorithms*, 2nd edition, 477 pp., (1998).
     """
     if (len(phi1) != len(h1)):
         raise ValueError('phi and h have incompatible dimensions')
@@ -1531,7 +1528,7 @@ def compute_delta_h(
     ):
     """
     Compute difference in elevation for two ellipsoids at a given
-        latitude using a simplified empirical relation
+    latitude using a simplified empirical relation :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
@@ -1550,10 +1547,6 @@ def compute_delta_h(
     -------
     delta_h: np.ndarray
         difference in elevation for two ellipsoids
-
-    References
-    ----------
-    .. [1] J Meeus, *Astronomical Algorithms*, pp. 77--82, (1991).
     """
     # force latitudes to be within -90 to 90 and convert to radians
     phi = np.clip(lat, -90.0, 90.0)*np.pi/180.0
@@ -1805,7 +1798,7 @@ def _moritz_iterative(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [1]_
+    using the iterative solution of :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
@@ -1823,13 +1816,6 @@ def _moritz_iterative(
         tolerance for iterative method
     iterations: int, default 10
         maximum number of iterations
-
-    References
-    ----------
-    .. [1] B. Hofmann-Wellenhof and H. Moritz,
-        *Physical Geodesy*, 2nd Edition, 403 pp., (2006).
-        `doi: 10.1007/978-3-211-33545-1
-        <https://doi.org/10.1007/978-3-211-33545-1>`_
     """
     # Linear eccentricity and first numerical eccentricity
     lin_ecc = np.sqrt((2.0*flat - flat**2)*a_axis**2)
@@ -1871,8 +1857,8 @@ def _bowring_iterative(
         iterations: int = 10
     ):
     """
-    Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [1]_ [2]_
+    Convert from cartesian coordinates to geodetic coordinates using
+    the iterative solution of :cite:p:`Bowring:1976jh` :cite:p:`Bowring:1985du`
 
     Parameters
     ----------
@@ -1890,17 +1876,6 @@ def _bowring_iterative(
         tolerance for iterative method
     iterations: int, default 10
         maximum number of iterations
-
-    References
-    ----------
-    .. [1] B. R. Bowring, "Transformation from spatial
-        to geodetic coordinates," *Survey Review*, 23(181),
-        323--327, (1976). `doi: 10.1179/sre.1976.23.181.323
-        <https://doi.org/10.1179/sre.1976.23.181.323>`_
-    .. [2] B. R. Bowring, "The Accuracy Of Geodetic
-        Latitude and Height Equations," *Survey Review*, 28(218),
-        202--206, (1985). `doi: 10.1179/sre.1985.28.218.202
-        <https://doi.org/10.1179/sre.1985.28.218.202>`_
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
@@ -1949,7 +1924,7 @@ def _zhu_closed_form(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the closed-form solution of [1]_
+    using the closed-form solution of :cite:p:`Zhu:1993ja`
 
     Parameters
     ----------
@@ -1963,14 +1938,6 @@ def _zhu_closed_form(
         semimajor axis of the ellipsoid
     flat: float, default 1.0/298.257223563
         ellipsoidal flattening
-
-    References
-    ----------
-    .. [1] J. Zhu, "Exact conversion of Earth-centered,
-        Earth-fixed coordinates to geodetic coordinates,"
-        *Journal of Guidance, Control, and Dynamics*,
-        16(2), 389--391, (1993). `doi: 10.2514/3.21016
-        <https://arc.aiaa.org/doi/abs/10.2514/3.21016>`_
     """
     # semiminor axis of the WGS84 ellipsoid [m]
     b_axis = (1.0 - flat)*a_axis
@@ -2256,7 +2223,8 @@ def scale_factors(
     ):
     """
     Calculates scaling factors to account for polar stereographic
-    distortion including special case of at the exact pole [1]_ [2]_
+    distortion including special case of at the exact pole
+    :cite:p:`Snyder:1982gf`
 
     Parameters
     ----------
@@ -2276,12 +2244,6 @@ def scale_factors(
     -------
     scale: np.ndarray
         scaling factors at input latitudes
-
-    References
-    ----------
-    .. [1] J. P. Snyder, *Map Projections used by the U.S. Geological Survey*,
-        Geological Survey Bulletin 1532, U.S. Government Printing Office, (1982).
-    .. [2] JPL Technical Memorandum 3349-85-101
     """
     assert metric.lower() in ['distance', 'area'], 'Unknown metric'
     # convert latitude from degrees to positive radians
