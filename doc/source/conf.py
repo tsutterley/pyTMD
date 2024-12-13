@@ -71,7 +71,7 @@ autosummary_generate = True
 autodoc_member_order = 'bysource'
 numpydoc_show_class_members = False
 pygments_style = 'native'
-bibtex_bibfiles = ['_assets/references.bib']
+bibtex_bibfiles = ['_assets/pytmd-refs.bib']
 bibtex_default_style = 'plain'
 
 # -- Options for HTML output -------------------------------------------------
