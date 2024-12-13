@@ -3,7 +3,7 @@ crs
 ===
 
 - Coordinates Reference System (CRS) routines
-- Gravitational and ellipsoidal parameters [HofmannWellenhof2006]_ [Petit2010]_
+- Gravitational and ellipsoidal parameters :cite:p:`HofmannWellenhof:2006hy` :cite:p:`Petit:2010tp`
 
 `Source code`__
 

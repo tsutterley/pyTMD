@@ -44,7 +44,7 @@ __all__ = [
 def ellipse(u: np.ndarray, v: np.ndarray):
     """
     Expresses the amplitudes and phases for the u and v components in terms of
-    four ellipse parameters using Foreman's formula [Foreman1989]_
+    four ellipse parameters using Foreman's formula :cite:p:`Foreman:1989dt`
 
     Parameters
     ----------
@@ -100,7 +100,7 @@ def inverse(
     ):
     """
     Calculates currents u, v using the four tidal ellipse
-    parameters from Foreman's formula [Foreman1989]_
+    parameters from Foreman's formula :cite:p:`Foreman:1989dt`
 
     Parameters
     ----------

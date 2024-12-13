@@ -48,7 +48,7 @@ def constants(t: float | np.ndarray,
     ):
     """
     Estimate the harmonic constants for an elevation time series
-    [Egbert2002]_
+    :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------

@@ -1175,7 +1175,7 @@ class model:
     def node_equilibrium(lat: np.ndarray):
         """
         Compute the equilibrium amplitude and phase of the 18.6 year
-        node tide [Cartwright1971]_ [Cartwright1973]_
+        node tide :cite:p:`Cartwright:1971iz` :cite:p:`Cartwright:1973em`
 
         Parameters
         ----------

@@ -8,29 +8,29 @@ Ocean and Load Tides
 The rise and fall of the oceanic tides are a major source of the vertical variability of the ocean surface.
 Ocean tides are typically observed using float gauges, GPS stations, gravimeters, tiltmeters, pressure recorders, and satellite altimeters.
 For each of these measurements, it is important to note the `vertical datum of the measurement technique <https://www.esr.org/data-products/antarctic_tg_database/ocean-tide-and-ocean-tide-loading/>`_.
-Ocean tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation [Doodson1921]_ [Meeus1998]_.
+Ocean tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh`.
 A secondary tidal effect, known as load tides, is due to the elastic response of the Earth's crust to ocean tidal loading, which produces deformation of both the sea floor and adjacent land areas.
 Tidal oscillations for both ocean and load tides can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
 
 Ocean tide models are typically one of following categories:
 1) an empirically adjusted model,
 2) a barotropic hydrodynamic model constrained by data assimilation,
-or 3) an unconstrained hydrodynamic model [Stammer2014]_.
-``pyTMD`` is not an ocean or load tide model, but rather a tool for using constituents from ocean and load tide models to calculate the tide deflections or currents at particular locations and times [Egbert2002]_.
+or 3) an unconstrained hydrodynamic model :cite:p:`Stammer:2014ci`.
+``pyTMD`` is not an ocean or load tide model, but rather a tool for using constituents from ocean and load tide models to calculate the tide deflections or currents at particular locations and times :cite:p:`Egbert:2002ge`.
 
 Solid Earth Tides
 #################
 
-Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun [Agnew2015]_ [Doodson1921]_ [Meeus1998]_ [Montenbruck1989]_.
+Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun :cite:p:`Agnew:2015kw` :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk`.
 However, while ocean tides are apparent to observers on the coast, solid Earth tides are typically more difficult to observe due to the reference frame of the observer moving.
-The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object [Agnew2015]_ [Wahr1981a]_.
+The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object :cite:p:`Agnew:2015kw` :cite:p:`Wahr:1981ea`.
 Analytical approximate positions for the sun and moon can be calculated within ``pyTMD``, and high-resolution numerical ephemerides for the sun and moon can be downloaded from the `Jet Propulsion Laboratory <https://ssd.jpl.nasa.gov/planets/orbits.html>`_.
 
-Within ``pyTMD``, the tidal deformation of the Earth is modeled using the Load Love/Shida numbers formalism described in the `IERS Conventions <https://iers-conventions.obspm.fr/>`_, which are based on [Mathews1997]_.
+Within ``pyTMD``, the tidal deformation of the Earth is modeled using the Load Love/Shida numbers formalism described in the `IERS Conventions <https://iers-conventions.obspm.fr/>`_, which are based on :cite:p:`Mathews:1997js`.
 Love and Shida numbers describe the elastic response of the Earth in terms of vertical displacement (*h*), gravitational potential (*k*) and horizontal displacement (*l*).
-For a spherical, non-rotating Earth, the Love and Shida numbers are largely independent of tidal frequency [Wahr1981a]_.
-However, for a rotating, ellipsoidal Earth, the Love and Shida numbers are dependent on tidal frequency, with resonances in the diurnal and semi-diurnal bands [Wahr1981a]_.
-``pyTMD`` computes these frequency-dependent corrections along with the dissipative mantle anelasticity corrections following [Mathews1997]_.
+For a spherical, non-rotating Earth, the Love and Shida numbers are largely independent of tidal frequency :cite:p:`Wahr:1981ea`.
+However, for a rotating, ellipsoidal Earth, the Love and Shida numbers are dependent on tidal frequency, with resonances in the diurnal and semi-diurnal bands :cite:p:`Wahr:1981ea`.
+``pyTMD`` computes these frequency-dependent corrections along with the dissipative mantle anelasticity corrections following :cite:p:`Mathews:1997js`.
 
 In addition to the ups and downs of tides, there is a considerable portion of tidal potential and displacement that does not vary in time, a *permanent tide* that is due to the Earth being in the presence of the Sun and Moon (and other planetary bodies).
 The `Earth is lower in polar areas and higher in equatorial areas <https://www.ngs.noaa.gov/PUBS_LIB/EGM96_GEOID_PAPER/egm96_geoid_paper.html>`_ than it would without those gravitational effects.
@@ -47,9 +47,9 @@ The radial difference in terms of latitude between the mean-tide and tide-free s
 Pole Tides
 ##########
 
-Load and ocean pole tides are driven by variations in the Earth's figure axis (e.g. Chandler wobble and annual variations) [Wahr1985]_ [Desai2002]_ [Agnew2015]_.
+Load and ocean pole tides are driven by variations in the Earth's figure axis (e.g. Chandler wobble and annual variations) :cite:p:`Wahr:1985gr` :cite:p:`Desai:2002ev` :cite:p:`Agnew:2015kw`.
 These pole tides are due to Earth's ellipsoidal shape shifting as the rotation axis of the Earth
-moves with respect to the mean pole location, and for the case of ocean pole tides the centripetal effects of polar motion on the ocean [Desai2002]_ [Desai2015]_.
+moves with respect to the mean pole location, and for the case of ocean pole tides the centripetal effects of polar motion on the ocean :cite:p:`Desai:2002ev` :cite:p:`Desai:2015jr`.
 The formalism for estimating the pole tides is also based upon `IERS Conventions <https://iers-conventions.obspm.fr/>`_.
 ``pyTMD`` uses the ``timescale`` library for reading the Earth Orientation Parameters (EOPs) necessary for computing load pole and ocean pole tide variations.
 The currently accepted formalism for estimating the reference position of the Earth's figure axis at a given date is the `IERS 2018 secular pole model <https://iers-conventions.obspm.fr/chapter7.php>`_:
@@ -73,7 +73,7 @@ The time-dependent offsets from the reference rotation pole position, are then c
 Terrestrial Reference Systems
 #############################
 
-Locations of planetary bodies and satellites can be determined in an Earth-centered Earth-Fixed (ECEF) coordinate system [Montenbruck1989]_.
+Locations of planetary bodies and satellites can be determined in an Earth-centered Earth-Fixed (ECEF) coordinate system :cite:p:`Montenbruck:1989uk`.
 ECEF is a Cartesian coordinate system representing *X*, *Y*, and *Z* measurements from the Earth's center of mass.
 The *Z* axis is aligned with the Earth's rotation axis, the *X* axis is aligned with the intersection of the prime meridian and the equator, and the *Y* axis is aligned with 90 degrees east longitude and the equator.
 

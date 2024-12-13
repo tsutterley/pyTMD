@@ -76,7 +76,7 @@ def extract_coefficients(
         **kwargs
     ):
     """
-    Reads ocean pole tide file from [Desai2002]_ [Desai2015]_
+    Reads ocean pole tide file from :cite:p:`Desai:2002ev` :cite:p:`Desai:2015jr`
     and spatially interpolates to input coordinates
 
     Parameters
@@ -136,7 +136,7 @@ def extract_coefficients(
 def read_binary_file(**kwargs):
     """
     Read real and imaginary ocean pole tide coefficients from
-    [Desai2002]_ [Desai2015]_
+    :cite:p:`Desai:2002ev` :cite:p:`Desai:2015jr`
 
     Parameters
     ----------

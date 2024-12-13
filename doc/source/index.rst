@@ -16,7 +16,6 @@ ocean, load, solid Earth and pole tides
     getting_started/Contributing.rst
     getting_started/Code-of-Conduct.rst
     getting_started/Resources.rst
-    getting_started/References.rst
     getting_started/Citations.rst
 
 .. toctree::
@@ -67,6 +66,13 @@ ocean, load, solid Earth and pole tides
     api_reference/compute_SET_displacements.rst
     api_reference/compute_tidal_currents.rst
     api_reference/compute_tidal_elevations.rst
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Bibliography
+
+    getting_started/Bibliography.rst
 
 .. toctree::
     :maxdepth: 1

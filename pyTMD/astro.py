@@ -112,7 +112,7 @@ def mean_longitudes(
     ):
     r"""
     Computes the basic astronomical mean longitudes:
-    `S`, `H`, `P`, `N` and `PP` [Meeus1998]_ [Simon1994]_
+    `S`, `H`, `P`, `N` and `PP` :cite:p:`Meeus:1991vh` :cite:p:`Simon:1994vo`
 
     Note `N` is not `N'`, i.e. `N` is decreasing with time.
 
@@ -222,7 +222,7 @@ def doodson_arguments(
     """
     Computes astronomical phase angles for the six Doodson
     Arguments: `tau`, `S`, `H`, `P`, and `N'`, and `Ps`
-    [Doodson1921]_ [Meeus1998]_
+    :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
@@ -301,7 +301,7 @@ def delaunay_arguments(MJD: np.ndarray):
     """
     Computes astronomical phase angles for the five primary Delaunay
     Arguments of Nutation: `l`, `l'`, `F`, `D`, and `N`
-    [Meeus1998]_ [Petit2010]_ [Capitaine2003a]_
+    :cite:p:`Meeus:1991vh` :cite:p:`Petit:2010tp` :cite:p:`Capitaine:2003fx`
 
     Parameters
     ----------
@@ -353,7 +353,7 @@ def delaunay_arguments(MJD: np.ndarray):
     return (l, lp, F, D, N)
 
 def mean_obliquity(MJD: np.ndarray):
-    """Mean obliquity of the ecliptic [Capitaine2003a]_ [Capitaine2003b]_
+    """Mean obliquity of the ecliptic :cite:p:`Capitaine:2003fx` :cite:p:`Capitaine:2003fw`
 
     Parameters
     ----------
@@ -374,7 +374,7 @@ def solar_ecef(MJD: np.ndarray, **kwargs):
     """
     Wrapper function for calculating the positional coordinates
     of the sun in an Earth-centric, Earth-Fixed (ECEF) frame
-    [Meeus1998]_ [Montenbruck1989]_ [Park2021]_
+    :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk` :cite:p:`Park:2021fa`
 
     Parameters
     ----------
@@ -402,7 +402,7 @@ def solar_ecef(MJD: np.ndarray, **kwargs):
 def solar_approximate(MJD, **kwargs):
     """
     Computes approximate positional coordinates of the sun in an
-    Earth-centric, Earth-Fixed (ECEF) frame [Meeus1998]_ [Montenbruck1989]_
+    Earth-centric, Earth-Fixed (ECEF) frame :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk`
 
     Parameters
     ----------
@@ -446,7 +446,7 @@ def solar_approximate(MJD, **kwargs):
 def solar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     Computes positional coordinates of the sun in an Earth-centric,
-    Earth-Fixed (ECEF) frame using JPL ephemerides [Meeus1998]_ [Park2021]_
+    Earth-Fixed (ECEF) frame using JPL ephemerides :cite:p:`Meeus:1991vh` :cite:p:`Park:2021fa`
 
     Parameters
     ----------
@@ -494,7 +494,7 @@ def lunar_ecef(MJD: np.ndarray, **kwargs):
     """
     Wrapper function for calculating the positional coordinates
     of the moon in an Earth-centric, Earth-Fixed (ECEF) frame
-    [Meeus1998]_ [Montenbruck1989]_ [Park2021]_
+    :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk` :cite:p:`Park:2021fa`
 
     Parameters
     ----------
@@ -522,7 +522,7 @@ def lunar_ecef(MJD: np.ndarray, **kwargs):
 def lunar_approximate(MJD, **kwargs):
     """
     Computes approximate positional coordinates of the moon in an
-    Earth-centric, Earth-Fixed (ECEF) frame [Meeus1998]_ [Montenbruck1989]_
+    Earth-centric, Earth-Fixed (ECEF) frame :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk`
 
     Parameters
     ----------
@@ -600,7 +600,7 @@ def lunar_approximate(MJD, **kwargs):
 def lunar_ephemerides(MJD: np.ndarray, **kwargs):
     """
     Computes positional coordinates of the moon in an Earth-centric,
-    Earth-Fixed (ECEF) frame using JPL ephemerides [Meeus1998]_ [Park2021]_
+    Earth-Fixed (ECEF) frame using JPL ephemerides :cite:p:`Meeus:1991vh` :cite:p:`Park:2021fa`
 
     Parameters
     ----------
@@ -643,7 +643,7 @@ def lunar_ephemerides(MJD: np.ndarray, **kwargs):
 
 def gast(T: float | np.ndarray):
     """Greenwich Apparent Sidereal Time (GAST)
-    [Capitaine2003a]_ [Capitaine2003b]_ [Petit2010]_
+    :cite:p:`Capitaine:2003fx` :cite:p:`Capitaine:2003fw` :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -666,7 +666,7 @@ def gast(T: float | np.ndarray):
 def itrs(T: float | np.ndarray):
     """
     International Terrestrial Reference System (ITRS)
-    [Capitaine2003a]_ [Capitaine2003b]_ [Petit2010]_:
+    :cite:p:`Capitaine:2003fx` :cite:p:`Capitaine:2003fw` :cite:p:`Petit:2010tp`:
     An Earth-centered Earth-fixed (ECEF) coordinate system
     combining the Earth's true equator and equinox of date,
     the Earth's rotation with respect to the stars, and the
@@ -706,7 +706,7 @@ def itrs(T: float | np.ndarray):
 def _eqeq_complement(T: float | np.ndarray):
     """
     Compute complementary terms of the equation of the equinoxes
-    [Capitaine2003a]_ [Capitaine2003b]_ [Petit2010]_
+    :cite:p:`Capitaine:2003fx` :cite:p:`Capitaine:2003fw` :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -788,7 +788,7 @@ def _frame_bias_matrix():
 def _nutation_angles(T: float | np.ndarray):
     """
     Calculate nutation rotation angles using tables
-    from IERS Conventions [Petit2010]_
+    from IERS Conventions :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -947,7 +947,7 @@ def _parse_table_5_2e():
     """Parse table with expressions for Greenwich Sidereal Time
     provided in `Chapter 5
     <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2e.txt>`_
-    of [Petit2010]_
+    of :cite:p:`Petit:2010tp`
     """
     table_5_2e = get_data_path(['data','tab5.2e.txt'])
     with table_5_2e.open(mode='r', encoding='utf8') as f:
@@ -975,7 +975,7 @@ def _parse_table_5_3a():
     """Parse table with IAU 2000A lunisolar and planetary components
     of nutation in longitude provided in `Chapter 5
     <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2e.txt>`_
-    of [Petit2010]_
+    of :cite:p:`Petit:2010tp`
     """
     table_5_3a = get_data_path(['data','tab5.3a.txt'])
     with table_5_3a.open(mode='r', encoding='utf8') as f:
@@ -1003,7 +1003,7 @@ def _parse_table_5_3b():
     """Parse table with IAU 2000A lunisolar and planetary components
     of nutation in obliquity provided in `Chapter 5
     <https://iers-conventions.obspm.fr/content/chapter5/additional_info/tab5.2e.txt>`_
-    of [Petit2010]_
+    of :cite:p:`Petit:2010tp`
     """
     table_5_3b = get_data_path(['data','tab5.3b.txt'])
     with table_5_3b.open(mode='r', encoding='utf8') as f:

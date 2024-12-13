@@ -156,7 +156,7 @@ _conventions = ('2003', '2010', '2015', '2018')
 def iers_mean_pole(*args, **kwargs):
     """
     Calculates the angular coordinates of the IERS Conventional Mean Pole (CMP)
-    or IERS Secular Pole (2018 convention) [Petit2010]_
+    or IERS Secular Pole (2018 convention) :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -192,7 +192,7 @@ def iers_mean_pole(*args, **kwargs):
 def iers_daily_EOP(**kwargs):
     """
     Read daily earth orientation parameters (EOP) file from IERS
-    [Petit2010]_
+    :cite:p:`Petit:2010tp`
 
     Parameters
     ----------
@@ -215,7 +215,7 @@ def iers_daily_EOP(**kwargs):
 def iers_polar_motion(*args, **kwargs):
     """
     Interpolates daily earth orientation parameters (EOP) file from IERS
-    [Petit2010]_
+    :cite:p:`Petit:2010tp`
 
     Parameters
     ----------

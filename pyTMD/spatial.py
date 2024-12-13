@@ -1382,7 +1382,7 @@ def convert_ellipsoid(
     ):
     """
     Convert latitudes and heights to a different ellipsoid using
-    Newton-Raphson [Meeus1998]_
+    Newton-Raphson :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
@@ -1528,7 +1528,7 @@ def compute_delta_h(
     ):
     """
     Compute difference in elevation for two ellipsoids at a given
-    latitude using a simplified empirical relation [Meeus1998]_
+    latitude using a simplified empirical relation :cite:p:`Meeus:1991vh`
 
     Parameters
     ----------
@@ -1798,7 +1798,7 @@ def _moritz_iterative(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the iterative solution of [HofmannWellenhof2006]_
+    using the iterative solution of :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
@@ -1858,7 +1858,7 @@ def _bowring_iterative(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates using
-    the iterative solution of [Bowring1976]_ [Bowring1985]_
+    the iterative solution of :cite:p:`Bowring:1976jh` :cite:p:`Bowring:1985du`
 
     Parameters
     ----------
@@ -1924,7 +1924,7 @@ def _zhu_closed_form(
     ):
     """
     Convert from cartesian coordinates to geodetic coordinates
-    using the closed-form solution of [Zhu1993]_
+    using the closed-form solution of :cite:p:`Zhu:1993ja`
 
     Parameters
     ----------
@@ -2224,7 +2224,7 @@ def scale_factors(
     """
     Calculates scaling factors to account for polar stereographic
     distortion including special case of at the exact pole
-    [Snyder1982]_
+    :cite:p:`Snyder:1982gf`
 
     Parameters
     ----------

@@ -2,7 +2,7 @@
 compute_tidal_currents.py
 =========================
 
-- Calculates tidal currents for an input file following [Egbert2002]_
+- Calculates tidal currents for an input file following :cite:p:`Egbert:2002ge`
 - Can use OTIS format tidal solutions provided by Oregon State University and ESR
 - Can use Finite Element Solution (FES) models provided by AVISO
 - Can read and write ascii, netCDF4, HDF5, (cloud optimized) geotiff and (geo)parquet formats

@@ -19,6 +19,7 @@ dependencies:
   - setuptools_scm
   - sphinx
   - sphinx-argparse>=0.4
+  - sphinxcontrib-bibtex
   - sphinx-design
   - sphinx_rtd_theme
   - timescale>=0.0.3

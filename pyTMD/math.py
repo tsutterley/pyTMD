@@ -34,7 +34,7 @@ def polynomial_sum(
     ):
     """
     Calculates the sum of a polynomial function using Horner's method
-    [Horner1819]_
+    :cite:p:`Horner:1819br`
 
     Parameters
     ----------
@@ -134,7 +134,7 @@ def legendre(
     ):
     """
     Computes associated Legendre functions for a particular degree
-    and order [Munk1966]_ [HofmannWellenhof2006]_
+    and order :cite:p:`Munk:1966go` :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ def sph_harm(
     ):
     """
     Computes the spherical harmonics for a particular degree
-    and order [Munk1966]_ [HofmannWellenhof2006]_
+    and order :cite:p:`Munk:1966go` :cite:p:`HofmannWellenhof:2006hy`
 
     Parameters
     ----------

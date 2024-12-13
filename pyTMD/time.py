@@ -271,7 +271,7 @@ def convert_calendar_dates(*args, **kwargs) -> np.ndarray:
 def convert_calendar_decimal(*args, **kwargs) -> np.ndarray:
     """
     Converts from calendar date into decimal years taking into
-    account leap years [Dershowitz2008]_
+    account leap years :cite:p:`Dershowitz:2007cc`
 
     Parameters
     ----------
@@ -303,7 +303,7 @@ def convert_calendar_decimal(*args, **kwargs) -> np.ndarray:
 def convert_julian(*args, **kwargs):
     """
     Converts from Julian day to calendar date and time
-    [Press1988]_ [Hatcher1984]_
+    :cite:p:`Press:1988we` :cite:p:`Hatcher:1984uo`
 
     Parameters
     ----------
