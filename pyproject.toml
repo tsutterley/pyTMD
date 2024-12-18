@@ -87,6 +87,7 @@ omit = [
     "conf.py",
     "scripts/*",
     "pyTMD/calc_astrol_longitudes.py",
+    "pyTMD/check_points.py",
     "pyTMD/compute_tide_corrections.py",
     "pyTMD/convert_crs.py",
     "pyTMD/convert_ll_xy.py",

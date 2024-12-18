@@ -70,13 +70,13 @@ ocean, load, solid Earth and pole tides
 .. toctree::
     :maxdepth: 1
     :hidden:
-    :caption: Bibliography
+    :caption: Release Notes
 
-    getting_started/Bibliography.rst
+    release_notes/Release-Notes.rst
 
 .. toctree::
     :maxdepth: 1
     :hidden:
-    :caption: Release Notes
+    :caption: Bibliography
 
-    release_notes/Release-Notes.rst
+    getting_started/Bibliography.rst
