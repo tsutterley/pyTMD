@@ -49,7 +49,8 @@ def response(
         **kwargs: dict
     ):
     """
-    Estimate tidal constituents using the response method [1]_ [2]_ [3]_ [4]_
+    Estimate tidal constituents using the response method :cite:p:`Munk:1966go`
+    :cite:p:`Groves:1975ky` :cite:p:`Zetler:1975uv` :cite:p:`Cartwright:1990ck`
 
     Parameters
     ----------
@@ -74,23 +75,6 @@ def response(
         amplitude of each harmonic constant (meters)
     phase: np.ndarray
         phase of each harmonic constant (degrees)
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
-    .. [2] G. W. Groves and R. W. Reynolds, "An orthogonalized convolution
-        method of tide prediction," *Journal of Geophysical Research*,
-        80(30), 4131--4138, (1975).
-        `doi: 10.1029/jc080i030p04131 <https://doi.org/10.1029/jc080i030p04131>`_
-    .. [3] B. D. Zetler and W. T. Munk, "The optimum wiggliness of tidal
-        admittances," *Journal of Marine Research*, 33(S), (1975).
-    .. [4] D. E. Cartwright and R. D. Ray, "Oceanic tides from Geosat altimetry,"
-        *Journal of Geophysical Research: Oceans*, 95(C3), 3069--3090, (1990).
-        `doi: 10.1029/JC095iC03p03069 <https://doi.org/10.1029/JC095iC03p03069>`_
     """
     # default keyword arguments
     kwargs.setdefault('ephemerides', 'approximate')
@@ -129,7 +113,7 @@ def _gravitational(
         **kwargs: dict
     ):
     """
-    Estimate gravitational tides using the response method [1]_
+    Estimate gravitational tides using the response method :cite:p:`Munk:1966go`
 
     Parameters
     ----------
@@ -154,14 +138,6 @@ def _gravitational(
         amplitude of each harmonic constant (meters)
     phase: np.ndarray
         phase of each harmonic constant (degrees)
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
     """
     # default keyword arguments
     kwargs.setdefault('a_axis', 6378137.0)
@@ -204,7 +180,7 @@ def _radiational(
         **kwargs: dict
     ):
     """
-    Estimate radiational tides using the response method [1]_
+    Estimate radiational tides using the response method :cite:p:`Munk:1966go`
 
     Parameters
     ----------
@@ -227,14 +203,6 @@ def _radiational(
         amplitude of each harmonic constant (meters)
     phase: np.ndarray
         phase of each harmonic constant (degrees)
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
     """
     # default keyword arguments
     kwargs.setdefault('a_axis', 6378137.0)
@@ -260,7 +228,7 @@ def _radiational(
 
 def _kappa(l: int, xi: float) -> float:
     """
-    Kappa values as a function of degree [1]_
+    Kappa values as a function of degree :cite:p:`Munk:1966go`
 
     Parameters
     ----------
@@ -273,14 +241,6 @@ def _kappa(l: int, xi: float) -> float:
     -------
     kappa: float
         kappa value for the given degree
-
-    References
-    ----------
-    .. [1] W. H. Munk, D. E. Cartwright, and E. C. Bullard, "Tidal
-        spectroscopy and prediction," *Philosophical Transactions of the
-        Royal Society of London. Series A, Mathematical and Physical
-        Sciences*, 259(1105), 533--581, (1966).
-        `doi: 10.1098/rsta.1966.0024 <https://doi.org/10.1098/rsta.1966.0024>`_
     """
     kappa = np.zeros((4))
     kappa[0] = 1.0/4.0 + xi/6.0

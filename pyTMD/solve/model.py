@@ -37,7 +37,7 @@ import pyTMD.solve.grid as fdgrid
 class model:
     """
     Base class for estimating tidal constituents using
-    hydrodynamic modeling
+    hydrodynamic modeling :cite:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -59,15 +59,6 @@ class model:
         Love number of gravitational potential
     dt: float, default 30.0
         time step in seconds
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # degrees to radians
     deg2rad = np.pi/180.0

@@ -43,6 +43,7 @@ class forward(model):
     """
     Class for estimating non-linear parameters using a finite
     difference model with a Crank-Nicolson scheme
+    :cite:p:`Egbert:2002ge` :cite:p:`Primeau:2007ie`
 
     Parameters
     ----------
@@ -64,19 +65,6 @@ class forward(model):
         Love number of gravitational potential
     dt: float, default 30.0
         time step in seconds
-
-    References
-    ----------
-    .. [1] G. D. Egbert and S. Y. Erofeeva, "Efficient Inverse Modeling of
-        Barotropic Ocean Tides," *Journal of Atmospheric and Oceanic
-        Technology*, 19(2), 183--204, (2002).
-        `doi: 10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2`__
-    .. [2] F. W. Primeau and D. Newman, "Bifurcation structure of a wind-driven
-        shallow water model with layer-outcropping," *Ocean Modelling*,
-        16(3-4), 250--263, (2007). `doi: 10.1016/j.ocemod.2006.10.003
-        <https://doi.org/10.1016/j.ocemod.2006.10.003>`_
-
-    .. __: https://doi.org/10.1175/1520-0426(2002)019<0183:EIMOBO>2.0.CO;2
     """
     # seconds per day
     day = 86400.0
