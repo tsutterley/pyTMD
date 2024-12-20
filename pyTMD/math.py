@@ -15,6 +15,8 @@ UPDATE HISTORY:
     Updated 12/2024: added function to calculate an aliasing frequency
     Written 11/2024
 """
+from __future__ import annotations
+
 import numpy as np
 from scipy.special import factorial
 
