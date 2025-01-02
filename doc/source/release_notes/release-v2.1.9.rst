@@ -11,7 +11,6 @@
 * ``feat``: add calculation of zenith angle `(#363) <https://github.com/tsutterley/pyTMD/pull/363>`_
 * ``test``: add zenith angle test `(#363) <https://github.com/tsutterley/pyTMD/pull/363>`_
 * ``feat``: expose buffer distance to crop tide model data for `#367 <https://github.com/tsutterley/pyTMD/issues/367>`_ `(#368) <https://github.com/tsutterley/pyTMD/pull/368>`_
-* ``feat``: expose buffer distance to crop tide model data for `#367 <https://github.com/tsutterley/pyTMD/issues/367>`_ `(#368) <https://github.com/tsutterley/pyTMD/pull/368>`_
 * ``test``: add constituent parameter test `(#368) <https://github.com/tsutterley/pyTMD/pull/368>`_
 * ``ci``: add windows build for `#98 <https://github.com/tsutterley/pyTMD/issues/98>`_ `(#369) <https://github.com/tsutterley/pyTMD/pull/369>`_
 * ``fix``: omega and phase in constituent parameters `(#369) <https://github.com/tsutterley/pyTMD/pull/369>`_
