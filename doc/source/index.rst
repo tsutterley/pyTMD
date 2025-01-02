@@ -1,14 +1,76 @@
-pyTMD
-=====
+===================
+pyTMD Documentation
+===================
 
-Python-based tidal prediction software for estimating
-ocean, load, solid Earth and pole tides
+Welcome to the documentation for ``pyTMD``, a Python-based tidal prediction software.
+This documentation is intended to explain how to compute ocean, solid Earth, load and pole tide variations using the set of ``pyTMD`` programs.
+
+Introduction
+------------
+
+.. grid:: 2 2 4 4
+    :padding: 0
+
+    .. grid-item-card::  Installation
+      :text-align: center
+      :link: ./getting_started/Install.html
+
+      :material-outlined:`download;5em`
+
+    .. grid-item-card::  Getting Started
+      :text-align: center
+      :link: ./getting_started/Getting-Started.html
+
+      :material-outlined:`hiking;5em`
+
+    .. grid-item-card::  Background
+      :text-align: center
+      :link: ./getting_started/Background.html
+
+      :material-outlined:`library_books;5em`
+
+    .. grid-item-card::  Examples
+      :text-align: center
+      :link: ./user_guide/Examples.html
+
+      :material-outlined:`apps;5em`
+
+
+Contribute
+----------
+
+.. grid:: 2 2 4 4
+    :padding: 0
+
+    .. grid-item-card::  Guidelines
+      :text-align: center
+      :link: ./getting_started/Contributing.html
+
+      :material-outlined:`groups;5em`
+
+    .. grid-item-card::  Code of Conduct
+      :text-align: center
+      :link: ./getting_started/Code-of-Conduct.html
+
+      :material-outlined:`gavel;5em`
+
+    .. grid-item-card::  Discussions
+      :text-align: center
+      :link: https://github.com/tsutterley/pyTMD/discussions
+
+      :material-outlined:`forum;5em`
+
+    .. grid-item-card::  Issues
+      :text-align: center
+      :link: https://github.com/tsutterley/pyTMD/issues
+
+      :material-outlined:`bug_report;5em`
 
 .. toctree::
     :maxdepth: 2
+    :hidden:
     :caption: Getting Started
 
-    getting_started/Overview.rst
     getting_started/Install.rst
     getting_started/Getting-Started.rst
     getting_started/Background.rst
