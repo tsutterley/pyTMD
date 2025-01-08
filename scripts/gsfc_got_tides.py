@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 gsfc_got_tides.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (01/2025)
 Download GSFC Global Ocean Tide (GOT) models
 
 CALLING SEQUENCE:
@@ -32,12 +32,14 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 01/2025: scrubbed use of pathlib.os to just use os directly
     Updated 09/2024: added Ray and Erofeeva (2014) long-period tide model
     Updated 08/2024: keep prime nomenclature for 3rd degree tides
     Written 07/2024
 """
 from __future__ import print_function, annotations
 
+import os
 import re
 import gzip
 import shutil
@@ -120,7 +122,7 @@ def gsfc_got_tides(MODEL: str,
             shutil.copyfileobj(fi, fo)
         # get last modified date of remote file within tar file
         # keep remote modification time of file and local access time
-        pathlib.os.utime(local_file, (local_file.stat().st_atime, m.mtime))
+        os.utime(local_file, (local_file.stat().st_atime, m.mtime))
         local_file.chmod(mode=MODE)
 
 # PURPOSE: compare the modification time of two files

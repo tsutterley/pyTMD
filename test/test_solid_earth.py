@@ -1,5 +1,5 @@
 """
-test_solid_earth.py (11/2024)
+test_solid_earth.py (01/2025)
 Tests the steps for calculating the solid earth tides
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://pypi.org/project/timescale/
 
 UPDATE HISTORY:
+    Updated 01/2025: added function to get JPL ephemerides file from AWS
     Updated 11/2024: moved normalize_angle and polynomial_sum to math.py
     Updated 07/2024: use normalize_angle from pyTMD astro module
     Updated 04/2024: use timescale for temporal operations
@@ -18,7 +19,10 @@ UPDATE HISTORY:
     Updated 04/2023: added test for using JPL ephemerides for positions
     Written 04/2023
 """
+import boto3
 import pytest
+import shutil
+import posixpath
 import numpy as np
 import pyTMD.astro
 import pyTMD.compute
@@ -291,7 +295,7 @@ def test_solid_earth_radial(EPHEMERIDES):
     assert np.isclose(tide_mean-tide_free, predicted, atol=5e-4).all()
 
 # PURPOSE: Download JPL ephemerides from Solar System Dynamics server
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module", autouse=False)
 def download_jpl_ephemerides():
     """Download JPL ephemerides from Solar System Dynamics server
     """
@@ -307,6 +311,38 @@ def download_jpl_ephemerides():
     else:
         # run tests
         yield
+
+# PURPOSE: Retrieve JPL ephemerides from AWS S3 bucket
+@pytest.fixture(scope="module", autouse=True)
+def aws_ephemerides(aws_access_key_id, aws_secret_access_key, aws_region_name):
+    """Retrieve JPL ephemerides from AWS S3 bucket
+    """
+    # get aws session object
+    session = boto3.Session(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        region_name=aws_region_name)
+    # get s3 object and bucket object for pytmd data
+    s3 = session.resource('s3')
+    bucket = s3.Bucket('pytmd')
+    # get path to default ephemerides
+    de440s = pyTMD.astro._default_kernel
+    # get JPL ephemerides from AWS if not existing
+    if not de440s.exists():
+        # retrieve spice kernel file
+        obj = bucket.Object(key=posixpath.join('spice',de440s.name))
+        response = obj.get()
+        # save kernel to destination
+        with de440s.open('wb') as destination:
+            shutil.copyfileobj(response['Body'], destination)
+        assert de440s.exists()
+        # run tests
+        yield
+        # clean up
+        de440s.unlink(missing_ok=True)
+    else:
+        # run tests
+        yield  
 
 def test_solar_ecef():
     """Test solar ECEF coordinates with ephemeride predictions
