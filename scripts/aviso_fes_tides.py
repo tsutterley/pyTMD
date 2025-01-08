@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 aviso_fes_tides.py
-Written by Tyler Sutterley (07/2024)
+Written by Tyler Sutterley (01/2025)
 Downloads the FES (Finite Element Solution) global tide model from AVISO
 Decompresses the model tar files into the constituent files and auxiliary files
     https://www.aviso.altimetry.fr/data/products/auxiliary-products/
@@ -40,6 +40,8 @@ PROGRAM DEPENDENCIES:
     utilities.py: download and management utilities for syncing files
 
 UPDATE HISTORY:
+    Updated 01/2025: new ocean tide directory for latest FES2022 version
+        scrubbed use of pathlib.os to just use os directly
     Updated 07/2024: added list and download for FES2022 tide model
         compare modification times with remote to not overwrite files
     Updated 05/2023: added option to change connection timeout
@@ -234,7 +236,9 @@ def aviso_fes_list(MODEL, f, logger,
     FES = {}
     # 2022 model
     FES['FES2022'] = []
-    FES['FES2022'].append(['fes2022b','ocean_tide'])
+    # updated directory for ocean tide model
+    # latest version fixes the valid_max attribute for longitudes
+    FES['FES2022'].append(['fes2022b','ocean_tide_20241025'])
     if LOAD:
         FES['FES2022'].append(['fes2022b','load_tide'])
     if EXTRAPOLATED:
@@ -320,7 +324,7 @@ def ftp_download(logger, ftp, remote_path, local_dir,
                 shutil.copyfileobj(fi, fo)
             # get last modified date of remote file within tar file
             # keep remote modification time of file and local access time
-            pathlib.os.utime(local_file, (local_file.stat().st_atime, m.mtime))
+            os.utime(local_file, (local_file.stat().st_atime, m.mtime))
             local_file.chmod(mode=MODE)
     elif LZMA:
         # get last modified date of remote file and convert into unix time
@@ -350,7 +354,7 @@ def ftp_download(logger, ftp, remote_path, local_dir,
             shutil.copyfileobj(fi, fo)
         # get last modified date of remote file within tar file
         # keep remote modification time of file and local access time
-        pathlib.os.utime(local_file, (local_file.stat().st_atime, mtime))
+        os.utime(local_file, (local_file.stat().st_atime, mtime))
         local_file.chmod(mode=MODE)
     else:
         # copy readme and uncompressed files directly
@@ -375,7 +379,7 @@ def ftp_download(logger, ftp, remote_path, local_dir,
         with opener(local_file, 'wb') as f:
             ftp.retrbinary(f'RETR {remote_file}', f.write, blocksize=CHUNK)
         # keep remote modification time of file and local access time
-        pathlib.os.utime(local_file, (local_file.stat().st_atime, mtime))
+        os.utime(local_file, (local_file.stat().st_atime, mtime))
         local_file.chmod(mode=MODE)
 
 # PURPOSE: compare the modification time of two files

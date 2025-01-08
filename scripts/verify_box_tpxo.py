@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 verify_box_tpxo.py
-Written by Tyler Sutterley (09/2024)
+Written by Tyler Sutterley (01/2025)
 Verifies downloaded TPXO9-atlas global tide models from the box file
     sharing service
 
@@ -26,6 +26,7 @@ REFERENCE:
     https://developer.box.com/guides/
 
 UPDATE HISTORY:
+    Updated 01/2025: scrubbed use of pathlib.os to just use os directly
     Updated 09/2024: use model class to define output directory
     Updated 04/2023: using pathlib to define and expand paths
     Updated 01/2023: use default context from utilities module
@@ -38,6 +39,7 @@ UPDATE HISTORY:
 """
 from __future__ import print_function
 
+import os
 import re
 import json
 import logging
@@ -132,7 +134,7 @@ def verify_box_tpxo(tide_dir, folder_id, TIDE_MODEL=None,
             logger.critical(f'Local checksum: {sha1}')
             raise Exception('Checksum verification failed')
         # keep remote modification time of file and local access time
-        pathlib.os.utime(local, (local.stat().st_atime, remote_mtime))
+        os.utime(local, (local.stat().st_atime, remote_mtime))
         # change the permissions mode of the local file
         local.chmod(mode=MODE)
 
