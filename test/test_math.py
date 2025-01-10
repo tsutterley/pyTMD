@@ -18,6 +18,19 @@ def test_normalize_angle():
     test = pyTMD.math.normalize_angle(angles)
     assert np.all(exp == test)
 
+def test_aliasing():
+    """
+    Tests the calculation of an aliasing frequency
+    """
+    # test frequencies
+    frequency = 39000
+    sampling = np.array([37500, 38000, 38500, 44000, 44500, 45000])
+    # expected values
+    exp = np.array([1500, 1000, 500, 5000, 5500, 6000])
+    # test aliasing frequencies
+    test = pyTMD.math.aliasing(frequency, sampling)
+    assert np.all(exp == test)
+
 @pytest.mark.parametrize("l", [1, 2, 3])
 def test_legendre(l, x=[-1.0, -0.9, -0.8]):
     """test the calculation of unnormalized Legendre polynomials
@@ -48,3 +61,29 @@ def test_legendre(l, x=[-1.0, -0.9, -0.8]):
         ])
     # check with expected values
     assert np.isclose(obs, expected, atol=1e-05).all()
+
+# PURPOSE: test fully-normalized Legendre polynomials
+def test_normalized(lmax=3, x=[-1.0, -0.9, -0.8]):
+    """test the calculation of normalized Legendre polynomials
+    """
+    obs = pyTMD.math.assoc_legendre(lmax, x)
+    expected = np.array([
+        [-2.64575, -1.25012, -0.21166],
+        [-0.00000, 2.15398, 2.13864],
+        [0.00000, -0.87611, -1.47556],
+        [-0.00000, 0.17323, 0.45180]
+    ])
+    assert np.isclose(obs[lmax:,:], expected, atol=1e-05).all()
+
+# PURPOSE: test fully-normalized zonal Legendre polynomials
+def test_zonal(lmax=3, x=[-1.0, -0.9, -0.8]):
+    """test the calculation of zonal Legendre polynomials
+    """
+    obs = pyTMD.math.assoc_legendre(lmax, x)
+    expected = np.array([
+        [1.00000, 1.00000, 1.00000],
+        [-1.73205, -1.55885, -1.38564],
+        [2.23607, 1.59879, 1.02859],
+        [-2.64575, -1.25012, -0.21166],
+    ])
+    assert np.isclose(obs[:lmax+1,0,:], expected, atol=1e-05).all()

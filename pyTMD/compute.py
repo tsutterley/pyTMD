@@ -153,6 +153,7 @@ __all__ = [
     "corrections",
     "tide_elevations",
     "tide_currents",
+    "tide_masks",
     "LPET_elevations",
     "LPT_displacements",
     "OPT_displacements",
