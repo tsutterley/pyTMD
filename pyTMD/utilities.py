@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 utilities.py
-Written by Tyler Sutterley (08/2024)
+Written by Tyler Sutterley (01/2025)
 Download and management utilities for syncing time and auxiliary files
 
 PYTHON DEPENDENCIES:
@@ -9,6 +9,7 @@ PYTHON DEPENDENCIES:
         https://pypi.python.org/pypi/lxml
 
 UPDATE HISTORY:
+    Updated 01/2025: added function to list a directory from the UHSLC
     Updated 08/2024: generalize hash function to use any available algorithm
     Updated 07/2024: added function to parse JSON responses from https
     Updated 06/2024: make default case for an import exception be a class
@@ -112,7 +113,8 @@ __all__ = [
     "cddis_list",
     "from_cddis",
     "iers_list",
-    "from_jpl_ssd"
+    "from_jpl_ssd",
+    "uhslc_list"
 ]
 
 # PURPOSE: get absolute path within a package from a relative path
@@ -1567,3 +1569,67 @@ def from_jpl_ssd(
     logging.info('Downloading JPL Planetary Ephemeride Kernel File')
     from_http(HOST, timeout=timeout, context=context, local=local,
         hash=hash, chunk=chunk, verbose=verbose, mode=mode)
+
+# PURPOSE: list a directory on the University of Hawaii SLC Server
+def uhslc_list(
+        HOST: str | list,
+        timeout: int | None = None,
+        context: ssl.SSLContext = _default_ssl_context,
+        parser = lxml.etree.HTMLParser(),
+        pattern: str = '',
+        sort: bool = False
+    ):
+    """
+    List a directory from the University of Hawaii Sea Level Center
+
+    Parameters
+    ----------
+    HOST: str or list
+        remote http host path
+    timeout: int or NoneType, default None
+        timeout in seconds for blocking operations
+    context: obj, default pyTMD.utilities._default_ssl_context
+        SSL context for ``urllib`` opener object
+    parser: obj, default lxml.etree.HTMLParser()
+        HTML parser for ``lxml``
+    pattern: str, default ''
+        regular expression pattern for reducing list
+    sort: bool, default False
+        sort output list
+
+    Returns
+    -------
+    colnames: list
+        column names in a directory
+    """
+    # verify inputs for remote http host
+    if isinstance(HOST, str):
+        HOST = url_split(HOST)
+    # try listing from http
+    try:
+        # Create and submit request.
+        request = urllib2.Request(posixpath.join(*HOST))
+        response = urllib2.urlopen(request, timeout=timeout, context=context)
+    except urllib2.HTTPError as exc:
+        logging.debug(exc.code)
+        raise RuntimeError(exc.reason) from exc
+    except urllib2.URLError as exc:
+        logging.debug(exc.reason)
+        msg = 'List error from {0}'.format(posixpath.join(*HOST))
+        raise Exception(msg) from exc
+    else:
+        # read and parse request for files
+        tree = lxml.etree.parse(response, parser)
+        colnames = tree.xpath('//a/text()')
+        # reduce using regular expression pattern
+        if pattern:
+            i = [i for i,f in enumerate(colnames) if re.search(pattern, f)]
+            # reduce list of column names
+            colnames = [colnames[indice] for indice in i]
+        # sort the list
+        if sort:
+            i = [i for i,j in sorted(enumerate(colnames), key=lambda i: i[1])]
+            # sort list of column names
+            colnames = [colnames[indice] for indice in i]
+        # return the list of column names
+        return colnames
