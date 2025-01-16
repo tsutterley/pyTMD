@@ -84,3 +84,5 @@ General Methods
 .. autofunction:: pyTMD.utilities.iers_list
 
 .. autofunction:: pyTMD.utilities.from_jpl_ssd
+
+.. autofunction:: pyTMD.utilities.uhslc_list
