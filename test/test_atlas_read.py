@@ -53,7 +53,11 @@ filepath = pathlib.Path(filename).absolute().parent
 
 # PURPOSE: Download TPXO8 ATLAS compact constituents from AWS S3 bucket
 # @pytest.fixture(scope="module", autouse=True)
-def download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
+def download_TPXO8(
+        aws_access_key_id,
+        aws_secret_access_key,
+        aws_region_name
+    ):
     # get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -67,8 +71,11 @@ def download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
     model_directory = filepath.joinpath('tpxo8_atlas')
     # recursively create model directory
     model_directory.mkdir(parents=True, exist_ok=True)
+    model_files = ['grid_tpxo8atlas_30_v1',
+        'hf.tpxo8_atlas_30_v1',
+        'uv.tpxo8_atlas_30_v1']
     # retrieve each model file from s3
-    for f in ['grid_tpxo8atlas_30_v1','hf.tpxo8_atlas_30_v1','uv.tpxo8_atlas_30_v1']:
+    for f in model_files:
         # retrieve constituent file
         obj = bucket.Object(key=posixpath.join('tpxo8_atlas',f))
         response = obj.get()
@@ -83,7 +90,11 @@ def download_TPXO8(aws_access_key_id,aws_secret_access_key,aws_region_name):
 
 # PURPOSE: Download TPXO9 ATLAS V2 netCDF constituents from AWS S3 bucket
 @pytest.fixture(scope="module", autouse=True)
-def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
+def download_TPXO9_v2(
+        aws_access_key_id,
+        aws_secret_access_key,
+        aws_region_name
+    ):
     # get aws session object
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
@@ -94,13 +105,14 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     bucket = s3.Bucket('pytmd')
 
     # model parameters for TPXO9-atlas-v2
-    model = pyTMD.io.model(filepath,format='ATLAS-netcdf',compressed=True,
-        verify=False).elevation('TPXO9-atlas-v2-nc')
+    model = pyTMD.io.model(filepath,compressed=True,verify=False
+        ).elevation('TPXO9-atlas-v2-nc')
     # recursively create model directory
     model_directory = model.model_file[0].parent
     model_directory.mkdir(parents=True, exist_ok=True)
     # retrieve grid file from s3
-    obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model.grid_file.name))
+    key = posixpath.join('TPXO9_atlas_v2',model.grid_file.name)
+    obj = bucket.Object(key=key)
     response = obj.get()
     # save grid data
     with model.grid_file.open(mode='wb') as destination:
@@ -109,7 +121,8 @@ def download_TPXO9_v2(aws_access_key_id,aws_secret_access_key,aws_region_name):
     # retrieve each model file from s3
     for model_file in model.model_file:
         # retrieve constituent file
-        obj = bucket.Object(key=posixpath.join('TPXO9_atlas_v2',model_file.name))
+        key = posixpath.join('TPXO9_atlas_v2',model_file.name)
+        obj = bucket.Object(key=key)
         response = obj.get()
         # save constituent data
         with model_file.open(mode='wb') as destination:
@@ -131,8 +144,12 @@ def test_read_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
     # model grid file
     grid_file = model_directory.joinpath('grid_tpxo9_atlas_30_v2.nc.gz')
     # constituent files included in test
-    model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
-        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    model_files = [
+        'h_m2_tpxo9_atlas_30_v2.nc.gz',
+        'h_s2_tpxo9_atlas_30_v2.nc.gz',
+        'h_k1_tpxo9_atlas_30_v2.nc.gz',
+        'h_o1_tpxo9_atlas_30_v2.nc.gz'
+    ]
     model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
     TYPE = 'z'
@@ -176,8 +193,12 @@ def test_compare_TPXO9_v2(METHOD):
     # model grid file
     grid_file = model_directory.joinpath('grid_tpxo9_atlas_30_v2.nc.gz')
     # constituent files included in test
-    model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
-        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    model_files = [
+        'h_m2_tpxo9_atlas_30_v2.nc.gz',
+        'h_s2_tpxo9_atlas_30_v2.nc.gz',
+        'h_k1_tpxo9_atlas_30_v2.nc.gz',
+        'h_o1_tpxo9_atlas_30_v2.nc.gz'
+    ]
     model_file = [model_directory.joinpath(m) for m in model_files]
     TYPE = 'z'
     SCALE = 1.0
@@ -316,8 +337,12 @@ def test_verify_TPXO9_v2(METHOD, EXTRAPOLATE, CROP):
     # model grid file
     grid_file = model_directory.joinpath('grid_tpxo9_atlas_30_v2.nc.gz')
     # constituent files included in test
-    model_files = ['h_m2_tpxo9_atlas_30_v2.nc.gz','h_s2_tpxo9_atlas_30_v2.nc.gz',
-        'h_k1_tpxo9_atlas_30_v2.nc.gz','h_o1_tpxo9_atlas_30_v2.nc.gz']
+    model_files = [
+        'h_m2_tpxo9_atlas_30_v2.nc.gz',
+        'h_s2_tpxo9_atlas_30_v2.nc.gz',
+        'h_k1_tpxo9_atlas_30_v2.nc.gz',
+        'h_o1_tpxo9_atlas_30_v2.nc.gz'
+    ]
     model_file = [model_directory.joinpath(m) for m in model_files]
     constituents = ['m2','s2','k1','o1']
     model_format = 'ATLAS-netcdf'
@@ -413,7 +438,8 @@ def test_definition_file(MODEL):
     model = pyTMD.io.model(filepath,compressed=True).elevation(MODEL)
     # create model definition file
     fid = io.StringIO()
-    attrs = ['name','format','grid_file','model_file','compressed','type','scale']
+    attrs = ['name','format','grid_file','model_file',
+        'compressed','type','scale']
     d = model.to_dict(fields=attrs, serialize=True)
     json.dump(d, fid)
     fid.seek(0)

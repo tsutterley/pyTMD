@@ -115,7 +115,7 @@ Contributing
 ############
 
 This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
-If you would like to contribute to the project, please have a look at the `open issues <https://github.com/tsutterley/pyTMD/issues>`_ and the project `code of conduct <./CODE_OF_CONDUCT.rst>`_.
+If you would like to contribute to the project, please have a look at the `open issues <https://github.com/tsutterley/pyTMD/issues>`_ and `discussions board <https://github.com/tsutterley/pyTMD/discussions>`_.
 
 Credits
 #######

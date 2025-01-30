@@ -19,10 +19,12 @@ models = ['AOTIM-5-2018','Gr1km-v2','CATS2008','TPXO9-atlas-v5']
 @pytest.mark.parametrize("MODEL", models)
 # PURPOSE: verify forward and backwards coordinate conversions
 def test_coordinates(MODEL):
-    startlat = {'Gr1km-v2':60,'CATS2008':-60,'AOTIM-5-2018':60,'TPXO9-atlas-v5':90}
-    endlat = {'Gr1km-v2':70,'CATS2008':-70,'AOTIM-5-2018':70,'TPXO9-atlas-v5':-90}
-    is_geographic = {'Gr1km-v2':False,'CATS2008':False,
-        'AOTIM-5-2018':False,'TPXO9-atlas-v5':True}
+    startlat = {'Gr1km-v2':60, 'CATS2008':-60,
+        'AOTIM-5-2018':60,'TPXO9-atlas-v5':90}
+    endlat = {'Gr1km-v2':70, 'CATS2008':-70,
+        'AOTIM-5-2018':70,'TPXO9-atlas-v5':-90}
+    is_geographic = {'Gr1km-v2':False, 'CATS2008':False,
+        'AOTIM-5-2018':False, 'TPXO9-atlas-v5':True}
     i1 = np.arange(-180,180+1,1)
     i2 = np.linspace(startlat[MODEL],endlat[MODEL],len(i1))
     # convert latitude and longitude to and from projection

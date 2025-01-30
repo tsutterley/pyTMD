@@ -108,7 +108,8 @@ def map(t: float | np.ndarray,
         corrections: str = 'OTIS'
     ):
     """
-    Predict tides at a single time using harmonic constants :cite:p:`Egbert:2002ge`
+    Predict tides at a single time using harmonic
+    constants :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -280,8 +281,9 @@ def infer_minor(
     ):
     """
     Infer the tidal values for minor constituents using their
-    relation with major constituents :cite:p:`Doodson:1941td` :cite:p:`Schureman:1958ty`
-    :cite:p:`Foreman:1989dt` :cite:p:`Egbert:2002ge`
+    relation with major constituents :cite:p:`Doodson:1941td`
+    :cite:p:`Schureman:1958ty` :cite:p:`Foreman:1989dt`
+    :cite:p:`Egbert:2002ge`
 
     Parameters
     ----------
@@ -621,7 +623,8 @@ def _infer_diurnal(
     Infer the tidal values for diurnal minor constituents
     using their relation with major constituents taking into
     account resonance due to free core nutation
-    :cite:p:`Munk:1966go` :cite:p:`Ray:2017jx` :cite:p:`Wahr:1981if` :cite:p:`Cartwright:1973em`
+    :cite:p:`Munk:1966go` :cite:p:`Ray:2017jx` :cite:p:`Wahr:1981if`
+    :cite:p:`Cartwright:1973em`
 
     Parameters
     ----------
@@ -1259,7 +1262,8 @@ def solid_earth_tide(
     ):
     """
     Compute the solid Earth tides due to the gravitational attraction of
-    the moon and sun :cite:p:`Mathews:1991kv` :cite:p:`Mathews:1997js` :cite:p:`Ries:1992ip` :cite:p:`Wahr:1981ea`
+    the moon and sun :cite:p:`Mathews:1991kv` :cite:p:`Mathews:1997js`
+    :cite:p:`Ries:1992ip` :cite:p:`Wahr:1981ea`
 
     Parameters
     ----------

@@ -170,40 +170,72 @@ def test_definition_FES_currents():
     # model files and constituents
     model_files = {}
     model_files['u'] = ['fes2014/eastward_velocity/2n2.nc.gz',
-        'fes2014/eastward_velocity/eps2.nc.gz', 'fes2014/eastward_velocity/j1.nc.gz',
-        'fes2014/eastward_velocity/k1.nc.gz', 'fes2014/eastward_velocity/k2.nc.gz',
-        'fes2014/eastward_velocity/l2.nc.gz', 'fes2014/eastward_velocity/la2.nc.gz',
-        'fes2014/eastward_velocity/m2.nc.gz', 'fes2014/eastward_velocity/m3.nc.gz',
-        'fes2014/eastward_velocity/m4.nc.gz', 'fes2014/eastward_velocity/m6.nc.gz',
-        'fes2014/eastward_velocity/m8.nc.gz', 'fes2014/eastward_velocity/mf.nc.gz',
-        'fes2014/eastward_velocity/mks2.nc.gz', 'fes2014/eastward_velocity/mm.nc.gz',
-        'fes2014/eastward_velocity/mn4.nc.gz', 'fes2014/eastward_velocity/ms4.nc.gz',
-        'fes2014/eastward_velocity/msf.nc.gz', 'fes2014/eastward_velocity/msqm.nc.gz',
-        'fes2014/eastward_velocity/mtm.nc.gz', 'fes2014/eastward_velocity/mu2.nc.gz',
-        'fes2014/eastward_velocity/n2.nc.gz', 'fes2014/eastward_velocity/n4.nc.gz',
-        'fes2014/eastward_velocity/nu2.nc.gz', 'fes2014/eastward_velocity/o1.nc.gz',
-        'fes2014/eastward_velocity/p1.nc.gz', 'fes2014/eastward_velocity/q1.nc.gz',
-        'fes2014/eastward_velocity/r2.nc.gz', 'fes2014/eastward_velocity/s1.nc.gz',
-        'fes2014/eastward_velocity/s2.nc.gz', 'fes2014/eastward_velocity/s4.nc.gz',
-        'fes2014/eastward_velocity/sa.nc.gz', 'fes2014/eastward_velocity/ssa.nc.gz',
+        'fes2014/eastward_velocity/eps2.nc.gz',
+        'fes2014/eastward_velocity/j1.nc.gz',
+        'fes2014/eastward_velocity/k1.nc.gz',
+        'fes2014/eastward_velocity/k2.nc.gz',
+        'fes2014/eastward_velocity/l2.nc.gz',
+        'fes2014/eastward_velocity/la2.nc.gz',
+        'fes2014/eastward_velocity/m2.nc.gz',
+        'fes2014/eastward_velocity/m3.nc.gz',
+        'fes2014/eastward_velocity/m4.nc.gz',
+        'fes2014/eastward_velocity/m6.nc.gz',
+        'fes2014/eastward_velocity/m8.nc.gz',
+        'fes2014/eastward_velocity/mf.nc.gz',
+        'fes2014/eastward_velocity/mks2.nc.gz',
+        'fes2014/eastward_velocity/mm.nc.gz',
+        'fes2014/eastward_velocity/mn4.nc.gz',
+        'fes2014/eastward_velocity/ms4.nc.gz',
+        'fes2014/eastward_velocity/msf.nc.gz',
+        'fes2014/eastward_velocity/msqm.nc.gz',
+        'fes2014/eastward_velocity/mtm.nc.gz',
+        'fes2014/eastward_velocity/mu2.nc.gz',
+        'fes2014/eastward_velocity/n2.nc.gz',
+        'fes2014/eastward_velocity/n4.nc.gz',
+        'fes2014/eastward_velocity/nu2.nc.gz',
+        'fes2014/eastward_velocity/o1.nc.gz',
+        'fes2014/eastward_velocity/p1.nc.gz',
+        'fes2014/eastward_velocity/q1.nc.gz',
+        'fes2014/eastward_velocity/r2.nc.gz',
+        'fes2014/eastward_velocity/s1.nc.gz',
+        'fes2014/eastward_velocity/s2.nc.gz',
+        'fes2014/eastward_velocity/s4.nc.gz',
+        'fes2014/eastward_velocity/sa.nc.gz',
+        'fes2014/eastward_velocity/ssa.nc.gz',
         'fes2014/eastward_velocity/t2.nc.gz']
     model_files['v'] = ['fes2014/northward_velocity/2n2.nc.gz',
-        'fes2014/northward_velocity/eps2.nc.gz', 'fes2014/northward_velocity/j1.nc.gz',
-        'fes2014/northward_velocity/k1.nc.gz', 'fes2014/northward_velocity/k2.nc.gz',
-        'fes2014/northward_velocity/l2.nc.gz', 'fes2014/northward_velocity/la2.nc.gz',
-        'fes2014/northward_velocity/m2.nc.gz', 'fes2014/northward_velocity/m3.nc.gz',
-        'fes2014/northward_velocity/m4.nc.gz', 'fes2014/northward_velocity/m6.nc.gz',
-        'fes2014/northward_velocity/m8.nc.gz', 'fes2014/northward_velocity/mf.nc.gz',
-        'fes2014/northward_velocity/mks2.nc.gz', 'fes2014/northward_velocity/mm.nc.gz',
-        'fes2014/northward_velocity/mn4.nc.gz', 'fes2014/northward_velocity/ms4.nc.gz',
-        'fes2014/northward_velocity/msf.nc.gz', 'fes2014/northward_velocity/msqm.nc.gz',
-        'fes2014/northward_velocity/mtm.nc.gz', 'fes2014/northward_velocity/mu2.nc.gz',
-        'fes2014/northward_velocity/n2.nc.gz', 'fes2014/northward_velocity/n4.nc.gz',
-        'fes2014/northward_velocity/nu2.nc.gz', 'fes2014/northward_velocity/o1.nc.gz',
-        'fes2014/northward_velocity/p1.nc.gz', 'fes2014/northward_velocity/q1.nc.gz',
-        'fes2014/northward_velocity/r2.nc.gz', 'fes2014/northward_velocity/s1.nc.gz',
-        'fes2014/northward_velocity/s2.nc.gz', 'fes2014/northward_velocity/s4.nc.gz',
-        'fes2014/northward_velocity/sa.nc.gz', 'fes2014/northward_velocity/ssa.nc.gz',
+        'fes2014/northward_velocity/eps2.nc.gz',
+        'fes2014/northward_velocity/j1.nc.gz',
+        'fes2014/northward_velocity/k1.nc.gz',
+        'fes2014/northward_velocity/k2.nc.gz',
+        'fes2014/northward_velocity/l2.nc.gz',
+        'fes2014/northward_velocity/la2.nc.gz',
+        'fes2014/northward_velocity/m2.nc.gz',
+        'fes2014/northward_velocity/m3.nc.gz',
+        'fes2014/northward_velocity/m4.nc.gz',
+        'fes2014/northward_velocity/m6.nc.gz',
+        'fes2014/northward_velocity/m8.nc.gz',
+        'fes2014/northward_velocity/mf.nc.gz',
+        'fes2014/northward_velocity/mks2.nc.gz',
+        'fes2014/northward_velocity/mm.nc.gz',
+        'fes2014/northward_velocity/mn4.nc.gz',
+        'fes2014/northward_velocity/ms4.nc.gz',
+        'fes2014/northward_velocity/msf.nc.gz',
+        'fes2014/northward_velocity/msqm.nc.gz',
+        'fes2014/northward_velocity/mtm.nc.gz',
+        'fes2014/northward_velocity/mu2.nc.gz',
+        'fes2014/northward_velocity/n2.nc.gz',
+        'fes2014/northward_velocity/n4.nc.gz',
+        'fes2014/northward_velocity/nu2.nc.gz',
+        'fes2014/northward_velocity/o1.nc.gz',
+        'fes2014/northward_velocity/p1.nc.gz',
+        'fes2014/northward_velocity/q1.nc.gz',
+        'fes2014/northward_velocity/r2.nc.gz',
+        'fes2014/northward_velocity/s1.nc.gz',
+        'fes2014/northward_velocity/s2.nc.gz',
+        'fes2014/northward_velocity/s4.nc.gz',
+        'fes2014/northward_velocity/sa.nc.gz',
+        'fes2014/northward_velocity/ssa.nc.gz',
         'fes2014/northward_velocity/t2.nc.gz']
     constituents = ['2n2','eps2','j1','k1','k2','l2',
                 'lambda2','m2','m3','m4','m6','m8','mf','mks2','mm',
@@ -222,7 +254,8 @@ def test_definition_FES_currents():
     assert m.scale == 1.0
     assert m.compressed is True
     # check validity of parsed constituents
-    parsed_constituents = [pyTMD.io.model.parse_file(f) for f in model_files['u']]
+    parsed_constituents = \
+        [pyTMD.io.model.parse_file(f) for f in model_files['u']]
     assert parsed_constituents == constituents
     # test derived properties
     assert m.long_name['u'] == 'zonal_tidal_current'
@@ -239,40 +272,72 @@ def test_definition_FES_currents_glob():
     # model files for each component
     model_files = {}
     model_files['u'] = ['fes2014/eastward_velocity/2n2.nc.gz',
-        'fes2014/eastward_velocity/eps2.nc.gz', 'fes2014/eastward_velocity/j1.nc.gz',
-        'fes2014/eastward_velocity/k1.nc.gz', 'fes2014/eastward_velocity/k2.nc.gz',
-        'fes2014/eastward_velocity/l2.nc.gz', 'fes2014/eastward_velocity/la2.nc.gz',
-        'fes2014/eastward_velocity/m2.nc.gz', 'fes2014/eastward_velocity/m3.nc.gz',
-        'fes2014/eastward_velocity/m4.nc.gz', 'fes2014/eastward_velocity/m6.nc.gz',
-        'fes2014/eastward_velocity/m8.nc.gz', 'fes2014/eastward_velocity/mf.nc.gz',
-        'fes2014/eastward_velocity/mks2.nc.gz', 'fes2014/eastward_velocity/mm.nc.gz',
-        'fes2014/eastward_velocity/mn4.nc.gz', 'fes2014/eastward_velocity/ms4.nc.gz',
-        'fes2014/eastward_velocity/msf.nc.gz', 'fes2014/eastward_velocity/msqm.nc.gz',
-        'fes2014/eastward_velocity/mtm.nc.gz', 'fes2014/eastward_velocity/mu2.nc.gz',
-        'fes2014/eastward_velocity/n2.nc.gz', 'fes2014/eastward_velocity/n4.nc.gz',
-        'fes2014/eastward_velocity/nu2.nc.gz', 'fes2014/eastward_velocity/o1.nc.gz',
-        'fes2014/eastward_velocity/p1.nc.gz', 'fes2014/eastward_velocity/q1.nc.gz',
-        'fes2014/eastward_velocity/r2.nc.gz', 'fes2014/eastward_velocity/s1.nc.gz',
-        'fes2014/eastward_velocity/s2.nc.gz', 'fes2014/eastward_velocity/s4.nc.gz',
-        'fes2014/eastward_velocity/sa.nc.gz', 'fes2014/eastward_velocity/ssa.nc.gz',
+        'fes2014/eastward_velocity/eps2.nc.gz',
+        'fes2014/eastward_velocity/j1.nc.gz',
+        'fes2014/eastward_velocity/k1.nc.gz',
+        'fes2014/eastward_velocity/k2.nc.gz',
+        'fes2014/eastward_velocity/l2.nc.gz',
+        'fes2014/eastward_velocity/la2.nc.gz',
+        'fes2014/eastward_velocity/m2.nc.gz',
+        'fes2014/eastward_velocity/m3.nc.gz',
+        'fes2014/eastward_velocity/m4.nc.gz',
+        'fes2014/eastward_velocity/m6.nc.gz',
+        'fes2014/eastward_velocity/m8.nc.gz',
+        'fes2014/eastward_velocity/mf.nc.gz',
+        'fes2014/eastward_velocity/mks2.nc.gz',
+        'fes2014/eastward_velocity/mm.nc.gz',
+        'fes2014/eastward_velocity/mn4.nc.gz',
+        'fes2014/eastward_velocity/ms4.nc.gz',
+        'fes2014/eastward_velocity/msf.nc.gz',
+        'fes2014/eastward_velocity/msqm.nc.gz',
+        'fes2014/eastward_velocity/mtm.nc.gz',
+        'fes2014/eastward_velocity/mu2.nc.gz',
+        'fes2014/eastward_velocity/n2.nc.gz',
+        'fes2014/eastward_velocity/n4.nc.gz',
+        'fes2014/eastward_velocity/nu2.nc.gz',
+        'fes2014/eastward_velocity/o1.nc.gz',
+        'fes2014/eastward_velocity/p1.nc.gz',
+        'fes2014/eastward_velocity/q1.nc.gz',
+        'fes2014/eastward_velocity/r2.nc.gz',
+        'fes2014/eastward_velocity/s1.nc.gz',
+        'fes2014/eastward_velocity/s2.nc.gz',
+        'fes2014/eastward_velocity/s4.nc.gz',
+        'fes2014/eastward_velocity/sa.nc.gz',
+        'fes2014/eastward_velocity/ssa.nc.gz',
         'fes2014/eastward_velocity/t2.nc.gz']
     model_files['v'] = ['fes2014/northward_velocity/2n2.nc.gz',
-        'fes2014/northward_velocity/eps2.nc.gz', 'fes2014/northward_velocity/j1.nc.gz',
-        'fes2014/northward_velocity/k1.nc.gz', 'fes2014/northward_velocity/k2.nc.gz',
-        'fes2014/northward_velocity/l2.nc.gz', 'fes2014/northward_velocity/la2.nc.gz',
-        'fes2014/northward_velocity/m2.nc.gz', 'fes2014/northward_velocity/m3.nc.gz',
-        'fes2014/northward_velocity/m4.nc.gz', 'fes2014/northward_velocity/m6.nc.gz',
-        'fes2014/northward_velocity/m8.nc.gz', 'fes2014/northward_velocity/mf.nc.gz',
-        'fes2014/northward_velocity/mks2.nc.gz', 'fes2014/northward_velocity/mm.nc.gz',
-        'fes2014/northward_velocity/mn4.nc.gz', 'fes2014/northward_velocity/ms4.nc.gz',
-        'fes2014/northward_velocity/msf.nc.gz', 'fes2014/northward_velocity/msqm.nc.gz',
-        'fes2014/northward_velocity/mtm.nc.gz', 'fes2014/northward_velocity/mu2.nc.gz',
-        'fes2014/northward_velocity/n2.nc.gz', 'fes2014/northward_velocity/n4.nc.gz',
-        'fes2014/northward_velocity/nu2.nc.gz', 'fes2014/northward_velocity/o1.nc.gz',
-        'fes2014/northward_velocity/p1.nc.gz', 'fes2014/northward_velocity/q1.nc.gz',
-        'fes2014/northward_velocity/r2.nc.gz', 'fes2014/northward_velocity/s1.nc.gz',
-        'fes2014/northward_velocity/s2.nc.gz', 'fes2014/northward_velocity/s4.nc.gz',
-        'fes2014/northward_velocity/sa.nc.gz', 'fes2014/northward_velocity/ssa.nc.gz',
+        'fes2014/northward_velocity/eps2.nc.gz',
+        'fes2014/northward_velocity/j1.nc.gz',
+        'fes2014/northward_velocity/k1.nc.gz',
+        'fes2014/northward_velocity/k2.nc.gz',
+        'fes2014/northward_velocity/l2.nc.gz',
+        'fes2014/northward_velocity/la2.nc.gz',
+        'fes2014/northward_velocity/m2.nc.gz',
+        'fes2014/northward_velocity/m3.nc.gz',
+        'fes2014/northward_velocity/m4.nc.gz',
+        'fes2014/northward_velocity/m6.nc.gz',
+        'fes2014/northward_velocity/m8.nc.gz',
+        'fes2014/northward_velocity/mf.nc.gz',
+        'fes2014/northward_velocity/mks2.nc.gz',
+        'fes2014/northward_velocity/mm.nc.gz',
+        'fes2014/northward_velocity/mn4.nc.gz',
+        'fes2014/northward_velocity/ms4.nc.gz',
+        'fes2014/northward_velocity/msf.nc.gz',
+        'fes2014/northward_velocity/msqm.nc.gz',
+        'fes2014/northward_velocity/mtm.nc.gz',
+        'fes2014/northward_velocity/mu2.nc.gz',
+        'fes2014/northward_velocity/n2.nc.gz',
+        'fes2014/northward_velocity/n4.nc.gz',
+        'fes2014/northward_velocity/nu2.nc.gz',
+        'fes2014/northward_velocity/o1.nc.gz',
+        'fes2014/northward_velocity/p1.nc.gz',
+        'fes2014/northward_velocity/q1.nc.gz',
+        'fes2014/northward_velocity/r2.nc.gz',
+        'fes2014/northward_velocity/s1.nc.gz',
+        'fes2014/northward_velocity/s2.nc.gz',
+        'fes2014/northward_velocity/s4.nc.gz',
+        'fes2014/northward_velocity/sa.nc.gz',
+        'fes2014/northward_velocity/ssa.nc.gz',
         'fes2014/northward_velocity/t2.nc.gz']
     # create temporary files for testing glob functionality
     for t in ['u','v']:
@@ -496,7 +561,8 @@ def test_definition_TPXO9_glob():
     shutil.rmtree(filepath.joinpath('TPXO9_atlas_v5'))
 
 def test_definition_TPXO9_currents():
-    """Tests the reading of the TPXO9-atlas-v5 model definition file for currents
+    """Tests the reading of the TPXO9-atlas-v5 model definition file
+    for currents
     """
     # read model definition file
     definition_file = 'model_TPXO9-atlas-v5_currents.json'
@@ -539,7 +605,8 @@ def test_definition_TPXO9_currents():
     assert m.name == 'TPXO9-atlas-v5'
     assert m.grid_file == grid_file
     for t in ['u','v']:
-        assert sorted(m.model_file[t]) == [pathlib.Path(f) for f in model_files[t]]
+        assert sorted(m.model_file[t]) == \
+            [pathlib.Path(f) for f in model_files[t]]
     assert m.type == ['u', 'v']
     assert m.scale == 1.0/100.0
     assert m.compressed is False
@@ -549,8 +616,8 @@ def test_definition_TPXO9_currents():
 
 # PURPOSE: test glob file functionality
 def test_definition_TPXO9_currents_glob():
-    """Tests the reading of the TPXO9-atlas-v5 model definition file for currents
-    with glob file searching
+    """Tests the reading of the TPXO9-atlas-v5 model definition file for
+    currents with glob file searching
     """
     # read model definition file
     definition_file = 'model_TPXO9-atlas-v5_currents.json'
@@ -679,14 +746,16 @@ def test_parse_TPXO9_elevation(MODEL):
         assert all(c in m.constituents for c in ['s1',])
 
 # parameterize model
-current_models = set(pyTMD.io.model.ATLAS()) & set(pyTMD.io.model.ocean_current())
+current_models = set(pyTMD.io.model.ATLAS()) & \
+    set(pyTMD.io.model.ocean_current())
 @pytest.mark.parametrize("MODEL", sorted(current_models))
 def test_parse_TPXO9_currents(MODEL):
     """Tests the parsing of ATLAS-type current model files
     """
     m = pyTMD.io.model(verify=False).current(MODEL)
     m.constituents = [pyTMD.io.model.parse_file(f) for f in m.model_file['u']]
-    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2','m4','ms4','mn4','2n2']
+    constituents = ['q1','o1','p1','k1','n2','m2','s2','k2',
+        'm4','ms4','mn4','2n2']
     assert all(c in m.constituents for c in constituents)
     # test additional constituents found in newer models
     if m.name in ('TPXO9-atlas-v3','TPXO9-atlas-v4','TPXO9-atlas-v5'):
