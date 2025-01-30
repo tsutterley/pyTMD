@@ -136,7 +136,8 @@ def test_load_pole_tide_displacements(TYPE):
     dfactor = -hb2*atr*(units.omega**2*rr**2)/(2.0*gamma_0)
 
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
+        convention=CONVENTION)
     # read and interpolate IERS daily polar motion values
     px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions
@@ -150,19 +151,23 @@ def test_load_pole_tide_displacements(TYPE):
         Srad.mask = np.zeros((ny,nx,nt),dtype=bool)
         approx = np.zeros((ny,nx,nt))
         for i in range(nt):
-            SRAD = dfactor*np.sin(2.0*theta)*(mx[i]*np.cos(phi)+my[i]*np.sin(phi))
+            SRAD = dfactor*np.sin(2.0*theta) * \
+                (mx[i]*np.cos(phi)+my[i]*np.sin(phi))
             # reform grid
             Srad.data[:,:,i] = np.reshape(SRAD, (ny, nx))
             Srad.mask[:,:,i] = np.isnan(Srad.data[:,:,i])
             # approximate values from IERS (2010) conventions
-            S = -33.0*np.sin(2.0*theta)*(mx[i]*np.cos(phi) + my[i]*np.sin(phi))
+            S = -33.0*np.sin(2.0*theta) * \
+                (mx[i]*np.cos(phi) + my[i]*np.sin(phi))
             approx[:,:,i] = np.reshape(S, (ny, nx))/1e3
     elif (TYPE == 'drift'):
         Srad = np.ma.zeros((nt), fill_value=FILL_VALUE)
-        Srad.data[:] = dfactor*np.sin(2.0*theta)*(mx*np.cos(phi)+my*np.sin(phi))
+        Srad.data[:] = dfactor*np.sin(2.0*theta) * \
+            (mx*np.cos(phi)+my*np.sin(phi))
         Srad.mask = np.isnan(Srad.data)
         # approximate values from IERS (2010) conventions
-        S = -33.0*np.sin(2.0*theta)*(mx*np.cos(phi) + my*np.sin(phi))
+        S = -33.0*np.sin(2.0*theta) * \
+            (mx*np.cos(phi) + my*np.sin(phi))
         approx = S/1e3
     elif (TYPE == 'time series'):
         nstation = len(x)
@@ -170,11 +175,13 @@ def test_load_pole_tide_displacements(TYPE):
         Srad.mask = np.zeros((nstation,nt),dtype=bool)
         approx = np.zeros((nstation,nt))
         for s in range(nstation):
-            SRAD = dfactor[s]*np.sin(2.0*theta[s])*(mx*np.cos(phi[s])+my*np.sin(phi[s]))
+            SRAD = dfactor[s]*np.sin(2.0*theta[s]) * \
+                (mx*np.cos(phi[s])+my*np.sin(phi[s]))
             Srad.data[s,:] = np.copy(SRAD)
             Srad.mask[s,:] = np.isnan(Srad.data[s,:])
             # approximate values from IERS (2010) conventions
-            S = -33.0*np.sin(2.0*theta[s])*(mx*np.cos(phi[s]) + my*np.sin(phi[s]))
+            S = -33.0*np.sin(2.0*theta[s]) * \
+                (mx*np.cos(phi[s]) + my*np.sin(phi[s]))
             approx[s,:] = np.copy(S)/1e3
     # replace invalid data with fill values
     Srad.data[Srad.mask] = Srad.fill_value
@@ -201,8 +208,8 @@ def test_read_ocean_pole(METHOD):
         header[param] = np.float64(contents)
 
     # extract longitude and latitude from header
-    lat = re.findall(r'latitude = ([-+]?\d+\.\d+) degrees', file_contents[1]).pop()
-    lon = re.findall(r'longitude = ([-+]?\d+\.\d+) degrees', file_contents[1]).pop()
+    lat, = re.findall(r'latitude = ([-+]?\d+\.\d+) degrees', file_contents[1])
+    lon, = re.findall(r'longitude = ([-+]?\d+\.\d+) degrees', file_contents[1])
     header['latitude'] = np.float64(lat)
     # convert longitude from 0:360 to -180:180
     header['longitude'] = np.float64(lon) - 360.0
@@ -211,7 +218,8 @@ def test_read_ocean_pole(METHOD):
     npts = len(np.atleast_1d(header['longitude']))
     # read ocean pole tide map from Desai (2002)
     Umap = {}
-    Umap['R'], Umap['N'], Umap['E'], ilon, ilat = pyTMD.io.IERS.read_binary_file()
+    Umap['R'], Umap['N'], Umap['E'], ilon, ilat = \
+        pyTMD.io.IERS.read_binary_file()
     # interpolate ocean pole tide map from Desai (2002)
     Uint = {}
     if (METHOD == 'spline'):
@@ -230,7 +238,8 @@ def test_read_ocean_pole(METHOD):
             Uint[key] = np.zeros((npts), dtype=np.clongdouble)
             r1 = scipy.interpolate.RegularGridInterpolator((ilon,ilat[::-1]),
                 val[:,::-1], bounds_error=False, method=METHOD)
-            Uint[key][:] = r1.__call__(np.c_[header['longitude'], header['latitude']])
+            points = np.c_[header['longitude'], header['latitude']]
+            Uint[key][:] = r1.__call__(points)
 
     # extract coefficients from IERS pole tide map
     U = pyTMD.io.IERS.extract_coefficients(
@@ -259,8 +268,8 @@ def test_ocean_pole_tide(METHOD):
         header[param] = np.float64(contents)
 
     # extract longitude and latitude from header
-    lat = re.findall(r'latitude = ([-+]?\d+\.\d+) degrees', file_contents[1]).pop()
-    lon = re.findall(r'longitude = ([-+]?\d+\.\d+) degrees', file_contents[1]).pop()
+    lat, = re.findall(r'latitude = ([-+]?\d+\.\d+) degrees', file_contents[1])
+    lon, = re.findall(r'longitude = ([-+]?\d+\.\d+) degrees', file_contents[1])
     header['latitude'] = np.float64(lat)
     # convert longitude from 0:360 to -180:180
     header['longitude'] = np.float64(lon) - 360.0
@@ -296,7 +305,8 @@ def test_ocean_pole_tide(METHOD):
     assert np.isclose(K, header['K'])
 
     # read test file for values
-    names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2','u_radial','u_north','u_east')
+    names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2',
+        'u_radial','u_north','u_east')
     formats = ('i4','f4','f4','f4','f4','f4','f4','f4','f4','f4')
     validation = np.loadtxt(ocean_pole_test_file, skiprows=26,
         dtype=dict(names=names, formats=formats))
@@ -371,14 +381,15 @@ def test_predict_ocean_pole_tide(METHOD):
         header[param] = np.float64(contents)
 
     # extract longitude and latitude from header
-    lat = re.findall(r'latitude = ([-+]?\d+\.\d+) degrees', file_contents[1]).pop()
-    lon = re.findall(r'longitude = ([-+]?\d+\.\d+) degrees', file_contents[1]).pop()
+    lat, = re.findall(r'latitude = ([-+]?\d+\.\d+) degrees', file_contents[1])
+    lon, = re.findall(r'longitude = ([-+]?\d+\.\d+) degrees', file_contents[1])
     header['latitude'] = np.float64(lat)
     # convert longitude from 0:360 to -180:180
     header['longitude'] = np.float64(lon) - 360.0
 
     # read test file for values
-    names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2','u_radial','u_north','u_east')
+    names = ('MJD','xbar_p','ybar_p','x_p','y_p','m1','m2',
+        'u_radial','u_north','u_east')
     formats = ('i4','f4','f4','f4','f4','f4','f4','f4','f4','f4')
     validation = np.loadtxt(ocean_pole_test_file, skiprows=26,
         dtype=dict(names=names, formats=formats))
@@ -408,8 +419,12 @@ def test_predict_ocean_pole_tide(METHOD):
         )
 
     # convert latitude and longitude to ECEF cartesian coordinates
-    X, Y, Z = pyTMD.spatial.to_cartesian(header['longitude'], header['latitude'],
-        a_axis=units.a_axis, flat=units.flat)
+    X, Y, Z = pyTMD.spatial.to_cartesian(
+        header['longitude'],
+        header['latitude'],
+        a_axis=units.a_axis,
+        flat=units.flat
+    )
     # calculate geocentric latitude and convert to degrees
     latitude_geocentric = np.arctan(Z / np.sqrt(X**2.0 + Y**2.0))/dtr
     # geocentric colatitude and longitude in radians
@@ -545,7 +560,8 @@ def test_ocean_pole_tide_displacements(TYPE, METHOD):
     K1 = 4.0*np.pi*units.G*rho_w*Hp*units.a_axis**3/(3.0*units.GM)
 
     # calculate angular coordinates of mean/secular pole at time
-    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal, convention=CONVENTION)
+    mpx, mpy, fl = timescale.eop.iers_mean_pole(time_decimal,
+        convention=CONVENTION)
     # read and interpolate IERS daily polar motion values
     px, py = timescale.eop.iers_polar_motion(MJD, k=3, s=0)
     # calculate differentials from mean/secular pole positions

@@ -220,7 +220,7 @@ def tide_elevations(
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
         BUFFER: int | float | None = None,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
         TIME: str = 'UTC',
@@ -261,7 +261,7 @@ def tide_elevations(
         Boundaries for cropping tide model data
     BUFFER: int, float or NoneType, default None
         Buffer distance for cropping tide model data
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
         Time period for calculating delta times
@@ -448,7 +448,7 @@ def tide_currents(
         CROP: bool = False,
         BOUNDS: list | np.ndarray | None = None,
         BUFFER: int | float | None = None,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
         TIME: str = 'UTC',
@@ -487,7 +487,7 @@ def tide_currents(
         Boundaries for cropping tide model data
     BUFFER: int, float or NoneType, default None
         Buffer distance for cropping tide model data
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
         Time period for calculating delta times
@@ -667,7 +667,7 @@ def tide_masks(x: np.ndarray, y: np.ndarray,
         MODEL: str | None = None,
         GZIP: bool = False,
         DEFINITION_FILE: str | pathlib.Path | None = None,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         METHOD: str = 'spline'
     ):
     """
@@ -687,7 +687,7 @@ def tide_masks(x: np.ndarray, y: np.ndarray,
         Tide model files are gzip compressed
     DEFINITION_FILE: str or NoneType, default None
         Tide model definition file for use
-    EPSG: str or int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: str or int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     METHOD: str, default 'spline'
         interpolation method
@@ -795,7 +795,7 @@ def tide_masks(x: np.ndarray, y: np.ndarray,
 # PURPOSE: compute long-period equilibrium tidal elevations
 def LPET_elevations(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
         TIME: str = 'UTC',
@@ -812,7 +812,7 @@ def LPET_elevations(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
         Time period for calculating delta times
@@ -900,7 +900,7 @@ def LPET_elevations(
 # following IERS Convention (2010) guidelines
 def LPT_displacements(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
         TIME: str = 'UTC',
@@ -921,7 +921,7 @@ def LPT_displacements(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
         Time period for calculating delta times
@@ -1100,7 +1100,7 @@ def LPT_displacements(
 # following IERS Convention (2010) guidelines
 def OPT_displacements(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
         TIME: str = 'UTC',
@@ -1122,7 +1122,7 @@ def OPT_displacements(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
         Time period for calculating delta times
@@ -1328,7 +1328,7 @@ def OPT_displacements(
 # PURPOSE: compute solid earth tidal elevations
 def SET_displacements(
         x: np.ndarray, y: np.ndarray, delta_time: np.ndarray,
-        EPSG: str | int = 3031,
+        EPSG: str | int = 4326,
         EPOCH: list | tuple = (2000, 1, 1, 0, 0, 0),
         TYPE: str | None = 'drift',
         TIME: str = 'UTC',
@@ -1349,7 +1349,7 @@ def SET_displacements(
         y-coordinates in projection EPSG
     delta_time: np.ndarray
         seconds since EPOCH or datetime array
-    EPSG: int, default: 3031 (Polar Stereographic South, WGS84)
+    EPSG: int, default: 4326 (WGS84 Latitude and Longitude)
         Input coordinate system
     EPOCH: tuple, default (2000,1,1,0,0,0)
         Time period for calculating delta times

@@ -853,7 +853,8 @@ def test_parse_tables():
         CTE = pyTMD.arguments._parse_tide_potential_table(table)
         for i, line in enumerate(CTE):
             # convert Doodson number to Cartwright numbers
-            tau, s, h, p, n, pp = pyTMD.arguments._from_doodson_number(line['DO'])
+            DO = line['DO']
+            tau, s, h, p, n, pp = pyTMD.arguments._from_doodson_number(DO)
             assert tau == line['tau'], line
             assert s == line['s'], line
             assert h == line['h'], line

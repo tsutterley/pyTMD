@@ -97,8 +97,9 @@ class Test_CATS2008:
         zfile = zipfile.ZipFile(FILE)
         print(f'{posixpath.join(*HOST)} -->\n')
         # find model files within zip file
-        rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)',re.IGNORECASE)
-        m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
+        rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)', re.I)
+        m = [m for m in zfile.filelist
+            if rx.match(posixpath.basename(m.filename))]
         # verify that model files are within downloaded zip file
         assert all(m)
         # output tide directory for model
@@ -129,7 +130,11 @@ class Test_CATS2008:
 
     # PURPOSE: Download CATS2008 from AWS S3 bucket
     @pytest.fixture(scope="class", autouse=True)
-    def AWS_CATS2008(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
+    def AWS_CATS2008(self,
+            aws_access_key_id,
+            aws_secret_access_key,
+            aws_region_name
+        ):
         # get aws session object
         session = boto3.Session(
             aws_access_key_id=aws_access_key_id,
@@ -191,7 +196,11 @@ class Test_CATS2008:
 
     # PURPOSE: Download Antarctic Tide Gauge Database from AWS
     @pytest.fixture(scope="class", autouse=True)
-    def AWS_AntTG(self, aws_access_key_id, aws_secret_access_key, aws_region_name):
+    def AWS_AntTG(self,
+            aws_access_key_id,
+            aws_secret_access_key,
+            aws_region_name
+        ):
         # get aws session object
         session = boto3.Session(
             aws_access_key_id=aws_access_key_id,
@@ -459,7 +468,8 @@ class Test_CATS2008:
             station_amp.data[s,:] = np.array(amp,dtype=np.float64)
             station_ph.data[s,:] = np.array(ph,dtype=np.float64)
         # update masks where NaN
-        station_amp.mask = np.isnan(station_amp.data) | (station_amp.data == 0.0)
+        station_amp.mask = np.isnan(station_amp.data) | \
+            (station_amp.data == 0.0)
         station_ph.mask = np.isnan(station_ph.data)
         # replace nans with fill values
         station_amp.data[station_amp.mask] = station_amp.fill_value
@@ -481,12 +491,13 @@ class Test_CATS2008:
         valid = np.all((~station_z.mask) & (~model_z.mask), axis=1)
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
             'Cape Roberts','Casey','Doake Ice Rumples','EE4A','EE4B',
-            'Eklund Islands','Gerlache C','Groussac','Gurrachaga','Half Moon Is.',
-            'Heard Island','Hobbs Pool','Mawson','McMurdo','Mikkelsen','Palmer',
-            'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
-            'Seymour Is','Terra Nova Bay']
+            'Eklund Islands','Gerlache C','Groussac','Gurrachaga',
+            'Half Moon Is.','Heard Island','Hobbs Pool','Mawson','McMurdo',
+            'Mikkelsen','Palmer','Primavera','Rutford GL','Rutford GPS',
+            'Rothera','Scott Base','Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
-        invalid_stations = [i for i,s in enumerate(shortname) if s in invalid_list]
+        invalid_stations = [i for i,s in enumerate(shortname)
+            if s in invalid_list]
         valid[invalid_stations] = False
         nv = np.count_nonzero(valid)
         # compare with RMS values from King et al. (2011)
@@ -496,8 +507,9 @@ class Test_CATS2008:
         for i,c in enumerate(constituents):
             # calculate difference and rms
             difference = np.abs(station_z[valid,i] - model_z[valid,i])
+            variance = np.sum(difference**2)/(2.0*nv)
             # round to precision of King et al. (2011)
-            rms[i] = np.round(np.sqrt(np.sum(difference**2)/(2.0*nv)),decimals=1)
+            rms[i] = np.round(np.sqrt(variance), decimals=1)
         # test RMS differences
         assert np.all(rms <= RMS)
 
@@ -552,12 +564,13 @@ class Test_CATS2008:
         # compare daily outputs at each station point
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
             'Cape Roberts','Casey','Doake Ice Rumples','EE4A','EE4B',
-            'Eklund Islands','Gerlache C','Groussac','Gurrachaga','Half Moon Is.',
-            'Heard Island','Hobbs Pool','Mawson','McMurdo','Mikkelsen','Palmer',
-            'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
-            'Seymour Is','Terra Nova Bay']
+            'Eklund Islands','Gerlache C','Groussac','Gurrachaga',
+            'Half Moon Is.','Heard Island','Hobbs Pool','Mawson','McMurdo',
+            'Mikkelsen','Palmer','Primavera','Rutford GL','Rutford GPS',
+            'Rothera','Scott Base','Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
-        valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations=[i for i,s in enumerate(shortname)
+            if s not in invalid_list]
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
 
@@ -638,12 +651,13 @@ class Test_CATS2008:
         # compare outputs at each station point
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
             'Cape Roberts','Casey','Doake Ice Rumples','EE4A','EE4B',
-            'Eklund Islands','Gerlache C','Groussac','Gurrachaga','Half Moon Is.',
-            'Heard Island','Hobbs Pool','Mawson','McMurdo','Mikkelsen','Palmer',
-            'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
-            'Seymour Is','Terra Nova Bay']
+            'Eklund Islands','Gerlache C','Groussac','Gurrachaga',
+            'Half Moon Is.','Heard Island','Hobbs Pool','Mawson','McMurdo',
+            'Mikkelsen','Palmer','Primavera','Rutford GL','Rutford GPS',
+            'Rothera','Scott Base','Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
-        valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations=[i for i,s in enumerate(shortname)
+            if s not in invalid_list]
         ns = len(valid_stations)
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
@@ -706,7 +720,7 @@ class Test_CATS2008:
                 assert np.all(np.abs(difference) < eps)
 
     # PURPOSE: Tests solving for harmonic constants
-    @pytest.mark.parametrize("SOLVER", ['lstsq', 'gelsy', 'gelss', 'gelsd', 'bvls'])
+    @pytest.mark.parametrize("SOLVER", ['lstsq','gelsy','gelss','gelsd','bvls'])
     def test_solve(self, SOLVER):
         # get model parameters
         model = pyTMD.io.model(filepath).elevation('CATS2008')
@@ -790,12 +804,13 @@ class Test_CATS2008:
         # compare outputs at each station point
         invalid_list = ['Ablation Lake','Amery','Bahia Esperanza','Beaver Lake',
             'Cape Roberts','Casey','Doake Ice Rumples','EE4A','EE4B',
-            'Eklund Islands','Gerlache C','Groussac','Gurrachaga','Half Moon Is.',
-            'Heard Island','Hobbs Pool','Mawson','McMurdo','Mikkelsen','Palmer',
-            'Primavera','Rutford GL','Rutford GPS','Rothera','Scott Base',
-            'Seymour Is','Terra Nova Bay']
+            'Eklund Islands','Gerlache C','Groussac','Gurrachaga',
+            'Half Moon Is.','Heard Island','Hobbs Pool','Mawson','McMurdo',
+            'Mikkelsen','Palmer','Primavera','Rutford GL','Rutford GPS',
+            'Rothera','Scott Base','Seymour Is','Terra Nova Bay']
         # remove coastal stations from the list
-        valid_stations = [i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations = [i for i,s in enumerate(shortname)
+            if s not in invalid_list]
         ns = len(valid_stations)
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
@@ -908,8 +923,9 @@ class Test_AOTIM5_2018:
         zfile = zipfile.ZipFile(FILE)
         print(f'{posixpath.join(*HOST)} -->\n')
         # find model files within zip file
-        rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)',re.IGNORECASE)
-        m = [m for m in zfile.filelist if rx.match(posixpath.basename(m.filename))]
+        rx = re.compile(r'(grid|h[0f]?|UV[0]?|Model|xy)[_\.](.*?)', re.I)
+        m = [m for m in zfile.filelist
+            if rx.match(posixpath.basename(m.filename))]
         # verify that model files are within downloaded zip file
         assert all(m)
         # output tide directory for model
@@ -958,8 +974,7 @@ class Test_AOTIM5_2018:
         # compute validation data from Matlab TMD program using octave
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
         octave = copy.copy(oct2py.octave)
-        # TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
-        TMDpath = pathlib.Path.home().joinpath('github','TMD_Matlab_Toolbox_v2.5','TMD')
+        TMDpath = filepath.joinpath('..','TMD_Matlab_Toolbox','TMD').absolute()
         octave.addpath(octave.genpath(str(TMDpath)))
         octave.addpath(str(filepath))
         # turn off octave warnings
@@ -1060,7 +1075,8 @@ class Test_AOTIM5_2018:
         # compare daily outputs at each station point
         invalid_list = ['BC1','KS12','KS14','BI3','BI4']
         # remove coastal stations from the list
-        valid_stations=[i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations=[i for i,s in enumerate(shortname)
+            if s not in invalid_list]
 
         # read validation data from Matlab TMD program
         # https://github.com/EarthAndSpaceResearch/TMD_Matlab_Toolbox_v2.5
@@ -1133,7 +1149,8 @@ class Test_AOTIM5_2018:
         # compare outputs at each station point
         invalid_list = ['BC1','KS12','KS14','BI3','BI4']
         # remove coastal stations from the list
-        valid_stations = [i for i,s in enumerate(shortname) if s not in invalid_list]
+        valid_stations = [i for i,s in enumerate(shortname)
+            if s not in invalid_list]
         ns = len(valid_stations)
         # will verify differences between model outputs are within tolerance
         eps = np.finfo(np.float16).eps
