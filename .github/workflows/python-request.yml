@@ -94,5 +94,5 @@ jobs:
       if: steps.secrets.outputs.accessible == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: code-coverage-report
+        name: code-coverage-report-${{ matrix.os }}
         path: ./coverage.xml
