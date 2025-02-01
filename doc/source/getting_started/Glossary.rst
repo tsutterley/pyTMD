@@ -185,6 +185,9 @@ Glossary
 
     Semi-diurnal Tide
         tidal oscillations with an approximate half-day period
+    
+    Shallow-water Tide
+        additional tidal constituents necessary for shallow seas that are heavily dependent on ocean bathymetry and coastline geometry
 
     Sidereal day
         time it takes for a celestial body to make one complete rotation relative to the stars

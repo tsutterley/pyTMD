@@ -10,19 +10,28 @@ Ocean tides are typically observed using float gauges, GPS stations, gravimeters
 For each of these measurements, it is important to note the `vertical datum of the measurement technique <https://www.esr.org/data-products/antarctic_tg_database/ocean-tide-and-ocean-tide-loading/>`_.
 Ocean tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh`.
 A secondary tidal effect, known as load tides, is due to the elastic response of the Earth's crust to ocean tidal loading, which produces deformation of both the sea floor and adjacent land areas.
-Tidal oscillations for both ocean and load tides can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies.
+Tidal oscillations for both ocean and load tides can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies that are associated with the relative positions of the sun, moon and Earth.
+These tidal constituents are typically classified into different "species" based on their approximate period: short-period, semi-diurnal, diurnal, and long-period.
 
+The amplitude and phase of major constituents are provided by ocean tide models, which can be used for tidal predictions.
 Ocean tide models are typically one of following categories:
-1) an empirically adjusted model,
-2) a barotropic hydrodynamic model constrained by data assimilation,
-or 3) an unconstrained hydrodynamic model :cite:p:`Stammer:2014ci`.
+1) empirically adjusted models,
+2) barotropic hydrodynamic models constrained by data assimilation, and
+3) unconstrained hydrodynamic models :cite:p:`Stammer:2014ci`.
 ``pyTMD`` is not an ocean or load tide model, but rather a tool for using constituents from ocean and load tide models to calculate the tide deflections or currents at particular locations and times :cite:p:`Egbert:2002ge`.
+
+``pyTMD.io`` contains routines for reading major constituent values from commonly available tide models, and interpolating those values to spatial locations.
+For any given time, ``pyTMD.astro`` can calculate the longitudes of the sun (`S`), moon (`H`), lunar perigree (`P`), ascending lunar node (`N`) and solar perigree (`Ps`), which are used in combination with the lunar hour angle (\ |tau|\ ) in a six-dimensional Fourier series :cite:p:`Doodson:1921kt` :cite:p:`Dietrich:1980ua`.
+Each constituent has a particular "Doodson number" describing the polynomial coefficients of each of these astronomical terms in the Fourier series :cite:p:`Doodson:1921kt`. 
+``pyTMD`` stores these coefficients in an easily accessible `JSON database <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/doodson.json>`_ supplied with the program.
+Together these coefficients can be used to calculate the frequencies and 18.6-year modulations of the tidal constituents, and allow for the accurate determination of the tidal amplitudes :cite:p:`Schureman:1958ty` :cite:p:`Dietrich:1980ua`.
 
 Solid Earth Tides
 #################
 
-Similar to ocean tides, solid Earth tides are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun :cite:p:`Agnew:2015kw` :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk`.
+Similar to ocean tides, solid Earth tides (or body tides) are tidal deformations due to gravitational undulations based on the relative positions of the Earth, moon and sun :cite:p:`Agnew:2015kw` :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh` :cite:p:`Montenbruck:1989uk`.
 However, while ocean tides are apparent to observers on the coast, solid Earth tides are typically more difficult to observe due to the reference frame of the observer moving.
+The tidal deformation of the Earth is to a very high degree instantaneous, with the Earth's response to the gravitational potential of the moon and sun being nearly immediate.
 The total gravitational potential at a position on the Earth's surface due to a celestial object is directly related to the distance between the Earth and the object, and the mass of that object :cite:p:`Agnew:2015kw` :cite:p:`Wahr:1981ea`.
 Analytical approximate positions for the sun and moon can be calculated within ``pyTMD``, and high-resolution numerical ephemerides for the sun and moon can be downloaded from the `Jet Propulsion Laboratory <https://ssd.jpl.nasa.gov/planets/orbits.html>`_.
 
@@ -104,3 +113,5 @@ Time in Julian centuries (36525 days) are calculated relative to noon on January
     :label: 5
 
     T = \frac{JD - 2451545.0}{36525}
+
+.. |tau|    unicode:: U+1D70F .. MATHEMATICAL ITALIC SMALL TAU
