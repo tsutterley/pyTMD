@@ -601,7 +601,7 @@ def _infer_semi_diurnal(
                 [1.5018, -3.2579, 1.7561]])
             coef = np.inner(Ainv, z)
             # convert frequency to cycles per day
-            f = 2.0*omega[k]*86400.0
+            f = omega[k]*86400.0/(2.0*np.pi)
             # calculate interpolated values for constituent
             interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
             # rescale tide values
@@ -766,7 +766,7 @@ def _infer_diurnal(
                 [1.438, -3.0297, 1.5917]])
             coef = np.inner(Ainv, z)
             # convert frequency to cycles per day
-            f = 2.0*omega[k]*86400.0
+            f = omega[k]*86400.0/(2.0*np.pi)
             # calculate interpolated values for constituent
             interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
             # rescale tide values

@@ -21,6 +21,7 @@ The available examples include:
    ../notebooks/Plot-ATLAS-Compact
    ../notebooks/Plot-Ocean-Pole-Tide-Map
    ../notebooks/Plot-Ross-Ice-Shelf-Map
+   ../notebooks/Plot-Tidal-Spectra
    ../notebooks/Plot-Tide-Forecasts
    ../notebooks/Plot-Tide-Form-Factor
    ../notebooks/Solve-Synthetic-Tides
@@ -85,6 +86,12 @@ The available examples include:
       :link: ../notebooks/Plot-Ross-Ice-Shelf-Map.html
       :link-alt: Creates an animation of hourly tidal elevations for the Ross Ice Shelf
 
+    .. grid-item-card::  Plot Tidal Spectra
+      :text-align: center
+      :img-top: ../_assets/tidal_spectra.png
+      :link: ../notebooks/Plot-Tidal-Spectra.html
+      :link-alt: Plots tidal potential amplitude spectra for constituents
+
     .. grid-item-card::  Plot Tide Forecasts
       :text-align: center
       :img-top: ../_assets/tide_forecasts.png
@@ -96,6 +103,8 @@ The available examples include:
       :img-top: ../_assets/tide_form_factor.png
       :link: ../notebooks/Plot-Tide-Form-Factor.html
       :link-alt: Plots maps of the dominant tidal species
+
+.. grid:: 1 2 4 4
 
     .. grid-item-card::  Solve Synthetic Tides
       :text-align: center
