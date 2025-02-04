@@ -21,10 +21,17 @@ Ocean tide models are typically one of following categories:
 ``pyTMD`` is not an ocean or load tide model, but rather a tool for using constituents from ocean and load tide models to calculate the tide deflections or currents at particular locations and times :cite:p:`Egbert:2002ge`.
 
 ``pyTMD.io`` contains routines for reading major constituent values from commonly available tide models, and interpolating those values to spatial locations.
-For any given time, ``pyTMD.astro`` can calculate the longitudes of the sun (`S`), moon (`H`), lunar perigree (`P`), ascending lunar node (`N`) and solar perigree (`Ps`), which are used in combination with the lunar hour angle (\ |tau|\ ) in a six-dimensional Fourier series :cite:p:`Doodson:1921kt` :cite:p:`Dietrich:1980ua`.
+``pyTMD`` uses the astronomical argument formalism outlined in :cite:p:`Doodson:1921kt` for the prediction of ocean and load tides. 
+For any given time, ``pyTMD.astro`` calculates the longitudes of the sun (`S`), moon (`H`), lunar perigree (`P`), ascending lunar node (`N`) and solar perigree (`Ps`), which are used in combination with the lunar hour angle (\ |tau|\ ) in a six-dimensional Fourier series :cite:p:`Doodson:1921kt` :cite:p:`Dietrich:1980ua`.
 Each constituent has a particular "Doodson number" describing the polynomial coefficients of each of these astronomical terms in the Fourier series :cite:p:`Doodson:1921kt`. 
+
+.. math::
+    :label: 1
+
+    \sigma(t) = d_1\tau + d_2 S + d_3 H + d_4 P + d_5 N + d_6 Ps
+
 ``pyTMD`` stores these coefficients in an easily accessible `JSON database <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/doodson.json>`_ supplied with the program.
-Together these coefficients can be used to calculate the frequencies and 18.6-year modulations of the tidal constituents, and allow for the accurate determination of the tidal amplitudes :cite:p:`Schureman:1958ty` :cite:p:`Dietrich:1980ua`.
+Together these coefficients and additional nodal corrections can be used to calculate the frequencies and 18.6-year modulations of the tidal constituents, and allow for the accurate determination of the tidal amplitudes :cite:p:`Schureman:1958ty` :cite:p:`Dietrich:1980ua`.
 
 Solid Earth Tides
 #################
@@ -49,7 +56,7 @@ Alternatively, the permanent tide components can be added back in order to calcu
 The radial difference in terms of latitude between the mean-tide and tide-free systems is:
 
 .. math::
-    :label: 1
+    :label: 2
 
     \delta r(\varphi) = -0.120582 \left(\frac{3}{2} sin^2 \varphi - \frac{1}{2} \right)
 
@@ -64,7 +71,7 @@ The formalism for estimating the pole tides is also based upon `IERS Conventions
 The currently accepted formalism for estimating the reference position of the Earth's figure axis at a given date is the `IERS 2018 secular pole model <https://iers-conventions.obspm.fr/chapter7.php>`_:
 
 .. math::
-    :label: 2
+    :label: 3
 
     \bar{x}_s(t) &= 0.055 + 0.001677(t - 2000.0)\\
     \bar{y}_s(t) &= 0.3205 + 0.00346(t - 2000.0)
@@ -74,7 +81,7 @@ The time-dependent offsets from the reference rotation pole position, are then c
 
 
 .. math::
-    :label: 3
+    :label: 4
 
     m_1(t) &= x_p(t) - \bar{x}_s(t)\\
     m_2(t) &= -(y_p(t) - \bar{y}_s(t))
@@ -102,7 +109,7 @@ The Modified Julian Day (MJD) differs from the Julian Day by reducing the number
 The MJD is calculated from the Julian Day by
 
 .. math::
-    :label: 4
+    :label: 5
 
     MJD = JD - 2400000.5
 
@@ -110,7 +117,7 @@ The start of the Modified Julian Day calendar is 1858-11-17T00:00:00.
 Time in Julian centuries (36525 days) are calculated relative to noon on January 1, 2000 (2000-01-01T12:00:00).
 
 .. math::
-    :label: 5
+    :label: 6
 
     T = \frac{JD - 2451545.0}{36525}
 
