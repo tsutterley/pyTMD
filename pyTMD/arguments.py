@@ -1543,6 +1543,8 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     ----------
     coef: list or np.ndarray
         Doodson coefficients (Cartwright numbers) for constituent
+    astype: type, default float
+        Output data type for default case
     raise_error: bool, default True
         Raise exception if constituent is unsupported
 
@@ -1553,7 +1555,7 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     """
     # default keyword arguments
     kwargs.setdefault('raise_error', True)
-    kwargs.setdefault('astype', None)
+    astype = kwargs.get('astype', float)
     # assert length and verify array
     coef = np.array(coef[:6]).astype(int)
     # add 5 to values following Doodson convention (prevent negatives)
@@ -1563,7 +1565,7 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
         raise ValueError('Unsupported constituent')
     elif (np.any(coef < 0) or np.any(coef > 10)):
         return None
-    elif np.any(coef == 10) or (kwargs['astype'] == 'str'):
+    elif np.any(coef == 10):
         # convert to string and replace 10 with X (Cartwright convention)
         DO = [str(v).replace('10','X') for v in coef]
         # convert to Doodson number
@@ -1571,7 +1573,7 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     else:
         # convert to single number and round off floating point errors
         DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
-        return np.round(DO, decimals=3)
+        return np.round(DO, decimals=3).astype(astype)
 
 def _to_extended_doodson(coef: list | np.ndarray, **kwargs):
     """
