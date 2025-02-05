@@ -9,38 +9,12 @@ This work was initially supported by an appointment to the NASA Postdoctoral
 Program (NPP) at NASA Goddard Space Flight Center (GSFC), administered by
 Universities Space Research Association (USRA) under contract with NASA.
 It is currently supported under the NASA Cryospheric Sciences Program (Grant Number 80NSSC22K0379).
-The programs included in this software have contributed most recently to the
-following work:
-
-    T. C. Sutterley, T. Markus, T. A. Neumann, M. R. van den Broeke, J. M. van Wessem, and S. R. M. Ligtenberg,
-    "Antarctic ice shelf thickness change from multimission lidar mapping", *The Cryosphere*,
-    13, 1801--1817, (2019). `doi: 10.5194/tc-13-1801-2019 <https://doi.org/10.5194/tc-13-1801-2019>`_
-
 
 If you have used ``pyTMD`` in your work, please consider citing our library:
 
     T. C. Sutterley, K. Alley, K. Brunt, S. Howard, L. Padman, and M. Siegfried,
     "pyTMD: Python-based tidal prediction software", (2017).
     `doi: 10.5281/zenodo.5555395 <https://doi.org/10.5281/zenodo.5555395>`_
-
-Contributors
-############
-
-.. include:: ../../../CONTRIBUTORS.rst
-
-Development
-###########
-
-``pyTMD`` is an open source project.
-We welcome any help in maintaining and developing the software and documentation.
-Anyone at any career stage and with any level of coding experience can contribute.
-Please see the `Contribution Guidelines <./Contributing.html>`_ for more information.
-
-Problem Reports
-###############
-
-If you have found a problem in ``pyTMD``, or you would like to suggest an improvement or modification,
-please submit a `GitHub issue <https://github.com/tsutterley/pyTMD/issues>`_ and we will get back to you.
 
 Dependencies
 ############

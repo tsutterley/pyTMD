@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 arguments.py
-Written by Tyler Sutterley (12/2024)
+Written by Tyler Sutterley (02/2025)
 Calculates the nodal corrections for tidal constituents
 Modification of ARGUMENTS fortran subroutine by Richard Ray 03/1999
 
@@ -39,6 +39,7 @@ REFERENCES:
         Ocean Tides", Journal of Atmospheric and Oceanic Technology, (2002).
 
 UPDATE HISTORY:
+    Updated 02/2025: add option to make doodson numbers strings
     Updated 12/2024: added function to calculate tidal aliasing periods
     Updated 11/2024: allow variable case for Doodson number formalisms
         fix species in constituent parameters for complex tides
@@ -1542,6 +1543,8 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     ----------
     coef: list or np.ndarray
         Doodson coefficients (Cartwright numbers) for constituent
+    astype: type, default float
+        Output data type for default case
     raise_error: bool, default True
         Raise exception if constituent is unsupported
 
@@ -1552,6 +1555,7 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     """
     # default keyword arguments
     kwargs.setdefault('raise_error', True)
+    astype = kwargs.get('astype', float)
     # assert length and verify array
     coef = np.array(coef[:6]).astype(int)
     # add 5 to values following Doodson convention (prevent negatives)
@@ -1569,7 +1573,7 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     else:
         # convert to single number and round off floating point errors
         DO = np.sum([v*10**(2-o) for o,v in enumerate(coef)])
-        return np.round(DO, decimals=3)
+        return np.round(DO, decimals=3).astype(astype)
 
 def _to_extended_doodson(coef: list | np.ndarray, **kwargs):
     """

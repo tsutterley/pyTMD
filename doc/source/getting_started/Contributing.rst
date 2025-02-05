@@ -2,10 +2,14 @@
 Contribution Guidelines
 =======================
 
-We welcome and invite contributions from anyone at any career stage and with any amount of coding experience towards the development of ``pyTMD``.
-We appreciate any and all contributions made to the project.
+``pyTMD`` is an open source project.
+We welcome any help in maintaining and developing the software and documentation.
+Anyone at any career stage and with any level of coding experience can contribute towards the development of ``pyTMD``.
 Please read our `code of conduct <./Code-of-Conduct.html>`_ before contributing to ``pyTMD`` development.
-You will be recognized for your work by being listed as one of the `project contributors <./Citations.html#contributors>`_.
+You will be recognized for your work by being listed as one of the `project contributors <../project/Contributors.html>`_.
+
+If you have found a problem in ``pyTMD``, or you would like to suggest an improvement or modification,
+please submit a `GitHub issue <https://github.com/tsutterley/pyTMD/issues>`_ and we will get back to you.
 
 Ways to Contribute
 ------------------
