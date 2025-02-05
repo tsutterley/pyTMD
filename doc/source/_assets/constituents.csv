@@ -1,0 +1,37 @@
+Constituent,Doodson Number,Frequency (cpd),Description
+sa,056.554,0.00273791,Solar annual
+ssa,057.555,0.00547582,Solar semiannual
+mm,065.455,0.03629165,Lunar monthly
+msf,073.555,0.06772638,Lunisolar synodic fortnightly
+mf,075.555,0.07320220,Lunisolar fortnightly
+mt,085.455,0.10949385,
+2q1,125.755,0.85695241,Larger elliptic diurnal
+σ1,127.555,0.86180932,
+q1,135.655,0.89324406,Larger lunar elliptic diurnal
+ρ1,137.455,0.89810097,Larger lunar evectional diurnal
+o1,145.555,0.92953571,Lunar diurnal
+τ1,147.555,0.93501153,
+m1,155.555,0.96613681,Smaller lunar elliptic diurnal
+χ1,157.455,0.97130317,
+π1,162.556,0.99452418,
+p1,163.555,0.99726209,Solar diurnal
+s1,164.555,1.00000000,Solar diurnal
+k1,165.555,1.00273791,Lunisolar diurnal
+ᴪ1,166.554,1.00547582,
+φ1,167.555,1.00821373,
+θ1,173.655,1.03417265,
+j1,175.455,1.03902956,Smaller lunar elliptic diurnal
+oo1,185.555,1.07594011,Lunar diurnal
+ϵ2,227.655,1.82825558,
+2n2,235.755,1.85969032,Lunar elliptical semidiurnal second-order
+μ2,237.555,1.86454723,Variational
+n2,245.655,1.89598197,Larger lunar elliptic semidiurnal
+ν2,247.455,1.90083888,Larger lunar evectional
+m2,255.555,1.93227362,Principal lunar semidiurnal
+λ2,263.655,1.96370835,Smaller lunar evectional
+l2,265.455,1.96856526,Smaller lunar elliptic semidiurnal
+t2,272.556,1.99726209,Larger solar elliptic semidiurnal
+s2,273.555,2.00000000,Principal solar semidiurnal
+r2,274.554,2.00273791,Smaller solar elliptic semidiurnal
+k2,275.555,2.00547582,Lunisolar semidiurnal
+η2,285.455,2.04176747,

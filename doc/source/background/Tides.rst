@@ -10,7 +10,7 @@ For each of these measurements, it is important to note the `vertical datum of t
 Ocean tides are driven by gravitational undulations due to the relative positions of the Earth, moon and sun, and the centripetal acceleration due to the Earth's rotation :cite:p:`Doodson:1921kt` :cite:p:`Meeus:1991vh`.
 A secondary tidal effect, known as load tides, is due to the elastic response of the Earth's crust to ocean tidal loading, which produces deformation of both the sea floor and adjacent land areas.
 Tidal oscillations for both ocean and load tides can be decomposed into a series of tidal constituents (or partial tides) of particular frequencies that are associated with the relative positions of the sun, moon and Earth.
-These tidal constituents are typically classified into different "species" based on their approximate period: short-period, semi-diurnal, diurnal, and long-period.
+These tidal constituents are typically classified into different "species" based on their approximate period: short-period, semi-diurnal, diurnal, and long-period [see :ref:`tab-1`].
 
 The amplitude and phase of major constituents are provided by ocean tide models, which can be used for tidal predictions.
 Ocean tide models are typically one of following categories:
@@ -31,6 +31,7 @@ Each constituent has a particular "Doodson number" describing the polynomial coe
 
 ``pyTMD`` stores these coefficients in an easily accessible `JSON database <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/doodson.json>`_ supplied with the program.
 Together these coefficients and additional nodal corrections (`f` and `u`) can be used to calculate the frequencies and 18.6-year modulations of the tidal constituents, and allow for the accurate determination of the tidal amplitudes :cite:p:`Schureman:1958ty` :cite:p:`Dietrich:1980ua`.
+
 
 Solid Earth Tides
 -----------------

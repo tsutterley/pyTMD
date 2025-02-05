@@ -37,6 +37,7 @@ This section provides background information on the theoretical concepts used in
     :caption: Background
 
     ../background/Tides.rst
+    ../background/Constituent-Table.rst
     ../background/Reference-Systems.rst
     ../background/Time.rst
     ../background/Glossary.rst
