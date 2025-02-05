@@ -499,6 +499,7 @@ def _infer_semi_diurnal(
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'GOT')
     kwargs.setdefault('method', 'linear')
     kwargs.setdefault('raise_exception', False)
     # list of minor constituents
@@ -599,9 +600,9 @@ def _infer_semi_diurnal(
             Ainv = np.array([[3.3133, -4.2538, 1.9405],
                 [-3.3133, 4.2538, -0.9405],
                 [1.5018, -3.2579, 1.7561]])
-            coef = np.inner(Ainv, z)
-            # convert frequency to cycles per day
-            f = omega[k]*86400.0/(2.0*np.pi)
+            coef = np.dot(Ainv, z.T)
+            # convert frequency
+            f = 2.0*omega[k]*86400.0
             # calculate interpolated values for constituent
             interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
             # rescale tide values
@@ -653,6 +654,7 @@ def _infer_diurnal(
     """
     # set default keyword arguments
     kwargs.setdefault('deltat', 0.0)
+    kwargs.setdefault('corrections', 'GOT')
     kwargs.setdefault('method', 'linear')
     kwargs.setdefault('raise_exception', False)
     # list of minor constituents
@@ -764,9 +766,9 @@ def _infer_diurnal(
             Ainv = np.array([[3.1214, -3.8494, 1.728],
                 [-3.1727, 3.9559, -0.7832],
                 [1.438, -3.0297, 1.5917]])
-            coef = np.inner(Ainv, z)
-            # convert frequency to cycles per day
-            f = omega[k]*86400.0/(2.0*np.pi)
+            coef = np.dot(Ainv, z.T)
+            # convert frequency
+            f = 2.0*omega[k]*86400.0
             # calculate interpolated values for constituent
             interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
             # rescale tide values
