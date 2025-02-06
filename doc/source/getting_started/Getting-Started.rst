@@ -92,6 +92,10 @@ Presently, the following models and their directories are parameterized within `
     * `EOT20 <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/ocean_tides/``
     * `EOT20_load <https://doi.org/10.17882/79489>`_: ``<path_to_tide_models>/EOT20/load_tides/``
 
+- Technical University of Denmark tide models :cite:p:`Andersen:2023ei`
+
+    * `DTU23 <https://doi.org/10.11583/DTU.23828874>`_: ``<path_to_tide_models>/DTU23_OceanTide/DTU23/``
+
 - Hamburg direct data Assimilation Methods for Tides models :cite:p:`Taguchi:2014ht`
 
     * `HAMTIDE11 <https://www.cen.uni-hamburg.de/en/icdc/data/ocean/hamtide.html>`_: ``<path_to_tide_models>/hamtide/``
