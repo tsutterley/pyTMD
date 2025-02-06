@@ -985,6 +985,27 @@
             "type": "z",
             "variable": "tide_load"
         },
+        "DTU2023": {
+            "format": "GOT-ascii",
+            "model_file": [
+                "DTU23_OceanTide/DTU23/K1_DTU23.d",
+                "DTU23_OceanTide/DTU23/K2_DTU23.d",
+                "DTU23_OceanTide/DTU23/M2_DTU23.d",
+                "DTU23_OceanTide/DTU23/M4_DTU23.d",
+                "DTU23_OceanTide/DTU23/N2_DTU23.d",
+                "DTU23_OceanTide/DTU23/O1_DTU23.d",
+                "DTU23_OceanTide/DTU23/P1_DTU23.d",
+                "DTU23_OceanTide/DTU23/Q1_DTU23.d",
+                "DTU23_OceanTide/DTU23/S1_DTU23.d",
+                "DTU23_OceanTide/DTU23/S2_DTU23.d"
+            ],
+            "name": "DTU2023",
+            "reference": "https://doi.org/10.3390/rs15184479",
+            "scale": 0.01,
+            "type": "z",
+            "variable": "tide_ocean",
+            "version": "2023"
+        },
         "EOT20": {
             "format": "FES-netcdf",
             "model_file": [
