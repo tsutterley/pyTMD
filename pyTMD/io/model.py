@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 model.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (02/2025)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
@@ -11,6 +11,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 02/2025: fixed missing grid kwarg for reading from TMD3 models 
     Updated 11/2024: use Love numbers for long-period tides in node equilibrium
     Updated 10/2024: add wrapper functions to read and interpolate constants
         add functions to append node tide equilibrium values to amplitudes
@@ -1077,7 +1078,8 @@ class model:
                 model_file = self.model_file
             # read tidal constants for model type
             c = OTIS.read_constants(self.grid_file,
-                model_file, self.projection, **kwargs)
+                model_file, self.projection,
+                grid=self.file_format, **kwargs)
         elif self.format in ('ATLAS-netcdf',):
             # extract model file in case of currents
             if isinstance(self.model_file, dict):
