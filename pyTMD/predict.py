@@ -601,7 +601,8 @@ def _infer_semi_diurnal(
                 [-3.3133, 4.2538, -0.9405],
                 [1.5018, -3.2579, 1.7561]])
             coef = np.dot(Ainv, z.T)
-            # convert frequency
+            # convert frequency to radians per 48 hours
+            # following Munk and Cartwright (1966)
             f = 2.0*omega[k]*86400.0
             # calculate interpolated values for constituent
             interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
@@ -767,7 +768,8 @@ def _infer_diurnal(
                 [-3.1727, 3.9559, -0.7832],
                 [1.438, -3.0297, 1.5917]])
             coef = np.dot(Ainv, z.T)
-            # convert frequency
+            # convert frequency to radians per 48 hours
+            # following Munk and Cartwright (1966)
             f = 2.0*omega[k]*86400.0
             # calculate interpolated values for constituent
             interp = coef[0,:] + coef[1,:]*np.cos(f) + coef[2,:]*np.sin(f)
