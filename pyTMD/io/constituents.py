@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 constituents.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (02/2025)
 Basic tide model constituent class
 
 PYTHON DEPENDENCIES:
@@ -10,6 +10,7 @@ PYTHON DEPENDENCIES:
         https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 UPDATE HISTORY:
+    Updated 02/2025: add RHO to rho1 to known mappable constituents
     Updated 11/2024: added property for Extended Doodson numbers
     Updated 10/2024: added property for the shape of constituent fields
     Updated 09/2024: add more known constituents to string parser function
@@ -259,6 +260,7 @@ class constituents:
             ('bet1', 'beta1'), ('bet2', 'beta2'), ('e2','eps2'),
             ('del2', 'delta2'), ('gam2', 'gamma2'),
             ('la2','lambda2'), ('lam2','lambda2'),
+            ('rho', 'rho1'), 
             ('sig1','sigma1'), ('the1', 'theta1')]
         # iterate over known remapped cases
         for m in mapping:

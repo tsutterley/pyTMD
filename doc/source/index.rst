@@ -25,7 +25,7 @@ Introduction
 
     .. grid-item-card::  Background
       :text-align: center
-      :link: ./getting_started/Background.html
+      :link: ./background/Background.html
 
       :material-outlined:`library_books;5em`
 
@@ -103,7 +103,7 @@ Project Details
 
     getting_started/Install.rst
     getting_started/Getting-Started.rst
-    getting_started/Background.rst
+    background/Background.rst
     getting_started/Contributing.rst
     getting_started/Code-of-Conduct.rst
     getting_started/Resources.rst

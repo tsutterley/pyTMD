@@ -23,4 +23,4 @@
 * ``feat``: add DTU23 to providers for `#383 <https://github.com/tsutterley/pyTMD/issues/383>`_ `(#384) <https://github.com/tsutterley/pyTMD/pull/384>`_
 * ``fix``: missing grid kwarg for reading from TMD3 models `(#385) <https://github.com/tsutterley/pyTMD/pull/385>`_
 
-.. __: https://github.com/tsutterley/pyTMD/pyTMD/releases/tag/2.2.1
+.. __: https://github.com/tsutterley/pyTMD/releases/tag/2.2.1
