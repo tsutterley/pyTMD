@@ -34,6 +34,12 @@ The available examples include:
       :link: ../notebooks/Check-Tide-Map.html
       :link-alt: Checks if given points are within a tide model domain
 
+    .. grid-item-card::  Compare NOAA Tides
+      :text-align: center
+      :img-top: ../_assets/noaa_stations.png
+      :link: ../notebooks/Compare-NOAA-Tides.html
+      :link-alt: Compares measurements from NOAA tide gauges with predicted values
+
     .. grid-item-card::  Compare Tide Gauges
       :text-align: center
       :img-top: ../_assets/tide_gauges.png
@@ -46,13 +52,13 @@ The available examples include:
       :link: ../notebooks/Plot-Antarctic-Cotidal-Charts.html
       :link-alt: Plots cotidal charts for selected constituents around Antarctica
 
+.. grid:: 1 2 4 4
+
     .. grid-item-card::  Plot Antarctic Tidal Currents
       :text-align: center
       :img-top: ../_assets/antarctic_tidal_currents.png
       :link: ../notebooks/Plot-Antarctic-Tidal-Currents.html
       :link-alt: Creates an animation of hourly tidal currents around Antarctica
-
-.. grid:: 1 2 4 4
 
     .. grid-item-card::  Plot Antarctic Tide Range
       :text-align: center
@@ -72,13 +78,13 @@ The available examples include:
       :link: ../notebooks/Plot-ATLAS-Compact.html
       :link-alt: Plots the global and local solutions from an ATLAS compact model
 
+.. grid:: 1 2 4 4
+
     .. grid-item-card::  Plot Ocean Pole Tide Map
       :text-align: center
       :img-top: ../_assets/ocean_pole_tide_map.png
       :link: ../notebooks/Plot-Ocean-Pole-Tide-Map.html
       :link-alt: Plots maps of the real and imaginary geocentric pole tide admittance functions
-
-.. grid:: 1 2 4 4
 
     .. grid-item-card::  Plot Ross Ice Shelf Map
       :text-align: center
@@ -98,13 +104,13 @@ The available examples include:
       :link: ../notebooks/Plot-Tide-Forecasts.html
       :link-alt: Plots a weekly forecast of tidal displacements at a given location
 
+.. grid:: 1 2 4 4
+
     .. grid-item-card::  Plot Tide Form Factor
       :text-align: center
       :img-top: ../_assets/tide_form_factor.png
       :link: ../notebooks/Plot-Tide-Form-Factor.html
       :link-alt: Plots maps of the dominant tidal species
-
-.. grid:: 1 2 4 4
 
     .. grid-item-card::  Solve Synthetic Tides
       :text-align: center

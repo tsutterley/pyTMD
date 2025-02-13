@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 predict.py
-Written by Tyler Sutterley (11/2024)
+Written by Tyler Sutterley (02/2025)
 Prediction routines for ocean, load, equilibrium and solid earth tides
 
 REFERENCES:
@@ -20,6 +20,7 @@ PROGRAM DEPENDENCIES:
     spatial.py: utilities for working with geospatial data
 
 UPDATE HISTORY:
+    Updated 02/2025: verify dimensions of harmonic constants
     Updated 11/2024: use Love numbers for long-period tides when inferring
         move body tide Love/Shida numbers to arguments module
     Updated 10/2024: use PREM as the default Earth model for Love numbers
@@ -131,6 +132,8 @@ def map(t: float | np.ndarray,
     """
     # number of points and number of constituents
     npts, nc = np.shape(hc)
+    # verify dimensions of harmonic constants
+    hc = np.ma.atleast_2d(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
     pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
@@ -187,7 +190,10 @@ def drift(t: float | np.ndarray,
     ht: np.ndarray
         tidal time series reconstructed using the nodal corrections
     """
+    # number of points
     nt = len(t)
+    # verify dimensions of harmonic constants
+    hc = np.ma.atleast_2d(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
     pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
@@ -244,7 +250,10 @@ def time_series(t: float | np.ndarray,
     ht: np.ndarray
         tidal time series reconstructed using the nodal corrections
     """
+    # number of time points
     nt = len(t)
+    # verify dimensions of harmonic constants
+    hc = np.ma.atleast_2d(hc)
     # load the nodal corrections
     # convert time to Modified Julian Days (MJD)
     pu, pf, G = pyTMD.arguments.arguments(t + _mjd_tide,
