@@ -13,6 +13,7 @@ The available examples include:
    :hidden:
 
    ../notebooks/Check-Tide-Map
+   ../notebooks/Compare-NOAA-Tides
    ../notebooks/Compare-Tide-Gauges
    ../notebooks/Plot-Antarctic-Cotidal-Charts
    ../notebooks/Plot-Antarctic-Tidal-Currents
