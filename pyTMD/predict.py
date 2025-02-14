@@ -378,6 +378,7 @@ def _infer_short_period(
     # list of minor constituents
     kwargs.setdefault('minor', None)
     # number of constituents
+    zmajor = np.ma.atleast_2d(zmajor)
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
     # number of data points to calculate if running time series/drift/map
@@ -516,6 +517,7 @@ def _infer_semi_diurnal(
     # validate interpolation method
     assert kwargs['method'].lower() in ('linear', 'admittance')
     # number of constituents
+    zmajor = np.ma.atleast_2d(zmajor)
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
     # number of data points to calculate if running time series/drift/map
@@ -672,6 +674,7 @@ def _infer_diurnal(
     # validate interpolation method
     assert kwargs['method'].lower() in ('linear', 'admittance')
     # number of constituents
+    zmajor = np.ma.atleast_2d(zmajor)
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
     # number of data points to calculate if running time series/drift/map
@@ -830,6 +833,7 @@ def _infer_long_period(
     # list of minor constituents
     kwargs.setdefault('minor', None)
     # number of constituents
+    zmajor = np.ma.atleast_2d(zmajor)
     npts, nc = np.shape(zmajor)
     nt = len(np.atleast_1d(t))
     # number of data points to calculate if running time series/drift/map

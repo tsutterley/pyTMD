@@ -243,7 +243,7 @@ class constituents:
         cindex = [r'(?<!s)sa','ssa','mm','msf',r'mt(?!m)(?!ide)','mf','alpha1',
             '2q1','sigma1',r'(?<!2)q1','rho1',r'(?<!rh)(?<!o)(?<!s)o1','tau1',
             'm1','chi1','pi1','p1','s1','k1','psi1','phi1','beta1','theta1','j1',
-            'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)m2(?!a)(?!b)',
+            'oo1','2n2','mu2',r'(?<!2)n2','nu2',r'(?<!2s)(?<!la)m2(?!a)(?!b)',
             'm2a','m2b','lambda2','l2','t2',r'(?<!mn)(?<!mk)(?<!ep)s2(?!0)',
             'alpha2','beta2','delta2','gamma2','r2','k2',r'(?<!b)eta2',
             'mns2','2sm2','m3','mk3','s3','mn4','m4','ms4','mk4','so1',
@@ -257,11 +257,12 @@ class constituents:
             return "".join(rx.findall(constituent)[0]).lower()
         # known remapped cases
         mapping = [('2n','2n2'), ('alp1', 'alpha1'), ('alp2', 'alpha2'),
-            ('bet1', 'beta1'), ('bet2', 'beta2'), ('e2','eps2'),
-            ('del2', 'delta2'), ('gam2', 'gamma2'),
+            ('bet1', 'beta1'), ('bet2', 'beta2'), ('del2', 'delta2'),
+            ('e2','eps2'), ('ep2','eps2'), ('gam2', 'gamma2'),
             ('la2','lambda2'), ('lam2','lambda2'),
-            ('rho', 'rho1'), 
-            ('sig1','sigma1'), ('the1', 'theta1')]
+            ('omega0', 'node'), ('om0', 'node'),
+            ('rho', 'rho1'), ('sig1','sigma1'),
+            ('the1', 'theta1')]
         # iterate over known remapped cases
         for m in mapping:
             # check if tide model is a remapped case
