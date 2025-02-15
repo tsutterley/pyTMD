@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 u"""
-test_arguments.py (11/2024)
+test_arguments.py (02/2025)
 Verify arguments table matches prior arguments array
 Verify nodal corrections match prior estimates
 
 UPDATE HISTORY:
+    Updated 02/2025: add Doodson (1921) table with missing coefficients
     Updated 11/2024: moved normalize_angle test to test_math.py
     Updated 10/2024: add comparisons for formatted Doodson numbers
         add function to parse tide potential tables
@@ -843,9 +844,11 @@ def test_parse_tables():
     """
     Tests the parsing of tables for tide potential coefficients
     """
+    # Doodson (1921) table with values missing from Cartwright tables
     # Cartwright and Tayler (1971) table with 3rd-degree values
     # Cartwright and Edden (1973) table with updated values
     tables = []
+    tables.append(pyTMD.arguments._d1921_table)
     tables.append(pyTMD.arguments._ct1971_table_5)
     tables.append(pyTMD.arguments._ce1973_table_1)
     for table in tables:
@@ -853,14 +856,15 @@ def test_parse_tables():
         CTE = pyTMD.arguments._parse_tide_potential_table(table)
         for i, line in enumerate(CTE):
             # convert Doodson number to Cartwright numbers
-            DO = line['DO']
-            tau, s, h, p, n, pp = pyTMD.arguments._from_doodson_number(DO)
-            assert tau == line['tau'], line
+            t, s, h, p, n, pp = pyTMD.arguments._from_doodson_number(line['DO'])
+            assert t == line['tau'], line
             assert s == line['s'], line
             assert h == line['h'], line
             assert p == line['p'], line
             assert n == line['n'], line
             assert pp == line['pp'], line
+            DO = pyTMD.arguments._to_doodson_number([t, s, h, p, n, pp])
+            assert str(DO).zfill(7) == line['DO'], line
 
 def test_aliasing_period():
     """
