@@ -40,6 +40,8 @@ REFERENCES:
 
 UPDATE HISTORY:
     Updated 02/2025: add option to make doodson numbers strings
+        add Doodson number convention for converting 11 to E
+        add Doodson (1921) table for coefficients missing from Cartwright tables
     Updated 12/2024: added function to calculate tidal aliasing periods
     Updated 11/2024: allow variable case for Doodson number formalisms
         fix species in constituent parameters for complex tides
@@ -1489,6 +1491,8 @@ def _love_numbers(
     # return the Love numbers for frequency
     return (h2, k2, l2)
 
+# Doodson (1921) table with values missing from Cartwright tables
+_d1921_table = get_data_path(['data','d1921_tab.txt'])
 # Cartwright and Tayler (1971) table with 3rd-degree values
 _ct1971_table_5 = get_data_path(['data','ct1971_tab5.txt'])
 # Cartwright and Edden (1973) table with updated values
@@ -1561,13 +1565,14 @@ def _to_doodson_number(coef: list | np.ndarray, **kwargs):
     # add 5 to values following Doodson convention (prevent negatives)
     coef[1:] += 5
     # check for unsupported constituents
-    if (np.any(coef < 0) or np.any(coef > 10)) and kwargs['raise_error']:
+    if (np.any(coef < 0) or np.any(coef > 11)) and kwargs['raise_error']:
         raise ValueError('Unsupported constituent')
-    elif (np.any(coef < 0) or np.any(coef > 10)):
+    elif (np.any(coef < 0) or np.any(coef > 11)):
         return None
-    elif np.any(coef == 10):
-        # convert to string and replace 10 with X (Cartwright convention)
-        DO = [str(v).replace('10','X') for v in coef]
+    elif np.any(coef == 10) or np.any(coef == 11):
+        # convert coefficients to strings
+        # replace 10 with X and 11 with E (Doodson convention)
+        DO = [str(v).replace('10','X').replace('11','E') for v in coef]
         # convert to Doodson number
         return np.str_('{0}{1}{2}.{3}{4}{5}'.format(*DO))
     else:
@@ -1614,8 +1619,9 @@ def _from_doodson_number(DO: str | float | np.ndarray, **kwargs):
         Doodson coefficients (Cartwright numbers) for constituent
     """
     # convert from Doodson number to Cartwright numbers
-    coef = [c.replace('X', '10') for c in re.findall(r'\w', str(DO).zfill(7))]
-    coef = np.array(coef, dtype=int)
+    # replace 10 with X and 11 with E (Doodson convention)
+    coef = np.array([c.replace('X', '10').replace('E', '11')
+        for c in re.findall(r'\w', str(DO).zfill(7))], dtype=int)
     # remove 5 from values following Doodson convention
     coef[1:] -= 5
     return coef

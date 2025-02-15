@@ -2,6 +2,13 @@
 Resources
 =========
 
+Books and Articles
+##################
+
+- `NOAA - Manual of Harmonic Analysis and Prediction of Tides <https://tidesandcurrents.noaa.gov/publications/SpecialPubNo98.pdf>`_
+- `NOAA - Computer Applications of Tides in the National Ocean Survey <https://tidesandcurrents.noaa.gov/publications/SpecialPubNo98Suppl.pdf>`_
+- `NOAA - Tidal Analysis and Predictions <https://tidesandcurrents.noaa.gov/publications/Tidal_Analysis_and_Predictions.pdf>`_
+ 
 Ocean and Load Tide Resources
 #############################
 

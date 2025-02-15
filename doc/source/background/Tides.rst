@@ -19,6 +19,13 @@ Ocean tide models are typically one of following categories:
 3) unconstrained hydrodynamic models :cite:p:`Stammer:2014ci`.
 ``pyTMD`` is not an ocean or load tide model, but rather a tool for using constituents from ocean and load tide models to calculate the tide deflections or currents at particular locations and times :cite:p:`Egbert:2002ge`.
 
+Under the equilibrium theory of tides, the Earth is a spherical body with a uniform distribution of water over its surface :cite:p:`Doodson:1921kt`.
+In this model, the oceanic surface instantaneously responds to the tide-producing forces of the moon and sun, and is not influenced by inertia, currents or the irregular distribution of land :cite:p:`Schureman:1958ty`.
+The potential amplitudes of each constituent can be calculated using equilibrium tide theory, and their relative amplitudes are useful for inferring unmodeled constituents :cite:p:`Cartwright:1971iz` :cite:p:`Cartwright:1973em`.
+Tidal inference refers to the estimation of smaller (minor) constituents from estimates of the more major constituents :cite:p:`Ray:2017jx`.
+Inferrence is a useful tool for estimating more of the tidal spectrum when only a limited set of constituents are provided by a tide model :cite:p:`Parker:2007wq`.
+Additional care is needed when inferring diurnal constituents due to a resonance in this band from the free core notation (FCN) of the Earth :cite:p:`Wahr:1981if` :cite:p:`Ray:2017jx`.
+
 ``pyTMD.io`` contains routines for reading major constituent values from commonly available tide models, and interpolating those values to spatial locations.
 ``pyTMD`` uses the astronomical argument formalism outlined in :cite:p:`Doodson:1921kt` for the prediction of ocean and load tides. 
 For any given time, ``pyTMD.astro`` calculates the longitudes of the sun (`S`), moon (`H`), lunar perigree (`P`), ascending lunar node (`N`) and solar perigree (`Ps`), which are used in combination with the lunar hour angle (\ |tau|\ ) in a six-dimensional Fourier series :cite:p:`Doodson:1921kt` :cite:p:`Dietrich:1980ua`.
@@ -31,6 +38,7 @@ Each constituent has a particular "Doodson number" describing the polynomial coe
 
 ``pyTMD`` stores these coefficients in an easily accessible `JSON database <https://github.com/tsutterley/pyTMD/blob/main/pyTMD/data/doodson.json>`_ supplied with the program.
 Together these coefficients and additional nodal corrections (`f` and `u`) can be used to calculate the frequencies and 18.6-year modulations of the tidal constituents, and allow for the accurate determination of the tidal amplitudes :cite:p:`Schureman:1958ty` :cite:p:`Dietrich:1980ua`.
+In addition, the amplitudes of minor constituents can be estimated using inferrence methods :cite:p:`Schureman:1958ty` :cite:p:`Ray:2017jx`.
 
 
 Solid Earth Tides
