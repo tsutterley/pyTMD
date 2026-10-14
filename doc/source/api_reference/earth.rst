@@ -25,6 +25,8 @@ General Methods
 
 .. autofunction:: pyTMD.earth.adjust_load_love_numbers
 
+.. autofunction:: pyTMD.earth.greens_function
+
 .. autofunction:: pyTMD.earth._melchior_table_52
 
 .. autofunction:: pyTMD.earth._infconv

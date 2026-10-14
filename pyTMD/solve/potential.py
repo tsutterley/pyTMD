@@ -35,6 +35,9 @@ import pyTMD.earth
 import pyTMD.math
 import pyTMD.spatial
 
+# get ellipsoid parameters and load love number tables
+from pyTMD.earth import _lln_table, _wgs84
+
 __all__ = [
     "ocean_harmonics",
     "crustal_loading",
@@ -42,15 +45,6 @@ __all__ = [
     "_greens_function",
     "_seawater_density",
 ]
-
-# dictionary for tables of load Love/Shida numbers
-_lln_table = {}
-_lln_table["han-wahr"] = pyTMD.earth._han_wahr_lln_table
-_lln_table["gegout"] = pyTMD.earth._gegout_lln_table
-_lln_table["wang-prem"] = pyTMD.earth._wang_prem_lln_table
-# earth and physical parameters for WGS84 ellipsoid
-# using meters-kilogram-seconds standard
-_wgs84 = pyTMD.earth.datum(ellipsoid="WGS84", units="MKS")
 
 
 # PURPOSE: convert tidal constituents into spherical harmonics
@@ -86,7 +80,7 @@ def ocean_harmonics(
 
         Can be spatially uniform or a grid matching the tidal dataset
     lln: str, default 'han-wahr'
-        name of the Load Love number dataset to use
+        Name of the Load Love number dataset to use
 
             - ``'han-wahr'``: :cite:t:`Han:1995go`
             - ``'gegout'``: :cite:t:`Gegout:2010gc`
@@ -332,7 +326,7 @@ def _harmonic_summation(
     flat: float, default 1.0/298.257223563
         Ellipsoidal flattening
     lln: str, default 'han-wahr'
-        name of the Load Love number dataset to use
+        Name of the Load Love number dataset to use
 
             - ``'han-wahr'``: :cite:t:`Han:1995go`
             - ``'gegout'``: :cite:t:`Gegout:2010gc`
@@ -449,12 +443,12 @@ def _greens_function(
     rho_w: float | xr.DataArray = 1025.0,
     lln: str = "han-wahr",
     reference: str = "CE",
+    hinf: float | None = None,
     **kwargs,
 ):
     r"""
     Calculates the crustal deformation induced by ocean tide loading
-    via Green's functions following :cite:t:`Farrell:1972cm` using
-    the Legendre recurrence relation from :cite:t:`HofmannWellenhof:2006hy`
+    via Green's functions :cite:p:`Farrell:1972cm`
 
     Parameters
     ----------
@@ -477,7 +471,7 @@ def _greens_function(
     area: float, xr.DataArray or None, default None
         Grid cell areas for integrating tidal harmonics
     lln: str, default 'han-wahr'
-        name of the Load Love number dataset to use
+        Name of the Load Love number dataset to use
 
             - ``'han-wahr'``: :cite:t:`Han:1995go`
             - ``'gegout'``: :cite:t:`Gegout:2010gc`
@@ -490,6 +484,8 @@ def _greens_function(
             - ``'CH'``: Center of Surface Height Figure
             - ``'CM'``: Center of Mass of Earth System
             - ``'CE'``: Center of Mass of Solid Earth
+    hinf: float | None, default None
+        Asymptotic value for the Love Number of Vertical Displacement
     kwargs: dict
         Keyword arguments for :py:func:`pyTMD.constituents.frequency`
 
@@ -519,10 +515,14 @@ def _greens_function(
     # Earth's radius at the given latitude (meters)
     radius1 = pyTMD.math.radius(XYZ1.X, XYZ1.Y, XYZ1.Z)
     radius2 = pyTMD.math.radius(XYZ2.X, XYZ2.Y, XYZ2.Z)
-    # cosine of angles between vectors
+    # angles between vectors
     scalar = pyTMD.math.scalar_product(
         XYZ1.X, XYZ1.Y, XYZ1.Z, XYZ2.X, XYZ2.Y, XYZ2.Z
     ) / (radius1 * radius2)
+    alpha = np.arccos(scalar)
+    # replace colocated points with spherical caps
+    radius = np.sqrt(area / np.pi) / rad_e
+    alpha = xr.where(alpha > 0.0, alpha, radius)
     # calculate colatitude and longitude (radians)
     th1 = np.pi / 2.0 - np.arctan(XYZ1.Z / np.hypot(XYZ1.X, XYZ1.Y))
     th2 = np.pi / 2.0 - np.arctan(XYZ2.Z / np.hypot(XYZ2.X, XYZ2.Y))
@@ -536,28 +536,15 @@ def _greens_function(
     Ylms2, _ = pyTMD.math.sph_harm(l, th2, la2, m=m)
     P21 = (8.0 * np.pi) * np.real(Ylms1 * np.conj(Ylms2)) / (2.0 * l + 1.0)
 
-    # read load Love numbers from table
-    hl, kl, ll = pyTMD.earth.load_love_numbers(
-        _lln_table[lln], reference=reference
+    # calculate Green's function for vertical uplift
+    u = xr.zeros_like(alpha)
+    u.values = pyTMD.earth.greens_function(
+        alpha,
+        lmax=lmax,
+        lln=lln,
+        reference=reference,
+        hinf=hinf,
     )
-    # maximum degree for spherical harmonics
-    if lmax is None:
-        lmax = len(hl) - 1
-
-    # allocate for Legendre polynomial series
-    Pm2 = xr.ones_like(scalar)
-    Pm1 = scalar
-    # calculate Green's function for first two degrees
-    u = hl[0] * Pm2 + hl[1] * Pm1
-    # for each spherical harmonic degree
-    for l in range(2, lmax + 1):
-        # calculate unnormalized Legendre polynomial for degree l
-        P = np.divide(2 * l - 1, l) * scalar * Pm1 - np.divide(l - 1, l) * Pm2
-        # add to output Green's function
-        u += hl[l] * P
-        # update Legendre polynomial recursion series
-        Pm2 = Pm1
-        Pm1 = P
 
     # create output dataset
     tmp = xr.Dataset(coords=XYZ1.coords)
@@ -567,10 +554,10 @@ def _greens_function(
         dh, dk, dl = pyTMD.earth.adjust_load_love_numbers(omega[i])
         # Green's function for converting to crustal deformation
         # taking into account frequency dependence of load Love numbers
-        G = u + dh * P21
+        GF = u + dh * P21
         # summation over all tide points
         M = rho_w * XYZ2[c] * area * rad_e / m_e
-        tmp[c] = xr.dot(G, M, dim=XYZ2.dims, optimize=True)
+        tmp[c] = xr.dot(GF, M, dim=XYZ2.dims, optimize=True)
 
     # copy attributes from input tidal dataset
     tmp.attrs.update(XYZ2.attrs)

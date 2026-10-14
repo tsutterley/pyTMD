@@ -29,6 +29,7 @@ __all__ = [
     "degree_love_numbers",
     "load_love_numbers",
     "adjust_load_love_numbers",
+    "greens_function",
     "_melchior_table_52",
     "_infconv",
 ]
@@ -544,6 +545,12 @@ class datum:
         setattr(self, key, value)
 
 
+# helper variables with common ellipsoid parameters
+# using meters-kilogram-seconds standard
+_wgs84 = datum(ellipsoid="WGS84", units="MKS")
+_iers = datum(ellipsoid="IERS", units="MKS")
+
+
 def love_numbers(
     omega: np.ndarray,
     model: str = "PREM",
@@ -810,6 +817,11 @@ _gegout_lln_table = get_data_path(["data", "gegout-lln.txt"])
 _wang_prem_lln_table = get_data_path(["data", "wang-prem-lln.txt"])
 # default maximum degree and order in case of infinite
 _default_max_degree = 100000
+# dictionary for tables of load Love/Shida numbers
+_lln_table = {}
+_lln_table["han-wahr"] = _han_wahr_lln_table
+_lln_table["gegout"] = _gegout_lln_table
+_lln_table["wang-prem"] = _wang_prem_lln_table
 
 
 # PURPOSE: read tables of load Love/Shida numbers
@@ -962,6 +974,81 @@ def adjust_load_love_numbers(omega: np.ndarray, **kwargs):
 
     # return the load Love numbers adjustments
     return (dh21, dk21, dl21)
+
+
+def greens_function(
+    alpha: float | np.ndarray,
+    lmax: int | None = None,
+    lln: str = "han-wahr",
+    reference: str = "CE",
+    hinf: float | None = None,
+):
+    """
+    Computes Green's functions for vertical displacement following
+    :cite:t:`Farrell:1972cm` using the Legendre recurrence relation
+    from :cite:t:`HofmannWellenhof:2006hy`
+
+    Parameters
+    ----------
+    alpha: float or np.ndarray,
+        Angular distance (radians)
+    lmax: int or None, default None
+        Upper bound of spherical harmonic degrees
+    lln: str, default 'han-wahr'
+        Name of the Load Love number dataset to use
+
+            - ``'han-wahr'``: :cite:t:`Han:1995go`
+            - ``'gegout'``: :cite:t:`Gegout:2010gc`
+            - ``'wang-prem'``: :cite:t:`Wang:2012gc`
+    reference: str, default 'CE'
+        Reference frame of degree 1 load Love numbers
+
+            - ``'CF'``: Center of Surface Figure
+            - ``'CL'``: Center of Surface Lateral Figure
+            - ``'CH'``: Center of Surface Height Figure
+            - ``'CM'``: Center of Mass of Earth System
+            - ``'CE'``: Center of Mass of Solid Earth
+    hinf: float | None, default None
+        Asymptotic value for the Love Number of Vertical Displacement
+
+    Returns
+    -------
+    GF: numpy.ndarray
+        Green's function
+    """
+    # read load Love numbers from table
+    hl, kl, ll = load_love_numbers(_lln_table[lln], reference=reference)
+    # maximum degree for spherical harmonics
+    if lmax is None:
+        lmax = len(hl) - 1
+    # Love number asymtoptic value
+    if hinf is None:
+        hinf = np.copy(hl[-1])
+    # calculate the cosine of the angular distance
+    x = np.cos(alpha)
+    # allocate for Legendre polynomial series
+    # P0 and P1
+    Pm2 = np.ones_like(x)
+    Pm1 = np.copy(x)
+    P = np.zeros_like(x)
+    # calculate Legendre asymptotic value using Kummer's transformation
+    Pinf = np.divide(1.0, 2.0 * np.sin(alpha / 2.0))
+    # calculate Green's function at the asymptote
+    GF = hinf * Pinf
+    # add first two degrees to the output Green's function
+    GF += (hl[0] - hinf) * Pm2
+    GF += (hl[1] - hinf) * Pm1
+    # for each spherical harmonic degree
+    for l in range(2, lmax + 1):
+        # calculate unnormalized Legendre polynomial for degree l
+        P[:] = np.divide(2 * l - 1, l) * x * Pm1 - np.divide(l - 1, l) * Pm2
+        # add to output Green's function
+        GF += (hl[l] - hinf) * P
+        # update Legendre polynomial recursion series
+        Pm2[:] = np.copy(Pm1)
+        Pm1[:] = np.copy(P)
+    # return the Green's function
+    return GF
 
 
 def _melchior_table_52(model: str):

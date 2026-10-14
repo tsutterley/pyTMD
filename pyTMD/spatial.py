@@ -88,7 +88,9 @@ from __future__ import annotations
 
 import warnings
 import numpy as np
-from pyTMD.earth import datum
+
+# get ellipsoid parameters
+from pyTMD.earth import _wgs84
 
 __all__ = [
     "data_type",
@@ -404,10 +406,6 @@ def from_dms(
     sign = np.sign(degree)
     d = np.abs(degree) + minute / 60.0 + second / 3600.0
     return sign * d
-
-
-# get WGS84 parameters
-_wgs84 = datum(ellipsoid="WGS84", units="MKS")
 
 
 def to_cartesian(
