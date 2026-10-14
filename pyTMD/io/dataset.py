@@ -786,7 +786,7 @@ class Dataset:
         # get extrapolation cutoff distance
         cutoff = kwargs.get("cutoff", np.inf)
         # check if chunks are present
-        if hasattr(other, "chunks") and other.chunks is not None:
+        if hasattr(other, "chunks") and bool(other.chunks):
             other = other.chunk(-1).compute()
         # bounds of other dataset
         bounds = [

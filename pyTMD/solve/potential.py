@@ -258,7 +258,7 @@ def ocean_harmonics(
     else:
         Ylms.attrs["seawater_density"] = "gridded"
     # check if chunks were present in original dataset
-    if hasattr(ds, "chunks") and ds.chunks is not None:
+    if hasattr(ds, "chunks") and bool(ds.chunks):
         Ylms = Ylms.chunk("auto")
     # return the spherical harmonic dataset
     return Ylms
@@ -432,7 +432,7 @@ def _harmonic_summation(
     # copy attributes from spherical harmonic dataset
     tmp.attrs.update(Ylms.attrs)
     # check if chunks were present in spherical harmonic dataset
-    if hasattr(Ylms, "chunks") and Ylms.chunks is not None:
+    if hasattr(Ylms, "chunks") and bool(Ylms.chunks):
         tmp = tmp.chunk("auto")
     # return the spatial dataset of tidal constituents
     return tmp
@@ -445,6 +445,7 @@ def _greens_function(
     a_axis: float = _wgs84.a_axis,
     flat: float = _wgs84.flat,
     GM: float = _wgs84.GM,
+    area: float | xr.DataArray | None = None,
     rho_w: float | xr.DataArray = 1025.0,
     lln: str = "han-wahr",
     reference: str = "CE",
@@ -473,6 +474,8 @@ def _greens_function(
         Density of sea water (kg m\ :sup:`-3`)
 
         Can be spatially uniform or a grid matching the tidal dataset
+    area: float, xr.DataArray or None, default None
+        Grid cell areas for integrating tidal harmonics
     lln: str, default 'han-wahr'
         name of the Load Love number dataset to use
 
@@ -566,7 +569,7 @@ def _greens_function(
         # taking into account frequency dependence of load Love numbers
         G = u + dh * P21
         # summation over all tide points
-        M = rho_w * XYZ2[c] * XYZ2.area * rad_e / m_e
+        M = rho_w * XYZ2[c] * area * rad_e / m_e
         tmp[c] = xr.dot(G, M, dim=XYZ2.dims, optimize=True)
 
     # copy attributes from input tidal dataset
@@ -588,7 +591,7 @@ def _greens_function(
     else:
         tmp.attrs["seawater_density"] = "gridded"
     # check if chunks were present in input tidal dataset
-    if hasattr(XYZ2, "chunks") and XYZ2.chunks is not None:
+    if hasattr(XYZ2, "chunks") and bool(XYZ2.chunks):
         tmp = tmp.chunk("auto")
     # return the spatial dataset of tidal constituents
     return tmp
