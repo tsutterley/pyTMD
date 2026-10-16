@@ -1019,20 +1019,22 @@ def greens_function(
     # read load Love numbers from table
     hl, kl, ll = load_love_numbers(_lln_table[lln], reference=reference)
     # maximum degree for spherical harmonics
-    if lmax is None:
+    if lmax is None or lmax >= len(hl):
         lmax = len(hl) - 1
     # Love number asymtoptic value
     if hinf is None:
         hinf = np.copy(hl[-1])
+    # check if input is scalar or array
+    singular_values = np.ndim(alpha) == 0
     # calculate the cosine of the angular distance
-    x = np.cos(alpha)
+    x = np.cos(np.atleast_1d(alpha))
     # allocate for Legendre polynomial series
     # P0 and P1
     Pm2 = np.ones_like(x)
     Pm1 = np.copy(x)
     P = np.zeros_like(x)
     # calculate Legendre asymptotic value using Kummer's transformation
-    Pinf = np.divide(1.0, 2.0 * np.sin(alpha / 2.0))
+    Pinf = np.divide(1.0, 2.0 * np.sin(np.atleast_1d(alpha) / 2.0))
     # calculate Green's function at the asymptote
     GF = hinf * Pinf
     # add first two degrees to the output Green's function
@@ -1048,7 +1050,10 @@ def greens_function(
         Pm2[:] = np.copy(Pm1)
         Pm1[:] = np.copy(P)
     # return the Green's function
-    return GF
+    if singular_values:
+        return GF.item()
+    else:
+        return GF
 
 
 def _melchior_table_52(model: str):

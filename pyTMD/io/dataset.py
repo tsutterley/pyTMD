@@ -652,9 +652,10 @@ class Dataset:
         else:
             # projected coordinates (assume Cartesian)
             ny, nx = len(self._y), len(self._x)
+            geodetic_crs = getattr(self.crs, "geodetic_crs", 4326)
             # calculate scaling factors for area distortions
-            gridx, gridy = np.meshgrid(self._x, self._y)
-            factors = pyproj.Proj(self.crs).get_factors(gridx, gridy)
+            lon, lat = self.to_geographic(crs=geodetic_crs)
+            factors = pyproj.Proj(self.crs).get_factors(lon, lat)
             areal_scale = factors.areal_scale
             # calculate scaling factors to convert from axis units to meters
             axis_units = 1.0 * __ureg__.parse_units(self.axis_units)

@@ -74,7 +74,7 @@ Load Love Numbers
 
 Load Love numbers describe the deformation of the solid Earth in response to a change in *surface mass load* :cite:p:`Munk:1960uk`.
 The loading change, such as the redistribution of ocean mass from tides or circulation, acts upon the *surface of the Earth* :cite:p:`Wahr:1998hy`.
-These ":term:`load tides <Load Tide>`" are computed through a convolution of the tidal constituents and load Love numbers typically by either a Green's function or :ref:`spherical harmonic <spherical-harmonics>` approach :cite:p:`Agnew:2013vx,Farrell:1972cm,Ray:1989wf`.
+These ":term:`load tides <Load Tide>`" are computed through a convolution of the tidal constituents and load Love numbers typically by either a :ref:`Green's function <greens-functions>` or :ref:`spherical harmonic <spherical-harmonics>` approach :cite:p:`Agnew:2013vx,Farrell:1972cm,Ray:1989wf`.
 In either of those cases, the calculation uses a set of load Love numbers to high :ref:`spherical harmonic degree <spherical-harmonics>`.
 
 .. role:: raw-html(raw)
@@ -89,3 +89,28 @@ In either of those cases, the calculation uses a set of load Love numbers to hig
 .. tip::
 
     Tidal Love numbers are for *external* potential perturbations and Load Love numbers are for *surface* mass changes :cite:p:`Michel:2021bn`
+
+.. _greens-functions:
+
+Green's Functions
+-----------------
+
+The point response of the Earth to a surface load change can be computed using Green's functions :cite:p:`Farrell:1972cm`. 
+Convolving the Green's function for vertical displacement with the mass of an ocean tide height change provides the induced :term:`load tides <Load Tide>`.
+
+.. math::
+    :label: 10.1
+    :name: eq:10.1
+
+    u(\theta) &= \frac{a}{m_e}\sum_{l=0}^\infty h_l\,P_l(\cos{\theta})\\
+              &= \frac{a h_\infty}{m_e}\sum_{l=0}^\infty P_l(\cos{\theta}) + \frac{a}{m_e}\sum_{l=0}^\infty (h_l - h_\infty)\,P_l(\cos{\theta})\\
+              &= \frac{a}{m_e}\left(\frac{h_\infty}{2\sin{(\theta/2)}} + \sum_{l=0}^\infty (h_l - h_\infty)\,P_l(\cos{\theta})\right)
+
+.. role:: raw-html(raw)
+   :format: html
+
+.. plot:: ./background/greens-functions.py
+    :align: center
+    
+    Green's function for elastic vertical deformation using :term:`Love numbers <Love and Shida Numbers>` from :cite:t:`Wang:2012gc` :raw-html:`<br />`
+    Function is normalized as described in Table A3 of :cite:t:`Farrell:1972cm`

@@ -262,7 +262,6 @@ def ocean_harmonics(
 def crustal_loading(
     ds: xr.Dataset,
     other: xr.Dataset,
-    method: str = "SHA",
     **kwargs,
 ):
     r"""
@@ -288,6 +287,8 @@ def crustal_loading(
     ds: xr.Dataset
         Dataset containing tidal harmonic constants
     """
+    # get the calculation method
+    method = kwargs.get("method", "SHA")
     if method.upper() == "SHA":
         return _harmonic_summation(ds, other, **kwargs)
     elif method.upper() == "GF":
@@ -523,8 +524,8 @@ def _greens_function(
     # angles between vectors
     scalar = pyTMD.math.scalar_product(
         XYZ1.X, XYZ1.Y, XYZ1.Z, XYZ2.X, XYZ2.Y, XYZ2.Z
-    )
-    alpha = np.arccos(scalar / (radius1 * radius2))
+    ) / (radius1 * radius2)
+    alpha = np.arccos(scalar.clip(min=-1, max=1))
     # replace colocated points with spherical caps
     # with areas equal to those of the grid cells
     rad_cap = np.sqrt(area / np.pi) / rad_e
@@ -556,21 +557,24 @@ def _greens_function(
     tmp = xr.Dataset(coords=XYZ1.coords)
     # for each constituent
     for i, c in enumerate(constituents):
+        # get constituent and replace nans with 0
+        data = XYZ2[c].fillna(0.0)
         # adjust load Love numbers for frequency dependence
         dh, dk, dl = pyTMD.earth.adjust_load_love_numbers(omega[i])
         # Green's function for converting to crustal deformation
         # taking into account frequency dependence of load Love numbers
         GF = scale * (u + dh * P21)
         # mass of the tide height change
-        M = rho_w * XYZ2[c] * area
+        M = rho_w * data * area
         # summation over all tide points
         tmp[c] = xr.dot(GF, M, dim=XYZ2.dims, optimize=True)
 
     # copy attributes from input tidal dataset
     tmp.attrs.update(XYZ2.attrs)
     # add attributes for degree of truncation of Green's function
-    tmp.attrs["max_degree"] = lmax
-    tmp.attrs["max_order"] = lmax
+    if lmax is not None:
+        tmp.attrs["max_degree"] = lmax
+        tmp.attrs["max_order"] = lmax
     # add attributes for earth model and love numbers
     tmp.attrs["earth_love_numbers"] = lln
     tmp.attrs["reference_frame"] = reference
