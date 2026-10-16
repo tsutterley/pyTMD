@@ -1009,12 +1009,12 @@ def greens_function(
             - ``'CM'``: Center of Mass of Earth System
             - ``'CE'``: Center of Mass of Solid Earth
     hinf: float | None, default None
-        Asymptotic value for the Love Number of Vertical Displacement
+        Asymptotic value of the Love number for vertical displacement
 
     Returns
     -------
     GF: numpy.ndarray
-        Green's function
+        Green's function for vertical displacement
     """
     # read load Love numbers from table
     hl, kl, ll = load_love_numbers(_lln_table[lln], reference=reference)

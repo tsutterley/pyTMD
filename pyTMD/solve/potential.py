@@ -511,6 +511,11 @@ def _greens_function(
     m_e = GM / G
     # average density of the Earth [kg / m^3]
     rho_e = 0.75 * m_e / (np.pi * rad_e**3)
+    # scale factor to convert a mass load to uplift
+    scale = rad_e / m_e
+    # verify scale factor values are close to expected
+    if not np.allclose(scale, 6.371e6 / 5.972e24):
+        raise ValueError(f"Unexpected scale factor: {scale}")
 
     # Earth's radius at the given latitude (meters)
     radius1 = pyTMD.math.radius(XYZ1.X, XYZ1.Y, XYZ1.Z)
@@ -518,11 +523,12 @@ def _greens_function(
     # angles between vectors
     scalar = pyTMD.math.scalar_product(
         XYZ1.X, XYZ1.Y, XYZ1.Z, XYZ2.X, XYZ2.Y, XYZ2.Z
-    ) / (radius1 * radius2)
-    alpha = np.arccos(scalar)
+    )
+    alpha = np.arccos(scalar / (radius1 * radius2))
     # replace colocated points with spherical caps
-    radius = np.sqrt(area / np.pi) / rad_e
-    alpha = xr.where(alpha > 0.0, alpha, radius)
+    # with areas equal to those of the grid cells
+    rad_cap = np.sqrt(area / np.pi) / rad_e
+    alpha = alpha.clip(min=rad_cap)
     # calculate colatitude and longitude (radians)
     th1 = np.pi / 2.0 - np.arctan(XYZ1.Z / np.hypot(XYZ1.X, XYZ1.Y))
     th2 = np.pi / 2.0 - np.arctan(XYZ2.Z / np.hypot(XYZ2.X, XYZ2.Y))
@@ -536,7 +542,7 @@ def _greens_function(
     Ylms2, _ = pyTMD.math.sph_harm(l, th2, la2, m=m)
     P21 = (8.0 * np.pi) * np.real(Ylms1 * np.conj(Ylms2)) / (2.0 * l + 1.0)
 
-    # calculate Green's function for vertical uplift
+    # calculate Green's function for vertical displacement (unscaled)
     u = xr.zeros_like(alpha)
     u.values = pyTMD.earth.greens_function(
         alpha,
@@ -554,9 +560,10 @@ def _greens_function(
         dh, dk, dl = pyTMD.earth.adjust_load_love_numbers(omega[i])
         # Green's function for converting to crustal deformation
         # taking into account frequency dependence of load Love numbers
-        GF = u + dh * P21
+        GF = scale * (u + dh * P21)
+        # mass of the tide height change
+        M = rho_w * XYZ2[c] * area
         # summation over all tide points
-        M = rho_w * XYZ2[c] * area * rad_e / m_e
         tmp[c] = xr.dot(GF, M, dim=XYZ2.dims, optimize=True)
 
     # copy attributes from input tidal dataset
