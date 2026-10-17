@@ -12,4 +12,8 @@
 
 .. autofunction:: pyTMD.solve.crustal_loading
 
+.. autofunction:: pyTMD.solve._harmonic_summation
+
+.. autofunction:: pyTMD.solve._greens_function
+
 .. autofunction:: pyTMD.solve._seawater_density

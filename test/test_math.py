@@ -1,26 +1,30 @@
 #!/usr/bin/env python
-u"""
+"""
 test_math.py (11/2024)
 """
+
 import pytest
 import numpy as np
 import pyTMD.ellipse
 import pyTMD.math
-from scipy.special import factorial
+from scipy.special import factorial, gammaln
+
 
 def test_asec2rad():
     """
     Tests the conversion of arcseconds to radians
     """
     # test angles in arcseconds
-    angles = np.array([-180, -90, 0, 90, 180, 270, 360])*3600.0
+    angles = np.array([-180, -90, 0, 90, 180, 270, 360]) * 3600.0
     # expected values in radians
-    exp = np.array([-np.pi, -np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    exp = np.array(
+        [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi]
+    )
     # test conversion to radians
     test = pyTMD.math.asec2rad(angles)
     assert np.allclose(exp, test)
     # arcseconds to radians
-    atr = np.pi/648000.0
+    atr = np.pi / 648000.0
     # test conversion to radians
     test = angles * atr
     assert np.allclose(exp, test)
@@ -28,25 +32,29 @@ def test_asec2rad():
     arcseconds = pyTMD.math.rad2asec(test)
     assert np.allclose(angles, arcseconds)
 
+
 def test_masec2rad():
     """
     Tests the conversion of microarcseconds to radians
     """
     # test angles in microarcseconds
-    angles = np.array([-180, -90, 0, 90, 180, 270, 360])*3600.0*1e6
+    angles = np.array([-180, -90, 0, 90, 180, 270, 360]) * 3600.0 * 1e6
     # expected values in radians
-    exp = np.array([-np.pi, -np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    exp = np.array(
+        [-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi]
+    )
     # test conversion to radians
     test = pyTMD.math.masec2rad(angles)
     assert np.allclose(exp, test)
     # microarcseconds to radians
-    atr = np.pi/648e9
+    atr = np.pi / 648e9
     # test conversion to radians
     test = angles * atr
     assert np.allclose(exp, test)
     # test reverse conversion
     microarcseconds = pyTMD.math.rad2masec(test)
     assert np.allclose(angles, microarcseconds)
+
 
 def test_normalize_angle():
     """
@@ -59,6 +67,7 @@ def test_normalize_angle():
     # test normalization of angles
     test = pyTMD.math.normalize_angle(angles)
     assert np.all(exp == test)
+
 
 def test_aliasing():
     """
@@ -73,6 +82,7 @@ def test_aliasing():
     test = pyTMD.math.aliasing(frequency, sampling)
     assert np.all(exp == test)
 
+
 def test_condon_shortley():
     """
     Tests the calculation of the Condon-Shortley phase
@@ -84,6 +94,7 @@ def test_condon_shortley():
     # test Condon-Shortley phase
     test = pyTMD.math._condon_shortley(m)
     assert np.all(exp == test)
+
 
 def test_kronecker_delta():
     """
@@ -97,52 +108,91 @@ def test_kronecker_delta():
     test = pyTMD.math._kronecker_delta(m, 0)
     assert np.all(exp == test)
 
+
+@pytest.mark.parametrize("l", [1, 2, 3, 4, 5, 10, 20, 30, 40, 50])
+def test_factorial(l):
+    """
+    Tests the calculation of factorials
+    """
+    m = 0
+    r = np.floor_divide(l - m, 2)
+    for k in range(r + 1):
+        # calculate factorial terms for Legendre polynomials
+        Fexact = (
+            factorial(2 * l - 2 * k)
+            / factorial(k)
+            / factorial(l - k)
+            / factorial(l - m - 2 * k)
+        )
+        # calculate approximate factorial terms using gamma functions
+        Fgamma = np.exp(
+            gammaln(2.0 * l - 2.0 * k + 1)
+            - gammaln(k + 1)
+            - gammaln(l - k + 1)
+            - gammaln(l - m - 2.0 * k + 1)
+        )
+        assert np.allclose(Fexact, Fgamma)
+    # for each order
+    for m in range(l + 1):
+        # calculate factorial terms for the normalization
+        # using integer arithmetic for exact calculations
+        Fexact = factorial(l - m) / factorial(l + m)
+        # using gamma functions for cases with potential overflow
+        Fgamma = np.exp(gammaln(l - m + 1) - gammaln(l + m + 1))
+        assert np.allclose(Fexact, Fgamma)
+
+
 @pytest.mark.parametrize("l", [1, 2, 3])
 def test_assoc_legendre(l, x=[-1.0, -0.9, -0.8]):
-    """test the calculation of unnormalized Legendre polynomials
-    """
+    """test the calculation of unnormalized Legendre polynomials"""
     # calculate Legendre polynomials
     nx = len(x)
-    obs = np.zeros((l+1, nx))
-    test = np.zeros((l+1, nx))
-    for m in range(l+1):
-        obs[m,:], _ = pyTMD.math.legendre(l, x, m=m)
-        test[m,:] = pyTMD.math._assoc_legendre(l, m, x)
+    obs = np.zeros((l + 1, nx))
+    test = np.zeros((l + 1, nx))
+    for m in range(l + 1):
+        obs[m, :], _ = pyTMD.math.legendre(l, x, m=m)
+        test[m, :] = pyTMD.math._assoc_legendre(l, m, x)
     # expected values for each spherical harmonic degree
-    if (l == 1):
-        expected = np.array([
-            [-1.00000, -0.90000, -0.80000],
-            [ 0.00000, -0.43589, -0.60000]
-        ])
-    elif (l == 2):
-        expected = np.array([
-            [1.00000, 0.71500, 0.46000],
-            [0.00000, 1.17690, 1.44000],
-            [0.00000, 0.57000, 1.08000]
-        ])
-    elif (l == 3):
-        expected = np.array([
-            [-1.00000, -0.47250, -0.08000],
-            [0.00000, -1.99420, -1.98000],
-            [0.00000, -2.56500, -4.32000],
-            [0.00000, -1.24229, -3.24000]
-        ])
+    if l == 1:
+        expected = np.array(
+            [
+                [-1.00000, -0.90000, -0.80000],
+                [0.00000, -0.43589, -0.60000],
+            ]
+        )
+    elif l == 2:
+        expected = np.array(
+            [
+                [1.00000, 0.71500, 0.46000],
+                [0.00000, 1.17690, 1.44000],
+                [0.00000, 0.57000, 1.08000],
+            ]
+        )
+    elif l == 3:
+        expected = np.array(
+            [
+                [-1.00000, -0.47250, -0.08000],
+                [0.00000, -1.99420, -1.98000],
+                [0.00000, -2.56500, -4.32000],
+                [0.00000, -1.24229, -3.24000],
+            ]
+        )
     # check with expected values
     assert np.allclose(obs, expected, atol=1e-05)
     # check that the two methods give the same values
     assert np.allclose(obs, test)
 
+
 @pytest.mark.parametrize("l", [1, 2, 3, 4])
 def test_legendre(l):
-    """test the calculation of unnormalized Legendre polynomials
-    """
+    """test the calculation of unnormalized Legendre polynomials"""
     # test over the range of latitudes
     lat = np.arange(-90, 91, 1)
     th = np.radians(90.0 - lat)
     # test values for x
     x = np.cos(th)
     u = np.sqrt(1.0 - x**2)
-    for m in range(l+1):
+    for m in range(l + 1):
         obs, dobs = pyTMD.math.legendre(l, x, m=m)
         # since tides only use low-degree harmonics:
         # functions are hard coded rather than using a recursion relation
@@ -200,7 +250,7 @@ def test_legendre(l):
 
 
 def test_legendre_hw95():
-    """test the calculation of fully-normalized Legendre polynomials 
+    """test the calculation of fully-normalized Legendre polynomials
     and their derivative versus values from HW95
     """
     # colatitude for test values
@@ -242,7 +292,7 @@ def test_legendre_hw95():
     # calculate legendre polynomials with Mohlenkamp recursion relation
     P1, D1 = pyTMD.math.legendreP(6, np.cos(theta))
     # check each row of values
-    for (l, m, PLM[0], DPLM[0], PLM[1], DPLM[1]) in validation:
+    for l, m, PLM[0], DPLM[0], PLM[1], DPLM[1] in validation:
         # verify that degree and order are integers
         l = int(l)
         m = int(m)
@@ -259,25 +309,24 @@ def test_legendre_hw95():
         assert np.allclose(P2, PLM, atol=1e-12)
         assert np.allclose(D2, DPLM, atol=1e-12)
 
+
 # PURPOSE: test the calculation of ellipse coordinates
 def test_ellipse_xy():
-    """test the calculation of ellipse coordinates
-    """
+    """test the calculation of ellipse coordinates"""
     # number of points
     npts = 30
     # define ellipse parameters
-    umajor = 4.0 + 2.0*np.random.rand(npts)
+    umajor = 4.0 + 2.0 * np.random.rand(npts)
     uminor = 2.0 + np.random.rand(npts)
-    uincl = 180.0*np.random.rand(npts)
+    uincl = 180.0 * np.random.rand(npts)
     # center of the ellipse
-    xy = (10.0 - 20.0*np.random.rand(1), 10.0 - 20.0*np.random.rand(1))
+    xy = (10.0 - 20.0 * np.random.rand(1), 10.0 - 20.0 * np.random.rand(1))
     # calculate coordinates
     x, y = pyTMD.ellipse._xy(umajor, uminor, uincl, phase=0.0, xy=xy)
     # verify that the coordinates match the ellipse equation
-    phi = uincl*np.pi/180.0
-    X = (x - xy[0])*np.cos(phi) + (y - xy[1])*np.sin(phi)
-    Y = -(x - xy[0])*np.sin(phi) + (y - xy[1])*np.cos(phi)
-    test = (uminor*X)**2 + (umajor*Y)**2
-    validation = (umajor*uminor)**2
+    phi = uincl * np.pi / 180.0
+    X = (x - xy[0]) * np.cos(phi) + (y - xy[1]) * np.sin(phi)
+    Y = -(x - xy[0]) * np.sin(phi) + (y - xy[1]) * np.cos(phi)
+    test = (uminor * X) ** 2 + (umajor * Y) ** 2
+    validation = (umajor * uminor) ** 2
     assert np.allclose(test, validation)
-

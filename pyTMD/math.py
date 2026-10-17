@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 math.py
-Written by Tyler Sutterley (09/2026)
+Written by Tyler Sutterley (10/2026)
 Special functions of mathematical physics
 
 PYTHON DEPENDENCIES:
@@ -12,6 +12,8 @@ PYTHON DEPENDENCIES:
         https://docs.scipy.org/doc/
 
 UPDATE HISTORY:
+    Updated 10/2026: added option to calculate exact factorial values
+        set to False for cases with large arguments that would cause overflow
     Updated 09/2026: added recurrence function for Legendre polynomials
         added option to calculate fully-normalized Legendre polynomials
     Updated 06/2026: standardize use of lambda (lmda) to denote longitudes
@@ -34,7 +36,7 @@ UPDATE HISTORY:
 from __future__ import annotations
 
 import numpy as np
-from scipy.special import factorial
+from scipy.special import factorial, gammaln
 
 __all__ = [
     "asec2rad",
@@ -263,6 +265,7 @@ def legendre(
     x: np.ndarray,
     m: int = 0,
     norm: float = 1.0,
+    exact: bool = True,
 ):
     r"""
     Computes associated Legendre functions and their first-derivatives
@@ -282,6 +285,8 @@ def legendre(
         Order of the Legendre polynomials (:math:`0` to :math:`l`)
     norm: float, default 1.0
         Normalization to apply to outputs
+    exact: bool, default True
+        Calculate factorials using integer arithmetic
 
     Returns
     -------
@@ -301,12 +306,12 @@ def legendre(
     if isinstance(x, list):
         x = np.atleast_1d(x)
     # equation 1.67 from Hofmann-Wellenhof (2006)
-    Plm = _assoc_legendre(l, m, x)
+    Plm = _assoc_legendre(l, m, x, exact=exact)
     # if x is the cos of colatitude, u is the sine
     u = np.sqrt(1.0 - x**2)
     # calculate first derivative
     # this will initially have a singularity at the poles
-    Pm1 = _assoc_legendre(l - 1, m, x)
+    Pm1 = _assoc_legendre(l - 1, m, x, exact=exact)
     # ignore divide by zero and invalid value warnings
     with np.errstate(divide="ignore", invalid="ignore"):
         dPlm = (l * x * Plm - (l + m) * Pm1) / u
@@ -322,6 +327,7 @@ def _assoc_legendre(
     l: int,
     m: int,
     x: np.ndarray,
+    exact: bool = True,
 ):
     r"""
     Computes associated Legendre polynomials following equation 1.67
@@ -338,6 +344,8 @@ def _assoc_legendre(
 
         Typically :math:`\cos(\theta)`, where :math:`\theta`
         is the colatitude
+    exact: bool, default True
+        Calculate factorials using integer arithmetic
 
     Returns
     -------
@@ -360,14 +368,25 @@ def _assoc_legendre(
     P = 0.0
     r = np.floor_divide(l - m, 2)
     for k in range(r + 1):
-        P += (
-            np.power(-1.0, k)
-            * factorial(2.0 * l - 2.0 * k)
-            / factorial(k)
-            / factorial(l - k)
-            / factorial(l - m - 2.0 * k)
-            * np.power(x, l - m - 2.0 * k)
-        )
+        # calculate factorial terms
+        if exact:
+            # using integer arithmetic for exact calculations
+            fact = (
+                factorial(2 * l - 2 * k)
+                / factorial(k)
+                / factorial(l - k)
+                / factorial(l - m - 2 * k)
+            )
+        else:
+            # using gamma functions for cases with potential overflow
+            fact = np.exp(
+                gammaln(2.0 * l - 2.0 * k + 1.0)
+                - gammaln(k + 1.0)
+                - gammaln(l - k + 1.0)
+                - gammaln(l - m - 2.0 * k + 1.0)
+            )
+        # add terms
+        P += np.power(-1.0, k) * fact * np.power(x, l - m - 2.0 * k)
     # calculate for degree l and order m
     Plm = P * np.power(2.0, -l) * np.power(u, m)
     # apply Condon-Shortley phase
@@ -412,7 +431,12 @@ def _kronecker_delta(
     return 1.0 * (i == j)
 
 
-def _legendre_norm(l: int, m: int, normalization: str = "schmidt"):
+def _legendre_norm(
+    l: int,
+    m: int,
+    normalization: str = "schmidt",
+    exact: bool = True,
+):
     r"""
     Calculates Legendre polynomials normalizations following
     :cite:t:`Munk:1966go`
@@ -437,25 +461,30 @@ def _legendre_norm(l: int, m: int, normalization: str = "schmidt"):
 
         - ``'schmidt'`` from :cite:t:`Schmidt:1917vh`
         - ``'full'`` from :cite:t:`HofmannWellenhof:2006hy`
+    exact: bool, default True
+        Calculate factorials using integer arithmetic
 
     Returns
     -------
     norm: float
         Normalization for degree :math:`l` and order :math:`m`
     """
+    # calculate factorial terms for the normalization
+    if exact:
+        # using integer arithmetic for exact calculations
+        F = factorial(l - m) / factorial(l + m)
+    else:
+        # using gamma functions for cases with potential overflow
+        F = np.exp(gammaln(l - m + 1) - gammaln(l + m + 1))
     # normalization from Munk and Cartwright (1966) equation A5
     if normalization.lower() == "schmidt":
-        norm = np.sqrt(factorial(l - m) / factorial(l + m))
+        norm = np.sqrt(F)
     elif normalization.lower() == "full":
         # fully-normalized spherical harmonics (geodesy formulation)
         # from equation 1.97 of Hofmann-Wellenhof (2006)
         # also equation 6.2b of IERS conventions (2010)
         kron = _kronecker_delta(m, 0)
-        norm = (
-            np.sqrt(2.0 - kron)
-            * np.sqrt(2.0 * l + 1.0)
-            * np.sqrt(factorial(l - m) / factorial(l + m))
-        )
+        norm = np.sqrt(2.0 - kron) * np.sqrt(2.0 * l + 1.0) * np.sqrt(F)
     else:
         raise ValueError(f"Unknown normalization {normalization}")
     # return the normalization
@@ -564,6 +593,7 @@ def sph_harm(
     lmda: np.ndarray,
     m: int = 0,
     phase: float = 0.0,
+    exact: bool = True,
 ):
     r"""
     Computes the spherical harmonics for a particular degree
@@ -585,6 +615,8 @@ def sph_harm(
         Order of the spherical harmonics (:math:`0` to :math:`l`)
     phase: float, default 0.0
         Phase shift :math:`\varphi` (radians)
+    exact: bool, default True
+        Calculate factorials using integer arithmetic
 
     Returns
     -------
@@ -595,9 +627,9 @@ def sph_harm(
         :math:`\theta`
     """
     # normalization from Munk and Cartwright (1966) equation A5
-    norm = _legendre_norm(l, m)
+    norm = _legendre_norm(l, m, exact=exact)
     # calculate associated Legendre functions and derivatives
-    Plm, dPlm = legendre(l, np.cos(theta), m=m, norm=norm)
+    Plm, dPlm = legendre(l, np.cos(theta), m=m, norm=norm, exact=exact)
     # normalized spherical harmonics of degree l and order m
     dfactor = np.sqrt((2.0 * l + 1.0) / (4.0 * np.pi))
     Ylm = dfactor * Plm * np.exp(1j * m * lmda + 1j * phase)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 dataset.py
-Written by Tyler Sutterley (08/2026)
+Written by Tyler Sutterley (10/2026)
 An xarray.Dataset extension for tidal model data
 
 PYTHON DEPENDENCIES:
@@ -20,6 +20,8 @@ PYTHON DEPENDENCIES:
         https://docs.xarray.dev/en/stable/
 
 UPDATE HISTORY:
+    Updated 10/2026: added function to convert coordinates to geographic
+        added grid cell area calculators for geographic and projected models
     Updated 08/2026: add isel_bounds; gridded crop uses index hyperslabs
         Pacific/dateline crop via dual lon hyperslabs (no half-globe pad)
         use np.hypot to calculate harmonic amplitudes
@@ -576,6 +578,96 @@ class Dataset:
         # drop empty vertex coordinates
         return other.drop_vars("vertex", errors="ignore").compute()
 
+    def cell_area(self, assume_spherical: bool = False):
+        """
+        Calculate the area of each grid cell in the ``Dataset``
+
+        Parameters
+        ----------
+        assume_spherical: bool, default False
+            use a spherical Earth model for the area calculation
+
+        Returns
+        -------
+        area: xarray.DataArray
+            Area of each grid cell
+        """
+        # import area functions
+        from pyTMD.spatial import scale_factors
+
+        # get PROJ4 parameters for dataset projection
+        crs = self.crs.to_dict()
+        # get geodetic parameters
+        geod = self.crs.get_geod()
+        # ellipsoid semi-major and semi-minor axes
+        a_axis = geod.a
+        b_axis = geod.b
+        # ellipsoidal flattening
+        flat = geod.f
+        # first numerical eccentricity and its square
+        e12 = geod.es
+        ecc = np.sqrt(e12)
+        # authalic radius (same area as ellipsoid)
+        rad_e = np.sqrt(0.5 * (a_axis**2 + b_axis**2 * np.arctanh(ecc) / ecc))
+        # coordinates and attributes for output DataArray
+        coords = dict(y=self._ds.y, x=self._ds.x)
+        attrs = dict(units="m^2", long_name="Grid Cell Area")
+        # calculate areas based on the coordinate reference system
+        if self.crs.is_geographic and assume_spherical:
+            # geographic coordinates (spherical Earth model)
+            gridy, _ = xr.broadcast(np.radians(self._ds.y), self._ds.x)
+            # grid spacing in the x and y directions
+            dx = np.abs(np.radians(self._x[1] - self._x[0]))
+            dy = np.abs(np.radians(self._y[1] - self._y[0]))
+            # calculate area of each grid cell
+            area = (rad_e * dy) * (rad_e * dx * np.cos(gridy))
+        elif self.crs.is_geographic:
+            # geographic coordinates (ellipsoidal Earth model)
+            gridy, _ = xr.broadcast(np.radians(self._ds.y), self._ds.x)
+            # grid spacing in the x and y directions
+            dx = np.abs(np.radians(self._x[1] - self._x[0]))
+            dy = np.abs(np.radians(self._y[1] - self._y[0]))
+            # radius of curvature in prime vertical direction (east-west)
+            N = a_axis / np.sqrt(1.0 - e12 * np.sin(gridy) ** 2)
+            # radius of curvature in meridional direction (north-south)
+            M = a_axis * (1.0 - e12) / (1.0 - e12 * np.sin(gridy) ** 2) ** 1.5
+            # calculate area of each grid cell
+            area = (M * dy) * (N * np.cos(gridy) * dx)
+        elif self.crs.is_projected and crs.get("proj") == "stere":
+            # stereographic projection
+            geodetic_crs = getattr(self.crs, "geodetic_crs", 4326)
+            # get latitude and true-scale latitude
+            _, lat = self.to_geographic(crs=geodetic_crs)
+            lat_ts = crs.get("lat_ts", 90.0)
+            # calculate scaling factors for area distortions
+            ps_scale = scale_factors(lat, flat=flat, reference_latitude=lat_ts)
+            # calculate scaling factors to convert from axis units to meters
+            axis_units = 1.0 * __ureg__.parse_units(self.axis_units)
+            axis_scale = axis_units.to(__ureg__.meter).magnitude
+            # grid spacing in the x and y directions
+            dx = axis_scale * np.abs(self._x[1] - self._x[0])
+            dy = axis_scale * np.abs(self._y[1] - self._y[0])
+            # calculate area of each grid cell
+            area = ps_scale * dx * dy
+        else:
+            # projected coordinates (assume Cartesian)
+            ny, nx = len(self._y), len(self._x)
+            geodetic_crs = getattr(self.crs, "geodetic_crs", 4326)
+            # calculate scaling factors for area distortions
+            lon, lat = self.to_geographic(crs=geodetic_crs)
+            factors = pyproj.Proj(self.crs).get_factors(lon, lat)
+            areal_scale = factors.areal_scale
+            # calculate scaling factors to convert from axis units to meters
+            axis_units = 1.0 * __ureg__.parse_units(self.axis_units)
+            axis_scale = axis_units.to(__ureg__.meter).magnitude
+            # grid spacing in the x and y directions
+            dx = axis_scale * np.abs(self._x[1] - self._x[0])
+            dy = axis_scale * np.abs(self._y[1] - self._y[0])
+            # calculate area of each grid cell
+            area = dx * dy * np.ones((ny, nx)) / areal_scale
+        # return area as xarray DataArray
+        return xr.DataArray(area, coords=coords, dims=["y", "x"], attrs=attrs)
+
     def coords_as(
         self,
         x: np.ndarray,
@@ -695,7 +787,7 @@ class Dataset:
         # get extrapolation cutoff distance
         cutoff = kwargs.get("cutoff", np.inf)
         # check if chunks are present
-        if hasattr(other, "chunks") and other.chunks is not None:
+        if hasattr(other, "chunks") and bool(other.chunks):
             other = other.chunk(-1).compute()
         # bounds of other dataset
         bounds = [
@@ -974,13 +1066,16 @@ class Dataset:
         # return xarray dataset
         return ds
 
-    def node_equilibrium(self):
+    def node_equilibrium(self, crs: str | int | dict = 4326):
         """
         Compute the equilibrium amplitude and phase of the 18.6 year
         node tide :cite:p:`Cartwright:1971iz,Cartwright:1973em`
+
+        Parameters
+        ----------
+        crs: str, int, or dict, default 4326 (WGS84 Latitude/Longitude)
+            Coordinate reference system for geographic coordinates
         """
-        # copy dataset
-        ds = self._ds.copy()
         # get name of first listed constituent
         c = self._ds.tmd.constituents[0]
         # Cartwright and Edden potential amplitude
@@ -990,18 +1085,16 @@ class Dataset:
         h2 = 0.606
         # tilt factor: response with respect to the solid earth
         gamma_2 = 1.0 + k2 - h2
-        # check dimensions
-        y, x = xr.broadcast(ds.y, ds.x)
         # transform model coordinates to lat/lon coordinates
-        lon, lat = _transform(
-            x, y, source_crs=self.crs, target_crs=4326, direction="FORWARD"
-        )
+        _, lat = self.to_geographic(crs=crs)
         # colatitude in radians
         th = np.radians(90.0 - lat)
         # 2nd degree Legendre polynomials
         P20 = 0.5 * (3.0 * np.cos(th) ** 2 - 1.0)
         # normalization for spherical harmonics
         dfactor = np.sqrt((4.0 + 1.0) / (4.0 * np.pi))
+        # copy dataset
+        ds = self._ds.copy()
         # allocate for output node equilibrium tide
         ds["node"] = xr.zeros_like(ds[c])
         # calculate equilibrium node constants
@@ -1085,6 +1178,34 @@ class Dataset:
             return ds[[c]]
         else:
             return ds[c]
+
+    def to_geographic(self, crs: str | int | dict = 4326):
+        """
+        Get latitude and longitude coordinates for the ``Dataset``
+
+        Parameters
+        ----------
+        crs: str, int, or dict, default 4326 (WGS84 Latitude/Longitude)
+            Coordinate reference system for geographic coordinates
+
+        Returns
+        -------
+        lon: xarray.DataArray
+            Longitude coordinates for the dataset
+        lat: xarray.DataArray
+            Latitude coordinates for the dataset
+        """
+        # check dimensions
+        y, x = xr.broadcast(self._ds.y, self._ds.x)
+        # allocate for output latitude and longitude
+        lon = xr.zeros_like(x)
+        lat = xr.zeros_like(y)
+        # convert coordinates to latitude and longitude
+        lon.values, lat.values = _transform(
+            x, y, source_crs=self.crs, target_crs=crs, direction="FORWARD"
+        )
+        # return the geographic coordinates
+        return lon, lat
 
     def transform_as(
         self,
@@ -1759,6 +1880,7 @@ def _transform(
         raise ValueError("Invalid transformation direction")
     # get the coordinate reference system and transform
     source_crs = pyproj.CRS.from_user_input(source_crs)
+    target_crs = pyproj.CRS.from_user_input(target_crs)
     transformer = pyproj.Transformer.from_crs(
         source_crs, target_crs, always_xy=True
     )

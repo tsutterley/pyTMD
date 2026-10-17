@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 model.py
-Written by Tyler Sutterley (09/2026)
+Written by Tyler Sutterley (10/2026)
 Retrieves tide model parameters for named tide models and
     from model definition files
 
@@ -13,6 +13,7 @@ PYTHON DEPENDENCIES:
         https://docs.xarray.dev/en/stable/
 
 UPDATE HISTORY:
+    Updated 10/2026: change parameter names from 'm' to 'name'
     Updated 09/2026: expose default xarray engines as possible readers
     Updated 06/2026: add validate argument to from_dict method
         split old parse json function into a series of validation functions
@@ -234,7 +235,7 @@ class model:
 
     def from_database(
         self,
-        m: str,
+        name: str,
         group: tuple = ("z", "u", "v"),
     ):
         """
@@ -242,7 +243,7 @@ class model:
 
         Parameters
         ----------
-        m: str
+        name: str
             Model name
         group: tuple, default ('z', 'u', 'v')
             Model variable(s) to extract
@@ -254,9 +255,9 @@ class model:
         parameters = load_database(extra_databases=self.extra_databases)
         # try to extract parameters for model
         try:
-            self.from_dict(parameters[m], validate=False)
+            self.from_dict(parameters[name], validate=False)
         except (ValueError, KeyError, AttributeError) as exc:
-            raise ValueError(f"Unlisted tide model {m}") from exc
+            raise ValueError(f"Unlisted tide model {name}") from exc
         # verify model types to extract
         if isinstance(group, str):
             group = (group,)

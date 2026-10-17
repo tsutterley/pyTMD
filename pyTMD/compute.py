@@ -1228,7 +1228,7 @@ def _ephemerides_SET(
             - ``'N'``: north displacement
             - ``'E'``: east displacement
             - ``'R'``: radial displacement
-    kwargs: dict, optional
+    kwargs: dict
         Additional keyword arguments to pass to the prediction function
 
     Returns
@@ -1409,7 +1409,7 @@ def _catalog_SET(
             - ``'N'``: north displacement
             - ``'E'``: east displacement
             - ``'R'``: radial displacement
-    kwargs: dict, optional
+    kwargs: dict
         Additional keyword arguments to pass to the prediction function
 
     Returns
@@ -1528,7 +1528,7 @@ def TG_forces(
             - ``'N'``: generating force in the north direction
             - ``'E'``: generating force in the east direction
             - ``'R'``: generating force in the radial direction
-    kwargs: dict, optional
+    kwargs: dict
         Additional keyword arguments to pass to the prediction function
 
     Returns
@@ -1699,7 +1699,7 @@ def GT_accelerations(
             - ``'Meeus'``: :cite:t:`Meeus:1991vh`
             - ``'Montenbruck'``: :cite:t:`Montenbruck:1989uk`
             - ``'JPL'``: computed ephemerides from JPL kernels
-    kwargs: dict, optional
+    kwargs: dict
         Additional keyword arguments to pass to the prediction function
 
     Returns
