@@ -3,6 +3,7 @@
 - [Paul Branson (CSIRO)](https://github.com/pbranson)
 - [Kelly Brunt (NASA Goddard Space Flight Center)](https://science.gsfc.nasa.gov/sed/bio/kelly.m.brunt)
 - [Susan Howard (Earth & Space Research)](https://www.esr.org/staff/susan-l-howard/)
+- [Jean Pierre Mandujano G.](https://github.com/manduinca)
 - [Laurie Padman (Earth & Space Research)](https://www.esr.org/staff/laurence-padman/)
 - [Matt Siegfried (Colorado School of Mines)](https://geophysics.mines.edu/project/siegfried-matthew/)
 - [Tyler Sutterley (University of Washington)](http://psc.apl.uw.edu/people/investigators/tyler-sutterley/)
