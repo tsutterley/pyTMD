@@ -684,19 +684,16 @@ class Dataset:
         -------
         other: xarray.Dataset
             ``Dataset`` with extrapolated values
-        """
-        # import extrapolate functions
-        from pyTMD.interpolate import (
-            _to_cartesian,
-            _build_tree,
-            _query_tree,
-        )
 
+        Notes
+        -----
+        Chunked model or target values are evaluated only when the returned
+        dataset is computed. Coordinates are read to determine the crop.
+        KD-tree extrapolation is a global operation over the cropped model;
+        its working arrays must fit in memory when the task executes.
+        """
         # get extrapolation cutoff distance
         cutoff = kwargs.get("cutoff", np.inf)
-        # check if chunks are present
-        if hasattr(other, "chunks") and other.chunks is not None:
-            other = other.chunk(-1).compute()
         # bounds of other dataset
         bounds = [
             other.x.values.min(),
@@ -721,6 +718,57 @@ class Dataset:
         else:
             # copy dataset without cropping
             ds = self._ds.copy()
+        # Keep the tree construction and missing-value checks in the task
+        # graph. Coordinates are needed for cropping, but model and target
+        # values need not be read until the result is computed.
+        if any(
+            var.chunks is not None
+            for obj in (ds, other)
+            for var in obj.variables.values()
+        ):
+            import dask.array as da
+            from dask import delayed
+
+            variables = list(other.data_vars)
+            # Namespace every variable and dimension so merging cannot align
+            # unrelated model and target coordinates. A single collection lets
+            # Dask share model reads with the interpolation graph.
+            inputs = []
+            names = []
+            attrs = []
+            for i, obj in enumerate((ds[variables], other)):
+                mapping = {
+                    name: f"__extrap_{i}_{j}"
+                    for j, name in enumerate(
+                        dict.fromkeys((*obj.dims, *obj.variables))
+                    )
+                }
+                inputs.append(obj.rename(mapping))
+                names.append(mapping)
+                attrs.append(obj.attrs)
+            combined = xr.merge(inputs, combine_attrs="drop")
+            values = delayed(_extrapolate_values)(
+                combined, names, attrs, kwargs
+            )
+            result = other.copy(deep=False)
+            for i, v in enumerate(variables):
+                data = da.from_delayed(
+                    values[i], shape=other[v].shape, dtype=other[v].dtype
+                )
+                result[v] = other[v].copy(data=data)
+            return result
+        return ds.tmd._extrap_like(other.copy(deep=True), **kwargs)
+
+    def _extrap_like(self, other: xr.Dataset, **kwargs):
+        """Evaluate extrapolation from an already cropped model."""
+        # import extrapolate functions
+        from pyTMD.interpolate import (
+            _to_cartesian,
+            _build_tree,
+            _query_tree,
+        )
+
+        ds = self._ds
         # check if extrapolating from grid or mesh
         if self.grid_type == "unstructured":
             # get the polynomial order of the finite elements
@@ -1869,3 +1917,20 @@ def _coords(
     Y.attrs["type"] = coord_type
     # return the transformed coordinates
     return (X, Y)
+
+
+def _extrapolate_values(combined, names, attrs, kwargs):
+    """Restore names after Dask materializes the shared input collection."""
+    datasets = []
+    for mapping, metadata in zip(names, attrs):
+        excluded = [
+            name for name in combined.variables if name not in mapping.values()
+        ]
+        obj = combined.drop_vars(excluded).rename(
+            {v: k for k, v in mapping.items()}
+        )
+        obj.attrs = metadata
+        datasets.append(obj)
+    ds, other = datasets
+    result = ds.tmd._extrap_like(other.copy(deep=True), **kwargs)
+    return tuple(result[v].values for v in other.data_vars)
